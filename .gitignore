@@ -25,7 +25,12 @@ __pycache__/
 
 .DS_Store
 
-# NOTE: everything panelkit generates is deliberately NOT ignored.
-# res/*.svg, src/PanelTheme.hpp, src/*/Panel.hpp and tools/previews/* are
+# The browser mock embeds Rack's fonts as base64, read from an installed copy of
+# Rack (panelkit/preview.py). A machine without Rack generates a valid but
+# different file, so this one generated artefact is local-only.
+/tools/previews/*.html
+
+# NOTE: everything else panelkit generates is deliberately NOT ignored.
+# res/*.svg, src/PanelTheme.hpp, src/*/Panel.hpp and tools/previews/*.png are
 # committed, because the VCV Library build machines compile this repo without
 # running Python. They are still outputs -- edit tools/panels/<Module>.py.

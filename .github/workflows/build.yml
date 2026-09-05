@@ -30,19 +30,25 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      # res/*.svg, src/PanelTheme.hpp, src/*/Panel.hpp and tools/previews/* are
-      # generated and committed. Regenerating them must be a no-op: if it is
-      # not, either a generated file was hand-edited or a spec change was
-      # committed without its output.
+      # res/*.svg, src/PanelTheme.hpp and src/*/Panel.hpp are generated and
+      # committed. Regenerating them must be a no-op: if it is not, either a
+      # generated file was hand-edited or a spec change was committed without
+      # its output.
+      #
+      # tools/previews/*.html is excluded and gitignored -- it embeds Rack's
+      # fonts as base64 from an installed Rack, which CI does not have.
       - name: Regenerate every panel
         run: make panel
       - name: Committed output must match
         run: |
-          if ! git diff --exit-code; then
+          if ! git diff --quiet; then
             echo "::error::Generated panel files differ from their spec." \
                  "Run 'make panel' and commit the result."
+            git diff --stat
+            git diff
             exit 1
           fi
+          echo "Every generated file matches its spec."
 
   test:
     name: Unit tests
