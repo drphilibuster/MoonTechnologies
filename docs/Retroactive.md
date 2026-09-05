@@ -8,6 +8,25 @@ while leaving the windows themselves in their original time order. The macro-tim
 windows make it a timbral effect; long windows give the familiar "reversed but still
 moving forward" sound.
 
+**And then there is OVERDRAFT, which is the best thing in the module and was not
+designed in.** Push FADE past half the sub-block — short window, high SUBDIV — and the
+crossfade clamp starts doing all the work; the OVERDRAFT light comes on to say so.
+What comes out stops behaving like a delay. It plucks and rings: Karplus–Strong-ish
+pitched tones, delays that never quite settle, comb-like resonances that move on their
+own, and past a point plain chaos.
+
+The ingredients for that are genuinely all present — the sub-block period `B` sets a
+pitch, and the overlapping crossfade averages successive reads the way the filter in a
+plucked-string loop does — but it is emergent rather than intended, and it is not
+predictable. Both TIME and SUBDIV change `B`, and `B` is what the clamp bites on, so
+small moves in either can land somewhere quite different. There is no way to read the
+right settings off the panel; you find them.
+
+Treat it as a second instrument hiding inside the first rather than as a
+misconfiguration. [Overdraft](#overdraft) below has the mechanics, and — importantly —
+which modes actually respond to it: in Identity and Reverse the light comes on and
+nothing happens at all.
+
 Part of the [Moon Technologies](../README.md) plugin.
 
 A single sample is one number, so it cannot be reversed on its own. What gets reversed
@@ -93,7 +112,8 @@ TIME, MODE, SUBDIV and MIX have attenuverted CV. FADE and CLK DIV do not.
 `L` is clamped to `min(FADE, B/2, N/2)`, so a fade can never reach the next seam. Once
 FADE exceeds half the sub-block — short window, high SUBDIV — the clamp is doing all the
 work and the OVERDRAFT light comes on. It is a named region of the control space, not an
-error: the modes that live there are unstable and strange, and that is the point.
+error. The behaviour there was found rather than designed — see the top of this page —
+and the light exists so it can be found again, not to warn you off it.
 
 **How much you actually hear depends on the mode's seam count.** Fades only fire at genuine
 discontinuities, and consecutive blocks are often contiguous in the source:
