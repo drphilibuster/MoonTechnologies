@@ -1,0 +1,48 @@
+{
+  "slug": "MoonTechnologies",
+  "name": "Moon Technologies",
+  "version": "2.0.0",
+  "license": "GPL-3.0-or-later",
+  "brand": "Moon Technologies",
+  "author": "Taxxess",
+  "authorEmail": "",
+  "authorUrl": "https://github.com/drphilibuster",
+  "pluginUrl": "https://github.com/drphilibuster/MoonTechnologies",
+  "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/README.md",
+  "sourceUrl": "https://github.com/drphilibuster/MoonTechnologies",
+  "donateUrl": "",
+  "changelogUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/CHANGELOG.md",
+  "modules": [
+    {
+      "slug": "PatchAudit",
+      "name": "PatchAudit",
+      "description": "Browse Patchstorage and audit patches against your installed modules",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/PatchAudit.md",
+      "tags": [
+        "Utility",
+        "Visual"
+      ]
+    },
+    {
+      "slug": "Retroactive",
+      "name": "Retroactive",
+      "description": "Windowed sample-permutation effect",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Retroactive.md",
+      "tags": [
+        "Effect",
+        "Delay",
+        "Granular"
+      ]
+    },
+    {
+      "slug": "UncertaintyPolicy",
+      "name": "Uncertainty Policy",
+      "description": "Signal-aware knob and cable randomizer that auditions each roll and reverts the ones that kill the sound",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/UncertaintyPolicy.md",
+      "tags": [
+        "Utility",
+        "Random"
+      ]
+    }
+  ]
+}

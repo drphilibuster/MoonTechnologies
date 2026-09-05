@@ -1,0 +1,31 @@
+# Build output
+/build/
+/dist/
+/dep/
+/plugin.dylib
+/plugin.so
+/plugin.dll
+*.o
+*.d
+*.a
+*.dSYM/
+
+# Scratch directory the VCV screenshot renderer uses
+/tools/.rackshot/
+
+# Test binaries and rendered audio
+/tests/*/test_*
+!/tests/*/test_*.cpp
+/tests/*/render_*
+!/tests/*/render_*.cpp
+/tests/*/out/
+
+__pycache__/
+*.pyc
+
+.DS_Store
+
+# NOTE: everything panelkit generates is deliberately NOT ignored.
+# res/*.svg, src/PanelTheme.hpp, src/*/Panel.hpp and tools/previews/* are
+# committed, because the VCV Library build machines compile this repo without
+# running Python. They are still outputs -- edit tools/panels/<Module>.py.

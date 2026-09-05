@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="81.2800mm" height="128.5000mm" viewBox="0 0 81.2800 128.5000" version="1.1">
+<g inkscape:label="panel" inkscape:groupmode="layer" id="panel">
+  <rect x="0" y="0" width="81.2800" height="128.5000" fill="#003512"/>
+  <rect x="0" y="0" width="81.2800" height="9.0000" fill="#00230b"/>
+  <rect x="0" y="8.5500" width="81.2800" height="0.45" fill="#d2fa52"/>
+  <rect x="0" y="9.5000" width="81.2800" height="0.18" fill="#2b7a45"/>
+  <rect x="0" y="110.6533" width="81.2800" height="17.8467" fill="#00230b"/>
+  <rect x="0" y="110.6533" width="81.2800" height="0.18" fill="#2b7a45"/>
+  <rect x="3.0000" y="110.6533" width="7.0000" height="0.5000" rx="0.25" fill="#00e95c"/>
+  <rect x="4.2" y="10.2000" width="72.8800" height="15.0000" rx="1.20" fill="#001505" stroke="#2b7a45" stroke-width="0.3"/>
+  <rect x="3.0000" y="26.4000" width="75.2800" height="21.9927" rx="1.60" fill="#005d1f"/>
+  <rect x="3.0000" y="26.4000" width="7.0000" height="0.5000" rx="0.25" fill="#d2fa52"/>
+  <rect x="3.0000" y="49.9927" width="75.2800" height="19.3249" rx="1.60" fill="#005d1f"/>
+  <rect x="3.0000" y="49.9927" width="7.0000" height="0.5000" rx="0.25" fill="#d2fa52"/>
+  <rect x="3.0000" y="70.9176" width="75.2800" height="21.3588" rx="1.60" fill="#005d1f"/>
+  <rect x="3.0000" y="70.9176" width="7.0000" height="0.5000" rx="0.25" fill="#d2fa52"/>
+  <rect x="3.0000" y="93.8764" width="75.2800" height="15.8249" rx="1.60" fill="#005d1f"/>
+  <rect x="3.0000" y="93.8764" width="7.0000" height="0.5000" rx="0.25" fill="#d2fa52"/>
+  <circle cx="14.0000" cy="36.9000" r="7.4000" fill="#00230b"/>
+  <circle cx="40.6400" cy="36.9000" r="7.4000" fill="#00230b"/>
+  <circle cx="67.2800" cy="36.9000" r="7.4000" fill="#00230b"/>
+  <rect x="17.4200" y="53.0927" width="7.1600" height="12.2000" rx="1.25" fill="#00230b"/>
+  <circle cx="60.2800" cy="59.1927" r="4.3200" fill="#00230b"/>
+  <circle cx="14.0000" cy="81.1176" r="4.3500" fill="#00230b"/>
+  <circle cx="40.6400" cy="81.1176" r="4.9000" fill="#00230b"/>
+  <circle cx="67.2800" cy="81.1176" r="4.3500" fill="#00230b"/>
+  <circle cx="21.0000" cy="101.3264" r="4.3500" fill="#00230b"/>
+  <circle cx="60.2800" cy="101.3264" r="2.6000" fill="#00230b"/>
+  <circle cx="40.6400" cy="118.6000" r="4.7000" fill="#00230b"/>
+  <circle cx="40.6400" cy="81.1176" r="5.8000" fill="none" stroke="#d2fa52" stroke-width="0.32"/>
+</g>
+<g inkscape:label="components" inkscape:groupmode="layer" id="components" style="display:none">
+  <circle inkscape:label="knob_amount" cx="14.0000" cy="36.9000" r="1" fill="#ff0000"/>
+  <circle inkscape:label="spread" cx="40.6400" cy="36.9000" r="1" fill="#ff0000"/>
+  <circle inkscape:label="cable_count" cx="67.2800" cy="36.9000" r="1" fill="#ff0000"/>
+  <circle inkscape:label="basis" cx="21.0000" cy="59.1927" r="1" fill="#ff0000"/>
+  <circle inkscape:label="spine" cx="60.2800" cy="59.1927" r="1" fill="#ff0000"/>
+  <circle inkscape:label="roll_controls" cx="14.0000" cy="81.1176" r="1" fill="#ff0000"/>
+  <circle inkscape:label="roll_all" cx="40.6400" cy="81.1176" r="1" fill="#ff0000"/>
+  <circle inkscape:label="roll_cables" cx="67.2800" cy="81.1176" r="1" fill="#ff0000"/>
+  <circle inkscape:label="revert" cx="21.0000" cy="101.3264" r="1" fill="#ff0000"/>
+  <circle inkscape:label="verdict" cx="60.2800" cy="101.3264" r="1" fill="#ff00ff"/>
+  <circle inkscape:label="trig" cx="40.6400" cy="118.6000" r="1" fill="#00ff00"/>
+</g>
+</svg>

@@ -1,0 +1,107 @@
+# Builds the plugin for every platform the VCV Library ships, on every push.
+#
+# The four targets here are exactly the four VCV publishes an SDK for, which is
+# also exactly what the Library distributes. There is no lin-arm64 SDK.
+#
+# This uses native runners plus the official SDK rather than VCV's Docker
+# toolchain, because the toolchain image takes about an hour to build and this
+# takes about a minute. Release binaries are built the same way; see
+# release.yml. To reproduce a Library build byte-for-byte, use
+# rack-plugin-toolchain -- docs/BUILDING.md says how.
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  # Bump this when you move to a newer Rack. It must be a version VCV has
+  # published an SDK for: https://vcvrack.com/downloads
+  RACK_SDK_VERSION: 2.6.6
+
+jobs:
+  panels:
+    name: Panels match their spec
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # res/*.svg, src/PanelTheme.hpp, src/*/Panel.hpp and tools/previews/* are
+      # generated and committed. Regenerating them must be a no-op: if it is
+      # not, either a generated file was hand-edited or a spec change was
+      # committed without its output.
+      - name: Regenerate every panel
+        run: make panel
+      - name: Committed output must match
+        run: |
+          if ! git diff --exit-code; then
+            echo "::error::Generated panel files differ from their spec." \
+                 "Run 'make panel' and commit the result."
+            exit 1
+          fi
+
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run the host-side tests
+        run: make test
+
+  build:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: lin-x64,   os: ubuntu-latest }
+          - { target: win-x64,   os: windows-latest }
+          - { target: mac-arm64, os: macos-latest }
+          # Cross-compiled from the arm64 runner against the x64 SDK, which is
+          # what VCV's own toolchain does. arch.mk reads CROSS_COMPILE.
+          - { target: mac-x64,   os: macos-latest, cross: x86_64-apple-darwin }
+
+    defaults:
+      run:
+        shell: ${{ matrix.os == 'windows-latest' && 'msys2 {0}' || 'bash' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Rack plugins on Windows are MinGW-w64 binaries. MSVC will not do.
+      - name: Set up MSYS2
+        if: matrix.os == 'windows-latest'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-jq
+            make
+            unzip
+
+      - name: Install jq
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Download the Rack SDK
+        run: |
+          curl -fsSL -o Rack-SDK.zip \
+            "https://vcvrack.com/downloads/Rack-SDK-${RACK_SDK_VERSION}-${{ matrix.target }}.zip"
+          unzip -q Rack-SDK.zip -d ..
+          test -f ../Rack-SDK/plugin.mk
+
+      - name: Build
+        run: make -j4 dist CROSS_COMPILE=${{ matrix.cross }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MoonTechnologies-${{ matrix.target }}
+          path: dist/*.vcvplugin
+          if-no-files-found: error

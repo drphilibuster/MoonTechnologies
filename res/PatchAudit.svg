@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="132.0800mm" height="128.5000mm" viewBox="0 0 132.0800 128.5000" version="1.1">
+<g inkscape:label="panel" inkscape:groupmode="layer" id="panel">
+  <rect x="0" y="0" width="132.0800" height="128.5000" fill="#003512"/>
+  <rect x="0" y="0" width="132.0800" height="9.0000" fill="#00230b"/>
+  <rect x="0" y="8.5500" width="132.0800" height="0.45" fill="#d2fa52"/>
+  <rect x="0" y="9.5000" width="132.0800" height="0.18" fill="#2b7a45"/>
+  <rect x="0" y="114.6000" width="132.0800" height="13.9000" fill="#00230b"/>
+  <rect x="0" y="114.6000" width="132.0800" height="0.18" fill="#2b7a45"/>
+  <rect x="3.0000" y="114.6000" width="7.0000" height="0.5000" rx="0.25" fill="#00e95c"/>
+  <rect x="3.0000" y="10.0000" width="126.0800" height="24.0000" rx="1.60" fill="#005d1f"/>
+  <rect x="3.0000" y="10.0000" width="7.0000" height="0.5000" rx="0.25" fill="#d2fa52"/>
+  <rect x="5.2000" y="15.6000" width="121.6800" height="8.0000" rx="1.20" fill="#001505" stroke="#2b7a45" stroke-width="0.3"/>
+  <rect x="5.2000" y="25.0000" width="58.8400" height="7.4000" rx="1.00" fill="#00230b" stroke="#2b7a45" stroke-width="0.3"/>
+  <rect x="68.0400" y="25.0000" width="58.8400" height="7.4000" rx="1.00" fill="#00230b" stroke="#2b7a45" stroke-width="0.3"/>
+  <rect x="5.2000" y="35.6000" width="121.6800" height="70.4000" rx="1.20" fill="#001505" stroke="#2b7a45" stroke-width="0.3"/>
+  <rect x="5.2000" y="107.2000" width="22.0000" height="6.5000" rx="0.80" fill="#00230b" stroke="#2b7a45" stroke-width="0.3"/>
+  <rect x="104.8800" y="107.2000" width="22.0000" height="6.5000" rx="0.80" fill="#00230b" stroke="#2b7a45" stroke-width="0.3"/>
+  <rect x="5.2000" y="115.4000" width="59.8400" height="7.8000" rx="1.00" fill="#005d1f" stroke="#2b7a45" stroke-width="0.3"/>
+  <rect x="5.2000" y="115.4000" width="7.0000" height="0.5000" rx="0.25" fill="#d2fa52"/>
+  <rect x="67.0400" y="115.4000" width="59.8400" height="7.8000" rx="1.00" fill="#005d1f" stroke="#2b7a45" stroke-width="0.3"/>
+  <rect x="67.0400" y="115.4000" width="7.0000" height="0.5000" rx="0.25" fill="#d2fa52"/>
+  <rect x="11.0000" y="124.4000" width="110.0800" height="1.8000" rx="0.90" fill="#001505"/>
+</g>
+<g inkscape:label="components" inkscape:groupmode="layer" id="components" style="display:none">
+</g>
+</svg>

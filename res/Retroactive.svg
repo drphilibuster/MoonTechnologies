@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="60.9600mm" height="128.5000mm" viewBox="0 0 60.9600 128.5000" version="1.1">
+<g inkscape:label="panel" inkscape:groupmode="layer" id="panel">
+  <rect x="0" y="0" width="60.9600" height="128.5000" fill="#003512"/>
+  <rect x="0" y="0" width="60.9600" height="9.0000" fill="#00230b"/>
+  <rect x="0" y="8.5500" width="60.9600" height="0.45" fill="#d2fa52"/>
+  <rect x="0" y="9.5000" width="60.9600" height="0.18" fill="#2b7a45"/>
+  <rect x="0" y="110.6515" width="60.9600" height="17.8485" fill="#00230b"/>
+  <rect x="0" y="110.6515" width="60.9600" height="0.18" fill="#2b7a45"/>
+  <rect x="3.0000" y="110.6515" width="7.0000" height="0.5000" rx="0.25" fill="#00e95c"/>
+  <rect x="4.2" y="10.2000" width="52.5600" height="9.2000" rx="1.20" fill="#001505" stroke="#2b7a45" stroke-width="0.3"/>
+  <rect x="3.0000" y="20.6000" width="54.9600" height="49.5780" rx="1.60" fill="#005d1f"/>
+  <rect x="3.0000" y="20.6000" width="7.0000" height="0.5000" rx="0.25" fill="#d2fa52"/>
+  <rect x="3.0000" y="71.7780" width="54.9600" height="37.7535" rx="1.60" fill="#005d1f"/>
+  <rect x="3.0000" y="71.7780" width="7.0000" height="0.5000" rx="0.25" fill="#d2fa52"/>
+  <rect x="6.0000" y="54.0353" width="48.9600" height="0.22" fill="#2b7a45"/>
+  <circle cx="39.6820" cy="22.7685" r="2.0900" fill="#00230b"/>
+  <circle cx="17.0000" cy="31.1000" r="7.4000" fill="#00230b"/>
+  <circle cx="30.4800" cy="31.1000" r="2.6000" fill="#00230b"/>
+  <circle cx="43.9600" cy="31.1000" r="7.4000" fill="#00230b"/>
+  <circle cx="12.0000" cy="45.8927" r="6.1000" fill="#00230b"/>
+  <circle cx="30.4800" cy="45.8927" r="6.1000" fill="#00230b"/>
+  <circle cx="48.9600" cy="45.8927" r="6.1000" fill="#00230b"/>
+  <circle cx="12.0000" cy="59.9853" r="6.1000" fill="#00230b"/>
+  <rect x="26.8100" y="55.1853" width="7.3400" height="9.6000" rx="1.28" fill="#00230b"/>
+  <circle cx="48.9600" cy="59.9853" r="4.9000" fill="#00230b"/>
+  <circle cx="8.0000" cy="82.4347" r="4.3200" fill="#00230b"/>
+  <circle cx="22.9867" cy="82.4347" r="4.3200" fill="#00230b"/>
+  <circle cx="37.9733" cy="82.4347" r="4.3200" fill="#00230b"/>
+  <circle cx="52.9600" cy="82.4347" r="4.3200" fill="#00230b"/>
+  <circle cx="8.0000" cy="90.5647" r="4.7000" fill="#00230b"/>
+  <circle cx="22.9867" cy="90.5647" r="4.7000" fill="#00230b"/>
+  <circle cx="37.9733" cy="90.5647" r="4.7000" fill="#00230b"/>
+  <circle cx="52.9600" cy="90.5647" r="4.7000" fill="#00230b"/>
+  <circle cx="12.0000" cy="102.9215" r="4.7000" fill="#00230b"/>
+  <circle cx="30.4800" cy="102.9215" r="4.7000" fill="#00230b"/>
+  <circle cx="48.9600" cy="102.9215" r="4.7000" fill="#00230b"/>
+  <circle cx="17.2396" cy="96.4306" r="2.0900" fill="#00230b"/>
+  <circle cx="8.0000" cy="118.6000" r="4.7000" fill="#00230b"/>
+  <circle cx="22.9867" cy="118.6000" r="4.7000" fill="#00230b"/>
+  <circle cx="37.9733" cy="118.6000" r="4.7000" fill="#00230b"/>
+  <circle cx="52.9600" cy="118.6000" r="4.7000" fill="#00230b"/>
+  <rect x="23.6000" y="30.9400" width="4.6800" height="0.3200" fill="#d2fa52"/>
+  <rect x="30.3200" y="33.3000" width="0.3200" height="6.8927" fill="#d2fa52"/>
+  <rect x="30.4800" y="40.0327" width="7.6016" height="0.3200" fill="#d2fa52"/>
+  <circle cx="30.4800" cy="40.1927" r="0.62" fill="#d2fa52"/>
+  <circle cx="48.9600" cy="40.1927" r="0.62" fill="#d2fa52"/>
+  <rect x="30.3200" y="40.1927" width="0.3200" height="0.9000" fill="#d2fa52"/>
+</g>
+<g inkscape:label="components" inkscape:groupmode="layer" id="components" style="display:none">
+  <circle inkscape:label="window" cx="39.6820" cy="22.7685" r="1" fill="#ff0000"/>
+  <circle inkscape:label="time" cx="17.0000" cy="31.1000" r="1" fill="#ff0000"/>
+  <circle inkscape:label="overdraft" cx="30.4800" cy="31.1000" r="1" fill="#ff00ff"/>
+  <circle inkscape:label="div" cx="43.9600" cy="31.1000" r="1" fill="#ff0000"/>
+  <circle inkscape:label="mode" cx="12.0000" cy="45.8927" r="1" fill="#ff0000"/>
+  <circle inkscape:label="subdiv" cx="30.4800" cy="45.8927" r="1" fill="#ff0000"/>
+  <circle inkscape:label="fade" cx="48.9600" cy="45.8927" r="1" fill="#ff0000"/>
+  <circle inkscape:label="mix" cx="12.0000" cy="59.9853" r="1" fill="#ff0000"/>
+  <circle inkscape:label="char" cx="30.4800" cy="59.9853" r="1" fill="#ff0000"/>
+  <circle inkscape:label="freeze" cx="48.9600" cy="59.9853" r="1" fill="#ff0000"/>
+  <circle inkscape:label="time_cv" cx="8.0000" cy="82.4347" r="1" fill="#ff0000"/>
+  <circle inkscape:label="mode_cv" cx="22.9867" cy="82.4347" r="1" fill="#ff0000"/>
+  <circle inkscape:label="subdiv_cv" cx="37.9733" cy="82.4347" r="1" fill="#ff0000"/>
+  <circle inkscape:label="mix_cv" cx="52.9600" cy="82.4347" r="1" fill="#ff0000"/>
+  <circle inkscape:label="time_in" cx="8.0000" cy="90.5647" r="1" fill="#00ff00"/>
+  <circle inkscape:label="mode_in" cx="22.9867" cy="90.5647" r="1" fill="#00ff00"/>
+  <circle inkscape:label="subdiv_in" cx="37.9733" cy="90.5647" r="1" fill="#00ff00"/>
+  <circle inkscape:label="mix_in" cx="52.9600" cy="90.5647" r="1" fill="#00ff00"/>
+  <circle inkscape:label="clock_in" cx="12.0000" cy="102.9215" r="1" fill="#00ff00"/>
+  <circle inkscape:label="reset_in" cx="30.4800" cy="102.9215" r="1" fill="#00ff00"/>
+  <circle inkscape:label="freeze_in" cx="48.9600" cy="102.9215" r="1" fill="#00ff00"/>
+  <circle inkscape:label="clock_led" cx="17.2396" cy="96.4306" r="1" fill="#ff0000"/>
+  <circle inkscape:label="in_l" cx="8.0000" cy="118.6000" r="1" fill="#00ff00"/>
+  <circle inkscape:label="in_r" cx="22.9867" cy="118.6000" r="1" fill="#00ff00"/>
+  <circle inkscape:label="out_l" cx="37.9733" cy="118.6000" r="1" fill="#00ff00"/>
+  <circle inkscape:label="out_r" cx="52.9600" cy="118.6000" r="1" fill="#00ff00"/>
+</g>
+</svg>
