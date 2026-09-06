@@ -8,6 +8,11 @@ using namespace rack;
 extern Plugin* pluginInstance;
 
 // One Model per module. Each is defined in src/<Module>/<Module>.cpp.
+extern Model* modelAmortization;
+extern Model* modelDividend;
+extern Model* modelGross;
 extern Model* modelPatchAudit;
+extern Model* modelRacketeer;
 extern Model* modelRetroactive;
+extern Model* modelTaxBracket;
 extern Model* modelUncertaintyPolicy;

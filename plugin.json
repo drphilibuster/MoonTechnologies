@@ -14,6 +14,37 @@
   "changelogUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/CHANGELOG.md",
   "modules": [
     {
+      "slug": "Amortization",
+      "name": "Amortization",
+      "description": "Verbtronic-style digital reverb: Verb and Tronic algorithms, tonal tilt, feedback, mode gate and wet-only output",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Amortization.md",
+      "tags": [
+        "Reverb",
+        "Effect"
+      ]
+    },
+    {
+      "slug": "Dividend",
+      "name": "Dividend",
+      "description": "Pulsar-synthesis VCO: pulsaret trains with formant, duty, masking and stochastic payout",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Dividend.md",
+      "tags": [
+        "Oscillator",
+        "Synth voice"
+      ]
+    },
+    {
+      "slug": "Gross",
+      "name": "Gross",
+      "description": "Black-box / gray-box distortion: Wiener-Hammerstein chain with a parametric tanh mapping, dynamic bias and device presets",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Gross.md",
+      "tags": [
+        "Distortion",
+        "Waveshaper",
+        "Effect"
+      ]
+    },
+    {
       "slug": "PatchAudit",
       "name": "PatchAudit",
       "description": "Browse Patchstorage and audit patches against your installed modules",
@@ -21,6 +52,17 @@
       "tags": [
         "Utility",
         "Visual"
+      ]
+    },
+    {
+      "slug": "Racketeer",
+      "name": "Racketeer",
+      "description": "Electric Intonarumori: a self-sustaining PT2399 noise voice with feedback echo, filter, chopper and CV'd delay time",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Racketeer.md",
+      "tags": [
+        "Noise",
+        "Delay",
+        "Synth voice"
       ]
     },
     {
@@ -32,6 +74,17 @@
         "Effect",
         "Delay",
         "Granular"
+      ]
+    },
+    {
+      "slug": "TaxBracket",
+      "name": "Tax Bracket",
+      "description": "Olegtron R2R: a passive 8-bit resistor ladder that is a DAC, a weighted mixer, an attenuator and a labile multiple at once",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/TaxBracket.md",
+      "tags": [
+        "Utility",
+        "Mixer",
+        "Attenuator"
       ]
     },
     {
