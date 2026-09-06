@@ -24,6 +24,17 @@
       ]
     },
     {
+      "slug": "AuditLogic",
+      "name": "Audit Logic",
+      "description": "Modular in a Week logic: four gates (inverter, AND, OR, XOR, NAND), a 4066 gated switch pair and the Emiz CV2 clock divider",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/AuditLogic.md",
+      "tags": [
+        "Logic",
+        "Switch",
+        "Clock modulator"
+      ]
+    },
+    {
       "slug": "Consolidation",
       "name": "Consolidation",
       "description": "Modular in a Week mixer and multiples: four-channel mixer with normal and inverted sums, plus buffered and passive-style multiples",
