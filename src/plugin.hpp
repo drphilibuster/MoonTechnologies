@@ -15,6 +15,7 @@ extern Model* modelGross;
 extern Model* modelKickback;
 extern Model* modelPatchAudit;
 extern Model* modelRacketeer;
+extern Model* modelRepossession;
 extern Model* modelRetroactive;
 extern Model* modelSixFigures;
 extern Model* modelTaxBracket;

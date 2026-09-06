@@ -86,6 +86,17 @@
       ]
     },
     {
+      "slug": "Repossession",
+      "name": "Repossession",
+      "description": "YouTube sampler: paste a link, chop the audio and video into regions, sequence and modulate them, watch the frames",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Repossession.md",
+      "tags": [
+        "Sampler",
+        "Sequencer",
+        "Visual"
+      ]
+    },
+    {
       "slug": "Retroactive",
       "name": "Retroactive",
       "description": "Windowed sample-permutation effect",
