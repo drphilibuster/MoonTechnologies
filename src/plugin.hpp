@@ -9,8 +9,10 @@ extern Plugin* pluginInstance;
 
 // One Model per module. Each is defined in src/<Module>/<Module>.cpp.
 extern Model* modelAmortization;
+extern Model* modelConsolidation;
 extern Model* modelDeduction;
 extern Model* modelDividend;
+extern Model* modelGarnishment;
 extern Model* modelGross;
 extern Model* modelKickback;
 extern Model* modelPatchAudit;

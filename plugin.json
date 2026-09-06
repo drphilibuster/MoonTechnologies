@@ -24,6 +24,17 @@
       ]
     },
     {
+      "slug": "Consolidation",
+      "name": "Consolidation",
+      "description": "Modular in a Week mixer and multiples: four-channel mixer with normal and inverted sums, plus buffered and passive-style multiples",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Consolidation.md",
+      "tags": [
+        "Mixer",
+        "Multiple",
+        "Utility"
+      ]
+    },
+    {
       "slug": "Deduction",
       "name": "Deduction",
       "description": "Modular in a Week filter bank: PAiA 2720-3L, Escobedo Q&D, Korg35, MS-20 OTA, EFM Moog high-pass and Synthrotek DIRT, one model at a time",
@@ -41,6 +52,17 @@
       "tags": [
         "Oscillator",
         "Synth voice"
+      ]
+    },
+    {
+      "slug": "Garnishment",
+      "name": "Garnishment",
+      "description": "Modular in a Week dual VCA: per channel an LM13700 OTA, a vactrol or a JFET I-AM-O amplitude modulator, with bias, lag and CV amount",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Garnishment.md",
+      "tags": [
+        "Voltage-controlled amplifier",
+        "Low-pass gate",
+        "Dual"
       ]
     },
     {
