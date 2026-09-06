@@ -86,6 +86,17 @@
       ]
     },
     {
+      "slug": "Repossession",
+      "name": "Repossession",
+      "description": "YouTube sampler: paste a link, chop the audio and video into regions, sequence and modulate them, watch the frames",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Repossession.md",
+      "tags": [
+        "Sampler",
+        "Sequencer",
+        "Visual"
+      ]
+    },
+    {
       "slug": "Retroactive",
       "name": "Retroactive",
       "description": "Windowed sample-permutation effect",
@@ -94,6 +105,16 @@
         "Effect",
         "Delay",
         "Granular"
+      ]
+    },
+    {
+      "slug": "SixFigures",
+      "name": "Six Figures",
+      "description": "Modular in a Week oscillator bank: six voices, each a 40106 Schmitt, 4069 AAC, 4046 PLL or reverse-avalanche core, with sync, PLL lock-in and a mix",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/SixFigures.md",
+      "tags": [
+        "Oscillator",
+        "Polyphonic"
       ]
     },
     {
