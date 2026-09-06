@@ -90,6 +90,18 @@
       ]
     },
     {
+      "slug": "Installment",
+      "name": "Installment",
+      "description": "Modular in a Week dual function generator: simple LFO, 13700 VCLFO, dual AR, PHObos AD/AR with looping, and the CV-controlled PWM driver",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Installment.md",
+      "tags": [
+        "Envelope generator",
+        "Low-frequency oscillator",
+        "Function generator",
+        "Dual"
+      ]
+    },
+    {
       "slug": "Kickback",
       "name": "Kickback",
       "description": "Modular in a Week drum bank: BaSnaHi kick, snare and hat, SmurfDrum, TomTomTom, XORbell, the percussive noise voice and the Tiny Dazzler, with a mix",
@@ -170,6 +182,17 @@
       "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/UncertaintyPolicy.md",
       "tags": [
         "Utility",
+        "Random"
+      ]
+    },
+    {
+      "slug": "Volatility",
+      "name": "Volatility",
+      "description": "Modular in a Week random: 4006 shift-register noise, YASH sample and hold, and the PHObos random gate",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Volatility.md",
+      "tags": [
+        "Noise",
+        "Sample and hold",
         "Random"
       ]
     }

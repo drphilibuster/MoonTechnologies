@@ -17,6 +17,7 @@ void init(Plugin* p) {
 	p->addModel(modelDividend);
 	p->addModel(modelGarnishment);
 	p->addModel(modelGross);
+	p->addModel(modelInstallment);
 	p->addModel(modelKickback);
 	p->addModel(modelPatchAudit);
 	p->addModel(modelRacketeer);
@@ -25,6 +26,7 @@ void init(Plugin* p) {
 	p->addModel(modelSixFigures);
 	p->addModel(modelTaxBracket);
 	p->addModel(modelUncertaintyPolicy);
+	p->addModel(modelVolatility);
 }
 
 
