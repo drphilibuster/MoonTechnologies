@@ -1,7 +1,7 @@
 {
   "slug": "MoonTechnologies",
   "name": "Moon Technologies",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "license": "GPL-3.0-or-later",
   "brand": "Moon Technologies",
   "author": "Taxxess",
@@ -133,6 +133,17 @@
       ]
     },
     {
+      "slug": "PaymentSchedule",
+      "name": "Payment Schedule",
+      "description": "Modular in a Week sequencer: Baby8 steps, 4017 sequential switch in both directions, 4031 tap looper and the varimode quantizer",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/PaymentSchedule.md",
+      "tags": [
+        "Sequencer",
+        "Switch",
+        "Quantizer"
+      ]
+    },
+    {
       "slug": "Racketeer",
       "name": "Racketeer",
       "description": "Electric Intonarumori: a self-sustaining PT2399 noise voice with feedback echo, filter, chopper and CV'd delay time",
@@ -163,6 +174,16 @@
         "Effect",
         "Delay",
         "Granular"
+      ]
+    },
+    {
+      "slug": "SignHere",
+      "name": "Sign Here",
+      "description": "Modular in a Week controllers: button and pedal, offset-scaler joystick, and four touch pads",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/SignHere.md",
+      "tags": [
+        "Controller",
+        "Utility"
       ]
     },
     {

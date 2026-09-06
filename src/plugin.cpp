@@ -21,9 +21,11 @@ void init(Plugin* p) {
 	p->addModel(modelInstallment);
 	p->addModel(modelKickback);
 	p->addModel(modelPatchAudit);
+	p->addModel(modelPaymentSchedule);
 	p->addModel(modelRacketeer);
 	p->addModel(modelRepossession);
 	p->addModel(modelRetroactive);
+	p->addModel(modelSignHere);
 	p->addModel(modelSixFigures);
 	p->addModel(modelTaxBracket);
 	p->addModel(modelUncertaintyPolicy);
