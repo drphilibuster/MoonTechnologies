@@ -11,8 +11,10 @@ void init(Plugin* p) {
 	// The order here is the order Rack lists the brand's modules in, so keep it
 	// alphabetical rather than in the order they were written.
 	p->addModel(modelAmortization);
+	p->addModel(modelDeduction);
 	p->addModel(modelDividend);
 	p->addModel(modelGross);
+	p->addModel(modelKickback);
 	p->addModel(modelPatchAudit);
 	p->addModel(modelRacketeer);
 	p->addModel(modelRetroactive);

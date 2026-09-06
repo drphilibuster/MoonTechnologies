@@ -24,6 +24,16 @@
       ]
     },
     {
+      "slug": "Deduction",
+      "name": "Deduction",
+      "description": "Modular in a Week filter bank: PAiA 2720-3L, Escobedo Q&D, Korg35, MS-20 OTA, EFM Moog high-pass and Synthrotek DIRT, one model at a time",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Deduction.md",
+      "tags": [
+        "Filter",
+        "Distortion"
+      ]
+    },
+    {
       "slug": "Dividend",
       "name": "Dividend",
       "description": "Pulsar-synthesis VCO: pulsaret trains with formant, duty, masking and stochastic payout",
@@ -42,6 +52,16 @@
         "Distortion",
         "Waveshaper",
         "Effect"
+      ]
+    },
+    {
+      "slug": "Kickback",
+      "name": "Kickback",
+      "description": "Modular in a Week drum bank: BaSnaHi kick, snare and hat, SmurfDrum, TomTomTom, XORbell, the percussive noise voice and the Tiny Dazzler, with a mix",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Kickback.md",
+      "tags": [
+        "Drum",
+        "Synth voice"
       ]
     },
     {
