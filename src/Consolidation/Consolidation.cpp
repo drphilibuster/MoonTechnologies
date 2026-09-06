@@ -51,10 +51,14 @@ struct Consolidation : Module {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 
 		for (int i = 0; i < NUM_CH; i++) {
-			configParam(LVL1_PARAM + i, 0.f, 1.f, 0.f,
+			// Unity, not zero. A mixer that defaults to silence makes a patched
+			// module look broken, and Rack's convention is the opposite --
+			// every Fundamental level defaults to unity (VCMixer.cpp:38,
+			// VCA.cpp:30, Mixer.cpp:29). It also matches the topology above:
+			// 10k in against 10k feedback is unity gain per channel.
+			configParam(LVL1_PARAM + i, 0.f, 1.f, 1.f,
 			            string::f("Channel %d level", i + 1), "%", 0.f, 100.f);
 			configInput(IN1_INPUT + i, string::f("Channel %d", i + 1));
-			configBypass(IN1_INPUT + i, OUT_OUTPUT);
 		}
 		configOutput(OUT_OUTPUT, "Mix");
 		configOutput(INV_OUT_OUTPUT, "Inverted mix");
@@ -67,6 +71,17 @@ struct Consolidation : Module {
 		configOutput(MULT_B_OUT1_OUTPUT, "Multiple B, leg 1");
 		configOutput(MULT_B_OUT2_OUTPUT, "Multiple B, leg 2");
 		configOutput(MULT_B_OUT3_OUTPUT, "Multiple B, leg 3");
+
+		// Rack allows each output to be bypass-routed exactly once
+		// (Rack-SDK/include/engine/Module.hpp:240 asserts it), so the mix
+		// output can only carry one channel through: channel 1, the same
+		// choice every hardware-style mixer bypass makes. The multiples fan
+		// one input out to distinct outputs, which the rule permits.
+		configBypass(IN1_INPUT, OUT_OUTPUT);
+		for (int i = 0; i < 3; i++) {
+			configBypass(MULT_A_IN_INPUT, MULT_A_OUT1_OUTPUT + i);
+			configBypass(MULT_B_IN_INPUT, MULT_B_OUT1_OUTPUT + i);
+		}
 	}
 
 	void processMixer() {

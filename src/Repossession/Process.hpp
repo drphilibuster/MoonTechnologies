@@ -24,6 +24,7 @@ Two rules the implementations share:
 
 #include <atomic>
 #include <cstdlib>
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -56,6 +57,11 @@ struct ProcessResult {
 	bool started = false;
 	std::string out;
 	std::string err;
+	/** Set, and `started` left false, when the program could not be launched at
+	    all -- as opposed to launching and then failing. A tool that never ran
+	    has no stderr to quote, so without this the caller can only report an
+	    exit code the tool never chose, and the panel blames the wrong thing. */
+	std::string execError;
 
 	bool ok() const { return started && !cancelled && status == 0; }
 };
@@ -319,11 +325,17 @@ inline ProcessResult run(const std::vector<std::string>& argv,
 
 	BOOL ok = CreateProcessA(NULL, &cmdBuf[0], NULL, NULL, TRUE,
 		CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+	DWORD launchErr = ok ? 0 : GetLastError();
 	CloseHandle(outW);
 	CloseHandle(errW);
 	if (!ok) {
 		CloseHandle(outR);
 		CloseHandle(errR);
+		// Windows resolves the whole launch up front, so unlike the POSIX side
+		// there is no window in which a child exists but has not exec'd: a
+		// failure here is always "never started".
+		r.execError = argv[0] + " could not be started (Windows error "
+			+ std::to_string((unsigned long) launchErr) + ").";
 		return r;
 	}
 	r.started = true;
@@ -354,6 +366,30 @@ inline ProcessResult run(const std::vector<std::string>& argv,
 
 #else
 
+/** Why a child could not be started, in words a person can act on.
+
+    The case worth naming is ENOENT on a file that is demonstrably there and
+    demonstrably executable. execvp() reports the *interpreter* named on a
+    script's `#!` line, not the script itself, so this is almost always a
+    wrapper whose Python or shell has been moved or uninstalled -- a pip shim
+    outliving the Homebrew Python it was built against being the classic. The
+    panel has just printed the path it found; telling the user that same path is
+    "not found" would send them looking in the wrong place entirely. */
+inline std::string execFailure(const std::string& path, int e) {
+	if (e == ENOENT && isExecutable(path))
+		return path + " could not be started: the file is there, but something it "
+		       "needs is not -- most likely the interpreter on its first line, a "
+		       "stale #! wrapper. Run it in a terminal to see what it names.";
+	if (e == ENOEXEC)
+		return path + " could not be started: it is not a runnable program on this "
+		       "machine (wrong architecture, or not a binary at all).";
+	if (e == EACCES)
+		return path + " could not be started: permission denied.";
+	if (e == ENOENT)
+		return path + " could not be started: no such file.";
+	return path + " could not be started: " + std::strerror(e) + ".";
+}
+
 inline ProcessResult run(const std::vector<std::string>& argv,
                          const std::atomic<bool>* cancel) {
 	ProcessResult r;
@@ -368,7 +404,7 @@ inline ProcessResult run(const std::vector<std::string>& argv,
 		args.push_back(const_cast<char*>(argv[i].c_str()));
 	args.push_back(NULL);
 
-	int outp[2], errp[2];
+	int outp[2], errp[2], execp[2];
 	if (::pipe(outp) != 0)
 		return r;
 	if (::pipe(errp) != 0) {
@@ -376,6 +412,20 @@ inline ProcessResult run(const std::vector<std::string>& argv,
 		::close(outp[1]);
 		return r;
 	}
+	// The exec-status pipe, and the whole reason this function can tell the two
+	// failures apart. Its write end is close-on-exec: a successful execvp()
+	// closes it and the parent reads EOF, while a failed one leaves the child
+	// alive just long enough to write its errno down it. The alternative -- a
+	// bare _exit(127) -- is indistinguishable from the tool itself exiting 127,
+	// which is exactly what a shell reports for a command it could not find.
+	if (::pipe(execp) != 0) {
+		::close(outp[0]);
+		::close(outp[1]);
+		::close(errp[0]);
+		::close(errp[1]);
+		return r;
+	}
+	::fcntl(execp[1], F_SETFD, FD_CLOEXEC);
 
 	pid_t pid = ::fork();
 	if (pid < 0) {
@@ -383,6 +433,8 @@ inline ProcessResult run(const std::vector<std::string>& argv,
 		::close(outp[1]);
 		::close(errp[0]);
 		::close(errp[1]);
+		::close(execp[0]);
+		::close(execp[1]);
 		return r;
 	}
 	if (pid == 0) {
@@ -392,6 +444,7 @@ inline ProcessResult run(const std::vector<std::string>& argv,
 		::close(outp[1]);
 		::close(errp[0]);
 		::close(errp[1]);
+		::close(execp[0]);
 		// A tool that decides to prompt must see EOF rather than wedge us.
 		int devnull = ::open("/dev/null", O_RDONLY);
 		if (devnull >= 0) {
@@ -399,11 +452,52 @@ inline ProcessResult run(const std::vector<std::string>& argv,
 			::close(devnull);
 		}
 		::execvp(args[0], &args[0]);
+		// Still async-signal-safe: one write() and one _exit().
+		int e = errno;
+		ssize_t wrote = ::write(execp[1], &e, sizeof(e));
+		(void) wrote;
 		::_exit(127);
 	}
 
 	::close(outp[1]);
 	::close(errp[1]);
+	::close(execp[1]);
+
+	// Cannot stall: between fork() and execvp() the child only dups and opens
+	// /dev/null, so this returns as soon as the exec resolves either way.
+	int execErrno = 0;
+	{
+		char* p = (char*) &execErrno;
+		size_t need = sizeof(execErrno);
+		size_t got = 0;
+		while (got < need) {
+			ssize_t n = ::read(execp[0], p + got, need - got);
+			if (n > 0)
+				got += (size_t) n;
+			else if (n == 0)
+				break;
+			else if (errno != EINTR)
+				break;
+		}
+		if (got != need)
+			execErrno = 0;
+	}
+	::close(execp[0]);
+
+	if (execErrno != 0) {
+		// Nothing ever ran, so `started` stays false and there is no exit status
+		// worth reporting -- only the reason. The child is still reaped: it is
+		// sitting in _exit(127) and would otherwise linger as a zombie.
+		::close(outp[0]);
+		::close(errp[0]);
+		int st = 0;
+		while (::waitpid(pid, &st, 0) < 0 && errno == EINTR) {
+			// retry
+		}
+		r.execError = execFailure(argv[0], execErrno);
+		return r;
+	}
+
 	r.started = true;
 
 	struct pollfd fds[2];

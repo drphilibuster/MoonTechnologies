@@ -1,4 +1,5 @@
 #include "../plugin.hpp"
+#include "../DspCache.hpp"
 #include "Panel.hpp"
 #include "Pt2399Loop.hpp"
 
@@ -68,6 +69,9 @@ struct Racketeer : Module {
 
 	dsp::SchmittTrigger noiseTrig, boostTrig, muteTrig;
 	dsp::ClockDivider lightDivider;
+
+	// Knob-rate coefficients kept out of the per-sample path; see DspCache.hpp.
+	mt::Cache lagSlowC, lagFastC, driveC;
 
 	float timeSlew = 0.5f;       // the optocoupler's state, 0..1 of the range
 	float chopPhase = 0.f;
@@ -212,10 +216,17 @@ struct Racketeer : Module {
 			timeSlew = t;
 		}
 		else {
-			float tau = 0.002f * std::pow(1000.f, lag);      // 2 ms .. 2 s
-			if (t < timeSlew) tau *= 0.35f;
-			float a = 1.f - std::exp(-args.sampleTime / tau);
-			timeSlew += a * (t - timeSlew);
+			// LAG is a knob, so both coefficients hold still between moves.
+			// Caching each separately means the rise/fall branch never forces a
+			// recompute the way one cache keyed on the chosen tau would.
+			float key = lag * args.sampleRate;   // covers a rate change too
+			float aSlow = lagSlowC.get(key, [&](float) {
+				return 1.f - std::exp(-args.sampleTime / (0.002f * std::pow(1000.f, lag)));
+			});
+			float aFast = lagFastC.get(key, [&](float) {
+				return 1.f - std::exp(-args.sampleTime / (0.002f * std::pow(1000.f, lag) * 0.35f));
+			});
+			timeSlew += (t < timeSlew ? aFast : aSlow) * (t - timeSlew);
 		}
 		float delaySec = delayFor(timeSlew, longRange);
 		loop.delaySec = delaySec;
@@ -235,7 +246,8 @@ struct Racketeer : Module {
 		if (inputs[CUTOFF_INPUT].isConnected())
 			cut += inputs[CUTOFF_INPUT].getVoltage() * params[CUTOFF_CV_PARAM].getValue();
 		cut = clamp(cut, kCutMinLog2, kCutMaxLog2);
-		loop.setFilter(std::pow(2.f, cut), params[RES_PARAM].getValue());
+		// CUTOFF is already log2, so this is exp2 -- no need for the general pow.
+		loop.setFilter(dsp::exp2_taylor5(cut), params[RES_PARAM].getValue());
 
 		// --- the chopper: the mute button pressed by a square LFO -----------
 		bool chopOn = params[CHOP_PARAM].getValue() > 0.5f;
@@ -243,7 +255,7 @@ struct Racketeer : Module {
 		if (inputs[RATE_INPUT].isConnected())
 			rate += inputs[RATE_INPUT].getVoltage() * params[RATE_CV_PARAM].getValue();
 		rate = clamp(rate, kRateMinLog2, kRateMaxLog2);
-		chopPhase += std::pow(2.f, rate) * args.sampleTime;
+		chopPhase += dsp::exp2_taylor5(rate) * args.sampleTime;
 		if (chopPhase >= 1.f) chopPhase -= 1.f;
 		bool chopGate = chopPhase < 0.5f;
 		float chopTarget = (chopOn && !chopGate) ? 0.f : 1.f;
@@ -253,7 +265,9 @@ struct Racketeer : Module {
 
 		// --- what goes into the loop ----------------------------------------
 		float in = clamp(inputs[IN_INPUT].getVoltageSum(), -12.f, 12.f) / 5.f;
-		in *= std::pow(10.f, params[DRIVE_PARAM].getValue() * 24.f / 20.f);
+		// DRIVE has no CV, so this dB-to-linear is a knob-rate value.
+		in *= driveC.get(params[DRIVE_PARAM].getValue(),
+			[](float k) { return std::pow(10.f, k * 24.f / 20.f); });
 		float seed = params[SEED_PARAM].getValue();
 		float seedAmp = seed * seed;                 // audible floor at the top, nothing at zero
 		float injectAmp = (noiseOn && !noiseKills) ? 0.7f : 0.f;

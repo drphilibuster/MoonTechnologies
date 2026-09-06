@@ -166,6 +166,17 @@
       ]
     },
     {
+      "slug": "ScheduleA",
+      "name": "Schedule A",
+      "description": "Repossession expander: discrete per-step CV inputs and per-step audio outputs for all eight regions",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/ScheduleA.md",
+      "tags": [
+        "Expander",
+        "Sampler",
+        "Sequencer"
+      ]
+    },
+    {
       "slug": "Retroactive",
       "name": "Retroactive",
       "description": "Windowed sample-permutation effect",

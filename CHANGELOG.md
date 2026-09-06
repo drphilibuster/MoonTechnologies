@@ -5,6 +5,202 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Fixed: Consolidation crashed Rack the moment it was added
+
+`configBypass` was called once per mixer channel with the same `OUT` as the
+destination. Rack allows each output to be bypass-routed exactly once and
+asserts on the second (`Rack-SDK/include/engine/Module.hpp:240`), so adding the
+module aborted the process — every time, on every platform. The mix output now
+carries channel 1 through on bypass, and the two multiples fan their input out
+to their own legs, which the one-route-per-output rule permits.
+
+### Fixed: Gross output a constant 12 V from the moment it was created
+
+An unpatched Gross sat at 12 V on both audio outputs with ENV pinned at 10 V,
+and poisoned anything downstream of it.
+
+Rack default-constructs a `BiquadFilter` by calling
+`setParameters(LOWPASS, f=0, Q=0, V=1)`, and that branch computes
+`1/(1 + K/Q + K*K)` — with `K = tan(0) = 0` and `Q = 0` that is `0/0`, so every
+coefficient of a freshly constructed biquad is NaN
+(`Rack-SDK/include/dsp/filter.hpp:307,335`). Gross designs its six filters in
+`updateControls()`, which runs behind a `ClockDivider` of 8 and so does not fire
+until the eighth sample. The seven samples before it were enough: NaN entered
+the filters' state history and never left, and `clamp()` returns its upper bound
+for NaN — hence exactly 12 V, forever, whatever was patched in.
+
+The controls are now designed once before the first sample goes through them.
+
+### Fixed: quitting Rack with a Repossession in the patch could segfault
+
+Rack deletes the window before the scene (`Rack/src/context.cpp:19` and `:27`),
+so `VideoScreen`'s destructor ran with an already-freed `NVGcontext` and called
+`nvgDeleteImage` on it. The image is now released only while the window that
+owns the context is still alive.
+
+### Fixed: Consolidation started silent
+
+The four channel levels defaulted to 0, so a fully patched mixer made no sound
+and looked broken. Rack's convention is the opposite — every Fundamental level
+defaults to unity — and it also matches the topology being modelled: 10k in
+against 10k feedback is unity gain per channel. They now default to 100%.
+
+### Faster: the per-sample audio paths no longer recompute what has not changed
+
+Filter and envelope coefficients are expensive functions — `exp`, `tan`, `pow`,
+`cos` — of things that barely move: a knob, or the sample rate. Written inline
+in `process()` that cost was paid on every sample. `src/DspCache.hpp` adds a
+one-float staleness check, so a transcendental call becomes a float compare
+until its input actually moves, and an exact recompute the moment it does — a
+knob sweep sounds precisely as it did before.
+
+Kickback, which ran eight voices through several of these each sample, is the
+clearest case: **0.875% of one core down to 0.477% at 96 kHz, 1.83x faster**,
+with its output identical to four significant figures. SixFigures was
+evaluating three `exp()` per voice per sample — eighteen per sample — for two
+values that depend only on the sample rate. Racketeer had five `pow()` per
+sample keyed on knobs; Deduction a `tan()` per polyphonic channel; Dividend and
+Installment used `pow(2, x)` where `exp2` does. Gross, Diversified and
+Amortization already updated at control rate behind a divider and are unchanged.
+
+### New module: Schedule A, the Repossession expander
+
+16 HP, eight rows, one per seized asset: discrete **SPEED / GAIN / START /
+LENGTH** inputs and a per-step audio **OUT**, for the four controls Repossession
+otherwise carries polyphonically. Attaches to Repossession's right.
+
+- **A jack here wins over the host's poly jack only where a cable is in it.** A
+  poly LFO can drive all eight steps while one hand-patched envelope takes over
+  step 5 and nothing else. Summing them would make every unpatched jack a silent
+  zero, which is why the message carries a `has` flag per step and not just a
+  voltage.
+- **The rows are named by colour, not by number.** Each row's light is sent the
+  colour the host's own step button is wearing, disabled steps included, so the
+  expander needs to know neither the palette nor the state.
+- **No state, no menu, no `dataToJson`.** The patch cables are the whole
+  configuration. A lone expander goes dark and silent rather than holding what
+  it last saw.
+
+### panelkit: a panel with no footer band now fills its face
+
+`slack` — the room the justify pass shares out among the gaps — was only ever
+computed inside the `if panel.footer:` branch. A panel without a footer got
+`slack = 0`, never justified, and packed its rows against the masthead with the
+whole lower face left empty. Schedule A's eight rows of jacks stopped
+three-quarters of the way down the panel.
+
+Footerless panels now measure their slack against the foot ribbon between the
+bottom screws, like every other panel measures it against its band. Only two
+panels in the family have no footer; PatchAudit had no slack to share, so its
+artwork is byte-identical, and the other nineteen never entered this branch.
+
+### Repossession: only the windows are in memory
+
+The module held the whole decoded clip in RAM — 230 MB for ten minutes of stereo
+float at 48 kHz, which is why the import length was a menu item rather than a
+number. Almost none of it was ever played. The module plays eight windows cut out
+of the clip; everything between them was memory spent on audio nobody asked for.
+
+The decode still lands on disk as a `.pcm`. Only the windows are read into RAM,
+and what is kept for the whole clip is its length, its rate and a
+thousand-bucket waveform — about four kilobytes, whatever the source.
+
+- **`Windows.hpp`.** A worker reads windows off the `.pcm` and hands each to the
+  audio thread as an atomic pointer, the same handover `Media.hpp` uses. Newest
+  request per slot wins, because dragging an edge queues one a frame and only
+  the last matters. A step whose window has not arrived is silent rather than
+  stalling.
+- **`Media` no longer holds audio.** `scanPcm` reads the file once, forwards, in
+  a fixed half-megabyte buffer, folding every frame into its peak bucket.
+- **A budget, and a meter that reads it off the buffers.** 16 MB to 512 MB,
+  default 64. The meter shows one segment per step in that step's own colour, so
+  the bar says who is holding what.
+- **The eight steps share the budget.** Trimming a step returns seconds to a
+  common pool; growing one takes from it and simply stops when it is empty, the
+  placed start staying put while the length gives. Disabling hands a whole share
+  back. Re-arming takes up to an even share *of what is left* — and when nothing
+  is left the step stays disabled and blinks. That refusal is the mechanic.
+- **"Eight equal spans" follows the budget, not the clip.** Eight windows of the
+  largest length the budget allows, spread evenly end to end. The old behaviour
+  made window length a function of clip length, so a ten-minute video produced
+  eight seventy-five-second regions whether or not there was memory for them.
+- **The crossfade names the buffer it is fading out of.** A seam between two
+  steps now reads two different buffers, so the old one is held past the longest
+  fade rather than freed four samples later.
+- **`tests/Repossession/test_windows.cpp`** — 63 checks under ASan/UBSan: the
+  allocator's rules including the refusal, conservation of the pool across a
+  20 000-operation random walk, windows read to the exact sample, reads past the
+  end of file, a missing file, newest-wins under a 200-request burst, and a
+  clean join with every slot still queued.
+
+### Repossession: an instrument, not only a sequencer
+
+The module could be clocked, and that was all it could be. Everything here is
+additive — the clock input, the region editing and the whole existing patch
+format still behave exactly as they did.
+
+- **An internal clock.** TEMPO, 30–300 BPM. Patching CLOCK silences it rather
+  than racing it, and pulling the cable hands the knob back; the light beside
+  CLOCK follows whichever clock is actually in charge.
+- **RUN is a three-position switch: RUN / STOP / LATCH.** Latching one step used
+  to be reachable only by accident — patch a clock, stop it, and whichever step
+  you landed on looped forever. It is a position now, and the selected step is
+  the one it loops.
+- **The step buttons are playable.** With the transport stopped, a tap fires a
+  step; holding one past 250 ms loops it for as long as it is held, overriding
+  the region's own LOOP and handing it back on release. Nothing that is saved
+  changes.
+- **Steps can be disabled.** Ctrl-click (cmd on a Mac) parks a step: it keeps
+  its span, speed and gain, and the sequencer passes over it as if it were
+  empty. Distinct from releasing a slot, which throws the region away.
+- **Every step has its own colour**, a lime-to-mint ramp across the eight, drawn
+  from one function so a step's button, its span on the timeline and its line in
+  the report cannot disagree. Disabled steps go to clay *and* are hatched, since
+  colour alone is the one channel a reader may not have.
+- **The timeline zooms.** Scroll about the pointer, shift-scroll to pan, with a
+  bar showing where the view sits in the clip. Rack's own zoom enlarges the
+  whole panel and runs out long before a boundary can be placed accurately on a
+  three-minute clip. The "dragged to nothing" threshold follows the zoom, so a
+  span trimmed at 100× is not deleted for being small on screen.
+- **Four per-step CV inputs — SPEED, GAIN, START, LENGTH.** Polyphonic, channel
+  N addressing slot N, so one cable carries all eight; a monophonic cable
+  applies to every step at once. START and LENGTH never write to the stored
+  region, so a modulated window springs back when the cable is pulled.
+- **A polyphonic STEPS output**, whichever step is sounding on its own channel.
+- **`panelkit` gains `RgbLight`**, a light whose colour the module picks rather
+  than the panel — the general capability the per-step colours needed, so it
+  lives in the kit and every panel has it.
+
+### Repossession: a tool that cannot start says so
+
+`yt-dlp failed (exit 127)` was, in at least one real case, a lie. The launcher
+forked, `execvp()` failed, and the child called `_exit(127)` — which is exactly
+what a shell reports for a command it could not find, so the parent had no way
+to tell "the tool ran and exited 127" from "the tool never ran at all". The
+panel then quoted an exit code the tool had never chosen, next to the path it
+had just successfully found on disk.
+
+The case that produced it: a `yt-dlp` on `PATH` that was a `pip` console script
+whose `#!` line named a Homebrew Python since removed. The file is present and
+executable, so `which()` resolves it and the log prints its path; `execvp()`
+then reports `ENOENT` about the *interpreter*, not the script. Being told that
+path is "not found" sends you looking in the wrong place.
+
+- **An exec-status pipe.** Its write end is `FD_CLOEXEC`, so a successful
+  `execvp()` closes it and the parent reads EOF, while a failed one leaves the
+  child alive just long enough to write its `errno` down it. A launch failure
+  now leaves `started` false and fills `ProcessResult::execError`; the child is
+  reaped rather than left as a zombie.
+- **The message names the likely cause.** `ENOENT` on a file that is provably
+  there and executable is reported as a broken `#!` wrapper, not as a missing
+  file. `ENOEXEC` and `EACCES` get their own wording.
+- **A program is still allowed to exit 127.** A tool that genuinely returns 127
+  is reported as having run, unchanged — the distinction is the point.
+- **`tests/Repossession/`.** The launcher tested against a host compiler through
+  a five-call Rack stub: success, separate streams, non-zero exit, a genuine
+  127, a missing file, a stale `#!` shim, a file without the executable bit,
+  `execvp`'s documented `/bin/sh` fallback, and no zombies after fifty failures.
+
 ### Panels: every layout re-solved
 
 Every panel in the family had some version of the same fault, and it was one

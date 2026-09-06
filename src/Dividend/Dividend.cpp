@@ -185,7 +185,7 @@ struct Dividend : Module {
 		if (!linear)
 			pitch += fm;
 		pitch = clamp(pitch, -14.f, 8.f);
-		float f0 = dsp::FREQ_C4 * std::pow(2.f, pitch);
+		float f0 = dsp::FREQ_C4 * dsp::exp2_taylor5(pitch);
 		if (linear) {
 			// Index 1 at +/-5 V with the attenuverter fully open: the train
 			// runs through zero and out the other side, backwards.
@@ -199,8 +199,8 @@ struct Dividend : Module {
 		float fv = params[FORMANT_PARAM].getValue()
 		           + inputs[FMT_INPUT].getVoltage() * params[FMT_CV_PARAM].getValue();
 		fv = clamp(fv, -8.f, 10.f);
-		float formant = track ? std::fabs(f0) * std::pow(2.f, fv)
-		                      : dsp::FREQ_C4 * std::pow(2.f, fv);
+		float formant = track ? std::fabs(f0) * dsp::exp2_taylor5(fv)
+		                      : dsp::FREQ_C4 * dsp::exp2_taylor5(fv);
 		int os = factor(oversample);
 		formant = clamp(formant, 1.f, 0.45f * args.sampleRate * (float) os);
 

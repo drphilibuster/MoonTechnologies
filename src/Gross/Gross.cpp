@@ -125,6 +125,7 @@ struct Gross : Module {
 	float driveTgt = 1.f, offsetTgt = 0.f, dynTgt = 0.f, wetTgt = 1.f, postTgt = 1.f;
 	float drive = 1.f, offset = 0.f, dyn = 0.f, wet = 1.f, post = 1.f;
 	float atkCoef = 0.f, relCoef = 0.f;
+	bool controlsReady = false;   // has updateControls() run at least once?
 
 	// Last values the filters were designed for, so the coefficients are only
 	// recomputed when something moved.
@@ -361,8 +362,24 @@ struct Gross : Module {
 			ch[1].resetResamplers();
 		}
 
-		if (ctrlDivider.process())
+		// The EQ and tilt biquads must be designed before a single sample goes
+		// through them. Rack default-constructs a BiquadFilter by calling
+		// setParameters(LOWPASS, f=0, Q=0, V=1), whose LOWPASS branch computes
+		// 1/(1 + K/Q + K*K) -- with K=0 and Q=0 that is 0/0, so every
+		// coefficient starts as NaN (Rack-SDK/include/dsp/filter.hpp:307,335).
+		// updateControls() is what replaces them, and it runs behind
+		// ctrlDivider, which does not fire until its eighth call. Those seven
+		// samples were enough: NaN lodges in the filters' state history and
+		// never washes out, so the module sat at a constant 12 V forever --
+		// clamp() returns its upper bound for NaN -- with ENV pinned at 10 V,
+		// whatever was patched in.
+		if (!controlsReady) {
+			controlsReady = true;
 			updateControls(args);
+		}
+		else if (ctrlDivider.process()) {
+			updateControls(args);
+		}
 
 		// Slew the gains toward their targets: ~1.5 ms at 48 kHz.
 		const float k = 0.015f;

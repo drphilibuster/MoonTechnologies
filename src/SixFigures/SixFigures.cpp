@@ -93,6 +93,31 @@ struct SixFigures : Module {
 		signalTrigger.reset();
 	}
 
+	// One-pole coefficients that depend only on the sample rate, and (for the
+	// PLL loop filter) on CAPTURE. Evaluated inline they cost three std::exp()
+	// per voice per sample -- eighteen per sample for six voices -- to produce
+	// values that change only when the rate or a knob does.
+	float coeffSr = 0.f;       // sample rate the cached coefficients are for
+	float coeffCapture = -1.f; // CAPTURE the cached pllCoeff is for
+	float driftCoeff = 0.f;
+	float slowCoeff = 0.f;
+	float pllCoeff = 0.f;
+
+	void updateCoeffs(float sampleRate, float sampleTime, float capture) {
+		if (sampleRate != coeffSr) {
+			coeffSr = sampleRate;
+			const float k = -sampleTime * 2.f * (float) M_PI;
+			driftCoeff = 1.f - std::exp(k * 0.3f);
+			slowCoeff = 1.f - std::exp(k * 0.5f);
+			coeffCapture = -1.f;  // rate change invalidates the capture coeff too
+		}
+		if (capture != coeffCapture) {
+			coeffCapture = capture;
+			pllCoeff = 1.f - std::exp(-sampleTime * 2.f * (float) M_PI
+			                          * (0.2f + capture * 8.f));
+		}
+	}
+
 	void process(const ProcessArgs& args) override {
 		bool lfoRange = params[RANGE_PARAM].getValue() < 0.5f;
 		float lo, hi;
@@ -110,6 +135,7 @@ struct SixFigures : Module {
 
 		float capture = params[CAPTURE_PARAM].getValue();
 		float driftAmount = params[DRIFT_PARAM].getValue();
+		updateCoeffs(args.sampleRate, args.sampleTime, capture);
 
 		float mixSum = 0.f;
 		bool lightUpdate = lightDivider.process();
@@ -134,9 +160,8 @@ struct SixFigures : Module {
 			// of white noise, so the wander is smooth rather than stepped.
 			if (core == sixfigures::CORE_AVALANCHE) {
 				float target = random::uniform() * 2.f - 1.f;
-				float driftCoeff = 1.f - std::exp(-args.sampleTime * 2.f * (float)M_PI * 0.3f);
 				v.drift += (target - v.drift) * driftCoeff;
-				freq *= std::pow(2.f, v.drift * driftAmount * 0.5f);
+				freq *= dsp::exp2_taylor5(v.drift * driftAmount * 0.5f);
 			}
 
 			// 4046 PLL: an XOR phase detector between this voice's own square and
@@ -150,13 +175,10 @@ struct SixFigures : Module {
 					bool ownHigh = v.phase < 0.5f;
 					pllErrorBit = (ownHigh != signalHigh) ? 1.f : 0.f;
 					pllHasError = true;
-					float cutoffHz = 0.2f + capture * 8.f;
-					float coeff = 1.f - std::exp(-args.sampleTime * 2.f * (float)M_PI * cutoffHz);
-					v.loopFilter += (pllErrorBit - 0.5f - v.loopFilter) * coeff;
-					float slowCoeff = 1.f - std::exp(-args.sampleTime * 2.f * (float)M_PI * 0.5f);
+					v.loopFilter += (pllErrorBit - 0.5f - v.loopFilter) * pllCoeff;
 					v.loopFilterSlow += (v.loopFilter - v.loopFilterSlow) * slowCoeff;
 					float maxPullOct = 0.2f + capture * 3.5f;
-					freq *= std::pow(2.f, clamp(v.loopFilter * 2.f, -1.f, 1.f) * maxPullOct);
+					freq *= dsp::exp2_taylor5(clamp(v.loopFilter * 2.f, -1.f, 1.f) * maxPullOct);
 
 					bool settled = std::fabs(v.loopFilter - v.loopFilterSlow) < 0.04f;
 					float lockCoeff = args.sampleTime * (settled ? 2.f : 8.f);

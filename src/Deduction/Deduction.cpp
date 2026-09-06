@@ -1,4 +1,5 @@
 #include "../plugin.hpp"
+#include "../DspCache.hpp"
 #include "Panel.hpp"
 #include "Filters.hpp"
 
@@ -43,6 +44,9 @@ struct Deduction : Module {
 	dsp::Upsampler<2, 8> upLp[PORT_MAX_CHANNELS], upHp[PORT_MAX_CHANNELS];
 	dsp::Decimator<2, 8> dn[PORT_MAX_CHANNELS];
 	float freqSmooth[PORT_MAX_CHANNELS];   // log2 Hz, slewed so CV steps don't zipper
+	// The filter's g coefficient costs a tan() per channel per sample, for a
+	// cutoff that stops moving the moment the slew settles; see DspCache.hpp.
+	mt::Cache gC[PORT_MAX_CHANNELS];
 
 	dsp::ClockDivider lightDivider;
 	float freqSlewCoef = 1.f;              // recomputed on sample-rate change
@@ -172,8 +176,9 @@ struct Deduction : Module {
 				freqLog2 += respSign * freqCvAmt * inputs[FREQ_CV_INPUT].getPolyVoltage(c);
 			freqLog2 = clamp(freqLog2, kFreqMinLog2, kFreqMaxLog2);
 			freqSmooth[c] += freqSlewCoef * (freqLog2 - freqSmooth[c]);
-			float fc = std::fmin(std::pow(2.f, freqSmooth[c]), nyquist);
-			float g = std::tan(deduction::kPi * fc / args.sampleRate);
+			float fc = std::fmin(dsp::exp2_taylor5(freqSmooth[c]), nyquist);
+			float g = gC[c].get(fc / args.sampleRate,
+				[](float k) { return std::tan(deduction::kPi * k); });
 			float G = g / (1.f + g);
 
 			// --- resonance and drive: attenuverters over 10 V -------------------

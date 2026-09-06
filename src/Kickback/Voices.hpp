@@ -19,6 +19,8 @@
 #include <cmath>
 #include <cstdint>
 
+#include "../DspCache.hpp"
+
 namespace kickback {
 
 static const float kPi = 3.14159265358979f;
@@ -94,12 +96,17 @@ struct Noise {
     a passive RC ring shocked by an edge, with no forcing after the shock. */
 struct Modal {
 	float y1 = 0.f, y2 = 0.f;
-	void reset() { y1 = y2 = 0.f; }
+	// Both coefficients are functions of knobs and the sample rate only, so
+	// they hold still for millions of samples at a time; see DspCache.hpp.
+	mt::Cache rC, cosC;
+	void reset() { y1 = y2 = 0.f; rC.clear(); cosC.clear(); }
 	inline float process(float x, float freq, float t60, float fs) {
 		freq = std::fmin(freq, fs * 0.45f);
-		float w = 2.f * kPi * freq / fs;
-		float r = std::exp(-6.9077553f / (std::fmax(t60, 0.005f) * fs));   // ln(1/1000)
-		float a1 = 2.f * r * std::cos(w);
+		float r = rC.get(std::fmax(t60, 0.005f) * fs,
+			[](float k) { return std::exp(-6.9077553f / k); });   // ln(1/1000)
+		float cosw = cosC.get(freq / fs,
+			[](float k) { return std::cos(2.f * kPi * k); });
+		float a1 = 2.f * r * cosw;
 		float a2 = -r * r;
 		float y = a1 * y1 + a2 * y2 + x;
 		y2 = y1; y1 = y;
@@ -136,8 +143,10 @@ struct SquareOsc {
     a vactrol-filtered noise decay sound smoothed rather than gated. */
 struct Vactrol {
 	float s = 0.f;
+	mt::Cache gC;
 	inline float process(float x, float riseHz, float fs) {
-		float g = 1.f - std::exp(-2.f * kPi * riseHz / fs);
+		float g = gC.get(riseHz / fs,
+			[](float k) { return 1.f - std::exp(-2.f * kPi * k); });
 		s += (x - s) * g;
 		return s;
 	}
@@ -156,13 +165,15 @@ struct Kick {
 	Modal body;
 	DcBlock dc;
 
+	mt::Cache freqC, t60C;
+
 	void setRate(float fs) { dc.setRate(fs); }
-	void reset() { body.reset(); dc.reset(); }
+	void reset() { body.reset(); dc.reset(); freqC.clear(); t60C.clear(); }
 
 	/** `pitch`/`decay`/`drive` 0..1 knobs. */
 	inline float process(bool strike, float vel, float pitch, float decay, float drive, float fs) {
-		float freq = expMap(pitch, 35.f, 220.f);
-		float t60 = expMap(decay, 0.06f, 1.6f);
+		float freq = freqC.get(pitch, [](float k) { return expMap(k, 35.f, 220.f); });
+		float t60 = t60C.get(decay, [](float k) { return expMap(k, 0.06f, 1.6f); });
 		float y = body.process(strike ? vel * freq * 0.25f : 0.f, freq, t60, fs);
 		y = transistorClip(y * (0.6f + drive * 2.4f)) * (1.f + drive);
 		return dc.process(y) * 5.f;
@@ -188,14 +199,17 @@ struct Snare {
 
 	float noiseG = 0.f;
 
+	mt::Cache freqC, toneC, nrC;
+
 	inline float process(bool strike, float vel, float pitch, float decay, float snap, float fs) {
-		float freq = expMap(pitch, 150.f, 420.f);
-		float t60Tone = expMap(decay, 0.03f, 0.5f);
+		float freq = freqC.get(pitch, [](float k) { return expMap(k, 150.f, 420.f); });
+		float t60Tone = toneC.get(decay, [](float k) { return expMap(k, 0.03f, 0.5f); });
 		float t60Noise = t60Tone * 0.7f;
 		float tone = body.process(strike ? vel * freq * 0.22f : 0.f, freq, t60Tone, fs);
 
 		if (strike) noiseEnvState = vel;
-		float nr = std::exp(-1.f / (std::fmax(t60Noise, 0.005f) * fs));
+		float nr = nrC.get(std::fmax(t60Noise, 0.005f) * fs,
+			[](float k) { return std::exp(-1.f / k); });
 		noiseEnvState *= nr;
 
 		float raw = noise.next();
@@ -222,18 +236,25 @@ struct Hat {
 	float env = 0.f;
 
 	Hat() : noise(0xBADC0DEu) {}
-	void setRate(float fs) { dc.setRate(fs); this->fs = fs; }
-	void reset() { hp1.reset(); hp2.reset(); dc.reset(); env = 0.f; }
+	// rC/gC key on a knob but close over `fs`, so the rate changing has to
+	// invalidate them by hand -- the key alone cannot see it move.
+	void setRate(float fs) { dc.setRate(fs); this->fs = fs; rC.clear(); gC.clear(); }
+	void reset() { hp1.reset(); hp2.reset(); dc.reset(); env = 0.f; rC.clear(); gC.clear(); }
 	float fs = 44100.f;
+
+	mt::Cache rC, gC;
 
 	inline float process(bool strike, float vel, float tone, float decay) {
 		if (strike) env = vel;
-		float t60 = expMap(decay, 0.02f, 0.5f);
-		float r = std::exp(-1.f / (std::fmax(t60, 0.005f) * fs));
+		float r = rC.get(decay, [this](float k) {
+			return std::exp(-1.f / (std::fmax(expMap(k, 0.02f, 0.5f), 0.005f) * fs));
+		});
 		env *= r;
 
-		float cutoff = expMap(tone, 2000.f, 11000.f);
-		float g = std::tan(kPi * cutoff / fs); g = g / (1.f + g);
+		float g = gC.get(tone, [this](float k) {
+			float t = std::tan(kPi * expMap(k, 2000.f, 11000.f) / fs);
+			return t / (1.f + t);
+		});
 		float raw = noise.next();
 		float h1 = raw - hp1.lp(raw, g);
 		float h2 = h1 - hp2.lp(h1, g);
@@ -256,19 +277,32 @@ struct Smurf {
 	float env = 0.f;
 	float fs = 44100.f;
 
-	void setRate(float fs_) { dc.setRate(fs_); fs = fs_; }
-	void reset() { osc.reset(); lp.reset(); dc.reset(); env = 0.f; }
+	mt::Cache rC, baseC, lpgC;
+
+	void setRate(float fs_) {
+		dc.setRate(fs_); fs = fs_;
+		rC.clear(); lpgC.clear();  // both close over fs
+	}
+	void reset() {
+		osc.reset(); lp.reset(); dc.reset(); env = 0.f;
+		rC.clear(); baseC.clear(); lpgC.clear();
+	}
 
 	inline float process(bool strike, float vel, float pitch, float decay, float sweep) {
 		if (strike) env = vel;
-		float t60 = expMap(decay, 0.04f, 1.2f);
-		float r = std::exp(-1.f / (std::fmax(t60, 0.005f) * fs));
+		float r = rC.get(decay, [this](float k) {
+			return std::exp(-1.f / (std::fmax(expMap(k, 0.04f, 1.2f), 0.005f) * fs));
+		});
 		env *= r;
 
-		float base = expMap(pitch, 70.f, 700.f);
-		float freq = base * std::pow(0.2f, sweep * (1.f - env));   // sags down as env dies
+		float base = baseC.get(pitch, [](float k) { return expMap(k, 70.f, 700.f); });
+		// Sags down as env dies, so this one really does move every sample --
+		// but 0.2^x is exp2(x * log2(0.2)), and exp2f is far cheaper than powf.
+		float freq = base * std::exp2f(sweep * (1.f - env) * -2.3219281f);
 		float sq = osc.process(freq, fs);
-		float lpg = std::tan(kPi * 2200.f / fs); lpg = lpg / (1.f + lpg);
+		float lpg = lpgC.get(fs, [](float k) {
+			float t = std::tan(kPi * 2200.f / k); return t / (1.f + t);
+		});
 		float y = lp.lp(sq, lpg);
 		y = transistorClip(y * (1.f + 2.f * env)) * env;
 		return dc.process(y) * 5.f;
@@ -286,15 +320,17 @@ struct Tom {
 	Modal body;
 	DcBlock dc;
 
+	mt::Cache trimC, t60C;
+
 	void setRate(float fs) { dc.setRate(fs); }
-	void reset() { body.reset(); dc.reset(); }
+	void reset() { body.reset(); dc.reset(); trimC.clear(); t60C.clear(); }
 
 	/** `range` is 0/1/2 for LO/MID/HI. */
 	inline float process(bool strike, float vel, float pitch, float decay, int range, float fs) {
 		static const float bandHz[3] = { 90.f, 160.f, 280.f };
 		float base = bandHz[range >= 0 && range <= 2 ? range : 1];
-		float freq = base * expMap(pitch, 0.6f, 1.6f);
-		float t60 = expMap(decay, 0.06f, 1.4f);
+		float freq = base * trimC.get(pitch, [](float k) { return expMap(k, 0.6f, 1.6f); });
+		float t60 = t60C.get(decay, [](float k) { return expMap(k, 0.06f, 1.4f); });
 		float y = body.process(strike ? vel * freq * 0.3f : 0.f, freq, t60, fs);
 		return dc.process(ftanh(y * 0.8f)) * 5.f;
 	}
@@ -314,16 +350,22 @@ struct Bell {
 	float env = 0.f;
 	float fs = 44100.f;
 
-	void setRate(float fs_) { dc.setRate(fs_); fs = fs_; }
-	void reset() { osc1.reset(); osc2.reset(); osc3.reset(); dc.reset(); env = 0.f; }
+	mt::Cache rC, f0C;
+
+	void setRate(float fs_) { dc.setRate(fs_); fs = fs_; rC.clear(); }  // rC closes over fs
+	void reset() {
+		osc1.reset(); osc2.reset(); osc3.reset(); dc.reset(); env = 0.f;
+		rC.clear(); f0C.clear();
+	}
 
 	inline float process(bool strike, float vel, float pitch, float decay, float timbre) {
 		if (strike) env = vel;
-		float t60 = expMap(decay, 0.03f, 1.5f);
-		float r = std::exp(-1.f / (std::fmax(t60, 0.005f) * fs));
+		float r = rC.get(decay, [this](float k) {
+			return std::exp(-1.f / (std::fmax(expMap(k, 0.03f, 1.5f), 0.005f) * fs));
+		});
 		env *= r;
 
-		float f0 = expMap(pitch, 180.f, 1800.f);
+		float f0 = f0C.get(pitch, [](float k) { return expMap(k, 180.f, 1800.f); });
 		float f1 = f0 * (1.f + timbre * 0.41f);
 		float f2 = f0 * (1.f + timbre * 0.98f);
 		float x = osc1.process(f0, fs) * osc2.process(f1, fs) * osc3.process(f2, fs);
@@ -347,18 +389,27 @@ struct NoiseVoice {
 	float env = 0.f;
 	float fs = 44100.f;
 
+	mt::Cache t60C, rC, cornerC;
+
 	NoiseVoice() : noise(0x5EAF00Du) {}
-	void setRate(float fs_) { dc.setRate(fs_); fs = fs_; }
-	void reset() { lp.reset(); vac.s = 0.f; dc.reset(); env = 0.f; }
+	void setRate(float fs_) { dc.setRate(fs_); fs = fs_; rC.clear(); }
+	void reset() {
+		lp.reset(); vac.s = 0.f; dc.reset(); env = 0.f;
+		t60C.clear(); rC.clear(); cornerC.clear();
+	}
 
 	inline float process(bool strike, float vel, float tone, float decay, float decayCv) {
 		if (strike) env = vel;
-		float t60 = std::fmax(expMap(decay, 0.02f, 1.0f) + decayCv, 0.005f);
-		float r = std::exp(-1.f / (t60 * fs));
+		// decayCv is audio-rate, so key the envelope coefficient on the summed
+		// t60 rather than on the knob -- it still holds still whenever nothing
+		// is patched into NOISE CV, which is the common case.
+		float t60 = std::fmax(t60C.get(decay,
+			[](float k) { return expMap(k, 0.02f, 1.0f); }) + decayCv, 0.005f);
+		float r = rC.get(t60, [this](float k) { return std::exp(-1.f / (k * fs)); });
 		env *= r;
 
 		float smoothed = vac.process(env, 35.f, fs);   // the LDR's lag
-		float hiCorner = expMap(tone, 300.f, 9000.f);
+		float hiCorner = cornerC.get(tone, [](float k) { return expMap(k, 300.f, 9000.f); });
 		float cutoff = 150.f + smoothed * hiCorner;
 		float g = std::tan(kPi * std::fmin(cutoff, fs * 0.45f) / fs); g = g / (1.f + g);
 		float raw = noise.next();
@@ -382,26 +433,35 @@ struct Dazzler {
 	float env = 0.f;
 	float fs = 44100.f;
 
+	mt::Cache rC, gC, g2C;
+
 	Dazzler() : noise(0xFACADE1u) {}
-	void setRate(float fs_) { dc.setRate(fs_); fs = fs_; }
-	void reset() { lp1.reset(); lp2.reset(); dc.reset(); env = 0.f; }
+	void setRate(float fs_) { dc.setRate(fs_); fs = fs_; rC.clear(); gC.clear(); g2C.clear(); }
+	void reset() {
+		lp1.reset(); lp2.reset(); dc.reset(); env = 0.f;
+		rC.clear(); gC.clear(); g2C.clear();
+	}
 
 	/** `kit` 0 = snare-ish (open, low corner), 1 = hihat-ish (tight, bright). */
 	inline float process(bool strike, float vel, int kit, float decay, float crackle) {
 		if (strike) env = vel;
-		float t60 = expMap(decay, 0.02f, 1.2f);
-		float r = std::exp(-1.f / (std::fmax(t60, 0.005f) * fs));
+		float r = rC.get(decay, [this](float k) {
+			return std::exp(-1.f / (std::fmax(expMap(k, 0.02f, 1.2f), 0.005f) * fs));
+		});
 		env *= r;
 
 		float corner = kit ? 6500.f : 900.f;
 		corner *= (0.5f + crackle);            // more crackle: brighter, grittier
-		float g = std::tan(kPi * std::fmin(corner, fs * 0.45f) / fs); g = g / (1.f + g);
+		float g = gC.get(corner, [this](float k) {
+			float t = std::tan(kPi * std::fmin(k, fs * 0.45f) / fs); return t / (1.f + t);
+		});
 		float raw = noise.next();
 		float y = lp1.lp(raw, g);
 		// A second, lightly-detuned pole left in the loop is the "crackle": a
 		// slightly resonant beat between two close corners rather than a flat roll-off.
-		float g2 = std::tan(kPi * std::fmin(corner * (1.f + crackle * 0.35f), fs * 0.45f) / fs);
-		g2 = g2 / (1.f + g2);
+		float g2 = g2C.get(corner * (1.f + crackle * 0.35f), [this](float k) {
+			float t = std::tan(kPi * std::fmin(k, fs * 0.45f) / fs); return t / (1.f + t);
+		});
 		float y2 = lp2.lp(y, g2);
 		float mix = y + (y - y2) * crackle * 1.5f;
 		return dc.process(mix * env) * 5.f;

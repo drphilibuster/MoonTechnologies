@@ -24,6 +24,7 @@ void init(Plugin* p) {
 	p->addModel(modelPaymentSchedule);
 	p->addModel(modelRacketeer);
 	p->addModel(modelRepossession);
+	p->addModel(modelScheduleA);
 	p->addModel(modelRetroactive);
 	p->addModel(modelSignHere);
 	p->addModel(modelSixFigures);

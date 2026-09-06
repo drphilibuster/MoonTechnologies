@@ -27,6 +27,7 @@ another rate stays correct until the re-decode lands. */
 
 #include <rack.hpp>
 
+#include <algorithm>
 #include <atomic>
 #include <cmath>
 #include <cstdio>
@@ -60,15 +61,20 @@ struct Media {
 	std::string pcmPath;
 	std::string rgbaPath;
 
-	std::vector<float> pcm;     // stereo, interleaved, -1..1
 	int sampleRate = 44100;
-	int64_t frames = 0;         // stereo frames, i.e. pcm.size() / 2
+	int64_t frames = 0;         // stereo frames in the .pcm on disk
 	int videoFrames = 0;
 	double duration = 0.0;      // seconds
 
 	std::vector<float> peaks;   // PEAK_BUCKETS entries, 0..1
 
-	bool playable() const { return frames > 1 && !pcm.empty(); }
+	/** The audio itself is NOT here. It stays in the .pcm at `pcmPath` and only
+	    the windows the module actually plays are read into RAM -- see
+	    Windows.hpp. What a Media holds is everything needed to *find* audio: the
+	    length, the rate, and enough of a waveform to draw. That is about four
+	    kilobytes for a clip of any length, where holding the audio was 230 MB
+	    for ten minutes. */
+	bool playable() const { return frames > 1 && !pcmPath.empty(); }
 };
 
 
@@ -349,6 +355,11 @@ private:
 				return;
 			}
 			if (!r.ok()) {
+				if (!r.execError.empty()) {
+					WARN("Repossession: %s", r.execError.c_str());
+					fail(r.execError);
+					return;
+				}
 				std::string why = lastLine(r.err);
 				fail(why.empty() ? "yt-dlp failed (exit " + std::to_string(r.status) + ")"
 				                 : why);
@@ -414,6 +425,11 @@ private:
 				return;
 			}
 			if (!r.ok() || rack::system::getFileSize(pcmPath) == 0) {
+				if (!r.execError.empty()) {
+					WARN("Repossession: %s", r.execError.c_str());
+					fail(r.execError);
+					return;
+				}
 				std::string why = lastLine(r.err);
 				fail(why.empty() ? "ffmpeg could not decode the audio." : why);
 				return;
@@ -448,9 +464,15 @@ private:
 				return;
 			}
 			// A soundtrack-only source is still worth having, so a missing video
-			// stream is not fatal -- the screen simply says so.
-			if (!r.ok())
+			// stream is not fatal -- the screen simply says so. An ffmpeg that
+			// could not be launched at all is a different matter: the audio pass
+			// already proved it can run, so this is worth a line in the log
+			// rather than a silent blank screen.
+			if (!r.ok()) {
+				if (!r.execError.empty())
+					WARN("Repossession: %s", r.execError.c_str());
 				rack::system::remove(rgbaPath);
+			}
 		}
 
 		if (stopping()) {
@@ -470,7 +492,11 @@ private:
 		m->rgbaPath = rgbaPath;
 		m->sampleRate = req.sampleRate;
 
-		if (!readPcm(*m)) {
+		if (!scanPcm(*m)) {
+			if (stopping()) {
+				phase.store(PHASE_CANCELLED);
+				return;
+			}
 			fail("Could not read the decoded audio.");
 			return;
 		}
@@ -478,7 +504,6 @@ private:
 			uint64_t sz = rack::system::getFileSize(rgbaPath);
 			m->videoFrames = (int) (sz / FRAME_BYTES);
 		}
-		buildPeaks(*m);
 
 		if (stopping()) {
 			phase.store(PHASE_CANCELLED);
@@ -495,57 +520,61 @@ private:
 		dirty.store(true);
 	}
 
-	/** Straight into RAM. 10 minutes of stereo float at 48 kHz is 230 MB, which
-	    is why the import length is a menu item rather than unbounded. */
-	bool readPcm(Media& m) {
+	/** Measures the .pcm and draws its waveform, without ever holding it.
+
+	    The file is read once, forwards, in a fixed buffer, and every frame is
+	    folded into the peak bucket it belongs to. Memory is the buffer -- half a
+	    megabyte, whatever the clip -- and the result is the four kilobytes of
+	    peaks the timeline draws from. The audio itself is left where it is; the
+	    module reads windows out of it as it needs them. */
+	bool scanPcm(Media& m) {
+		uint64_t bytes = rack::system::getFileSize(m.pcmPath);
+		int64_t frames = (int64_t) (bytes / (uint64_t) (2 * sizeof(float)));
+		if (frames < 2)
+			return false;
+		m.frames = frames;
+		m.duration = (double) frames / (double) m.sampleRate;
+		m.peaks.assign(PEAK_BUCKETS, 0.f);
+
 		FILE* f = std::fopen(m.pcmPath.c_str(), "rb");
 		if (!f)
 			return false;
-		uint64_t bytes = rack::system::getFileSize(m.pcmPath);
-		size_t floats = (size_t) (bytes / sizeof(float));
-		floats -= floats % 2;
-		if (floats < 4) {
-			std::fclose(f);
-			return false;
-		}
-		m.pcm.resize(floats);
-		size_t got = std::fread(&m.pcm[0], sizeof(float), floats, f);
-		std::fclose(f);
-		if (got < 4)
-			return false;
-		if (got < floats)
-			m.pcm.resize(got - (got % 2));
-		m.frames = (int64_t) (m.pcm.size() / 2);
-		m.duration = (double) m.frames / (double) m.sampleRate;
-		return m.frames > 1;
-	}
 
-	static void buildPeaks(Media& m) {
-		m.peaks.assign(PEAK_BUCKETS, 0.f);
-		if (m.frames < 1)
-			return;
-		for (int b = 0; b < PEAK_BUCKETS; b++) {
-			int64_t a = m.frames * b / PEAK_BUCKETS;
-			int64_t z = m.frames * (b + 1) / PEAK_BUCKETS;
-			if (z <= a)
-				z = a + 1;
-			if (z > m.frames)
-				z = m.frames;
-			float peak = 0.f;
-			// Long clips make every bucket millions of frames wide; a stride
-			// keeps the whole scan bounded without changing what it draws.
-			int64_t stride = (z - a) / 512;
-			if (stride < 1)
-				stride = 1;
-			for (int64_t i = a; i < z; i += stride) {
-				float l = std::fabs(m.pcm[(size_t) (i * 2)]);
-				float r = std::fabs(m.pcm[(size_t) (i * 2 + 1)]);
-				float v = (l > r) ? l : r;
-				if (v > peak)
-					peak = v;
+		static const size_t CHUNK_FRAMES = 65536;
+		std::vector<float> buf(CHUNK_FRAMES * 2);
+		int64_t at = 0;
+		while (at < frames) {
+			if (stopping()) {
+				std::fclose(f);
+				return false;
 			}
-			m.peaks[b] = (peak > 1.f) ? 1.f : peak;
+			size_t want = (size_t) std::min<int64_t>(
+				(int64_t) CHUNK_FRAMES, frames - at);
+			size_t got = std::fread(&buf[0], sizeof(float), want * 2, f);
+			got -= got % 2;
+			if (got == 0)
+				break;
+			size_t n = got / 2;
+			for (size_t i = 0; i < n; i++) {
+				int b = (int) (((at + (int64_t) i) * (int64_t) PEAK_BUCKETS)
+					/ frames);
+				if (b < 0)
+					b = 0;
+				if (b >= PEAK_BUCKETS)
+					b = PEAK_BUCKETS - 1;
+				float l = std::fabs(buf[i * 2]);
+				float r = std::fabs(buf[i * 2 + 1]);
+				float v = (l > r) ? l : r;
+				if (v > m.peaks[(size_t) b])
+					m.peaks[(size_t) b] = (v > 1.f) ? 1.f : v;
+			}
+			at += (int64_t) n;
+			// A long clip is a visible amount of reading; the panel should not
+			// sit at 92% through all of it.
+			progress.store(0.92f + 0.07f * (float) at / (float) frames);
 		}
+		std::fclose(f);
+		return m.frames > 1;
 	}
 };
 

@@ -8,7 +8,8 @@ Repossession is FORM 1099-A -- acquisition or abandonment of secured property.
 You give it a link, it seizes the media: the video goes on the screen, the audio
 goes into RAM, and the timeline strip under the screen is the schedule of what
 has been taken. SEIZED ASSETS are the eight region slots; LIENS are the terms
-charged against the selected one; COLLECTIONS is what drives the sequence.
+charged against them and the transport that works the schedule; COLLECTIONS is
+everything patched in from outside.
 
 The panel is laid out the way PatchAudit is -- a read-out well that fills the
 top third, with plates for the fields inside it -- because the screen, the URL
@@ -19,6 +20,11 @@ disagree about where the video ends and the timeline begins.
 
 Density is "compact": three rows of controls under a 39.0 mm read-out leaves no
 room for the regular scale.
+
+34 HP with room to spare, and deliberately not narrower. The per-step CV that
+would have forced this panel wide lives on the SCHEDULE A expander instead, and
+what is left could be squeezed -- but the timeline is the instrument here, and
+every millimetre taken off the panel comes off the strip you carve regions on.
 """
 
 import os
@@ -68,19 +74,24 @@ P.plates = [
 
 P.sections = [
     # The eight slots. Unlabelled on purpose: the timeline directly above names
-    # them far better than eight digits could, and each button lights when its
-    # region is the selected one. The caption light is the fetch/decode state.
+    # them far better than eight digits could, and each button carries its slot's
+    # own colour so a light and its span on the strip cannot be told apart. The
+    # caption light is the fetch/decode state.
     Section("SEIZED ASSETS", caption_light="busy", rows=[
         Row([Bezel("slot1"), Bezel("slot2"), Bezel("slot3"), Bezel("slot4"),
              Bezel("slot5"), Bezel("slot6"), Bezel("slot7"), Bezel("slot8")],
             silent=True),
     ]),
 
-    # What is charged against the selected region, plus the two controls that
-    # decide how the schedule is worked through. RUN is the primary action.
-    # There is no SKIP control because there is nothing to skip: a slot either
-    # holds a region or it is empty, and the sequencer only visits the ones that
-    # hold something. Emptying a slot IS skipping it.
+    # What is charged against the selected region, and the transport that works
+    # the schedule through. There is no SKIP control because there is nothing to
+    # skip: a slot either holds a region or it is empty, and a region can be
+    # disabled in place, which is the same thing said louder.
+    #
+    # RUN is a three-position switch rather than a latch because it has three
+    # states to say: running the sequence, stopped, and latched on one step. The
+    # third used to be reachable only by accident -- patch a clock, stop it, and
+    # whichever step you landed on loops forever.
     Section("LIENS", rows=[
         Row([Knob("region", "REGION", steps=8),
              Knob("speed", "SPEED"),
@@ -88,27 +99,37 @@ P.sections = [
              Switch("loop", "LOOP"),
              Switch("rev", "REV"),
              Knob("mode", "MODE", steps=4),
-             Bezel("run", "RUN", primary=True)]),
+             Knob("tempo", "TEMPO"),
+             Switch3("runmode", "RUN")]),
     ]),
 
-    # Everything that drives the sequence from outside.
+    # Everything that drives the sequence from outside. The last four are
+    # polyphonic and per-step: channel N addresses slot N, so one cable carries
+    # all eight. A monophonic cable in any of them applies to every step at once,
+    # which is what a single LFO into SPEED should obviously do.
     Section("COLLECTIONS", rows=[
         Row([Jack("clock_in", "CLOCK", light="clock_led"),
              Jack("reset_in", "RESET"),
              Jack("region_in", "REGION"),
              Jack("scan_in", "SCAN"),
+             Jack("fire_in", "FIRE"),
              Jack("speed_in", "SPEED"),
-             Jack("fire_in", "FIRE")]),
+             Jack("gain_in", "GAIN"),
+             Jack("start_in", "START"),
+             Jack("len_in", "LENGTH")]),
     ]),
 ]
 
 # The audio row sits as low as the bottom screws allow: RACK_GRID_HEIGHT -
 # RACK_GRID_WIDTH puts their top edge at 123.61 mm, so a jack collar centred
 # below 118.6 would run under one. Everything that leaves the module is here,
-# and all of it is an output -- the "video out" is the screen.
+# and all of it is an output. STEPS is polyphonic: channel N is slot N's own
+# audio, summed to mono, so a step can be sent somewhere of its own without an
+# expander in the rack.
 P.footer = [
     Row([Jack("out_l", "OUT L", ink="MINT"),
          Jack("out_r", "OUT R", ink="MINT"),
+         Jack("steps_out", "STEPS", ink="MINT"),
          Jack("pos_out", "POS", ink="MINT"),
          Jack("gate_out", "GATE", ink="MINT"),
          Jack("eor_out", "EOR", ink="MINT"),

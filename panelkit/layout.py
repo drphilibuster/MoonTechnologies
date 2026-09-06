@@ -569,6 +569,14 @@ def _solve(panel, m):
             slack = ideal - (last + m["BLOCK_GAP"])
     else:
         out.band_footer = panel.band_footer
+        # A panel with no footer band still has a bottom edge: the foot ribbon
+        # between the screws. Without this the justify pass below never runs for
+        # such a panel -- slack stays 0 -- and its rows pack against the masthead
+        # with the whole lower face left empty, which is what eight rows of jacks
+        # on Schedule A looked like before this line existed.
+        if panel.sections:
+            last = cursor - m["BLOCK_GAP"]
+            slack = FOOT_Y - m["BLOCK_GAP"] - last
 
     out.blocks.extend(panel.extra_blocks)
 

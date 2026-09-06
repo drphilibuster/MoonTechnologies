@@ -338,6 +338,22 @@ struct TVerdictLight : TSocketLight<TBase> {
 };
 using VerdictLight = TVerdictLight<>;
 
+/** A light whose colour the module picks rather than the panel: three base
+    colours the caller mixes by setting their brightnesses. For an indicator
+    that has to be told apart from its neighbours -- one step of a sequence,
+    one slot of a bank -- where a fixed ink can only say on or off. Feed it
+    the components of an NVGcolor and it wears that colour; the family socket
+    is kept, so it still reads as part of the panel and not as a stock LED. */
+template <typename TBase = GrayModuleLightWidget>
+struct TRgbLight : TSocketLight<TBase> {
+	TRgbLight() {
+		this->addBaseColor(nvgRGB(0xff, 0x00, 0x00));
+		this->addBaseColor(nvgRGB(0x00, 0xff, 0x00));
+		this->addBaseColor(nvgRGB(0x00, 0x00, 0xff));
+	}
+};
+using RgbLight = TRgbLight<>;
+
 /** The four corner screws, at the positions every panel in the family uses.
     Width comes from the widget's own box, so this needs no per-panel number. */
 inline void addScrews(app::ModuleWidget* mw) {

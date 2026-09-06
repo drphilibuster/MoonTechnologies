@@ -22,6 +22,7 @@ extern Model* modelPatchAudit;
 extern Model* modelPaymentSchedule;
 extern Model* modelRacketeer;
 extern Model* modelRepossession;
+extern Model* modelScheduleA;
 extern Model* modelRetroactive;
 extern Model* modelSignHere;
 extern Model* modelSixFigures;

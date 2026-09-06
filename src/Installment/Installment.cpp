@@ -320,9 +320,9 @@ struct Installment : Module {
 			if (cvConnected)
 				modOffset += cvAmt * (cvIn.getPolyVoltage(c) / 10.f) * installment::kCvOctaves;
 
-			float attackSec = clamp(std::pow(2.f, attackBaseLog2 + modOffset),
+			float attackSec = clamp(dsp::exp2_taylor5(attackBaseLog2 + modOffset),
 			                        installment::kTimeAbsMin, installment::kTimeAbsMax);
-			float releaseSec = clamp(std::pow(2.f, releaseBaseLog2 + modOffset),
+			float releaseSec = clamp(dsp::exp2_taylor5(releaseBaseLog2 + modOffset),
 			                         installment::kTimeAbsMin, installment::kTimeAbsMax);
 
 			float gateV = gateIn.getPolyVoltage(c);
