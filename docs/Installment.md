@@ -46,8 +46,8 @@ inputs.
 |---|---|
 | **CV IN** | Adds to ATTACK and RELEASE together (see BIAS/CV AMT above), through the trim directly over it. Polyphonic — the channel's polyphony count follows this and GATE/RESET. |
 | **GATE/RESET IN** | A level-sensitive gate in AR (attack while high, sustain, release on drop), an edge trigger in AD (fire and forget), and a phase reset in LFO (there is no gate to speak of once it is free-running — a trigger here restarts the cycle at zero). Threshold ~1 V with Schmitt hysteresis. |
-| **ENV***n* (panel: TRI/ENV) | The core's main output, 0–10 V: the triangle in LFO, the envelope in AR/AD. |
-| **SQU***n* (panel: SQU/INV) | In LFO, a band-limited (polyBLEP) pulse at the same duty as the triangle's rise/fall split — this is the panel's stand-in for the comparator/squarer the OTA core would otherwise need a second circuit to drive. In AR/AD, the inverted envelope (10 V − ENV). |
+| **ENV***n* | The core's main output, 0–10 V: the triangle in LFO, the envelope in AR/AD. |
+| **SQU***n* | In LFO, a band-limited (polyBLEP) pulse at the same duty as the triangle's rise/fall split — this is the panel's stand-in for the comparator/squarer the OTA core would otherwise need a second circuit to drive. In AR/AD, the inverted envelope (10 V − ENV). |
 | **EOC***n* | A 1 ms, 10 V trigger once per cycle: at the LFO's wrap, or at the moment an AR/AD envelope reaches zero. |
 
 ## MINIMUM DUE — the PWM driver

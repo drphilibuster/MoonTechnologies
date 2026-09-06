@@ -26,12 +26,31 @@ yourself:
 
 A local file needs only `ffmpeg`.
 
-The module looks for both on `PATH`, then in `/opt/homebrew/bin`,
-`/usr/local/bin` and `/opt/local/bin` (macOS) or `/usr/local/bin`, `/usr/bin`,
-`/snap/bin` (Linux), then in whatever directory you set under **Tools folder…**
-in the context menu. That last one matters more than it looks: Rack launched
-from the Dock or a desktop launcher inherits the system `PATH`, not your
-shell's, so a tool that works in your terminal may still be invisible here.
+The module does not care where the tools live, and it does not assume anyone
+has the same machine as the author. It looks in this order, stopping at the
+first hit:
+
+1. the folder set under **Tools folder…** in the context menu, if any — a
+   plugin-wide setting, remembered in `MoonTechnologies/settings.json` in
+   Rack's user directory, so one module's answer serves every patch;
+2. a drop folder inside Rack's user directory, `MoonTechnologies/tools/`
+   (**Open drop folder for tools** in the menu creates and opens it): copy or
+   symlink `yt-dlp` and `ffmpeg` there and nothing else on the system needs
+   to change;
+3. the places installers put things — on macOS `/opt/homebrew/bin`,
+   `/usr/local/bin`, `/opt/local/bin`, `~/.local/bin`, `~/bin`; on Linux
+   `/usr/local/bin`, `/usr/bin`, `/snap/bin`, Flatpak's exports, `~/.local/bin`,
+   `~/bin`; on Windows WinGet's links folder, scoop's shims, chocolatey's bin,
+   `C:\ffmpeg\bin`, `C:\Program Files\ffmpeg\bin` and the per-user Programs
+   folders;
+4. `PATH`.
+
+That last one is listed last on purpose: Rack launched from the Dock, the
+Start menu or a desktop launcher inherits the system `PATH`, not your shell's,
+so a tool that works in your terminal may still be invisible here. When `yt-dlp`
+has to merge separate video and audio streams it runs `ffmpeg` itself; the
+module passes it the `ffmpeg` it found, so that step cannot fail on `PATH`
+either. Every lookup, found or not, is written to Rack's `log.txt`.
 
 If a tool is missing the panel says so in plain words and the module sits inert
 and silent. Nothing crashes and no patch is harmed.
@@ -206,8 +225,9 @@ values into the knobs; from then on the knobs write back into it.
 | **Edge crossfade** | off / 2 ms / 4 ms / 10 ms (default 4 ms) |
 | **Eight equal spans** | fill all eight slots with equal eighths of the clip |
 | **Release all** | empty every slot |
-| **Tools folder…** | a directory searched before `PATH` for `yt-dlp` and `ffmpeg` |
-| **Clear tools folder** | go back to `PATH` and the default locations |
+| **Tools folder…** | a directory searched first for `yt-dlp` and `ffmpeg`; remembered plugin-wide |
+| **Clear tools folder** | go back to the automatic search |
+| **Open drop folder for tools** | opens `MoonTechnologies/tools/` in Rack's user directory, where the two programs can simply be dropped |
 | **Open cache folder** | show the downloads and decoded files in your file manager |
 
 ## Saved in the patch

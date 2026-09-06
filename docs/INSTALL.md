@@ -1,7 +1,7 @@
 # Installing Moon Technologies
 
-One plugin, three modules: **PatchAudit**, **Retroactive** and **Uncertainty
-Policy**. Installing the plugin installs all three; they appear in Rack's module
+One plugin, twenty modules — from **PatchAudit** and **Retroactive** to the
+Modular-in-a-Week banks. Installing the plugin installs all of them; they appear in Rack's module
 browser under the brand **Moon Technologies**.
 
 Requires **VCV Rack 2** (Free or Pro), version 2.0 or newer.
@@ -90,7 +90,7 @@ then go into the `plugins-…` directory.
 ## Checking it worked
 
 Restart Rack, then right-click on empty rack space to open the module browser
-and type `Moon`. You should see three modules, all badged **Moon Technologies**.
+and type `Moon`. You should see twenty modules, all badged **Moon Technologies**.
 
 If they are not there, open **Help > Open user folder** and read `log.txt`. A
 plugin that failed to load says so explicitly, with the reason — that one line

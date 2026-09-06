@@ -1,8 +1,12 @@
 # Moon Technologies
 
 One VCV Rack 2 plugin, slug `MoonTechnologies`, brand **Moon Technologies**,
-author **Taxxess**. Three modules — `PatchAudit`, `Retroactive`,
-`UncertaintyPolicy` — sharing one panel pipeline.
+author **Taxxess**. Twenty modules sharing one panel pipeline: the three
+originals (`PatchAudit`, `Retroactive`, `UncertaintyPolicy`), six built to
+order (`Dividend`, `TaxBracket`, `Racketeer`, `Gross`, `Amortization`,
+`Repossession`) and eleven Modular-in-a-Week banks (`SixFigures`,
+`Garnishment`, `Consolidation`, `Installment`, `Volatility`, `Deduction`,
+`AuditLogic`, `Kickback`, `PaymentSchedule`, `SignHere`, `Diversified`).
 
 ## VCV Rack UI: use the tool, always
 
@@ -35,7 +39,7 @@ because the call site owned state it should never have touched.
    Then regenerate every panel so they all get it. Do not open-code the gap in
    one module.
 5. A UI improvement — including a performance one — belongs in the tool by
-   default, so all three panels get it at once. Ellipsizing, text measurement
+   default, so every panel gets it at once. Ellipsizing, text measurement
    caching and the letter-spacing discipline all live in the kit for this reason.
 6. **Ink follows ground.** A spec names a label's *role* (`PAPER` primary,
    `SAGE` secondary, `LIME`, `MINT`, `CLAY`); the solver tags where it sits and
@@ -47,13 +51,13 @@ because the call site owned state it should never have touched.
 
 `src/PanelTheme.hpp` is shared and entirely `inline`/template: one definition for
 the whole plugin. `src/<Module>/Panel.hpp` is that panel's own numbers, all
-`static`: one copy per translation unit, so three silkscreen tables cannot
+`static`: one copy per translation unit, so twenty silkscreen tables cannot
 collide. Both are `namespace panel`, so call sites are unchanged.
 
 **A translation unit may include exactly one `Panel.hpp`.** Two is a
 duplicate-definition error, which is the loud failure you want — making the
 per-panel data `inline` instead would link fine and silently draw one module's
-silkscreen on all three panels.
+silkscreen on every panel.
 
 ### After any UI change
 
@@ -64,7 +68,7 @@ make panel && make -j8 && make vcv-preview
 Look at `tools/previews/<Module>.png` before calling a panel done — it goes
 through the real widget tree, so it is the only preview that cannot lie. Do this
 for **every** module whose header the change touched, not just the one you were
-working in; a `panelkit/` change reaches all three.
+working in; a `panelkit/` change reaches all twenty.
 
 See `panelkit/README.md` for the design language, the spec API and what the
 linter checks.
@@ -88,8 +92,8 @@ one. A screenshot showing old behaviour after a fix usually means exactly this.
 
 ## Slugs are permanent
 
-`MoonTechnologies`, `PatchAudit`, `Retroactive`, `UncertaintyPolicy`. Changing
-any of them orphans every saved patch that used it: Rack's fallback table
+`MoonTechnologies` and the twenty module slugs listed at the top of this file.
+Changing any of them orphans every saved patch that used it: Rack's fallback table
 (`Rack/src/plugin.cpp:374`) is maintained by VCV, not by plugin authors.
 
 ## VCV Rack patch compatibility

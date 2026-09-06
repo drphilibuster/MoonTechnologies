@@ -141,7 +141,7 @@ since turning the master down is the most boring way to kill a patch.
 | **TRANSFERS** | How many cable edits per filing (0–8) |
 | **BASIS** | What the review listens for: wind-down / neutral / going concern |
 | **SAFE HARBOR** | How much of the patch's timing is off limits |
-| **AMEND: CONTROLS / CABLES / BOTH** | File a change touching only controls, only cables, or both |
+| **AMEND: CONTROLS / BOTH / CABLES** | File a change touching only controls, only cables, or both |
 | **RESCIND** | Withdraw the last filing (and only a filing — it will not eat your own edits) |
 | **OPINION** | Green when the last filing was accepted, amber when it was withdrawn |
 | **TRIG** | Files a full amendment on a trigger, so the randomizer can be clocked |
@@ -205,12 +205,12 @@ make preview-UncertaintyPolicy    # ... and open the mock
 make vcv-preview             # ... build, then render every panel through VCV Rack
 ```
 
-`make panel` does the same for all three panels at once, which is what you want
+`make panel` does the same for every panel at once, which is what you want
 after a change to `panelkit/`.
 
 The palette, the shared hardware, the layout rules and the two constraints Rack's
 renderer imposes are documented once, in [`../panelkit/README.md`](../panelkit/README.md),
-which is also where the other two panels in the plugin get theirs. There is no
+which is also where every other panel in the plugin gets theirs. There is no
 per-module copy of any of it.
 
 

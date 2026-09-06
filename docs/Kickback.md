@@ -134,10 +134,10 @@ footer as the ACCENT CV jack and the MIX out.
 |---|---|
 | **ACCENT** (knob, strike row) | How much the ACCENT CV jack (footer) can raise a strike's level above unity. At 0 the CV does nothing; every strike is always full-velocity if nothing is patched. |
 | **LEVEL** (knob, strike row) | Sums all eight voice outputs into MIX at this level. |
-| **KICK / SNARE / HAT / SMURF / TOM / BELL / NOISE / DAZZLER TRIG** (input) | ≥1 V rising edge strikes the voice (Schmitt trigger, low 0.1 V / high 1 V). Retriggerable. |
-| **PITCH / TONE** (big knob, row 1) | Each voice's fundamental — see above for range. DAZZLER has none; its column carries **KIT** here instead (2-position: Snare / Hi-hat). |
+| **KICK / SNARE / HAT / SMURF / TOM / BELL / NOISE / DAZZLE TRIG** (input) | ≥1 V rising edge strikes the voice (Schmitt trigger, low 0.1 V / high 1 V). Retriggerable. |
+| **PITCH / TONE** (big knob, row 1) | Each voice's fundamental — see above for range. DAZZLE has none; its column carries **KIT** here instead (2-position: Snare / Hi-hat). |
 | **DECAY** (knob, row 2) | Every voice's ring or envelope time — see above for range. |
-| third knob (row 3) | **DRIVE** (KICK), **SNAP** (SNARE), **SWEEP** (SMURF), **RANGE** (TOM, 3-position), **TIMBRE** (BELL), **CRACKLE** (DAZZLER). HAT has none. NOISE's row-3 slot is its **DEC CV** input instead. |
+| third knob (row 3) | **DRIVE** (KICK), **SNAP** (SNARE), **SWEEP** (SMURF), **RANGE** (TOM, 3-position), **TIMBRE** (BELL), **CRACKLE** (DAZZLE). HAT has none. NOISE's row-3 slot is its **DEC CV** input instead. |
 | **OUT** (output, footer) | Each voice, ±5 V nominal, individually. |
 | **MIX** (output, footer) | All eight voices summed at LEVEL. |
 | **ACCENT** (input, footer) | 0–10 V unipolar CV, scaled by the ACCENT knob. |

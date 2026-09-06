@@ -50,10 +50,10 @@ follows the loop's envelope.
 | **TIME** | Delay time, exponential over the range the RANGE switch selects: 30–340 ms (SHORT) or 30 ms–1.2 s (LONG). Passes through LAG. The read-out shows the resulting delay. |
 | **ECHO** (primary) | Feedback, 0–150 %. Past 100 % the loop self-oscillates; the `tanh` keeps it bounded. This is the knob the module is about. |
 | **CUTOFF** | Low-pass cutoff, 40 Hz–18 kHz. In the loop or after it, per the FILTER switch. |
-| **LAG** | The optocoupler's slew on TIME and its CV. 0 is instant; up to a 2 s time constant. Like the TLP521, it moves faster toward *shorter* delays (the LED lights faster than it dims), so sweeps are asymmetric. |
-| **DRIVE** | Input gain, 0–24 dB, ahead of the loop. |
-| **SEED** | White noise injected into the loop, 0–100 % (square law: nothing at zero, an audible floor at the top). This is what a self-oscillating loop grows from when nothing is plugged in. |
-| **RATE** | Chopper rate, 0.1–60 Hz. |
+| **LAG** (trim) | The optocoupler's slew on TIME and its CV. 0 is instant; up to a 2 s time constant. Like the TLP521, it moves faster toward *shorter* delays (the LED lights faster than it dims), so sweeps are asymmetric. |
+| **DRIVE** (trim) | Input gain, 0–24 dB, ahead of the loop. |
+| **SEED** (trim) | White noise injected into the loop, 0–100 % (square law: nothing at zero, an audible floor at the top). This is what a self-oscillating loop grows from when nothing is plugged in. |
+| **RATE** (trim) | Chopper rate, 0.1–60 Hz. |
 | **RES** (trim) | Resonance of the low-pass, 0–100 %, clamped just below self-oscillation. The original has none. |
 | **THRESH** (trim) | The level, 0–10 V on the ENV output, at which the GATE output fires. Releases at 80 % of it. |
 

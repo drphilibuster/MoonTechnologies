@@ -8,7 +8,7 @@ and two outputs — the blend and the wet-only signal — the way the original h
 them. It is built to be overwhelmed by: the Tronic loop is allowed past unity,
 and a soft limiter inside it is what keeps "relentless" from becoming "exploded".
 
-Part of the [Moon Technologies](../README.md) plugin. 12 HP.
+Part of the [Moon Technologies](../README.md) plugin. 14 HP.
 
 ## What it is based on
 
@@ -66,7 +66,7 @@ tank's level against its knee.
 Four attenuverting trimmers, each directly over its own jack, sharing one label:
 **FDBK**, **TILT**, **MIX**, **SIZE**. Each is ±100 %; at full, 10 V of CV
 covers the whole range of its control (TILT and SIZE are bipolar, so ±5 V
-covers them). Below the rule, two gates:
+covers them). Two gates sit in the same row, beside the trims:
 
 - **MODE GATE** — while high, Tronic flips to Verb. Exactly as the original: the
   gate only ever pulls the mode *down* to Verb, so with the switch at Verb it does
@@ -157,7 +157,7 @@ make vcv-preview             # ... build, then render every panel through VCV Ra
 ```
 
 Amortization's panel runs at panelkit's `compact` density: three sections, a
-read-out and a six-jack audio row at 12 HP.
+read-out and a six-jack audio row at 14 HP.
 
 ## Licence
 

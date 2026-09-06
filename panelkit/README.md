@@ -29,7 +29,7 @@ make vcv-preview           # build, then render every panel through VCV Rack
 
 ## Two headers, split by linkage
 
-The three modules ship as one plugin, so all three panels' C++ is linked into one
+The twenty modules ship as one plugin, so every panel's C++ is linked into one
 binary. That is why the generated C++ comes out as two files rather than one:
 
 | | linkage | why |
@@ -45,7 +45,7 @@ failure mode you want.
 
 Getting this wrong the obvious way — one header per module, all of it `inline` —
 does not fail to build. It links, keeps one arbitrary copy of `Labels::draw`,
-and draws one module's silkscreen on all three panels.
+and draws one module's silkscreen on every panel.
 
 ## The design language
 
@@ -90,7 +90,7 @@ set, so it is the genuine glyph in the same face as the wordmark, stays sharp at
 any zoom, and needs neither a raster asset nor a font parser. Any label can be
 mirrored the same way, through `textMirrored()` in the text kit, which flips the
 alignment with the axis so the glyph lands where it would have unmirrored.
-All three modules publish under one plugin, brand **Moon Technologies**, author
+All twenty modules publish under one plugin, brand **Moon Technologies**, author
 **Taxxess**.
 
 ## The text kit
@@ -127,7 +127,7 @@ steady state to zero. Its key includes the transform scale, because
 measures a shade wider at a different rack zoom.
 
 **If a panel needs something the kit does not have, add it to the kit** and
-regenerate all three panels. Do not open-code it in one. `build()` prints every
+regenerate every panel. Do not open-code it in one. `build()` prints every
 place in `src/` that still calls the raw nanovg text API — advisory, never
 fatal, because the gap it is pointing at might be a real one.
 

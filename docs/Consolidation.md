@@ -17,7 +17,9 @@ one-in-two-out unity buffers) into two one-in-three-out multiples instead —
 MULT B normals from MULT A's input, so one cable into A gives a 1:3, a second
 cable into B gives a 1:6, and patching both independently gives two separate
 1:3s. That flexibility is the point of combining the board's three small
-buffers into two slightly bigger ones.
+buffers into two slightly bigger ones. A subtotal rule splits the felt block
+between MULT A's input and its three legs on one side and MULT B on the
+other, keeping the two multiples visually distinct within the one section.
 
 Credit: Modular in a Week, circuits by Kristian Blåsol (mixer) and Niklas
 Rönnberg (multiples). Part of the [Moon Technologies](../README.md) plugin.

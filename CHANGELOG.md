@@ -34,6 +34,11 @@ The family is now a banknote rather than a green form: the five-colour "High Con
 ### Under the hood
 
 - `panelkit/palette.py` derives every colour from five anchors; `palette.ink(role, ground)` is the one place a label's hex is chosen.
+- The layout solver measures every clearance from a widget's well and ring,
+  not its art; rows carrying lit labels make room for the light; sparse
+  panels are justified to the footer. The linter now catches wells that
+  overlap, wells straddling a block frame, and anything entering the foot
+  ribbon. Retroactive grew to 14 HP in the process.
 - `panelkit/render.py` draws the ornament as polyline paths, which is what Rack's nanosvg keeps.
 - Repossession spawns `yt-dlp` and `ffmpeg` through a small portable process wrapper; nothing new is linked, so the VCV Library rules still hold.
 

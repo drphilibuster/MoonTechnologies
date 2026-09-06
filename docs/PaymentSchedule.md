@@ -46,8 +46,9 @@ leaving `A OUT`.
 
 ## Transport and chaining
 
-- **UP** / **DN** (lights either side of **DIR**) -- show which way the count
-  is currently running.
+- **UP** / **DN** (lights flanking the STEPS/DIR/SCALE trio, one knob's-width
+  out from **DIR** on each side) -- show which way the count is currently
+  running.
 - **DIR** (switch) -- Down / Up.
 - **DIR CV** (jack) -- 1 V or more flips whatever `DIR` says.
 - **STEPS** (knob, 1-8) -- how many of the eight steps the count cycles

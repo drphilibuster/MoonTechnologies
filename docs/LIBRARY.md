@@ -53,6 +53,10 @@ newer than the one in the Library.
       submitting rather than having the review discover it. Retroactive and
       Uncertainty Policy raise no such question. Submitting the plugin without
       PatchAudit is possible but means a fourth module slug decision later.
+- [ ] **Decide about Repossession.** It runs `yt-dlp` and `ffmpeg` as child
+      processes to fetch and decode media the user points it at. Nothing is
+      linked, so the build rules are met, but the Library reviewers may want
+      to know a module spawns external programs; say so in the submission.
 - [ ] **Set `authorEmail` in `plugin.json`** (currently empty). VCV uses it to
       reach you about build failures. It becomes public.
 - [ ] **Add a `donateUrl`** if you want one.

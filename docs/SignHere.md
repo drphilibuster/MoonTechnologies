@@ -27,8 +27,8 @@ joystick, and the offset/scale trims are real knobs.
 - **The pad itself** (top left) -- click or drag anywhere on it to set the
   joystick's X/Y position; it recentres on release only if spring return is
   turned on (right-click menu). The dot is lit while held.
-- **X SCALE** / **Y SCALE** (trim, 0-200%) and **X OFFSET** / **Y OFFSET**
-  (trim, ±5 V) -- shape each axis before it reaches its jack: `X CV` =
+- **X SCALE** / **Y SCALE** (knob, 0-200%) and **X OFFSET** / **Y OFFSET**
+  (knob, ±5 V) -- shape each axis before it reaches its jack: `X CV` =
   `position x SCALE x 5 V + OFFSET`, clamped to ±12 V. Same for Y.
 - **GLIDE** (knob, 0-500 ms) -- a slew on both axes' output, so a flicked
   joystick can portamento into its new position instead of jumping.

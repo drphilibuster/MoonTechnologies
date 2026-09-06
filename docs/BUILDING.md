@@ -157,8 +157,8 @@ make panel && make -j8 && make vcv-preview
 
 Look at `tools/previews/<Module>.png` before calling a panel done: it is rendered
 by Rack itself, through the real widget tree, so it is the only preview that
-cannot lie. A change to `panelkit/` touches all three panels — regenerate and
-look at all three.
+cannot lie. A change to `panelkit/` touches every panel — regenerate and
+look at all of them.
 
 See [`../panelkit/README.md`](../panelkit/README.md) for the design language and
 the spec API.

@@ -268,12 +268,18 @@ private:
 		rack::system::createDirectories(cache);
 
 		std::vector<std::string> dirs = defaultToolDirs();
+		std::string globalDir = loadGlobalToolDir();
+		if (!globalDir.empty())
+			dirs.insert(dirs.begin(), globalDir);
 		if (!req.toolDir.empty())
 			dirs.insert(dirs.begin(), req.toolDir);
 		std::string ffmpeg = which("ffmpeg", dirs);
 
 		if (ffmpeg.empty()) {
-			fail("ffmpeg not found. Install it, or set the tools folder in the menu.");
+			WARN("Repossession: ffmpeg not found; looked in %s", whereLooked(dirs).c_str());
+			fail("ffmpeg not found. Install it (brew, apt, winget, scoop...), drop it "
+			     "in Rack's MoonTechnologies/tools folder, or set the tools folder "
+			     "in the menu. Rack's log lists everywhere it looked.");
 			return;
 		}
 
@@ -307,15 +313,24 @@ private:
 			// Nothing cached: go and get it.
 			std::string ytdlp = which("yt-dlp", dirs);
 			if (ytdlp.empty()) {
-				fail("yt-dlp not found. Install it, or set the tools folder in the menu.");
+				WARN("Repossession: yt-dlp not found; looked in %s", whereLooked(dirs).c_str());
+				fail("yt-dlp not found. Install it (brew, pipx, winget, scoop...), drop it "
+				     "in Rack's MoonTechnologies/tools folder, or set the tools folder "
+				     "in the menu. Rack's log lists everywhere it looked.");
 				return;
 			}
 			phase.store(PHASE_FETCHING);
 			progress.store(0.05f);
 			setMessage("Seizing " + req.source);
 
+			// yt-dlp merges the video and audio streams by running ffmpeg
+			// itself, and it looks for ffmpeg on PATH -- which, inside a GUI
+			// launched Rack, does not include Homebrew. Hand it the one we found.
+			INFO("Repossession: yt-dlp at %s, ffmpeg at %s", ytdlp.c_str(), ffmpeg.c_str());
 			std::vector<std::string> argv;
 			argv.push_back(ytdlp);
+			argv.push_back("--ffmpeg-location");
+			argv.push_back(rack::system::getDirectory(ffmpeg));
 			argv.push_back("-f");
 			argv.push_back("bv*[height<=360]+ba/b[height<=360]");
 			argv.push_back("--no-playlist");

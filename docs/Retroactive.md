@@ -101,8 +101,8 @@ TIME, MODE, SUBDIV and MIX have attenuverted CV. FADE and CLK DIV do not.
 
 ### Lights
 
-- **Yellow, by TIME** — window phase; it flashes at each boundary.
-- **Green, by CLOCK** — clock locked; dim means the edges have stopped.
+- **Yellow, ASSESSMENT caption light** — window phase; it flashes at each boundary.
+- **Green, WITHHOLDING caption light** — clock locked; dim means the edges have stopped.
 - **White, in the FREEZE button** — frozen.
 - **OVERDRAFT, below the display** — you are asking for more fade than the sub-block can
   pay for. Not a fault light; see below.
@@ -156,8 +156,8 @@ renderer imposes are documented once, in [`../panelkit/README.md`](../panelkit/R
 which is also where the other two panels in the plugin get theirs. There is no
 per-module copy of any of it.
 
-Retroactive's panel runs at panelkit's `compact` density: seven rows of controls
-and a read-out at 12 HP leaves no room for the regular scale.
+Retroactive's panel runs at panelkit's `compact` density: six rows of controls
+and a read-out at 14 HP leaves no room for the regular scale.
 
 One constraint is Retroactive's alone rather than the family's: display numerals
 use DSEG7, and characters missing from its `cmap` do *not* render as tofu — Rack

@@ -79,23 +79,104 @@ inline bool isExecutable(const std::string& path) {
 }
 
 
-/** Directories searched for a tool before PATH: Homebrew on Apple silicon,
-    /usr/local on Intel Macs and most Linuxes, and whatever the user set in the
-    context menu. Rack is usually launched from a GUI shell whose PATH is the
-    system default, so "it works in my terminal" is not evidence the plugin can
-    see a tool -- which is exactly why the menu entry exists. */
+/** Directories searched for a tool before PATH: every place the package
+    managers and installers on each platform put a binary, plus a folder
+    inside Rack's own user directory (MoonTechnologies/tools) where anyone can
+    drop the two programs without touching their system. Rack is usually
+    launched from a GUI shell whose PATH is the system default, so "it works
+    in my terminal" is not evidence the plugin can see a tool -- which is why
+    the search list is this long, and why the context-menu entry exists. */
 inline std::vector<std::string> defaultToolDirs() {
 	std::vector<std::string> dirs;
-#if defined ARCH_MAC
+	// the drop folder, first: it is the one place that is the same for everyone
+	dirs.push_back(rack::asset::user("MoonTechnologies/tools"));
+	const char* home = getenv("HOME");
+#if defined ARCH_WIN
+	const char* profile = getenv("USERPROFILE");
+	const char* local = getenv("LOCALAPPDATA");
+	const char* pdata = getenv("PROGRAMDATA");
+	if (local) {
+		dirs.push_back(std::string(local) + "\\Microsoft\\WinGet\\Links");
+		dirs.push_back(std::string(local) + "\\Programs\\yt-dlp");
+		dirs.push_back(std::string(local) + "\\Programs\\ffmpeg\\bin");
+	}
+	if (profile) {
+		dirs.push_back(std::string(profile) + "\\scoop\\shims");
+		dirs.push_back(std::string(profile) + "\\AppData\\Local\\Programs\\Python\\Scripts");
+	}
+	dirs.push_back(std::string(pdata ? pdata : "C:\\ProgramData") + "\\chocolatey\\bin");
+	dirs.push_back("C:\\ffmpeg\\bin");
+	dirs.push_back("C:\\Program Files\\ffmpeg\\bin");
+#elif defined ARCH_MAC
 	dirs.push_back("/opt/homebrew/bin");
 	dirs.push_back("/usr/local/bin");
 	dirs.push_back("/opt/local/bin");
+	if (home) {
+		dirs.push_back(std::string(home) + "/.local/bin");
+		dirs.push_back(std::string(home) + "/bin");
+	}
 #elif defined ARCH_LIN
 	dirs.push_back("/usr/local/bin");
 	dirs.push_back("/usr/bin");
 	dirs.push_back("/snap/bin");
+	dirs.push_back("/var/lib/flatpak/exports/bin");
+	if (home) {
+		dirs.push_back(std::string(home) + "/.local/bin");
+		dirs.push_back(std::string(home) + "/bin");
+	}
 #endif
 	return dirs;
+}
+
+
+/** The plugin-wide tools folder, shared by every Repossession in every patch:
+    MoonTechnologies/settings.json in Rack's user directory. A folder set in one
+    module's menu is remembered for all of them, which is what a person who has
+    just found the right folder expects. */
+inline std::string globalSettingsPath() {
+	return rack::asset::user("MoonTechnologies/settings.json");
+}
+
+inline std::string loadGlobalToolDir() {
+	std::string path = globalSettingsPath();
+	if (!rack::system::isFile(path))
+		return "";
+	json_error_t err;
+	json_t* root = json_load_file(path.c_str(), 0, &err);
+	if (!root)
+		return "";
+	std::string out;
+	json_t* j = json_object_get(root, "toolDir");
+	if (j && json_is_string(j))
+		out = json_string_value(j);
+	json_decref(root);
+	return out;
+}
+
+inline void saveGlobalToolDir(const std::string& dir) {
+	std::string path = globalSettingsPath();
+	rack::system::createDirectories(rack::system::getDirectory(path));
+	json_t* root = NULL;
+	if (rack::system::isFile(path)) {
+		json_error_t err;
+		root = json_load_file(path.c_str(), 0, &err);
+	}
+	if (!root)
+		root = json_object();
+	json_object_set_new(root, "toolDir", json_string(dir.c_str()));
+	json_dump_file(root, path.c_str(), JSON_INDENT(2));
+	json_decref(root);
+}
+
+
+/** One line naming every place a tool was looked for, for the panel's
+    not-found message: a person reading it should know what to do next. */
+inline std::string whereLooked(const std::vector<std::string>& dirs) {
+	std::string s = "PATH";
+	for (size_t i = 0; i < dirs.size(); i++)
+		if (!dirs[i].empty())
+			s += ", " + dirs[i];
+	return s;
 }
 
 

@@ -13,7 +13,7 @@ Text is drawn through `panel::` and nothing else. A widget must never call
 
 If the kit cannot express what a panel needs, **improve the kit**
 (`panelkit/emit.py` for the header, `panelkit/render.py` for artwork,
-`panelkit/layout.py` for the solver) and regenerate all three panels, so they
+`panelkit/layout.py` for the solver) and regenerate every panel, so they
 all get it. Do not open-code the gap in one module.
 
 After any UI change:
@@ -39,7 +39,7 @@ add there.
 
 **A translation unit may include exactly one `Panel.hpp`.** Each one defines this
 panel's `HP`, `LABELS` and widget positions in `namespace panel`, as `static`, so
-that three panels can be linked into one plugin without colliding. Including two
+that twenty panels can be linked into one plugin without colliding. Including two
 is a duplicate-definition error at compile time.
 
 ## Slugs are permanent

@@ -59,8 +59,8 @@ deliberate approximation rather than a circuit simulation.
 | Control | Type | Description |
 |---|---|---|
 | **RANGE** | 2-position switch | `LO` ≈ 0.05–8 Hz (LFO range), `HI` ≈ 20 Hz–4 kHz (audio range). Applies to every voice. |
-| **CAPTURE** | knob | For voices set to the PLL core: the loop filter's bandwidth. Low = narrow/slow lock, high = wide capture range and faster lock, at the cost of more audible ripple from the phase comparator leaking into the pitch. |
-| **LOCK** | light, beside `CAPTURE` | Lit when at least one PLL-core voice is locked to `SIGNAL`. See [PLL lock](#pll-lock-heuristic) below. |
+| **CAPT** | knob | For voices set to the PLL core: the loop filter's bandwidth. Low = narrow/slow lock, high = wide capture range and faster lock, at the cost of more audible ripple from the phase comparator leaking into the pitch. |
+| **LOCK** | light, beside `CAPT` | Lit when at least one PLL-core voice is locked to `SIGNAL`. See [PLL lock](#pll-lock-heuristic) below. |
 | **SYNC** | input | A rising edge (Schmitt, 0.1 V/2 V thresholds) hard-resets every voice's phase, drift and PLL state at once, whatever core each is set to. |
 | **DRIFT** | trim | For voices set to the Avalanche core: depth of a slow random wander added to the rate, modelling the vactrol's LDR never quite settling. Up to ±0.5 octave of smoothed, one-pole-filtered noise at maximum. Has no effect on the other three cores. |
 | **SIGNAL** | input | The reference signal PLL-core voices compare against — the 4046's comparator input. Unconnected, PLL voices simply free-run at their own `RATE`. |
@@ -88,7 +88,7 @@ instead of it.
 The 4046 core's `LOCK` light is not a cycle-accurate lock detector — this
 module doesn't have a discrete phase counter to check — but a heuristic: it
 low-passes the phase comparator's XOR bit twice, once quickly (the same
-`CAPTURE`-controlled corner the pitch pull itself uses) and once slowly
+`CAPT`-controlled corner the pitch pull itself uses) and once slowly
 (around 0.5 Hz), and calls the loop "locked" once the fast average stops
 drifting away from the slow one. It reads correctly in practice — steady
 while genuinely tracking `SIGNAL`, dark while beating against it or free-running
@@ -121,7 +121,7 @@ while genuinely tracking `SIGNAL`, dark while beating against it or free-running
   `SIGNAL` the way a real 4046 can be coaxed into doing (the "or its harmonics
   or subharmonics" the brief mentions) — implementing genuine N:M lock was out
   of scope for this pass.
-- `DRIFT` and `CAPTURE` are each one shared control across all six voices
+- `DRIFT` and `CAPT` are each one shared control across all six voices
   rather than per-voice, matching the panel's single totals column; every
   voice running that core gets its own independent noise generator or PLL
   state, so six avalanche voices drift independently even though they share

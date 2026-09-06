@@ -1411,16 +1411,29 @@ struct RepossessionWidget : ModuleWidget, ui_rp::SeizeHost {
 
 		menu->addChild(new MenuSeparator);
 		menu->addChild(createMenuLabel("Tools"));
+		// The folder is remembered plugin-wide (MoonTechnologies/settings.json in
+		// Rack's user directory) as well as in this module's own state, so the
+		// next Repossession in the next patch already knows where the tools are.
+		std::string current = self->mod->toolDir.empty() ? rp::loadGlobalToolDir()
+		                                                : self->mod->toolDir;
 		menu->addChild(createMenuItem("Tools folder...",
-			self->mod->toolDir.empty() ? "PATH" : self->mod->toolDir, [self]() {
+			current.empty() ? "auto" : current, [self]() {
 				char* dir = osdialog_file(OSDIALOG_OPEN_DIR, NULL, NULL, NULL);
 				if (dir) {
 					self->mod->toolDir = dir;
+					rp::saveGlobalToolDir(dir);
 					std::free(dir);
 				}
 			}));
-		menu->addChild(createMenuItem("Clear tools folder", "",
-			[self]() { self->mod->toolDir = ""; }));
+		menu->addChild(createMenuItem("Clear tools folder", "", [self]() {
+			self->mod->toolDir = "";
+			rp::saveGlobalToolDir("");
+		}));
+		menu->addChild(createMenuItem("Open drop folder for tools", "", []() {
+			std::string d = asset::user("MoonTechnologies/tools");
+			system::createDirectories(d);
+			system::openDirectory(d);
+		}));
 		menu->addChild(createMenuItem("Open cache folder", "", []() {
 			system::createDirectories(rp::cacheDir());
 			system::openDirectory(rp::cacheDir());

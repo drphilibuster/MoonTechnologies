@@ -1,6 +1,6 @@
 # Audit Logic
 
-18 HP. FORM 886-A, the IRS's "Explanation of Items" -- the form an examiner
+22 HP. FORM 886-A, the IRS's "Explanation of Items" -- the form an examiner
 attaches a finding to. Audit Logic consolidates three *Modular in a Week*
 boards into one panel, laid out as three felt blocks read top to bottom:
 
@@ -36,11 +36,15 @@ Per gate:
   schematic offers to a documented per-channel assignment. NAND, NOR and XNOR
   are additional selections this module adds; treat them as this build's
   extension, not a claim about which diode network the original board used.
-* **OUT** -- 0/10 V gate output, lit MINT when high.
+* **OUT** -- 0/10 V gate output (mint-inked).
 
-An unpatched A or B does not float: it reads the panel's **REF V** switch (in
-the footer), 0 V or 12 V, exactly as the original Quad Inverter's own
-"Trigger Voltage" switch set the reference for its unpatched "in a" pins.
+Between **A** and **B** sits that gate's own status light, lit MINT while its
+output is currently high -- the per-gate counterpart to VERDICT below.
+
+An unpatched A or B does not float: it reads **REF V**, the switch in
+REFERRAL (between **POLARITY** and **ROUTE**, described below), 0 V or 12 V,
+exactly as the original Quad Inverter's own "Trigger Voltage" switch set the
+reference for its unpatched "in a" pins.
 
 The **VERDICT** light beside the section caption is lit whenever any gate's
 channel 0 is currently true.
@@ -60,6 +64,13 @@ INSTALLMENTS have panel room. Per channel:
 **POLARITY** (shared by both channels, as the original's own jumper was one
 setting for the whole board) chooses whether the channel is on while its gate
 is high (**Hi On**) or low (**Lo On**).
+
+**REF V**, centred between **POLARITY** and **ROUTE**, is not part of either
+gated switch: it is FINDINGS' reference for an unpatched A or B input, 0 V or
+12 V, exactly as the original Quad Inverter's own "Trigger Voltage" switch set
+the reference for its unpatched "in a" pins. It lives on this block because it
+is one setting shared across all four FINDINGS gates, the same way POLARITY
+and ROUTE are each one setting shared across both REFERRAL channels.
 
 **ROUTE** chooses the topology: **A-B** passes A to B while the channel is on
 and leaves C at 0 V -- a plain gated switch, matching the original board.
@@ -84,9 +95,10 @@ One free-running binary counter, incremented on every **CLOCK** rising edge
 (comparator: rising 2 V, falling 1 V) and zeroed by **RESET**. Six gate
 outputs tap it: **/2 /4 /8 /16 /32 /64**, each lit MINT while high.
 
-In **BINARY** mode (the **MODE** switch's default, in the footer) each tap is
-one bit of the counter, which is why the duty cycle is exactly 50 % on every
-one of them: a single bit toggles at exactly half its own period, always.
+**MODE**, at the end of the tap row past **/64**, chooses the division set. In
+**BINARY** mode (its default) each tap is one bit of the counter, which is why
+the duty cycle is exactly 50 % on every one of them: a single bit toggles at
+exactly half its own period, always.
 
 In **MUSICAL** mode the same six jacks are retuned to thirds instead of
 halves -- **/3 /6 /12 /24 /48 /96** -- rather than doubling the panel with a
@@ -104,18 +116,17 @@ CLOCK.
 
 ## Footer
 
-* **CLOCK**, **RESET** -- the divider's own transport, shared with nothing
-  else on the panel.
-* **MODE** -- INSTALLMENTS' Binary/Musical switch, described above.
-* **REF V** -- FINDINGS' unpatched-input reference, 0 V or 12 V, described
-  above.
+**CLOCK**, **RESET** -- the divider's own transport, shared with nothing else
+on the panel. Everything else the panel needs shared across sections --
+**REF V** and **MODE** -- lives in REFERRAL and INSTALLMENTS respectively,
+described above.
 
 ## What was approximated or left out
 
 * **REFERRAL is two channels, not four.** The original 4066 Quad Gated
   Switch board used one quad-bilateral IC for four independent channels
   (silkscreened 1A/1B .. 4A/4B, Gate 1..4). This panel keeps two so FINDINGS
-  and INSTALLMENTS both fit at 18 HP; POLARITY and ROUTE stay one shared
+  and INSTALLMENTS both fit at 22 HP; POLARITY and ROUTE stay one shared
   setting for both channels, matching how the original's own jumpers were one
   setting for its whole board rather than per-channel.
 * **FINDINGS' default function per gate is a documented best guess, not a
