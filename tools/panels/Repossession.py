@@ -17,7 +17,7 @@ the well is drawn by RepossessionDisplay from the millimetre constants echoed
 into src/Repossession/Panel.hpp below, so the artwork and the live widget cannot
 disagree about where the video ends and the timeline begins.
 
-Density is "compact": three rows of controls under a 39.6 mm read-out leaves no
+Density is "compact": three rows of controls under a 39.0 mm read-out leaves no
 room for the regular scale.
 """
 
@@ -34,9 +34,9 @@ P = Panel(
     form="FORM 1099-A",
     hp=34,
     density="compact",
-    # The read-out is the module. 39.6 mm is everything the three control rows
+    # The read-out is the module. 39.0 mm is everything the three control rows
     # and the footer band can spare -- see the arithmetic in COLLECTIONS below.
-    glass=Glass(h=39.6),
+    glass=Glass(h=39.0),
 )
 
 W = P.w                         # 172.72 mm
@@ -47,13 +47,13 @@ IW = W - 2 * M                  # 159.72 mm of usable width
 # The well runs 10.20 .. 49.80. The video sits left at 16:9; the URL box and the
 # asset report share the column beside it; the timeline spans the full width
 # underneath, because a region is a span of the whole clip and reads as one.
-GLASS_Y0, GLASS_H = 10.2, 39.6
+GLASS_Y0, GLASS_H = 10.2, 39.0
 
 VID_X, VID_Y, VID_W, VID_H = M, 11.7, 56.0, 31.5        # 11.70 .. 43.20, 16:9
 URL_X, URL_Y, URL_W, URL_H = 66.0, 11.7, W - 66.0 - M, 7.0
 INFO_X, INFO_Y = URL_X, 19.6
 INFO_W, INFO_H = URL_W, 43.2 - 19.6
-TL_X, TL_Y, TL_W, TL_H = M, 44.0, IW, 5.5               # 44.00 .. 49.50
+TL_X, TL_Y, TL_W, TL_H = M, 44.0, IW, 4.9               # 44.00 .. 48.90
 
 C8 = P.cols(8, 14.0)
 C7 = P.cols(7, 14.0)

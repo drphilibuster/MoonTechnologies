@@ -33,7 +33,7 @@ P = Panel(
     form="FORM 8879",
     hp=20,
     density="compact",
-    glass=Glass(h=25.0),
+    glass=Glass(h=24.5),
 )
 
 W = P.w                         # 101.60 mm
@@ -69,7 +69,7 @@ def _joy_knob_row():
 
 
 def _all_jacks_row():
-    x = P.cols(8, 7.0)
+    x = P.cols(8, 8.0)
     return [
         Jack("x_cv_out", x[0], "X CV", ink="MINT"),
         Jack("y_cv_out", x[1], "Y CV", ink="MINT"),

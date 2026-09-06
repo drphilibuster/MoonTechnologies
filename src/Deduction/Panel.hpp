@@ -25,19 +25,19 @@ static const Label LABELS[] = {
 	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
 	{ 46.6000f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "SCHEDULE A"},
 	{ 25.4000f,  24.2000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DEDUCTIONS"},
-	{ 14.0000f,  47.1000f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CUTOFF"},
-	{ 36.8000f,  47.1000f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODEL"},
-	{ 10.0000f,  62.8927f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RES"},
-	{ 25.4000f,  62.8927f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DRIVE"},
-	{ 40.8000f,  62.8927f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "NRM/INV"},
-	{ 25.4000f,  73.9853f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "WITHHOLDING"},
-	{  7.0000f,  78.1971f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CUTOFF"},
-	{ 19.2667f,  78.1971f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RES"},
-	{ 31.5333f,  78.1971f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DRIVE"},
-	{ 43.8000f,  78.1971f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODEL"},
-	{ 10.0000f, 112.4651f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LP IN"},
-	{ 25.4000f, 112.4651f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "HP IN"},
-	{ 40.8000f, 112.4651f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
+	{ 14.0000f,  44.9069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CUTOFF"},
+	{ 36.8000f,  44.9069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODEL"},
+	{ 10.0000f,  64.1177f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RES"},
+	{ 25.4000f,  64.1177f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DRIVE"},
+	{ 40.8000f,  64.1177f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "NRM/INV"},
+	{ 25.4000f,  76.1290f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "WITHHOLDING"},
+	{  8.0000f,  79.2488f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CUTOFF"},
+	{ 19.6000f,  79.2488f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RES"},
+	{ 31.2000f,  79.2488f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DRIVE"},
+	{ 42.8000f,  79.2488f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODEL"},
+	{ 10.0000f, 112.3751f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LP IN"},
+	{ 25.4000f, 112.3751f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "HP IN"},
+	{ 40.8000f, 112.3751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
 };
 
 /** Draws this panel's silkscreen. `static` so each module keeps its own,
@@ -48,20 +48,20 @@ static inline void addLabels(app::ModuleWidget* mw) {
 
 // --- widget positions, by the names used in tools/panels/Deduction.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
-static const Vec FREQ_POS = Vec(14.0000, 35.2000);
-static const Vec MODEL_POS = Vec(36.8000, 35.2000);
-static const Vec RES_POS = Vec(10.0000, 54.4927);
-static const Vec DRIVE_POS = Vec(25.4000, 54.4927);
-static const Vec RESPONSE_POS = Vec(40.8000, 54.4927);
-static const Vec SAT_POS = Vec(31.0460, 62.0392);
-static const Vec CV_AMT_POS = Vec(7.0000, 83.3421);
-static const Vec RES_CV_POS = Vec(19.2667, 83.3421);
-static const Vec DRIVE_CV_POS = Vec(31.5333, 83.3421);
-static const Vec MODEL_CV_POS = Vec(43.8000, 83.3421);
-static const Vec CV_IN_POS = Vec(7.0000, 92.3721);
-static const Vec RES_IN_POS = Vec(19.2667, 92.3721);
-static const Vec DRIVE_IN_POS = Vec(31.5333, 92.3721);
-static const Vec MODEL_IN_POS = Vec(43.8000, 92.3721);
+static const Vec FREQ_POS = Vec(14.0000, 34.1000);
+static const Vec MODEL_POS = Vec(36.8000, 34.1000);
+static const Vec RES_POS = Vec(10.0000, 54.8743);
+static const Vec DRIVE_POS = Vec(25.4000, 54.8743);
+static const Vec RESPONSE_POS = Vec(40.8000, 54.8743);
+static const Vec SAT_POS = Vec(31.7460, 63.2643);
+static const Vec CV_AMT_POS = Vec(8.0000, 84.7938);
+static const Vec RES_CV_POS = Vec(19.6000, 84.7938);
+static const Vec DRIVE_CV_POS = Vec(31.2000, 84.7938);
+static const Vec MODEL_CV_POS = Vec(42.8000, 84.7938);
+static const Vec CV_IN_POS = Vec(8.0000, 97.2885);
+static const Vec RES_IN_POS = Vec(19.6000, 97.2885);
+static const Vec DRIVE_IN_POS = Vec(31.2000, 97.2885);
+static const Vec MODEL_IN_POS = Vec(42.8000, 97.2885);
 static const Vec LP_IN_POS = Vec(10.0000, 118.6000);
 static const Vec HP_IN_POS = Vec(25.4000, 118.6000);
 static const Vec OUT_POS = Vec(40.8000, 118.6000);

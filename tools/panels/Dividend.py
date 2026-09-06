@@ -30,7 +30,7 @@ P = Panel(
     glass=Glass(h=9.2),
 )
 
-C5 = P.cols(5, 10.0)      # 10.00, 25.32, 40.64, 55.96, 71.28
+C5 = P.cols(5, 10.5)      # the big knob's well clears the frame
 C4 = P.cols(4, 10.0)      # 10.00, 30.43, 50.85, 71.28
 C6 = P.cols(6, 8.0)       # 8.00, 21.06, 34.11, 47.17, 60.22, 73.28
 

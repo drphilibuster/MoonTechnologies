@@ -11,7 +11,7 @@ OVERDRAFT light is the panel drawing its own condition -- overdraft is
 FADE > B/2 where B = TIME / SUBDIV, so a lime trace runs from the TIME knob
 through the light and down to the two controls that complete the sum.
 
-This panel runs at "compact" density: seven rows of controls at 12 HP leaves no
+This panel runs at "compact" density: six rows of controls at 14 HP leaves no
 room for the regular scale. Same rules, same idioms, tighter numbers -- nothing
 about the design language changes, only the metric scale in panelkit/layout.py.
 """
@@ -26,15 +26,16 @@ P = Panel(
     slug="Retroactive",
     title="RETROACTIVE",
     form="FORM 1040-X",
-    hp=12,
+    hp=14,
     density="compact",
-    glass=Glass(h=9.2),
+    glass=Glass(h=9.0),
 )
 
-C4 = P.cols(4, 8.0)       # 8.00, 22.99, 37.97, 52.96
-C3 = P.cols(3, 12.0)      # 12.00, 30.48, 48.96
-C2 = P.cols(2, 17.0)      # 17.00, 43.96
-# C3[1] == the midpoint of C2 == 30.48: SUBDIV, CHAR and the overdraft light all
+C6 = P.cols(6, 8.0)       # 8.00 .. 63.12: the four CV pairs and the two clock jacks
+C4 = P.cols(4, 9.0)       # the audio row
+C3 = P.cols(3, 13.0)      # 13.00, 35.56, 58.12
+C2 = P.cols(2, 19.0)      # 19.00, 52.12
+# C3[1] == the midpoint of C2 == 35.56: SUBDIV, CHAR and the overdraft light all
 # share one axis, which is what makes the trace geometry fall out cleanly.
 
 P.sections = [
@@ -57,16 +58,19 @@ P.sections = [
 
     # What the CV inputs may take off each control. Each trimpot sits directly
     # over its own jack and they share one label -- the paired idiom.
-    Section("WITHHOLDING", rows=[
-        Row([Trim("time_cv", C4[0], "TIME"),
-             Trim("mode_cv", C4[1], "MODE"),
-             Trim("subdiv_cv", C4[2], "SUB"),
-             Trim("mix_cv", C4[3], "MIX")], label_side="above"),
-        Row([Jack("time_in", C4[0]), Jack("mode_in", C4[1]),
-             Jack("subdiv_in", C4[2]), Jack("mix_in", C4[3])], silent=True),
-        Row([Jack("clock_in", C3[0], "CLOCK", light="clock_led"),
-             Jack("reset_in", C3[1], "RESET"),
-             Jack("freeze_in", C3[2], "FREEZE")]),
+    # The clock and reset jacks sit beside the pairs, and FREEZE under CLOCK,
+    # so the block is two rows rather than three. The CLOCK light beside the
+    # caption is the clock being heard.
+    Section("WITHHOLDING", caption_light="clock_led", rows=[
+        Row([Trim("time_cv", C6[0], "TIME"),
+             Trim("mode_cv", C6[1], "MODE"),
+             Trim("subdiv_cv", C6[2], "SUB"),
+             Trim("mix_cv", C6[3], "MIX"),
+             Jack("clock_in", C6[4], "CLOCK"),
+             Jack("reset_in", C6[5], "RESET")], label_side="above"),
+        Row([Jack("time_in", C6[0]), Jack("mode_in", C6[1]),
+             Jack("subdiv_in", C6[2]), Jack("mix_in", C6[3]),
+             Jack("freeze_in", C6[4], "FREEZE")]),
     ]),
 ]
 

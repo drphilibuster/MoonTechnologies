@@ -66,7 +66,7 @@ P.sections = [
              Trim("kn", C4[1], "KNEE-"),
              Trim("gp", C4[2], "SHAPE+"),
              Trim("gn", C4[3], "SHAPE-")]),
-    ], divide_after=(0,)),
+    ]),
 
     # The Hammerstein tail: the wet/dry ledger, the post gain, and the output
     # filter -- a tilt and a low cut.

@@ -25,7 +25,7 @@ P = Panel(
     hp=10,
 )
 
-C2 = P.cols(2, 17.0)     # 17.00, 33.80
+C2 = P.cols(2, 12.5)     # BIAS and LAG, clear of the MODE switch between them
 C3 = P.cols(3, 12.0)     # 12.00, 25.40, 38.80 -- C3[1] is the midpoint of C2
 C4 = P.cols(4, 8.0)      # 8.00, 19.60, 31.20, 42.80
 

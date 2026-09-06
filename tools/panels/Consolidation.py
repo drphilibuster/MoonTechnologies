@@ -24,7 +24,7 @@ P = Panel(
     hp=12,
 )
 
-C4 = P.cols(4, 8.0)      # 8.00, 22.99, 37.97, 52.96 -- the four mixer channels
+C4 = P.cols(4, 9.0)      # the four mixer channels; knob wells clear the frame
 C3 = P.cols(3, 12.0)     # 12.00, 30.48, 48.96 -- the three legs of a multiple
 C2 = P.cols(2, 20.0)     # 20.00, 40.96 -- OUT / INV OUT, symmetric about centre
 CENTER = P.w / 2

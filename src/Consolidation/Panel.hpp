@@ -25,19 +25,19 @@ static const Label LABELS[] = {
 	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
 	{ 56.7600f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 1040"},
 	{ 30.4800f,  14.4000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MIXER"},
-	{  8.0000f,  30.3000f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 1"},
-	{ 22.9867f,  30.3000f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 2"},
-	{ 37.9733f,  30.3000f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 3"},
-	{ 52.9600f,  30.3000f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 4"},
-	{  8.0000f,  34.4045f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 1"},
-	{ 22.9867f,  34.4045f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 2"},
-	{ 37.9733f,  34.4045f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 3"},
-	{ 52.9600f,  34.4045f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 4"},
-	{ 30.4800f,  55.0494f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MULTIPLES"},
-	{ 30.4800f,  59.2612f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MULT A"},
-	{ 30.4800f,  83.5380f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MULT B"},
-	{ 20.0000f, 112.4651f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
-	{ 40.9600f, 112.4651f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "INV OUT"},
+	{  9.0000f,  30.5069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 1"},
+	{ 23.3200f,  30.5069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 2"},
+	{ 37.6400f,  30.5069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 3"},
+	{ 51.9600f,  30.5069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 4"},
+	{  9.0000f,  33.9114f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 1"},
+	{ 23.3200f,  33.9114f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 2"},
+	{ 37.6400f,  33.9114f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 3"},
+	{ 51.9600f,  33.9114f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 4"},
+	{ 30.4800f,  53.6363f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MULTIPLES"},
+	{ 30.4800f,  56.7561f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MULT A"},
+	{ 30.4800f,  83.0928f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MULT B"},
+	{ 20.0000f, 112.3751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
+	{ 40.9600f, 112.3751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "INV OUT"},
 };
 
 /** Draws this panel's silkscreen. `static` so each module keeps its own,
@@ -48,22 +48,22 @@ static inline void addLabels(app::ModuleWidget* mw) {
 
 // --- widget positions, by the names used in tools/panels/Consolidation.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
-static const Vec LVL1_POS = Vec(8.0000, 21.9000);
-static const Vec LVL2_POS = Vec(22.9867, 21.9000);
-static const Vec LVL3_POS = Vec(37.9733, 21.9000);
-static const Vec LVL4_POS = Vec(52.9600, 21.9000);
-static const Vec IN1_POS = Vec(8.0000, 40.5394);
-static const Vec IN2_POS = Vec(22.9867, 40.5394);
-static const Vec IN3_POS = Vec(37.9733, 40.5394);
-static const Vec IN4_POS = Vec(52.9600, 40.5394);
-static const Vec MULT_A_IN_POS = Vec(30.4800, 65.3961);
-static const Vec MULT_A_OUT1_POS = Vec(12.0000, 75.4161);
-static const Vec MULT_A_OUT2_POS = Vec(30.4800, 75.4161);
-static const Vec MULT_A_OUT3_POS = Vec(48.9600, 75.4161);
-static const Vec MULT_B_IN_POS = Vec(30.4800, 89.6729);
-static const Vec MULT_B_OUT1_POS = Vec(12.0000, 99.6929);
-static const Vec MULT_B_OUT2_POS = Vec(30.4800, 99.6929);
-static const Vec MULT_B_OUT3_POS = Vec(48.9600, 99.6929);
+static const Vec LVL1_POS = Vec(9.0000, 22.0000);
+static const Vec LVL2_POS = Vec(23.3200, 22.0000);
+static const Vec LVL3_POS = Vec(37.6400, 22.0000);
+static const Vec LVL4_POS = Vec(51.9600, 22.0000);
+static const Vec IN1_POS = Vec(9.0000, 40.1363);
+static const Vec IN2_POS = Vec(23.3200, 40.1363);
+static const Vec IN3_POS = Vec(37.6400, 40.1363);
+static const Vec IN4_POS = Vec(51.9600, 40.1363);
+static const Vec MULT_A_IN_POS = Vec(30.4800, 62.9810);
+static const Vec MULT_A_OUT1_POS = Vec(12.0000, 74.0810);
+static const Vec MULT_A_OUT2_POS = Vec(30.4800, 74.0810);
+static const Vec MULT_A_OUT3_POS = Vec(48.9600, 74.0810);
+static const Vec MULT_B_IN_POS = Vec(30.4800, 89.3178);
+static const Vec MULT_B_OUT1_POS = Vec(12.0000, 100.4178);
+static const Vec MULT_B_OUT2_POS = Vec(30.4800, 100.4178);
+static const Vec MULT_B_OUT3_POS = Vec(48.9600, 100.4178);
 static const Vec OUT_POS = Vec(20.0000, 118.6000);
 static const Vec INV_OUT_POS = Vec(40.9600, 118.6000);
 

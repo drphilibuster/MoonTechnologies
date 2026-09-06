@@ -32,11 +32,11 @@ P = Panel(
     form="FORM 211",
     hp=16,
     density="compact",
-    glass=Glass(h=9.2),
+    glass=Glass(h=8.8),
 )
 
-C6 = P.cols(6, 8.0)       # 8.00, 21.06, 34.11, 47.17, 60.22, 73.28
-C7 = P.cols(7, 7.0)       # 7.00, 18.21, 29.43, 40.64, 51.85, 63.07, 74.28
+C6 = P.cols(6, 8.0)       # trims: their wells clear the frame at 8
+C7 = P.cols(7, 8.0)       # 8.00 .. 73.28, the centre column on the panel axis
 C5 = P.cols(5, 8.0)       # 8.00, 24.32, 40.64, 56.96, 73.28
 C3 = P.cols(3, 14.0)      # 14.00, 40.64, 67.28
 # C7[3] == C5[2] == C3[1] == the panel centre: ECHO, the CHOP switch and the
@@ -53,10 +53,11 @@ P.sections = [
         Row([BigKnob("time", C3[0], "TIME"),
              BigKnob("echo", C3[1], "ECHO", primary=True),
              BigKnob("cutoff", C3[2], "CUTOFF")]),
-        Row([Knob("lag", C6[0], "LAG"),
-             Knob("drive", C6[1], "DRIVE"),
-             Knob("seed", C6[2], "SEED"),
-             Knob("rate", C6[3], "RATE"),
+        # Secondary controls, so trimpots: set and left, like a service panel.
+        Row([Trim("lag", C6[0], "LAG"),
+             Trim("drive", C6[1], "DRIVE"),
+             Trim("seed", C6[2], "SEED"),
+             Trim("rate", C6[3], "RATE"),
              Trim("res", C6[4], "RES"),
              Trim("thresh", C6[5], "THRESH")]),
     ]),

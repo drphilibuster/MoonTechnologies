@@ -9,8 +9,8 @@ and finding out what it cost you.
 
 | | | |
 | --- | --- | --- |
-| <img src="tools/previews/PatchAudit.png" width="260"> | <img src="tools/previews/Retroactive.png" width="120"> | <img src="tools/previews/UncertaintyPolicy.png" width="160"> |
-| **[PatchAudit](docs/PatchAudit.md)** · 26 HP | **[Retroactive](docs/Retroactive.md)** · 12 HP | **[Uncertainty Policy](docs/UncertaintyPolicy.md)** · 16 HP |
+| <img src="tools/previews/PatchAudit.png" width="260"> | <img src="tools/previews/Retroactive.png" width="140"> | <img src="tools/previews/UncertaintyPolicy.png" width="160"> |
+| **[PatchAudit](docs/PatchAudit.md)** · 26 HP | **[Retroactive](docs/Retroactive.md)** · 14 HP | **[Uncertainty Policy](docs/UncertaintyPolicy.md)** · 16 HP |
 
 *(Panels above are rendered by Rack itself, not mocked up.)*
 
@@ -46,6 +46,28 @@ roll → silence → undo → roll.
 
 Six devices built to order, and the whole of Kristian Blåsol's [Modular in a Week](https://www.youtube.com/@modularinaweek) DIY course folded into eleven banks — one module per day's theme rather than one per circuit. Every bank keeps each original's character selectable and default.
 
+*(Rendered by Rack itself, not mocked up.)*
+
+| <img src="tools/previews/Dividend.png" width="144"> | <img src="tools/previews/TaxBracket.png" width="108"> | <img src="tools/previews/Racketeer.png" width="144"> | <img src="tools/previews/Gross.png" width="162"> |
+|---|---|---|---|
+| **[Dividend](docs/Dividend.md)** · 16 HP | **[Tax Bracket](docs/TaxBracket.md)** · 12 HP | **[Racketeer](docs/Racketeer.md)** · 16 HP | **[Gross](docs/Gross.md)** · 18 HP |
+
+| <img src="tools/previews/Amortization.png" width="126"> | <img src="tools/previews/Repossession.png" width="306"> | <img src="tools/previews/SixFigures.png" width="216"> | <img src="tools/previews/Garnishment.png" width="90"> |
+|---|---|---|---|
+| **[Amortization](docs/Amortization.md)** · 14 HP | **[Repossession](docs/Repossession.md)** · 34 HP | **[Six Figures](docs/SixFigures.md)** · 24 HP | **[Garnishment](docs/Garnishment.md)** · 10 HP |
+
+| <img src="tools/previews/Consolidation.png" width="108"> | <img src="tools/previews/Installment.png" width="144"> | <img src="tools/previews/Volatility.png" width="126"> | <img src="tools/previews/Deduction.png" width="90"> |
+|---|---|---|---|
+| **[Consolidation](docs/Consolidation.md)** · 12 HP | **[Installment](docs/Installment.md)** · 16 HP | **[Volatility](docs/Volatility.md)** · 14 HP | **[Deduction](docs/Deduction.md)** · 10 HP |
+
+| <img src="tools/previews/AuditLogic.png" width="198"> | <img src="tools/previews/Kickback.png" width="270"> | <img src="tools/previews/PaymentSchedule.png" width="252"> | <img src="tools/previews/SignHere.png" width="180"> |
+|---|---|---|---|
+| **[Audit Logic](docs/AuditLogic.md)** · 22 HP | **[Kickback](docs/Kickback.md)** · 30 HP | **[Payment Schedule](docs/PaymentSchedule.md)** · 28 HP | **[Sign Here](docs/SignHere.md)** · 20 HP |
+
+| <img src="tools/previews/Diversified.png" width="162"> |
+|---|
+| **[Diversified](docs/Diversified.md)** · 18 HP |
+
 ### [Dividend](docs/Dividend.md) — 16 HP · *Oscillator, Synth voice*
 
 A pulsar-synthesis VCO after Curtis Roads: trains of pulsarets whose formant is set independently of the fundamental, six pulsaret waveforms, six windows, burst, stochastic and channel masking, an overlap voice pool, and a read-out of fundamental and formant.
@@ -62,7 +84,7 @@ Wolfgang Spahn's PB701 Electric Intonarumori: a PT2399 delay run as a self-susta
 
 A Wiener–Hammerstein distortion built from the Eichas–Zölzer piecewise-tanh mapping and the dynamic bias of Comunità, Steinmetz and Reiss: input EQ, drive, static and dynamic bias, knees and slopes per polarity, five curve families, output EQ, device presets, and a live transfer-curve read-out.
 
-### [Amortization](docs/Amortization.md) — 12 HP · *Reverb, Effect*
+### [Amortization](docs/Amortization.md) — 14 HP · *Reverb, Effect*
 
 A Verbtronic-style reverb: a Dattorro plate for VERB and an eight-line FDN with a limiter for TRONIC, tonal tilt inside the loop, feedback past unity, predelay, freeze, the mode gate, and wet-only outputs beside the mix.
 
@@ -86,7 +108,7 @@ Day 3: the ASMR four-channel mixer with normal and inverted sums, and two 1:3 bu
 
 Days 4 and 5: two function generators, each LFO, AR or AD with loop, range, bias and CV, plus the Day 12 tape-motor PWM driver with duty CV.
 
-### [Volatility](docs/Volatility.md) — 12 HP · *Noise, Sample and hold, Random*
+### [Volatility](docs/Volatility.md) — 14 HP · *Noise, Sample and hold, Random*
 
 Day 6: an 18-bit 4006-style shift-register noise source, the YASH sample and hold, and the PHObos random gate, on one shared clock.
 
@@ -94,7 +116,7 @@ Day 6: an 18-bit 4006-style shift-register noise source, the YASH sample and hol
 
 Day 7: six filters under one MODEL knob with CV — PAiA 2720-3L, Escobedo Q&D, Korg35, MS-20 OTA, EFM Moog-type high-pass, Synthrotek DIRT — with LP and HP inputs, a CV response switch and a read-out.
 
-### [Audit Logic](docs/AuditLogic.md) — 18 HP · *Logic, Switch, Clock modulator*
+### [Audit Logic](docs/AuditLogic.md) — 22 HP · *Logic, Switch, Clock modulator*
 
 Day 8 and the 4066: four logic gates with selectable functions and the 0 V / 12 V reference, two gated switches, and the Emiz CV2 clock divider.
 

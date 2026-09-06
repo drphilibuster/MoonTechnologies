@@ -33,7 +33,7 @@ P = Panel(
 
 # One column per voice, ACCENT at the far left and MIX at the far right, so the
 # footer carries the same ten columns as the section above it.
-C = P.cols(10, 8.0)       # 8.00, 23.16, 38.31, 53.47, 68.62, 83.78, 98.93, 114.09, 129.24, 144.40
+C = P.cols(10, 9.0)       # ten columns; the end knobs clear the frame
 ACC, KICK, SNARE, HAT, SMURF, TOM, BELL, NOISE, DAZZ, MIX = C
 
 P.sections = [
@@ -48,7 +48,7 @@ P.sections = [
              Jack("tom_trig", TOM, "TOM", ink="PAPER", light="tom_led"),
              Jack("bell_trig", BELL, "BELL", ink="PAPER", light="bell_led"),
              Jack("noise_trig", NOISE, "NOISE", ink="PAPER", light="noise_led"),
-             Jack("dazzler_trig", DAZZ, "DAZZLER", ink="PAPER", light="dazzler_led"),
+             Jack("dazzler_trig", DAZZ, "DAZZLE", ink="PAPER", light="dazzler_led"),
              Knob("accent", ACC, "ACCENT"),
              Knob("level", MIX, "LEVEL")]),
     ]),

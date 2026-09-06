@@ -27,7 +27,7 @@ P = Panel(
     slug="Volatility",
     title="VOLATILITY",
     form="SCHEDULE D",
-    hp=12,
+    hp=14,
     density="compact",
 )
 

@@ -402,23 +402,23 @@ struct RacketeerWidget : ModuleWidget {
 		RacketeerDisplay* display = new RacketeerDisplay;
 		display->module = module;
 		display->box.pos = panel::mm(4.2f, 10.2f);
-		display->box.size = panel::mm(panel::W - 8.4f, 9.2f);
+		display->box.size = panel::mm(panel::W - 8.4f, 8.8f);
 		addChild(display);
 
 		addParam(createParamCentered<LoopKnob>(panel::mm(panel::TIME_POS.x, panel::TIME_POS.y), module, Racketeer::TIME_PARAM));
 		addParam(createParamCentered<LoopKnob>(panel::mm(panel::ECHO_POS.x, panel::ECHO_POS.y), module, Racketeer::ECHO_PARAM));
 		addParam(createParamCentered<LoopKnob>(panel::mm(panel::CUTOFF_POS.x, panel::CUTOFF_POS.y), module, Racketeer::CUTOFF_PARAM));
 
-		addParam(createParamCentered<PanelKnob>(panel::mm(panel::LAG_POS.x, panel::LAG_POS.y), module, Racketeer::LAG_PARAM));
-		addParam(createParamCentered<PanelKnob>(panel::mm(panel::DRIVE_POS.x, panel::DRIVE_POS.y), module, Racketeer::DRIVE_PARAM));
-		addParam(createParamCentered<PanelKnob>(panel::mm(panel::SEED_POS.x, panel::SEED_POS.y), module, Racketeer::SEED_PARAM));
+		addParam(createParamCentered<Trimpot>(panel::mm(panel::LAG_POS.x, panel::LAG_POS.y), module, Racketeer::LAG_PARAM));
+		addParam(createParamCentered<Trimpot>(panel::mm(panel::DRIVE_POS.x, panel::DRIVE_POS.y), module, Racketeer::DRIVE_PARAM));
+		addParam(createParamCentered<Trimpot>(panel::mm(panel::SEED_POS.x, panel::SEED_POS.y), module, Racketeer::SEED_PARAM));
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::RES_POS.x, panel::RES_POS.y), module, Racketeer::RES_PARAM));
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::THRESH_POS.x, panel::THRESH_POS.y), module, Racketeer::THRESH_PARAM));
 
 		addParam(createParamCentered<CKSS>(panel::mm(panel::POL_POS.x, panel::POL_POS.y), module, Racketeer::POL_PARAM));
 		addParam(createParamCentered<CKSS>(panel::mm(panel::FILT_POS.x, panel::FILT_POS.y), module, Racketeer::FILT_PARAM));
 		addParam(createParamCentered<CKSS>(panel::mm(panel::RANGE_POS.x, panel::RANGE_POS.y), module, Racketeer::RANGE_PARAM));
-		addParam(createParamCentered<PanelKnob>(panel::mm(panel::RATE_POS.x, panel::RATE_POS.y), module, Racketeer::RATE_PARAM));
+		addParam(createParamCentered<Trimpot>(panel::mm(panel::RATE_POS.x, panel::RATE_POS.y), module, Racketeer::RATE_PARAM));
 		addParam(createParamCentered<CKSS>(panel::mm(panel::CHOP_POS.x, panel::CHOP_POS.y), module, Racketeer::CHOP_PARAM));
 
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::TIME_CV_POS.x, panel::TIME_CV_POS.y), module, Racketeer::TIME_CV_PARAM));

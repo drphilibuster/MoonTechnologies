@@ -81,6 +81,10 @@ class Widget:
     #: A small light drawn immediately to the right of this widget's label, for
     #: the "lit label" idiom -- an indicator that belongs to a control by name.
     light: str = ""
+    #: Which end of the label the light sits at: "right" (the rule) or "left",
+    #: for a control in the last column whose light would otherwise run off
+    #: the block.
+    light_side: str = "right"
 
     @property
     def r(self):

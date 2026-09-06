@@ -25,32 +25,32 @@ static const Label LABELS[] = {
 	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
 	{ 77.0800f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 9465"},
 	{ 40.6400f,  13.7000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PAYMENT PLAN"},
-	{  8.0000f,  27.0000f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODE"},
-	{ 29.7600f,  27.0000f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LOOP"},
-	{ 51.5200f,  27.0000f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODE"},
-	{ 73.2800f,  27.0000f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LOOP"},
-	{  8.0000f,  41.0588f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ATTACK"},
-	{ 29.7600f,  41.0588f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RELEASE"},
-	{ 51.5200f,  41.0588f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ATTACK"},
-	{ 73.2800f,  41.0588f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RELEASE"},
-	{  8.0000f,  54.5515f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RANGE"},
-	{ 29.7600f,  54.5515f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BIAS"},
-	{ 51.5200f,  54.5515f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RANGE"},
-	{ 73.2800f,  54.5515f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BIAS"},
-	{ 40.6400f,  62.2441f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "AUTOPAY"},
-	{ 18.8800f,  65.2559f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV AMT"},
-	{ 62.4000f,  65.2559f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV AMT"},
-	{ 18.8800f,  85.8055f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
-	{ 31.6400f,  98.5404f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DUTY"},
-	{ 49.6400f,  85.8055f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV"},
-	{ 62.4000f,  85.8055f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
-	{  6.0000f, 112.8651f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ENV1"},
-	{ 17.5467f, 112.8651f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SQU1"},
-	{ 29.0933f, 112.8651f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EOC1"},
-	{ 40.6400f, 112.8651f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ENV2"},
-	{ 52.1867f, 112.8651f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SQU2"},
-	{ 63.7333f, 112.8651f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EOC2"},
-	{ 75.2800f, 112.8651f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PWM"},
+	{  9.0000f,  28.0618f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODE"},
+	{ 30.0933f,  28.0618f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LOOP"},
+	{ 51.1867f,  28.0618f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODE"},
+	{ 72.2800f,  28.0618f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LOOP"},
+	{  9.0000f,  45.2775f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ATTACK"},
+	{ 30.0933f,  45.2775f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RELEASE"},
+	{ 51.1867f,  45.2775f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ATTACK"},
+	{ 72.2800f,  45.2775f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RELEASE"},
+	{  9.0000f,  60.5270f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RANGE"},
+	{ 30.0933f,  60.5270f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BIAS"},
+	{ 51.1867f,  60.5270f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RANGE"},
+	{ 72.2800f,  60.5270f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BIAS"},
+	{ 40.6400f,  67.3197f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "AUTOPAY"},
+	{ 19.5467f,  70.4395f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV AMT"},
+	{ 61.7333f,  70.4395f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV AMT"},
+	{ 19.5467f,  92.4163f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
+	{ 31.6400f, 106.3981f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DUTY"},
+	{ 49.6400f,  92.4163f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV"},
+	{ 61.7333f,  92.4163f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
+	{  6.0000f, 112.6751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ENV1"},
+	{ 17.5467f, 112.6751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SQU1"},
+	{ 29.0933f, 112.6751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EOC1"},
+	{ 40.6400f, 112.6751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ENV2"},
+	{ 52.1867f, 112.6751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SQU2"},
+	{ 63.7333f, 112.6751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EOC2"},
+	{ 75.2800f, 112.6751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PWM"},
 };
 
 /** Draws this panel's silkscreen. `static` so each module keeps its own,
@@ -61,26 +61,26 @@ static inline void addLabels(app::ModuleWidget* mw) {
 
 // --- widget positions, by the names used in tools/panels/Installment.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
-static const Vec MODE1_POS = Vec(8.0000, 20.0000);
-static const Vec LOOP1_POS = Vec(29.7600, 20.0000);
-static const Vec MODE2_POS = Vec(51.5200, 20.0000);
-static const Vec LOOP2_POS = Vec(73.2800, 20.0000);
-static const Vec ATTACK1_POS = Vec(8.0000, 34.0588);
-static const Vec RELEASE1_POS = Vec(29.7600, 34.0588);
-static const Vec ATTACK2_POS = Vec(51.5200, 34.0588);
-static const Vec RELEASE2_POS = Vec(73.2800, 34.0588);
-static const Vec RANGE1_POS = Vec(8.0000, 47.5515);
-static const Vec BIAS1_POS = Vec(29.7600, 47.5515);
-static const Vec RANGE2_POS = Vec(51.5200, 47.5515);
-static const Vec BIAS2_POS = Vec(73.2800, 47.5515);
-static const Vec CV1_AMT_POS = Vec(18.8800, 70.0009);
-static const Vec CV2_AMT_POS = Vec(62.4000, 70.0009);
-static const Vec CV1_IN_POS = Vec(18.8800, 78.1309);
-static const Vec CV2_IN_POS = Vec(62.4000, 78.1309);
-static const Vec GATE1_IN_POS = Vec(18.8800, 91.5404);
-static const Vec PWM_DUTY_POS = Vec(31.6400, 91.5404);
-static const Vec PWM_CV_IN_POS = Vec(49.6400, 91.5404);
-static const Vec GATE2_IN_POS = Vec(62.4000, 91.5404);
+static const Vec MODE1_POS = Vec(9.0000, 20.2000);
+static const Vec LOOP1_POS = Vec(30.0933, 20.2000);
+static const Vec MODE2_POS = Vec(51.1867, 20.2000);
+static const Vec LOOP2_POS = Vec(72.2800, 20.2000);
+static const Vec ATTACK1_POS = Vec(9.0000, 37.2206);
+static const Vec RELEASE1_POS = Vec(30.0933, 37.2206);
+static const Vec ATTACK2_POS = Vec(51.1867, 37.2206);
+static const Vec RELEASE2_POS = Vec(72.2800, 37.2206);
+static const Vec RANGE1_POS = Vec(9.0000, 52.4702);
+static const Vec BIAS1_POS = Vec(30.0933, 52.4702);
+static const Vec RANGE2_POS = Vec(51.1867, 52.4702);
+static const Vec BIAS2_POS = Vec(72.2800, 52.4702);
+static const Vec CV1_AMT_POS = Vec(19.5467, 75.6844);
+static const Vec CV2_AMT_POS = Vec(61.7333, 75.6844);
+static const Vec CV1_IN_POS = Vec(19.5467, 85.4044);
+static const Vec CV2_IN_POS = Vec(61.7333, 85.4044);
+static const Vec GATE1_IN_POS = Vec(19.5467, 98.3412);
+static const Vec PWM_DUTY_POS = Vec(31.6400, 98.3412);
+static const Vec PWM_CV_IN_POS = Vec(49.6400, 98.3412);
+static const Vec GATE2_IN_POS = Vec(61.7333, 98.3412);
 static const Vec ENV1_OUT_POS = Vec(6.0000, 118.6000);
 static const Vec INV1_OUT_POS = Vec(17.5467, 118.6000);
 static const Vec EOC1_OUT_POS = Vec(29.0933, 118.6000);

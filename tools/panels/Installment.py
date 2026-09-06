@@ -35,7 +35,7 @@ P = Panel(
     density="compact",
 )
 
-C4 = P.cols(4, 8.0)      # 8.00, 29.76, 51.52, 73.28 -- ch1 pair, ch2 pair
+C4 = P.cols(4, 9.0)      # ch1 pair, ch2 pair; knob wells clear the frame
 # Each channel's AUTOPAY column sits under the midpoint of its own ATTACK/
 # RELEASE pair above, so the trim, the jack and the gate line up with the pair
 # they belong to rather than with an unrelated grid.

@@ -31,7 +31,7 @@ P = Panel(
     glass=Glass(h=9.2),
 )
 
-C4 = P.cols(4, 7.0)       # 7.00, 19.27, 31.53, 43.80
+C4 = P.cols(4, 8.0)       # jack wells clear the frame
 C3 = P.cols(3, 10.0)      # 10.00, 25.40, 40.80
 C2 = P.cols(2, 14.0)      # 14.00, 36.80
 

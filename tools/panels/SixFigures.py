@@ -30,7 +30,7 @@ P = Panel(
 
 # Seven columns: six voices and a totals column on the right. The footer puts
 # each voice's OUT under its own column and MIX under the totals.
-C7 = P.cols(7, 9.0)       # 9.00, 26.32, 43.64, 60.96, 78.28, 95.60, 112.92
+C7 = P.cols(7, 10.5)      # the end big knobs' wells clear the frame
 V = C7[:6]
 T = C7[6]
 
@@ -43,7 +43,7 @@ P.sections = [
             + [Switch("range", T, "RANGE")]),
         Row([BigKnob("rate%d" % (i + 1), V[i], "RATE", light="led%d" % (i + 1))
              for i in range(6)]
-            + [Knob("capture", T, "CAPT", light="lock")]),
+            + [Knob("capture", T, "CAPT", light="lock", light_side="left")]),
         Row([Trim("cv%d" % (i + 1), V[i], "CV") for i in range(6)]
             + [Jack("sync", T, "SYNC")], label_side="above"),
         Row([Trim("drift", T, "DRIFT")]

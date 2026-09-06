@@ -29,15 +29,13 @@ P = Panel(
     slug="Amortization",
     title="AMORTIZATION",
     form="PUB 535",
-    hp=12,
+    hp=14,
     density="compact",
     glass=Glass(h=9.2),
 )
 
-C6 = P.cols(6, 6.5)       # 6.50, 16.09, 25.68, 35.28, 44.87, 54.46
-C4 = P.cols(4, 8.0)       # 8.00, 22.99, 37.97, 52.96
-C3 = P.cols(3, 12.0)      # 12.00, 30.48, 48.96
-C2 = P.cols(2, 17.0)      # 17.00, 43.96
+C6 = P.cols(6, 8.0)       # 8.00 .. 63.12: the CV pairs, the gates, the audio row
+C4 = P.cols(4, 10.0)      # 10.00, 27.04, 44.08, 61.12
 
 P.sections = [
     # How long the debt runs. FEEDBACK is the control you reach for, so it wears
@@ -45,10 +43,10 @@ P.sections = [
     # MOD is the depth of the tank modulation -- a trimmer, as on a service
     # panel, because it is set once and left.
     Section("TERM", caption_light="limit", rows=[
-        Row([BigKnob("feedback", 12.0, "FEEDBACK", primary=True),
-             Knob("size", 29.0, "SIZE"),
-             Knob("predelay", 43.0, "PREDELAY"),
-             Trim("mod", 55.5, "MOD")]),
+        Row([BigKnob("feedback", 13.0, "FEEDBACK", primary=True),
+             Knob("size", 31.0, "SIZE"),
+             Knob("predelay", 47.0, "PREDELAY"),
+             Trim("mod", 62.5, "MOD")]),
     ]),
 
     # The character of the repayments. The MODE switch's lit label shows which
@@ -64,16 +62,17 @@ P.sections = [
     # What CV may take off each control on the way in. Each trimpot sits
     # directly over its own jack and they share one label -- the paired idiom.
     # Below the rule, the two gates.
+    # The two gates sit beside the pairs, so the block is two rows, not three.
     Section("PAYMENTS", rows=[
-        Row([Trim("fb_cv", C4[0], "FDBK"),
-             Trim("tilt_cv", C4[1], "TILT"),
-             Trim("mix_cv", C4[2], "MIX"),
-             Trim("size_cv", C4[3], "SIZE")], label_side="above"),
-        Row([Jack("fb_in", C4[0]), Jack("tilt_in", C4[1]),
-             Jack("mix_in", C4[2]), Jack("size_in", C4[3])], silent=True),
-        Row([Jack("mode_in", C2[0], "MODE GATE"),
-             Jack("freeze_in", C2[1], "FREEZE")]),
-    ], divide_after=(1,)),
+        Row([Trim("fb_cv", C6[0], "FDBK"),
+             Trim("tilt_cv", C6[1], "TILT"),
+             Trim("mix_cv", C6[2], "MIX"),
+             Trim("size_cv", C6[3], "SIZE"),
+             Jack("mode_in", C6[4], "MODE GATE"),
+             Jack("freeze_in", C6[5], "FREEZE")], label_side="above"),
+        Row([Jack("fb_in", C6[0]), Jack("tilt_in", C6[1]),
+             Jack("mix_in", C6[2]), Jack("size_in", C6[3])], silent=True),
+    ]),
 ]
 
 # The audio row sits as low as the bottom screws allow: RACK_GRID_HEIGHT -

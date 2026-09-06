@@ -187,16 +187,26 @@ through `Panel.metrics`, which become `panel::NAME` constants in the header.
 `build()` refuses to write anything if the panel would be wrong, and says why:
 
 * the panel is over capacity, in millimetres
-* a label or widget running off an edge, or under a corner screw
-* two labels overlapping, or a label overlapping a widget
+* a label or widget running off an edge, under a corner screw, or into the
+  foot ribbon between the bottom screws
+* two labels overlapping, or a label overlapping a widget's **well**
+* two wells overlapping (their rings touching), including the lights that lit
+  labels and captions carry
+* a well straddling its block's frame -- the ring may touch the frame line,
+  never cross it
 * a section block running into the masthead or the footer band
 * two widgets sharing a name (each becomes a constant in the header)
 * more than one control marked `primary`
 
-Labels within a row share one baseline, taken from the tallest widget on it, so a
-row of mixed hardware — a switch beside a trimpot — does not read as though the
-type had slipped. The `primary` ring counts as ink for every clearance: it has to
-clear the caption above the row and its own label below it.
+Every clearance is measured from a widget's well and ring, not its art, and a
+label's gap is to the top of its capitals, not its baseline. A lit label's
+light is taller than its letters, so a row carrying one moves as far as the
+light needs. A first row labelled above holds off the caption by a line. A
+sparse panel is *justified*: slack above the footer band is shared out among
+the row and block gaps, up to a cap, so no panel ends in a dead pale strip.
+
+A spec that raises (rather than reports a problem) also writes nothing, and
+`make panel` stops at it -- check the exit status, not just the output.
 
 `--force` writes anyway. Only useful for looking at the damage.
 

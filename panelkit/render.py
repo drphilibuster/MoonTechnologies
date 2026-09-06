@@ -25,7 +25,7 @@ renderer and both still binding:
 import math
 from . import spec as S
 from . import palette as P
-from .layout import cap_h, desc_h, label_box, HEADER_H, SCALE
+from .layout import cap_h, desc_h, label_box, HEADER_H, SCALE, FOOT_Y
 
 TAB_W = 7.0             # the index tab on every block: a form's thumb index
 TAB_H = 0.5
@@ -126,7 +126,7 @@ def panel_svg(panel, sol):
               % (pl.x, pl.y, TAB_W, TAB_H, getattr(P, pl.tab)))
 
     # --- recessed seats behind every widget: a dark seal ringed in sage
-    for x, y, hw, hh in sol.wells:
+    for x, y, hw, hh, _name in sol.wells:
         if abs(hw - hh) < 1e-6:
             a('  <circle cx="%.4f" cy="%.4f" r="%.4f" fill="%s" stroke="%s" '
               'stroke-width="0.2"/>' % (x, y, hw, P.GLASS, P.RULE))

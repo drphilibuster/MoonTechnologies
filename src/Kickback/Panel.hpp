@@ -25,50 +25,50 @@ static const Label LABELS[] = {
 	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
 	{148.2000f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 1099-NEC"},
 	{ 76.2000f,  14.4000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PAYER"},
-	{ 23.1556f,  19.6646f,  6.20f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "KICK"},
-	{ 38.3111f,  19.6646f,  6.20f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SNARE"},
-	{ 53.4667f,  19.6646f,  6.20f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "HAT"},
-	{ 68.6222f,  19.6646f,  6.20f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SMURF"},
-	{ 83.7778f,  19.6646f,  6.20f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TOM"},
-	{ 98.9333f,  19.6646f,  6.20f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BELL"},
-	{114.0889f,  19.6646f,  6.20f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "NOISE"},
-	{129.2444f,  19.6646f,  6.20f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DAZZLER"},
-	{  8.0000f,  34.1995f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ACCENT"},
-	{144.4000f,  34.1995f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LEVEL"},
-	{ 76.2000f,  45.2922f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "NONEMPLOYEE COMPENSATION"},
-	{ 23.1556f,  63.7922f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PITCH"},
-	{ 38.3111f,  63.7922f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PITCH"},
-	{ 53.4667f,  63.7922f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TONE"},
-	{ 68.6222f,  63.7922f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PITCH"},
-	{ 83.7778f,  63.7922f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PITCH"},
-	{ 98.9333f,  63.7922f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PITCH"},
-	{114.0889f,  63.7922f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TONE"},
-	{129.2444f,  63.7922f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "KIT"},
-	{ 23.1556f,  79.5849f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
-	{ 38.3111f,  79.5849f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
-	{ 53.4667f,  79.5849f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
-	{ 68.6222f,  79.5849f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
-	{ 83.7778f,  79.5849f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
-	{ 98.9333f,  79.5849f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
-	{114.0889f,  79.5849f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
-	{129.2444f,  79.5849f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
-	{114.0889f,  84.7422f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DEC CV"},
-	{ 23.1556f,  99.2771f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DRIVE"},
-	{ 38.3111f,  99.2771f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SNAP"},
-	{ 68.6222f,  99.2771f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SWEEP"},
-	{ 83.7778f,  99.2771f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RANGE"},
-	{ 98.9333f,  99.2771f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TIMBRE"},
-	{129.2444f,  99.2771f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CRACKLE"},
-	{  8.0000f, 112.4651f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ACCENT"},
-	{ 23.1556f, 112.4651f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
-	{ 38.3111f, 112.4651f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
-	{ 53.4667f, 112.4651f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
-	{ 68.6222f, 112.4651f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
-	{ 83.7778f, 112.4651f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
-	{ 98.9333f, 112.4651f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
-	{114.0889f, 112.4651f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
-	{129.2444f, 112.4651f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
-	{144.4000f, 112.4651f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MIX"},
+	{ 23.9333f,  18.9539f,  6.20f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "KICK"},
+	{ 38.8667f,  18.9539f,  6.20f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SNARE"},
+	{ 53.8000f,  18.9539f,  6.20f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "HAT"},
+	{ 68.7333f,  18.9539f,  6.20f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SMURF"},
+	{ 83.6667f,  18.9539f,  6.20f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TOM"},
+	{ 98.6000f,  18.9539f,  6.20f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BELL"},
+	{113.5333f,  18.9539f,  6.20f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "NOISE"},
+	{128.4667f,  18.9539f,  6.20f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DAZZLE"},
+	{  9.0000f,  33.7949f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ACCENT"},
+	{143.4000f,  33.7949f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LEVEL"},
+	{ 76.2000f,  44.8476f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "NONEMPLOYEE COMPENSATION"},
+	{ 23.9333f,  63.5545f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PITCH"},
+	{ 38.8667f,  63.5545f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PITCH"},
+	{ 53.8000f,  63.5545f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TONE"},
+	{ 68.7333f,  63.5545f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PITCH"},
+	{ 83.6667f,  63.5545f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PITCH"},
+	{ 98.6000f,  63.5545f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PITCH"},
+	{113.5333f,  63.5545f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TONE"},
+	{128.4667f,  63.5545f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "KIT"},
+	{ 23.9333f,  81.8141f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
+	{ 38.8667f,  81.8141f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
+	{ 53.8000f,  81.8141f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
+	{ 68.7333f,  81.8141f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
+	{ 83.6667f,  81.8141f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
+	{ 98.6000f,  81.8141f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
+	{113.5333f,  81.8141f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
+	{128.4667f,  81.8141f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
+	{113.5333f,  87.0787f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DEC CV"},
+	{ 23.9333f, 101.8105f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DRIVE"},
+	{ 38.8667f, 101.8105f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SNAP"},
+	{ 68.7333f, 101.8105f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SWEEP"},
+	{ 83.6667f, 101.8105f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RANGE"},
+	{ 98.6000f, 101.8105f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TIMBRE"},
+	{128.4667f, 101.8105f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CRACKLE"},
+	{  9.0000f, 112.3751f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ACCENT"},
+	{ 23.9333f, 112.3751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
+	{ 38.8667f, 112.3751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
+	{ 53.8000f, 112.3751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
+	{ 68.7333f, 112.3751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
+	{ 83.6667f, 112.3751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
+	{ 98.6000f, 112.3751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
+	{113.5333f, 112.3751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
+	{128.4667f, 112.3751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
+	{143.4000f, 112.3751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MIX"},
 };
 
 /** Draws this panel's silkscreen. `static` so each module keeps its own,
@@ -79,56 +79,56 @@ static inline void addLabels(app::ModuleWidget* mw) {
 
 // --- widget positions, by the names used in tools/panels/Kickback.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
-static const Vec KICK_TRIG_POS = Vec(23.1556, 25.7995);
-static const Vec SNARE_TRIG_POS = Vec(38.3111, 25.7995);
-static const Vec HAT_TRIG_POS = Vec(53.4667, 25.7995);
-static const Vec SMURF_TRIG_POS = Vec(68.6222, 25.7995);
-static const Vec TOM_TRIG_POS = Vec(83.7778, 25.7995);
-static const Vec BELL_TRIG_POS = Vec(98.9333, 25.7995);
-static const Vec NOISE_TRIG_POS = Vec(114.0889, 25.7995);
-static const Vec DAZZLER_TRIG_POS = Vec(129.2444, 25.7995);
-static const Vec ACCENT_POS = Vec(8.0000, 25.7995);
-static const Vec LEVEL_POS = Vec(144.4000, 25.7995);
-static const Vec KICK_LED_POS = Vec(27.7652, 18.9087);
-static const Vec SNARE_LED_POS = Vec(43.5507, 18.9087);
-static const Vec HAT_LED_POS = Vec(57.4464, 18.9087);
-static const Vec SMURF_LED_POS = Vec(73.8618, 18.9087);
-static const Vec TOM_LED_POS = Vec(87.7575, 18.9087);
-static const Vec BELL_LED_POS = Vec(103.5430, 18.9087);
-static const Vec NOISE_LED_POS = Vec(119.3285, 18.9087);
-static const Vec DAZZLER_LED_POS = Vec(135.7439, 18.9087);
-static const Vec KICK_PITCH_POS = Vec(23.1556, 54.0922);
-static const Vec SNARE_PITCH_POS = Vec(38.3111, 54.0922);
-static const Vec HAT_TONE_POS = Vec(53.4667, 54.0922);
-static const Vec SMURF_PITCH_POS = Vec(68.6222, 54.0922);
-static const Vec TOM_PITCH_POS = Vec(83.7778, 54.0922);
-static const Vec BELL_PITCH_POS = Vec(98.9333, 54.0922);
-static const Vec NOISE_TONE_POS = Vec(114.0889, 54.0922);
-static const Vec DAZZLER_KIT_POS = Vec(129.2444, 54.0922);
-static const Vec KICK_DECAY_POS = Vec(23.1556, 71.1849);
-static const Vec SNARE_DECAY_POS = Vec(38.3111, 71.1849);
-static const Vec HAT_DECAY_POS = Vec(53.4667, 71.1849);
-static const Vec SMURF_DECAY_POS = Vec(68.6222, 71.1849);
-static const Vec TOM_DECAY_POS = Vec(83.7778, 71.1849);
-static const Vec BELL_DECAY_POS = Vec(98.9333, 71.1849);
-static const Vec NOISE_DECAY_POS = Vec(114.0889, 71.1849);
-static const Vec DAZZLER_DECAY_POS = Vec(129.2444, 71.1849);
-static const Vec NOISE_CV_POS = Vec(114.0889, 90.8771);
-static const Vec KICK_DRIVE_POS = Vec(23.1556, 90.8771);
-static const Vec SNARE_SNAP_POS = Vec(38.3111, 90.8771);
-static const Vec SMURF_SWEEP_POS = Vec(68.6222, 90.8771);
-static const Vec TOM_RANGE_POS = Vec(83.7778, 90.8771);
-static const Vec BELL_TIMBRE_POS = Vec(98.9333, 90.8771);
-static const Vec DAZZLER_CRACKLE_POS = Vec(129.2444, 90.8771);
-static const Vec ACCENT_IN_POS = Vec(8.0000, 118.6000);
-static const Vec KICK_OUT_POS = Vec(23.1556, 118.6000);
-static const Vec SNARE_OUT_POS = Vec(38.3111, 118.6000);
-static const Vec HAT_OUT_POS = Vec(53.4667, 118.6000);
-static const Vec SMURF_OUT_POS = Vec(68.6222, 118.6000);
-static const Vec TOM_OUT_POS = Vec(83.7778, 118.6000);
-static const Vec BELL_OUT_POS = Vec(98.9333, 118.6000);
-static const Vec NOISE_OUT_POS = Vec(114.0889, 118.6000);
-static const Vec DAZZLER_OUT_POS = Vec(129.2444, 118.6000);
-static const Vec MIX_OUT_POS = Vec(144.4000, 118.6000);
+static const Vec KICK_TRIG_POS = Vec(23.9333, 25.2880);
+static const Vec SNARE_TRIG_POS = Vec(38.8667, 25.2880);
+static const Vec HAT_TRIG_POS = Vec(53.8000, 25.2880);
+static const Vec SMURF_TRIG_POS = Vec(68.7333, 25.2880);
+static const Vec TOM_TRIG_POS = Vec(83.6667, 25.2880);
+static const Vec BELL_TRIG_POS = Vec(98.6000, 25.2880);
+static const Vec NOISE_TRIG_POS = Vec(113.5333, 25.2880);
+static const Vec DAZZLER_TRIG_POS = Vec(128.4667, 25.2880);
+static const Vec ACCENT_POS = Vec(9.0000, 25.2880);
+static const Vec LEVEL_POS = Vec(143.4000, 25.2880);
+static const Vec KICK_LED_POS = Vec(29.2430, 18.1980);
+static const Vec SNARE_LED_POS = Vec(44.8063, 18.1980);
+static const Vec HAT_LED_POS = Vec(58.4798, 18.1980);
+static const Vec SMURF_LED_POS = Vec(74.6729, 18.1980);
+static const Vec TOM_LED_POS = Vec(88.3464, 18.1980);
+static const Vec BELL_LED_POS = Vec(103.9097, 18.1980);
+static const Vec NOISE_LED_POS = Vec(119.4729, 18.1980);
+static const Vec DAZZLER_LED_POS = Vec(135.0362, 18.1980);
+static const Vec KICK_PITCH_POS = Vec(23.9333, 53.7476);
+static const Vec SNARE_PITCH_POS = Vec(38.8667, 53.7476);
+static const Vec HAT_TONE_POS = Vec(53.8000, 53.7476);
+static const Vec SMURF_PITCH_POS = Vec(68.7333, 53.7476);
+static const Vec TOM_PITCH_POS = Vec(83.6667, 53.7476);
+static const Vec BELL_PITCH_POS = Vec(98.6000, 53.7476);
+static const Vec NOISE_TONE_POS = Vec(113.5333, 53.7476);
+static const Vec DAZZLER_KIT_POS = Vec(128.4667, 53.7476);
+static const Vec KICK_DECAY_POS = Vec(23.9333, 73.3073);
+static const Vec SNARE_DECAY_POS = Vec(38.8667, 73.3073);
+static const Vec HAT_DECAY_POS = Vec(53.8000, 73.3073);
+static const Vec SMURF_DECAY_POS = Vec(68.7333, 73.3073);
+static const Vec TOM_DECAY_POS = Vec(83.6667, 73.3073);
+static const Vec BELL_DECAY_POS = Vec(98.6000, 73.3073);
+static const Vec NOISE_DECAY_POS = Vec(113.5333, 73.3073);
+static const Vec DAZZLER_DECAY_POS = Vec(128.4667, 73.3073);
+static const Vec NOISE_CV_POS = Vec(113.5333, 93.3036);
+static const Vec KICK_DRIVE_POS = Vec(23.9333, 93.3036);
+static const Vec SNARE_SNAP_POS = Vec(38.8667, 93.3036);
+static const Vec SMURF_SWEEP_POS = Vec(68.7333, 93.3036);
+static const Vec TOM_RANGE_POS = Vec(83.6667, 93.3036);
+static const Vec BELL_TIMBRE_POS = Vec(98.6000, 93.3036);
+static const Vec DAZZLER_CRACKLE_POS = Vec(128.4667, 93.3036);
+static const Vec ACCENT_IN_POS = Vec(9.0000, 118.6000);
+static const Vec KICK_OUT_POS = Vec(23.9333, 118.6000);
+static const Vec SNARE_OUT_POS = Vec(38.8667, 118.6000);
+static const Vec HAT_OUT_POS = Vec(53.8000, 118.6000);
+static const Vec SMURF_OUT_POS = Vec(68.7333, 118.6000);
+static const Vec TOM_OUT_POS = Vec(83.6667, 118.6000);
+static const Vec BELL_OUT_POS = Vec(98.6000, 118.6000);
+static const Vec NOISE_OUT_POS = Vec(113.5333, 118.6000);
+static const Vec DAZZLER_OUT_POS = Vec(128.4667, 118.6000);
+static const Vec MIX_OUT_POS = Vec(143.4000, 118.6000);
 
 } // namespace panel
