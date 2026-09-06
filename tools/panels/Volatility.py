@@ -27,47 +27,44 @@ P = Panel(
     slug="Volatility",
     title="VOLATILITY",
     form="SCHEDULE D",
-    hp=14,
     density="compact",
 )
-
-C3 = P.cols(3, 12.0)      # 12.00, 30.48, 48.96
 
 P.sections = [
     # The shared clock lives here because NOISE is the section whose whole
     # character rides on it. BITS picks which 8 of the register's 18 bits the
-    # DAC output reads as a stepped random CV.
+    # DAC output reads as a stepped random CV. The clock jack takes the middle
+    # column of the three, between and below the two knobs.
     Section("NOISE", rows=[
-        Row([Knob("rate", C3[0], "RATE"), Knob("bits", C3[2], "BITS")]),
-        Row([Jack("clock_in", C3[1], "CLOCK IN")]),
+        Row([Knob("rate", "RATE", col=0), Knob("bits", "BITS", col=2)]),
+        Row([Jack("clock_in", "CLOCK IN", col=1)]),
     ]),
 
     # SRC normals to the module's own white noise, TRIG to the shared clock --
     # patching either overrides it. SLEW softens the stepped output.
     Section("SAMPLE & HOLD", rows=[
-        Row([Jack("sh_src_in", C3[0], "SRC"), Jack("sh_trig_in", C3[1], "TRIG"),
-             Trim("sh_slew", C3[2], "SLEW")]),
+        Row([Jack("sh_src_in", "SRC"), Jack("sh_trig_in", "TRIG"),
+             Trim("sh_slew", "SLEW")]),
     ]),
 
     # PROBABILITY sets the odds; SRC picks whether the draw is the module's
     # own RNG or a voltage compared against it, patched in below. PROB CV's
-    # trim sits over its own jack, paired with the row under it.
+    # trim sits over its own jack, the label they share between them.
     Section("RND GATE", rows=[
-        Row([Knob("probability", C3[0], "PROB"), Switch("rnd_src", C3[1], "SRC"),
-             Trim("prob_cv_amt", C3[2], "PROB CV", side="above")]),
-        Row([Jack("rnd_src_in", C3[1], "SRC IN"), Jack("prob_cv_in", C3[2])]),
+        Row([Knob("probability", "PROB", col=0), Switch("rnd_src", "SRC", col=1),
+             Trim("prob_cv_amt", "PROB CV", col=2, pair=True)]),
+        Row([Jack("rnd_src_in", "SRC IN", col=1), Jack("prob_cv_in", col=2)]),
     ]),
 ]
 
 # Everything that leaves the module.
-F = P.cols(6, 7.0)       # 7.00, 16.39, 25.78, 35.18, 44.57, 53.96
 P.footer = [
-    Row([Jack("rnd_out", F[0], "RND", ink="MINT"),
-         Jack("dac_out", F[1], "DAC", ink="MINT"),
-         Jack("sh_out", F[2], "S&H", ink="MINT"),
-         Jack("gate_out", F[3], "GATE", ink="MINT"),
-         Jack("noise_out", F[4], "NOISE", ink="MINT"),
-         Jack("clock_out", F[5], "CLK", ink="MINT")], y=118.6),
+    Row([Jack("rnd_out", "RND", ink="MINT"),
+         Jack("dac_out", "DAC", ink="MINT"),
+         Jack("sh_out", "S&H", ink="MINT"),
+         Jack("noise_out", "NOISE", ink="MINT"),
+         Jack("clock_out", "CLK", ink="MINT"),
+         Jack("gate_out", "GATE", ink="MINT")], y=118.6),
 ]
 
 if __name__ == "__main__":

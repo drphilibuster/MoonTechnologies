@@ -3,6 +3,49 @@
 Versions follow the VCV convention: the major number is the Rack major version
 these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
+## Unreleased
+
+### Panels: every layout re-solved
+
+Every panel in the family had some version of the same fault, and it was one
+fault: the layout solver derived every vertical coordinate and no horizontal one.
+Rows were given evenly spaced *centres* — `P.cols(n, margin)`, with the margin
+typed by hand — which is the wrong quantity to hold constant, because a centre
+says nothing about how much of the panel a widget actually covers. One margin
+had to serve a big knob and a switch alike, so the knob hung over its own block
+frame while the switches floated in dead air. Dividend's FREQ knob through the
+left edge of PAYOUT was the clearest case; there were nineteen others.
+
+- **The horizontal solver.** A section's rows share a column grid, solved from
+  extents rather than counts: a column is as wide as the widest thing any row
+  puts in it — well, ring, primary seal, or label — measured on each side
+  separately, since a lit label's light hangs off one end only. Comparable
+  columns are spaced evenly as a *run*; where a row changes gear the run breaks
+  and the slack collects in a gutter between the runs.
+- **`hp` defaults to `"auto"`.** The panel comes out exactly as wide as its rows
+  need. Uncertainty Policy 16 → 12 HP, Diversified 18 → 15, Dividend 16 → 15;
+  the panels that were quietly a millimetre short of their own contents grew.
+- **Paired controls read as pairs.** A trimpot over its own jack now sets the
+  label they share in the gap *between* them, equidistant from each, instead of
+  above the trimpot where it could be read as naming the row above. Pairing is
+  per control, so a jack sharing that row without owning anything below keeps its
+  name over its head, where a cable cannot cover it.
+- **Stepped knobs look stepped.** A knob that is really a selector carries a
+  detent for every position and an arc through its real travel, engraved into the
+  dark of its own well — so it costs the layout nothing.
+- **Real minimum clearances, and a linter that knows them.** Label to well, label
+  to label, ink to block frame: each has a floor that holds at both densities.
+  The linter now measures gaps rather than only overlaps, and counts the primary
+  ring as the ink it is — the check it was missing is exactly the one that let
+  FREQ through its own frame.
+- **The read-out well's geometry is the spec's.** `panel::GLASS_X/Y/W/H` are
+  emitted into each `Panel.hpp`; nine modules had been positioning their display
+  by re-typing the same millimetres in C++.
+- **`make vcv-preview` builds after regenerating, not before.** It used to build
+  from whatever headers were on disk and only then re-run the specs, so a spec
+  change reached the artwork and not the widget positions — a panel whose jacks
+  sat beside their own wells, for as long as it took to notice.
+
 ## 2.1.0
 
 Seventeen new modules, and a new face for all of them.

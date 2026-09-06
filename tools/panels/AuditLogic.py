@@ -29,18 +29,8 @@ P = Panel(
     slug="AuditLogic",
     title="AUDIT LOGIC",
     form="FORM 886-A",
-    hp=22,
     density="compact",
 )
-
-# Four gate columns, reused for every row that lines up with them -- the A/B
-# inputs offset either side, the function knob and verdict jack sharing the
-# same row a little further apart -- and reused again for the footer band, so
-# the whole panel reads on one grid.
-GATE_X = P.cols(4, 16.0)     # the four gate columns
-SW8 = P.cols(8, 8.0)         # the two switch channels, side by side
-DIV7 = P.cols(7, 9.0)        # the six divider taps and their MODE switch
-FOOT2 = P.cols(2, 20.0)      # the footer band: the divider's transport
 
 P.sections = [
     # Four two-input gates, each a selectable function rather than the fixed
@@ -51,19 +41,27 @@ P.sections = [
     # board. Each gate's light sits between its A and B inputs; VERDICT beside
     # the caption lights if any channel is currently true. REF V is the
     # reference an unpatched input reads, from the quad inverter.
-    Section("FINDINGS", caption_light="verdict", rows=[
-        Row([Jack("a1", GATE_X[0] - 7.5, "A"), Light("out1_led", GATE_X[0], "", well=True),
-             Jack("b1", GATE_X[0] + 7.5, "B"),
-             Jack("a2", GATE_X[1] - 7.5, "A"), Light("out2_led", GATE_X[1], "", well=True),
-             Jack("b2", GATE_X[1] + 7.5, "B"),
-             Jack("a3", GATE_X[2] - 7.5, "A"), Light("out3_led", GATE_X[2], "", well=True),
-             Jack("b3", GATE_X[2] + 7.5, "B"),
-             Jack("a4", GATE_X[3] - 7.5, "A"), Light("out4_led", GATE_X[3], "", well=True),
-             Jack("b4", GATE_X[3] + 7.5, "B")]),
-        Row([Knob("fn1", GATE_X[0] - 5.5, "FN"), Jack("out1", GATE_X[0] + 5.5, "OUT", ink="MINT"),
-             Knob("fn2", GATE_X[1] - 5.5, "FN"), Jack("out2", GATE_X[1] + 5.5, "OUT", ink="MINT"),
-             Knob("fn3", GATE_X[2] - 5.5, "FN"), Jack("out3", GATE_X[2] + 5.5, "OUT", ink="MINT"),
-             Knob("fn4", GATE_X[3] - 5.5, "FN"), Jack("out4", GATE_X[3] + 5.5, "OUT", ink="MINT")]),
+    #
+    # Twelve columns, in four runs of three: the grouping here is what the gates
+    # are, not how wide they are, so the section says so outright rather than
+    # leaving the solver to guess from twelve identical jacks.
+    Section("FINDINGS", caption_light="verdict", groups=(3, 3, 3, 3), rows=[
+        Row([Jack("a1", "A", col=0), Light("out1_led", col=1),
+             Jack("b1", "B", col=2),
+             Jack("a2", "A", col=3), Light("out2_led", col=4),
+             Jack("b2", "B", col=5),
+             Jack("a3", "A", col=6), Light("out3_led", col=7),
+             Jack("b3", "B", col=8),
+             Jack("a4", "A", col=9), Light("out4_led", col=10),
+             Jack("b4", "B", col=11)]),
+        Row([Knob("fn1", "FN", steps=7, col=0),
+             Jack("out1", "OUT", ink="MINT", col=2),
+             Knob("fn2", "FN", steps=7, col=3),
+             Jack("out2", "OUT", ink="MINT", col=5),
+             Knob("fn3", "FN", steps=7, col=6),
+             Jack("out3", "OUT", ink="MINT", col=8),
+             Knob("fn4", "FN", steps=7, col=9),
+             Jack("out4", "OUT", ink="MINT", col=11)]),
     ]),
 
     # Two 4066 gated switches -- the original board ganged four into one quad
@@ -72,18 +70,18 @@ P.sections = [
     # the pair of switches shared above both channels. ACTIVE lights if either
     # channel is currently passing signal. REF V, the panel-wide jumper for
     # FINDINGS' unpatched inputs, keeps them company.
-    Section("REFERRAL", caption_light="active", rows=[
-        Row([Switch("polarity", GATE_X[0] + 5.0, "POLARITY"),
-             Switch("refv", P.w / 2, "REF V"),
-             Switch("route", GATE_X[3] - 5.0, "ROUTE")]),
-        Row([Jack("sw1_a", SW8[0], "1A"),
-             Jack("sw1_gate", SW8[1], "1G", light="sw1_gate_led"),
-             Jack("sw1_b", SW8[2], "1B", ink="MINT"),
-             Jack("sw1_c", SW8[3], "1C", ink="MINT"),
-             Jack("sw2_a", SW8[4], "2A"),
-             Jack("sw2_gate", SW8[5], "2G", light="sw2_gate_led"),
-             Jack("sw2_b", SW8[6], "2B", ink="MINT"),
-             Jack("sw2_c", SW8[7], "2C", ink="MINT")]),
+    Section("REFERRAL", caption_light="active", groups=(4, 4), rows=[
+        Row([Switch("polarity", "POLARITY"),
+             Switch("refv", "REF V"),
+             Switch("route", "ROUTE")], own_grid=True),
+        Row([Jack("sw1_a", "1A"),
+             Jack("sw1_gate", "1G", light="sw1_gate_led"),
+             Jack("sw1_b", "1B", ink="MINT"),
+             Jack("sw1_c", "1C", ink="MINT"),
+             Jack("sw2_a", "2A"),
+             Jack("sw2_gate", "2G", light="sw2_gate_led"),
+             Jack("sw2_b", "2B", ink="MINT"),
+             Jack("sw2_c", "2C", ink="MINT")]),
     ]),
 
     # The Emiz CV2 clock divider: one free-running binary counter, six taps.
@@ -92,21 +90,20 @@ P.sections = [
     # second set of jacks. CLOCKED lights while a clock is present. MODE, the
     # division set, sits with the taps it retunes.
     Section("INSTALLMENTS", caption_light="clocked", rows=[
-        Row([Jack("div2", DIV7[0], "/2", ink="MINT", light="div2_led"),
-             Jack("div4", DIV7[1], "/4", ink="MINT", light="div4_led"),
-             Jack("div8", DIV7[2], "/8", ink="MINT", light="div8_led"),
-             Jack("div16", DIV7[3], "/16", ink="MINT", light="div16_led"),
-             Jack("div32", DIV7[4], "/32", ink="MINT", light="div32_led"),
-             Jack("div64", DIV7[5], "/64", ink="MINT", light="div64_led"),
-             Switch("divmode", DIV7[6], "MODE")]),
+        Row([Jack("div2", "/2", ink="MINT", light="div2_led"),
+             Jack("div4", "/4", ink="MINT", light="div4_led"),
+             Jack("div8", "/8", ink="MINT", light="div8_led"),
+             Jack("div16", "/16", ink="MINT", light="div16_led"),
+             Jack("div32", "/32", ink="MINT", light="div32_led"),
+             Jack("div64", "/64", ink="MINT", light="div64_led"),
+             Switch("divmode", "MODE")]),
     ]),
 ]
 
 # The divider's transport, pinned to the footer band the way a form's filing
 # block sits below its line items.
 P.footer = [
-    Row([Jack("clock_in", FOOT2[0], "CLOCK"), Jack("reset_in", FOOT2[1], "RESET")],
-        y=118.6),
+    Row([Jack("clock_in", "CLOCK"), Jack("reset_in", "RESET")], y=118.6),
 ]
 
 if __name__ == "__main__":

@@ -1138,8 +1138,8 @@ struct UncertaintyPolicyWidget : ModuleWidget {
 		PolicyDisplay* display = new PolicyDisplay;
 		display->module = module;
 		display->engine = &engine;
-		display->box.pos = panel::mm(4.2f, 10.2f);
-		display->box.size = panel::mm(panel::W - 8.4f, 15.0f);
+		display->box.pos = panel::mm(panel::GLASS_X, panel::GLASS_Y);
+		display->box.size = panel::mm(panel::GLASS_W, panel::GLASS_H);
 		addChild(display);
 
 		addParam(createParamCentered<PolicyKnob>(panel::mm(panel::KNOB_AMOUNT_POS.x, panel::KNOB_AMOUNT_POS.y),

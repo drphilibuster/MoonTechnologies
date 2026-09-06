@@ -135,6 +135,15 @@ def panel_svg(panel, sol):
               'stroke="%s" stroke-width="0.2"/>'
               % (x - hw, y - hh, 2 * hw, 2 * hh, min(hw, hh) * 0.35, P.GLASS, P.RULE))
 
+    # --- a stepped knob is a switch wearing a knob's clothes, so the panel says
+    # so: an engraved arc through the sweep it actually has, with a subdivider at
+    # every detent, struck into the dark of its own well. Rack knobs sweep
+    # -135 deg to +135 deg from straight up, so the ticks land exactly where the
+    # pointer will -- and because the whole figure lives inside the well, a
+    # selector takes up no more of the panel than the plain knob it replaces.
+    for x, y, r, n in sol.steps:
+        _detents(a, x, y, r, n)
+
     # --- the primary action: a double ring, the way a seal is struck twice, so
     # the control you reach for is the one the eye lands on first
     for x, y, r in sol.rings:
@@ -226,6 +235,31 @@ def _scroll(a, cx, cy, sx, sy, size):
         pts.append((x, y))
     _path(a, pts, P.RULE, RIBBON_W)
     a('  <circle cx="%.4f" cy="%.4f" r="0.22" fill="%s"/>' % (pts[-1][0], pts[-1][1], P.RULE))
+
+
+KNOB_SWEEP = 270.0      # Rack's knob travel, -135 deg to +135 deg from vertical
+
+
+def _detents(a, cx, cy, r, n):
+    """The subdividers round a stepped knob: an arc over the sweep, a tick at
+    every position it stops at, and a bead at each end of the arc. Drawn as a
+    sampled polyline like every other ornament, because nanosvg keeps those and
+    discards nearly everything else."""
+    a0 = math.radians(90.0 + KNOB_SWEEP / 2)      # screen angles, y down
+    a1 = math.radians(90.0 - KNOB_SWEEP / 2)
+    pts = []
+    steps = 48
+    for i in range(steps + 1):
+        th = a0 + (a1 - a0) * i / steps
+        pts.append((cx + r * math.cos(th), cy - r * math.sin(th)))
+    _path(a, pts, P.RULE, RIBBON_W * 1.2)
+    for i in range(max(n, 2)):
+        th = a0 + (a1 - a0) * i / (max(n, 2) - 1)
+        c, s_ = math.cos(th), math.sin(th)
+        # a longer tick at the two ends, so the extent of the travel reads first
+        long = 0.80 if i in (0, max(n, 2) - 1) else 0.55
+        _path(a, [(cx + (r - long) * c, cy - (r - long) * s_),
+                  (cx + r * c, cy - r * s_)], P.RULE, 0.24)
 
 
 def _rosette(a, x, y):

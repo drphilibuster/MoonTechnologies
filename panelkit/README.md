@@ -64,7 +64,8 @@ two near-blacks, two off-whites, one sage. Everything else is derived from them.
 | section caption | secondary ink, 6 px, centred on the block, 3.3–3.6 mm below its top edge |
 | control label | primary ink for a primary control, secondary for a secondary. **Below** knobs, buttons and switches; **above** jacks, where a cable would cover it |
 | ink and ground | a label's role (`PAPER` primary, `SAGE` secondary, `LIME` accent, `MINT` output, `CLAY` warning) is what the spec says; what it lands as depends on where it sits. On the pale face it is `INK` / `SAGE_DARK` / `LIME_DARK` / `MINT_DARK` / `CLAY_DARK`; on a band or in a display it is `PAPER` / `SAGE` / `LIME` / `MINT` / `CLAY`. The solver tags every label with its ground; the emitter resolves it |
-| paired control | a trimpot directly over its jack shares one label, placed above the pair |
+| paired control | a trimpot directly over its jack shares one label, set in the gap **between** the two and equidistant from each, so it cannot be read as naming the row above instead |
+| stepped knob | a knob that is really a selector carries a detent for every position it has, plus an arc through its real travel, engraved into the dark of its own well — so it cannot be mistaken for a continuous control, and costs the layout nothing |
 | lit label | a small light immediately right of a label names what it reports |
 | the primary action | exactly one control per panel wears a double sage ring, a seal struck twice |
 | trace | a sage wire between controls the panel wants to relate, engraved as a wave, tied off with a rosette, breaking itself around any label it crosses |
@@ -136,8 +137,8 @@ fatal, because the gap it is pointing at might be a real one.
 Two metric scales, in `layout.py`. Same rules, same idioms — only the gaps change.
 
 * `regular` — panels with room. Uncertainty Policy, PatchAudit.
-* `compact` — panels at capacity. Retroactive: seven rows of controls and a
-  read-out at 12 HP.
+* `compact` — panels at capacity. Retroactive: six rows of controls and a
+  read-out at 15 HP.
 
 If a panel does not fit at `compact`, it has too many rows. Lose a row; do not
 invent a third scale.
@@ -147,54 +148,102 @@ invent a third scale.
 ```python
 from panelkit import *
 
-P = Panel(slug="Example", title="EXAMPLE", form="FORM 1040", hp=12,
-          glass=Glass(h=9.2))
-C2 = P.cols(2, 17.0)
+P = Panel(slug="Example", title="EXAMPLE", form="FORM 1040", glass=Glass(h=9.2))
 
 P.sections = [
     Section("EXPOSURE", rows=[
-        Row([BigKnob("amount", C2[0], "VARIANCE"),
-             BigKnob("count",  C2[1], "TRANSFERS")]),
+        Row([BigKnob("amount", "VARIANCE"),
+             BigKnob("count",  "TRANSFERS")]),
     ]),
 ]
-P.footer = [Row([Jack("trig", P.w / 2, "TRIG", ink="MINT")], y=118.6)]
+P.footer = [Row([Jack("trig", "TRIG", ink="MINT")], y=118.6)]
 
 if __name__ == "__main__":
     raise SystemExit(build(P))
 ```
 
-You give rows; the solver gives back every y. Block extents, label baselines and
-recessed wells are all derived, so a block always hugs its contents and a label
-is never closer to its widget on one panel than on another. The only vertical
-number you should ever type is a row the bottom screws pin.
+You give rows; the solver gives back everything else — every x, every y, and how
+many HP the panel is. Column centres, block extents, label baselines and recessed
+wells are all derived, so a block always hugs its contents, a knob is never nearer
+its own frame on one panel than on another, and a label is never nearer its
+control. The only number you should ever type is a row the bottom screws pin.
 
 Shorthands: `BigKnob Knob Trim Slider Button Bezel Jack Light Switch Switch3`,
 plus `Widget(...)` for anything else. `Switch` is the two-position `CKSS`,
 `Switch3` the three-position `CKSSThree` — which is half again as tall, so a
 row carrying one is taller than a row of knobs and the solver will tell you if
-that no longer fits. Useful keywords: `primary=True` (the lime ring),
-`light="name"` (a lit label), `side="above"/"below"` (override the rule for one
-widget), `Row(..., silent=True)` (the row above already labels it),
-`Row(..., label_side="above")` (the paired idiom), `Section(..., divide_after=(0,))`
-(a subtotal rule), `Section(..., caption_light="name")`.
+that no longer fits. Each takes a name and a label; a second positional *number*
+pins an x, for the rare control an outside constraint fixes.
 
-Panels laid out as a form rather than as controls — PatchAudit — use `Plate`,
-`extra_blocks` and `band_footer` instead of rows, and export their millimetres
-through `Panel.metrics`, which become `panel::NAME` constants in the header.
+Useful keywords:
+
+| | |
+|---|---|
+| `primary=True` | the lime ring; one control per panel |
+| `light="name"` | a lit label |
+| `steps=6` | a knob that is really a six-position selector, so it gets detents |
+| `side="above"/"below"` | override the label rule for one widget |
+| `col=3` | which column of its section this control stands in; defaults to its index in the row |
+| `pair=True` | this control owns the widget directly below it and shares a label with it |
+| `Row(..., silent=True)` | the row above already labels it |
+| `Row(..., pair=True)` | every column with a partner below is a pair |
+| `Row(..., own_grid=True)` | this row's columns are its own, not the section's |
+| `Section(..., groups=(3, 3, 3, 3))` | name the runs, where width alone cannot see them |
+| `Section(..., divide_after=(0,))` | a subtotal rule |
+| `Section(..., caption_light="name")` | a light beside the caption |
+
+## Columns, runs and gutters
+
+`hp` defaults to `"auto"`, and that is how every panel in the family is written.
+The horizontal solver works out what the rows need and the panel comes out exactly
+that wide — so a panel is never a millimetre short of its own contents, and never
+carries width it has no use for.
+
+The unit is the **column**. A section's rows share one grid, which is what puts a
+trimpot over its own jack without either of them being given a coordinate. A
+column is as wide as the widest thing any row puts in it — the well and its ring,
+the primary seal, or the label, whichever reaches furthest — and the reach is
+measured on each side separately, because a lit label's light hangs off one end
+only.
+
+Columns are then spaced in **runs**. Comparable columns — the same class of
+hardware, or near enough the same width — form one run and are spaced evenly,
+since even spacing is only even if the things being spaced are the same size.
+Where a row changes gear (three knobs, then two switches) the run breaks, each run
+keeps its own even pitch, and the slack collects in a **gutter** between them.
+That is the one place on a row where empty space reads as deliberate rather than
+as a mistake, and it is what keeps the switches on a mixed row together instead of
+drifting apart to match a knob's cell.
+
+What this replaced was `P.cols(n, margin)`: evenly spaced centres, with the margin
+typed by hand. A centre says nothing about how much of the panel a widget actually
+covers, so one margin had to serve a big knob and a switch alike — and the knob
+then hung over its own block frame while the switches floated in dead air. Every
+panel in the family had a version of it.
+
+`P.cols` is still there for a panel laid out against something outside the grid —
+a control that has to line up with a field of a live display — but a section
+either names every x or names none, and the linter says so.
 
 ## What the linter checks
 
 `build()` refuses to write anything if the panel would be wrong, and says why:
 
-* the panel is over capacity, in millimetres
+* the panel is over capacity, in millimetres — vertically, or too narrow for its
+  own rows, in which case it says how many HP would do
 * a label or widget running off an edge, under a corner screw, or into the
   foot ribbon between the bottom screws
-* two labels overlapping, or a label overlapping a widget's **well**
+* two labels overlapping, **or closer than 1.55 mm**, which reads as one run
+* a label overlapping a widget's **well**, or standing less than 0.7 mm off it
 * two wells overlapping (their rings touching), including the lights that lit
   labels and captions carry
-* a well straddling its block's frame -- the ring may touch the frame line,
-  never cross it
+* a widget's ink within 0.7 mm of its block's frame — the well, the primary ring,
+  everything drawn around it. Letting the ring merely *touch* the frame is what
+  put Dividend's FREQ knob through the left edge of PAYOUT: the check passed, and
+  the panel still read as broken
+* a label within 0.5 mm of its block's frame
 * a section block running into the masthead or the footer band
+* a section mixing pinned and solved x positions
 * two widgets sharing a name (each becomes a constant in the header)
 * more than one control marked `primary`
 

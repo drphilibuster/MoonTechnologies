@@ -195,8 +195,8 @@ struct TaxBracketWidget : ModuleWidget {
 
 		TaxBracketDisplay* display = new TaxBracketDisplay;
 		display->module = module;
-		display->box.pos = panel::mm(4.2f, 10.2f);
-		display->box.size = panel::mm(panel::W - 8.4f, 6.4f);
+		display->box.pos = panel::mm(panel::GLASS_X, panel::GLASS_Y);
+		display->box.size = panel::mm(panel::GLASS_W, panel::GLASS_H);
 		addChild(display);
 
 		// One table for the eight bit pairs, so the widget cannot disagree with

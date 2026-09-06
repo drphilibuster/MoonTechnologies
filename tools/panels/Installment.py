@@ -31,55 +31,47 @@ P = Panel(
     slug="Installment",
     title="INSTALLMENT",
     form="FORM 9465",
-    hp=16,
     density="compact",
 )
-
-C4 = P.cols(4, 9.0)      # ch1 pair, ch2 pair; knob wells clear the frame
-# Each channel's AUTOPAY column sits under the midpoint of its own ATTACK/
-# RELEASE pair above, so the trim, the jack and the gate line up with the pair
-# they belong to rather than with an unrelated grid.
-CH = [(C4[0] + C4[1]) / 2, (C4[2] + C4[3]) / 2]        # 18.88, 62.40
-PW = [P.w / 2 - 9.0, P.w / 2 + 9.0]                    # 31.64, 49.64
 
 P.sections = [
     # The shape of each channel's core: which day it is, whether it loops, the
     # two times that set both its rate/skew (LFO) and its envelope (AR/AD),
     # the range, and the manual nudge BIAS gives the same axis AUTOPAY reaches.
     Section("PAYMENT PLAN", rows=[
-        Row([Switch3("mode1", C4[0], "MODE"), Bezel("loop1", C4[1], "LOOP"),
-             Switch3("mode2", C4[2], "MODE"), Bezel("loop2", C4[3], "LOOP")]),
-        Row([Knob("attack1", C4[0], "ATTACK"), Knob("release1", C4[1], "RELEASE"),
-             Knob("attack2", C4[2], "ATTACK"), Knob("release2", C4[3], "RELEASE")]),
-        Row([Switch("range1", C4[0], "RANGE"), Knob("bias1", C4[1], "BIAS"),
-             Switch("range2", C4[2], "RANGE"), Knob("bias2", C4[3], "BIAS")]),
+        Row([Switch3("mode1", "MODE"), Bezel("loop1", "LOOP"),
+             Switch3("mode2", "MODE"), Bezel("loop2", "LOOP")]),
+        Row([Knob("attack1", "ATTACK"), Knob("release1", "RELEASE"),
+             Knob("attack2", "ATTACK"), Knob("release2", "RELEASE")]),
+        Row([Switch("range1", "RANGE"), Knob("bias1", "BIAS"),
+             Switch("range2", "RANGE"), Knob("bias2", "BIAS")]),
     ], divide_after=(0,)),
 
     # What each channel's own CV is allowed to add to ATTACK/RELEASE, and the
-    # gate that drives it (a reset in LFO mode) -- the trim over its own jack
-    # is the paired idiom, one label serving both. The Day 12 tape-motor PWM
-    # driver rides underneath, a subtotal line below it: a duty knob and its
-    # own CV, compared against channel one's core downstream in the footer.
+    # gate that drives it (a reset in LFO mode) -- the trim over its own jack,
+    # the label they share set between them. The Day 12 tape-motor PWM driver
+    # rides in the two middle columns: a duty knob and its own CV, compared
+    # against channel one's core downstream in the footer.
     Section("AUTOPAY", rows=[
-        Row([Trim("cv1_amt", CH[0], "CV AMT"), Trim("cv2_amt", CH[1], "CV AMT")],
-            label_side="above"),
-        Row([Jack("cv1_in", CH[0]), Jack("cv2_in", CH[1])], silent=True),
-        Row([Jack("gate1_in", CH[0], "GATE"),
-             Knob("pwm_duty", PW[0], "DUTY"), Jack("pwm_cv_in", PW[1], "CV"),
-             Jack("gate2_in", CH[1], "GATE")]),
+        Row([Trim("cv1_amt", "CV AMT", col=0),
+             Trim("cv2_amt", "CV AMT", col=3)], pair=True),
+        Row([Jack("cv1_in", col=0), Jack("cv2_in", col=3)], silent=True),
+        Row([Jack("gate1_in", "GATE", col=0),
+             Knob("pwm_duty", "DUTY", col=1),
+             Jack("pwm_cv_in", "CV", col=2),
+             Jack("gate2_in", "GATE", col=3)]),
     ]),
 ]
 
 # Everything that leaves the module: both channels' outputs, then the PWM's.
-F = P.cols(7, 6.0)      # 6.00, 17.55, 29.09, 40.64, 52.19, 63.73, 75.28
 P.footer = [
-    Row([Jack("env1_out", F[0], "ENV1", ink="MINT"),
-         Jack("inv1_out", F[1], "SQU1", ink="MINT"),
-         Jack("eoc1_out", F[2], "EOC1", ink="MINT"),
-         Jack("env2_out", F[3], "ENV2", ink="MINT"),
-         Jack("inv2_out", F[4], "SQU2", ink="MINT"),
-         Jack("eoc2_out", F[5], "EOC2", ink="MINT"),
-         Jack("pwm_out", F[6], "PWM", ink="MINT")], y=118.6),
+    Row([Jack("env1_out", "ENV1", ink="MINT"),
+         Jack("inv1_out", "SQU1", ink="MINT"),
+         Jack("eoc1_out", "EOC1", ink="MINT"),
+         Jack("env2_out", "ENV2", ink="MINT"),
+         Jack("inv2_out", "SQU2", ink="MINT"),
+         Jack("eoc2_out", "EOC2", ink="MINT"),
+         Jack("pwm_out", "PWM", ink="MINT")], y=118.6),
 ]
 
 if __name__ == "__main__":

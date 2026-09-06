@@ -380,8 +380,8 @@ struct DividendWidget : ModuleWidget {
 
 		DividendDisplay* display = new DividendDisplay;
 		display->module = module;
-		display->box.pos = panel::mm(4.2f, 10.2f);
-		display->box.size = panel::mm(panel::W - 8.4f, 9.2f);
+		display->box.pos = panel::mm(panel::GLASS_X, panel::GLASS_Y);
+		display->box.size = panel::mm(panel::GLASS_W, panel::GLASS_H);
 		addChild(display);
 
 		addParam(createParamCentered<PayoutKnob>(panel::mm(panel::FREQ_POS.x, panel::FREQ_POS.y), module, Dividend::FREQ_PARAM));

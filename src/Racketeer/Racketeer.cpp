@@ -401,8 +401,8 @@ struct RacketeerWidget : ModuleWidget {
 
 		RacketeerDisplay* display = new RacketeerDisplay;
 		display->module = module;
-		display->box.pos = panel::mm(4.2f, 10.2f);
-		display->box.size = panel::mm(panel::W - 8.4f, 8.8f);
+		display->box.pos = panel::mm(panel::GLASS_X, panel::GLASS_Y);
+		display->box.size = panel::mm(panel::GLASS_W, panel::GLASS_H);
 		addChild(display);
 
 		addParam(createParamCentered<LoopKnob>(panel::mm(panel::TIME_POS.x, panel::TIME_POS.y), module, Racketeer::TIME_PARAM));

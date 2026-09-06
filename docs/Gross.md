@@ -3,7 +3,7 @@
 Schedule C: profit or loss from business. A black-box / gray-box distortion for
 VCV Rack 2 -- a Wiener–Hammerstein chain with every block on the panel: input
 EQ, drive, a static and a dynamic bias shift, a parametric mapping function,
-dry/wet, post gain and output EQ. 18 HP, stereo.
+dry/wet, post gain and output EQ. 21 HP, stereo.
 
 Part of the [Moon Technologies](../README.md) plugin.
 

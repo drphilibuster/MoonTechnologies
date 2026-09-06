@@ -3,7 +3,7 @@
 **One hundred and six effects behind one knob.** The ninety-nine programs of the
 DSP99 board, then the seven dedicated Modular in a Week effect circuits, in one
 stereo multi-effect with three macro knobs whose meaning changes with the
-program. 18 HP, stereo in, stereo out, plus an effects loop.
+program. 15 HP, stereo in, stereo out, plus an effects loop.
 
 Form 1099-B is the IRS's *Proceeds From Broker and Barter Exchange
 Transactions* — the form that reports what a diversified portfolio actually did.

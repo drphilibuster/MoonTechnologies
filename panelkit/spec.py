@@ -65,10 +65,17 @@ LABEL_SIDE = {
 
 @dataclass
 class Widget:
-    """One control. `kind` keys into RADIUS and LABEL_SIDE."""
+    """One control. `kind` keys into RADIUS and LABEL_SIDE.
+
+    `x` is optional, and leaving it out is the norm: the horizontal solver in
+    layout.py works out every column centre from the widths of the things in the
+    column, so a row's spacing follows from what is actually on it. Set `x` only
+    where an outside constraint fixes it -- a control that has to line up with a
+    field of a live display.
+    """
     name: str                       # the component-layer id, matches the C++ enum
-    x: float
-    kind: str
+    x: float = None
+    kind: str = "knob"
     label: str = ""
     ink: str = "PAPER"
     size: float = 7.0               # label size in Rack px
@@ -86,6 +93,24 @@ class Widget:
     #: the block.
     light_side: str = "right"
 
+    #: Which column of its section this widget sits in. Defaults to its index in
+    #: the row, which is right whenever a row is written left to right; set it
+    #: only for a row that skips a column or lists its items out of order.
+    col: int = None
+
+    #: This control owns the widget directly below it and shares a label with
+    #: it -- the paired idiom, opted into one control at a time. `Row(pair=True)`
+    #: is the shorthand for every column that has a partner below.
+    pair: bool = False
+
+    #: A knob that is really a selector: how many detents it has. The renderer
+    #: engraves that many subdividers into the dark of its own well and closes
+    #: them with an arc through the knob's real travel, so a stepped control
+    #: cannot be mistaken for a continuous one -- and, because the whole figure
+    #: lives inside the well, costs the layout nothing. Meaningless on a switch,
+    #: which already looks like what it is, and ignored there.
+    steps: int = 0
+
     @property
     def r(self):
         return RADIUS[self.kind]
@@ -97,6 +122,15 @@ class Widget:
     @property
     def label_side(self):
         return self.side or LABEL_SIDE[self.kind]
+
+    @property
+    def step_count(self):
+        """Detents to engrave. A switch is already legibly a switch, so asking
+        for them there is a no-op rather than an error: the spec may say what a
+        control is without having to know how the kit draws it."""
+        if self.kind in ("switch", "switch3"):
+            return 0
+        return int(self.steps or 0)
 
 
 @dataclass
@@ -118,6 +152,17 @@ class Row:
     #: Override LABEL_SIDE for every item in the row. Set "above" on the trim
     #: row of a pair so the shared label sits clear of both widgets.
     label_side: str = ""
+    #: Solve this row's columns on their own rather than on the section's grid.
+    #: For a row that answers a different question from the rows around it -- the
+    #: four knee numbers under a subtotal rule -- where lining it up with the row
+    #: above would be a coincidence rather than a relationship.
+    own_grid: bool = False
+    #: The paired idiom: this row's controls each own the widget directly below
+    #: them (a trimpot over its CV jack), and one label serves both. The label is
+    #: placed *between* the two rows, equidistant from each, so it cannot be read
+    #: as belonging to the row above instead. The partner row is the next one and
+    #: must be `silent=True`.
+    pair: bool = False
 
 
 @dataclass
@@ -129,6 +174,12 @@ class Section:
     divide_after: tuple = ()
     #: A small light beside the caption, for a section that has a state of its own.
     caption_light: str = ""
+    #: Where the row changes gear, when width alone cannot tell. The solver
+    #: normally works the runs out from the column extents; a section whose
+    #: grouping is semantic rather than physical -- four gates of three jacks,
+    #: say, all the same size -- names the run lengths here instead. Must sum to
+    #: the column count.
+    groups: tuple = ()
     #: Solved:
     y0: float = 0.0
     y1: float = 0.0
@@ -193,7 +244,12 @@ class Panel:
     slug: str                       # matches plugin.json and res/<slug>.svg
     title: str                      # the masthead, drawn in PAPER
     form: str                       # the footer stub: "SCHEDULE UTP"
-    hp: int
+    #: Width in HP, or "auto" -- which is the norm. The horizontal solver knows
+    #: how much room the rows need, so a panel that is asked for "auto" comes out
+    #: exactly as wide as its contents, and never a hand-typed HP that happened
+    #: to be a millimetre short. Pin it only where an outside constraint fixes
+    #: the width, and the linter will still say if the rows do not fit.
+    hp: object = "auto"
     #: "regular" or "compact". Same rules, tighter scale -- for panels at capacity.
     density: str = "regular"
     subtitle: str = ""              # optional masthead right-hand gloss
@@ -221,6 +277,8 @@ class Panel:
     #: module in this plugin uses; it exists so a module whose directory and slug
     #: differ does not have to be a special case in the writer.
     module: str = ""
+    #: Solved: how many millimetres short of fitting its rows the panel is.
+    shortfall: float = 0.0
 
     @property
     def src_dir(self):

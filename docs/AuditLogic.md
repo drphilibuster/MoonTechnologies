@@ -1,6 +1,6 @@
 # Audit Logic
 
-22 HP. FORM 886-A, the IRS's "Explanation of Items" -- the form an examiner
+29 HP. FORM 886-A, the IRS's "Explanation of Items" -- the form an examiner
 attaches a finding to. Audit Logic consolidates three *Modular in a Week*
 boards into one panel, laid out as three felt blocks read top to bottom:
 
@@ -126,7 +126,7 @@ described above.
 * **REFERRAL is two channels, not four.** The original 4066 Quad Gated
   Switch board used one quad-bilateral IC for four independent channels
   (silkscreened 1A/1B .. 4A/4B, Gate 1..4). This panel keeps two so FINDINGS
-  and INSTALLMENTS both fit at 22 HP; POLARITY and ROUTE stay one shared
+  and INSTALLMENTS both fit at 29 HP; POLARITY and ROUTE stay one shared
   setting for both channels, matching how the original's own jumpers were one
   setting for its whole board rather than per-channel.
 * **FINDINGS' default function per gate is a documented best guess, not a

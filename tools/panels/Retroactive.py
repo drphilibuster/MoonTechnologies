@@ -26,53 +26,47 @@ P = Panel(
     slug="Retroactive",
     title="RETROACTIVE",
     form="FORM 1040-X",
-    hp=14,
     density="compact",
     glass=Glass(h=9.0),
 )
 
-C6 = P.cols(6, 8.0)       # 8.00 .. 63.12: the four CV pairs and the two clock jacks
-C4 = P.cols(4, 9.0)       # the audio row
-C3 = P.cols(3, 13.0)      # 13.00, 35.56, 58.12
-C2 = P.cols(2, 19.0)      # 19.00, 52.12
-# C3[1] == the midpoint of C2 == 35.56: SUBDIV, CHAR and the overdraft light all
-# share one axis, which is what makes the trace geometry fall out cleanly.
-
 P.sections = [
     # The window, how it is cut up, and what comes back. The WINDOW light beside
-    # the caption ticks once per window.
+    # the caption ticks once per window. MODE, SUBDIV and CLK DIV all step, so
+    # all three wear detent rings; CHAR is a two-position switch already.
     Section("ASSESSMENT", caption_light="window", rows=[
-        Row([BigKnob("time", C2[0], "TIME"),
+        Row([BigKnob("time", "TIME"),
              # The light's own label sits above it so the trace can drop straight
              # down from the light without running through its own name.
-             Light("overdraft", C3[1], "OVERDRAFT", ink="LIME", size=5.4,
-                   side="above"),
-             BigKnob("div", C2[1], "CLK DIV")]),
-        Row([Knob("mode", C3[0], "MODE"),
-             Knob("subdiv", C3[1], "SUBDIV"),
-             Knob("fade", C3[2], "FADE")]),
-        Row([Knob("mix", C3[0], "MIX"),
-             Widget("char", C3[1], "switch", "CHAR"),
-             Bezel("freeze", C3[2], "FREEZE", ink="PAPER")]),
+             Light("overdraft", "OVERDRAFT", ink="LIME", size=5.4, side="above"),
+             BigKnob("div", "CLK DIV", steps=11)]),
+        Row([Knob("mode", "MODE", steps=8),
+             Knob("subdiv", "SUBDIV", steps=7),
+             Knob("fade", "FADE")]),
+        Row([Knob("mix", "MIX"),
+             Switch("char", "CHAR"),
+             Bezel("freeze", "FREEZE", ink="PAPER")]),
     ], divide_after=(1,)),
 
     # What the CV inputs may take off each control. Each trimpot sits directly
-    # over its own jack and they share one label -- the paired idiom.
-    # The clock and reset jacks sit beside the pairs, and FREEZE under CLOCK,
-    # so the block is two rows rather than three. The CLOCK light beside the
-    # caption is the clock being heard.
+    # over its own jack, with the label they share set in the gap between the
+    # two. The clock and reset jacks sit beside the pairs and own nothing below
+    # them, so they keep their labels overhead where a cable cannot cover them.
+    # FREEZE is a gate in, and gates in this family live on the band with the
+    # rest of the patching, which keeps this block to two rows. The CLOCK light
+    # beside the caption is the clock being heard.
     Section("WITHHOLDING", caption_light="clock_led", rows=[
-        Row([Trim("time_cv", C6[0], "TIME"),
-             Trim("mode_cv", C6[1], "MODE"),
-             Trim("subdiv_cv", C6[2], "SUB"),
-             Trim("mix_cv", C6[3], "MIX"),
-             Jack("clock_in", C6[4], "CLOCK"),
-             Jack("reset_in", C6[5], "RESET")], label_side="above"),
-        Row([Jack("time_in", C6[0]), Jack("mode_in", C6[1]),
-             Jack("subdiv_in", C6[2]), Jack("mix_in", C6[3]),
-             Jack("freeze_in", C6[4], "FREEZE")]),
+        Row([Trim("time_cv", "TIME", pair=True),
+             Trim("mode_cv", "MODE", pair=True),
+             Trim("subdiv_cv", "SUB", pair=True),
+             Trim("mix_cv", "MIX", pair=True),
+             Jack("clock_in", "CLOCK"),
+             Jack("reset_in", "RESET")]),
+        Row([Jack("time_in"), Jack("mode_in"),
+             Jack("subdiv_in"), Jack("mix_in")], silent=True),
     ]),
 ]
+
 
 def overdraft_trace(pos, m):
     """The panel drawing its own condition.
@@ -105,9 +99,10 @@ P.traces = [overdraft_trace]
 # RACK_GRID_WIDTH puts their top edge at 123.61 mm, so a jack collar centred
 # below 118.6 would run under one.
 P.footer = [
-    Row([Jack("in_l", C4[0], "IN L"), Jack("in_r", C4[1], "IN R"),
-         Jack("out_l", C4[2], "OUT L", ink="MINT"),
-         Jack("out_r", C4[3], "OUT R", ink="MINT")], y=118.6),
+    Row([Jack("freeze_in", "FREEZE"),
+         Jack("in_l", "IN L"), Jack("in_r", "IN R"),
+         Jack("out_l", "OUT L", ink="MINT"),
+         Jack("out_r", "OUT R", ink="MINT")], y=118.6),
 ]
 
 if __name__ == "__main__":

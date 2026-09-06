@@ -14,30 +14,30 @@
 namespace panel {
 
 // --- identity --------------------------------------------------------------
-static const int   HP = 12;
-static const float W  = 60.9600f;  // mm
+static const int   HP = 13;
+static const float W  = 66.0400f;  // mm
 static const float H  = 128.5000f;  // mm
 
 // --- silkscreen ------------------------------------------------------------
 static const Label LABELS[] = {
-	{ 30.4800f,   5.5000f, 10.50f, 1.50f, PAPER    , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CONSOLIDATION"},
+	{ 33.0200f,   5.5000f, 10.50f, 1.50f, PAPER    , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CONSOLIDATION"},
 	{ 11.5600f,   8.2500f,  7.40f, 0.00f, LIME     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, true,  "$"},
 	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
-	{ 56.7600f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 1040"},
-	{ 30.4800f,  14.4000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MIXER"},
-	{  9.0000f,  30.5069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 1"},
-	{ 23.3200f,  30.5069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 2"},
-	{ 37.6400f,  30.5069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 3"},
-	{ 51.9600f,  30.5069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 4"},
-	{  9.0000f,  33.9114f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 1"},
-	{ 23.3200f,  33.9114f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 2"},
-	{ 37.6400f,  33.9114f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 3"},
-	{ 51.9600f,  33.9114f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 4"},
-	{ 30.4800f,  53.6363f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MULTIPLES"},
-	{ 30.4800f,  56.7561f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MULT A"},
-	{ 30.4800f,  83.0928f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MULT B"},
-	{ 20.0000f, 112.3751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
-	{ 40.9600f, 112.3751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "INV OUT"},
+	{ 61.8400f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 1040"},
+	{ 33.0200f,  14.0000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MIXER"},
+	{ 11.2000f,  29.9069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 1"},
+	{ 25.7467f,  29.9069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 2"},
+	{ 40.2933f,  29.9069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 3"},
+	{ 54.8400f,  29.9069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 4"},
+	{ 11.2000f,  33.5614f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 1"},
+	{ 25.7467f,  33.5614f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 2"},
+	{ 40.2933f,  33.5614f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 3"},
+	{ 54.8400f,  33.5614f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 4"},
+	{ 33.0200f,  52.1863f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MULTIPLES"},
+	{ 33.0200f,  55.7561f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MULT A"},
+	{ 33.0200f,  82.5928f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MULT B"},
+	{ 21.2200f, 112.3751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
+	{ 44.8200f, 112.3751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "INV OUT"},
 };
 
 /** Draws this panel's silkscreen. `static` so each module keeps its own,
@@ -48,23 +48,23 @@ static inline void addLabels(app::ModuleWidget* mw) {
 
 // --- widget positions, by the names used in tools/panels/Consolidation.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
-static const Vec LVL1_POS = Vec(9.0000, 22.0000);
-static const Vec LVL2_POS = Vec(23.3200, 22.0000);
-static const Vec LVL3_POS = Vec(37.6400, 22.0000);
-static const Vec LVL4_POS = Vec(51.9600, 22.0000);
-static const Vec IN1_POS = Vec(9.0000, 40.1363);
-static const Vec IN2_POS = Vec(23.3200, 40.1363);
-static const Vec IN3_POS = Vec(37.6400, 40.1363);
-static const Vec IN4_POS = Vec(51.9600, 40.1363);
-static const Vec MULT_A_IN_POS = Vec(30.4800, 62.9810);
-static const Vec MULT_A_OUT1_POS = Vec(12.0000, 74.0810);
-static const Vec MULT_A_OUT2_POS = Vec(30.4800, 74.0810);
-static const Vec MULT_A_OUT3_POS = Vec(48.9600, 74.0810);
-static const Vec MULT_B_IN_POS = Vec(30.4800, 89.3178);
-static const Vec MULT_B_OUT1_POS = Vec(12.0000, 100.4178);
-static const Vec MULT_B_OUT2_POS = Vec(30.4800, 100.4178);
-static const Vec MULT_B_OUT3_POS = Vec(48.9600, 100.4178);
-static const Vec OUT_POS = Vec(20.0000, 118.6000);
-static const Vec INV_OUT_POS = Vec(40.9600, 118.6000);
+static const Vec LVL1_POS = Vec(11.2000, 21.4000);
+static const Vec LVL2_POS = Vec(25.7467, 21.4000);
+static const Vec LVL3_POS = Vec(40.2933, 21.4000);
+static const Vec LVL4_POS = Vec(54.8400, 21.4000);
+static const Vec IN1_POS = Vec(11.2000, 39.7863);
+static const Vec IN2_POS = Vec(25.7467, 39.7863);
+static const Vec IN3_POS = Vec(40.2933, 39.7863);
+static const Vec IN4_POS = Vec(54.8400, 39.7863);
+static const Vec MULT_A_IN_POS = Vec(33.0200, 61.9810);
+static const Vec MULT_A_OUT1_POS = Vec(10.1000, 73.0810);
+static const Vec MULT_A_OUT2_POS = Vec(33.0200, 73.0810);
+static const Vec MULT_A_OUT3_POS = Vec(55.9400, 73.0810);
+static const Vec MULT_B_IN_POS = Vec(33.0200, 88.8178);
+static const Vec MULT_B_OUT1_POS = Vec(10.1000, 99.9178);
+static const Vec MULT_B_OUT2_POS = Vec(33.0200, 99.9178);
+static const Vec MULT_B_OUT3_POS = Vec(55.9400, 99.9178);
+static const Vec OUT_POS = Vec(21.2200, 118.6000);
+static const Vec INV_OUT_POS = Vec(44.8200, 118.6000);
 
 } // namespace panel

@@ -28,45 +28,37 @@ P = Panel(
     slug="UncertaintyPolicy",
     title="UNCERTAINTY POLICY",
     form="SCHEDULE UTP",
-    hp=16,
     density="compact",
     glass=Glass(h=15.0),
 )
 
-C2 = P.cols(2, 21.0)      # 21.00, 60.28
-C3 = P.cols(3, 14.0)      # 14.00, 40.64, 67.28
-
 P.sections = [
     # How much exposure a single filing may create.
     Section("EXPOSURE", rows=[
-        Row([BigKnob("knob_amount", C3[0], "VARIANCE"),
-             BigKnob("spread", C3[1], "SPREAD"),
-             BigKnob("cable_count", C3[2], "TRANSFERS")]),
+        Row([BigKnob("knob_amount", "VARIANCE"),
+             BigKnob("spread", "SPREAD"),
+             BigKnob("cable_count", "TRANSFERS")]),
     ]),
-    # What the filing may touch, then the filing itself. The rule between the
-    # rows is the subtotal line: above it you scope, below it you commit.
     # What a filing is allowed to do, as opposed to how much of it there is.
     # BASIS is what the review listens for once the roll has been made; SAFE
     # HARBOR is how much of the patch's timing is off limits while it is being
     # made. Turning SAFE HARBOR down is the sanctioned way to reach a drone.
     Section("MANDATE", rows=[
-        Row([Switch3("basis", C2[0], "BASIS"),
-             Trim("spine", C2[1], "SAFE HARBOR")]),
+        Row([Switch3("basis", "BASIS"),
+             Trim("spine", "SAFE HARBOR")]),
     ]),
-    # What the filing may touch, then the filing itself. The rule between the
-    # rows is the subtotal line: above it you scope, below it you commit.
-    # The filing itself. One row rather than two: at 16 HP the ringed bezel sits
-    # between the two narrower scopes and reads as the commit without needing a
-    # subtotal rule under them to say so.
+    # The filing itself. One row rather than two: the ringed bezel sits between
+    # the two narrower scopes and reads as the commit without needing a subtotal
+    # rule under them to say so.
     Section("AMEND", rows=[
-        Row([Button("roll_controls", C3[0], "CONTROLS"),
-             Bezel("roll_all", C3[1], "BOTH", primary=True),
-             Button("roll_cables", C3[2], "CABLES")]),
+        Row([Button("roll_controls", "CONTROLS"),
+             Bezel("roll_all", "BOTH", primary=True),
+             Button("roll_cables", "CABLES")]),
     ]),
     # The escape hatch, and the opinion issued on the last filing.
     Section("LAST FILING", rows=[
-        Row([Button("revert", C2[0], "RESCIND"),
-             Light("verdict", C2[1], "OPINION", ink="SAGE", size=6.2)]),
+        Row([Button("revert", "RESCIND"),
+             Light("verdict", "OPINION", ink="SAGE", size=6.2)]),
     ]),
 ]
 
@@ -74,7 +66,7 @@ P.sections = [
 # RACK_GRID_WIDTH puts their top edge at 123.61 mm, so the jack cannot go below
 # 118.6 without its collar running under a screw.
 P.footer = [
-    Row([Jack("trig", C3[1], "TRIG", ink="MINT")], y=118.6),
+    Row([Jack("trig", "TRIG", ink="MINT")], y=118.6),
 ]
 
 if __name__ == "__main__":

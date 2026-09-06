@@ -18,28 +18,35 @@ static const int   HP = 34;
 static const float W  = 172.7200f;  // mm
 static const float H  = 128.5000f;  // mm
 
+// --- the read-out well: the spec's numbers, not the widget's ---------------
+// A display used to be positioned by hand in the module's C++, in the same
+// millimetres the spec had already chosen -- two copies of one number, and
+// they drifted. The widget takes them from here now.
+static const float GLASS_X = 4.2000f;
+static const float GLASS_Y = 9.8000f;
+static const float GLASS_W = 164.3200f;
+static const float GLASS_H = 39.0000f;
+
 // --- panel metrics, mirrored from tools/panels/Repossession.py ---
-static const float GLASS_H        = 39.0000f;
-static const float GLASS_Y0       = 10.2000f;
 static const float INFO_H         = 23.6000f;
 static const float INFO_W         = 100.2200f;
 static const float INFO_X         = 66.0000f;
-static const float INFO_Y         = 19.6000f;
+static const float INFO_Y         = 19.2000f;
 static const float IW             = 159.7200f;
 static const float M              = 6.5000f;
 static const int   NUM_SLOTS      = 8;
 static const float TL_H           = 4.9000f;
 static const float TL_W           = 159.7200f;
 static const float TL_X           = 6.5000f;
-static const float TL_Y           = 44.0000f;
+static const float TL_Y           = 43.6000f;
 static const float URL_H          = 7.0000f;
 static const float URL_W          = 100.2200f;
 static const float URL_X          = 66.0000f;
-static const float URL_Y          = 11.7000f;
+static const float URL_Y          = 11.3000f;
 static const float VID_H          = 31.5000f;
 static const float VID_W          = 56.0000f;
 static const float VID_X          = 6.5000f;
-static const float VID_Y          = 11.7000f;
+static const float VID_Y          = 11.3000f;
 
 // --- silkscreen ------------------------------------------------------------
 static const Label LABELS[] = {
@@ -48,28 +55,28 @@ static const Label LABELS[] = {
 	{ 11.5600f,   8.2500f,  7.40f, 0.00f, LIME     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, true,  "$"},
 	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
 	{168.5200f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 1099-A"},
-	{ 86.3600f,  53.3000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SEIZED ASSETS"},
-	{ 86.3600f,  70.8585f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LIENS"},
-	{ 14.0000f,  85.4154f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "REGION"},
-	{ 38.1200f,  85.4154f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SPEED"},
-	{ 62.2400f,  85.4154f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GAIN"},
-	{ 86.3600f,  85.4154f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LOOP"},
-	{110.4800f,  85.4154f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "REV"},
-	{134.6000f,  85.4154f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODE"},
-	{158.7200f,  85.4154f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RUN"},
-	{ 86.3600f,  92.2080f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "COLLECTIONS"},
-	{ 14.0000f,  96.7619f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CLOCK"},
-	{ 42.9440f,  96.7619f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RESET"},
-	{ 71.8880f,  96.7619f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "REGION"},
-	{100.8320f,  96.7619f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SCAN"},
-	{129.7760f,  96.7619f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SPEED"},
-	{158.7200f,  96.7619f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FIRE"},
-	{ 14.0000f, 112.6751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT L"},
-	{ 42.9440f, 112.6751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT R"},
-	{ 71.8880f, 112.6751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "POS"},
-	{100.8320f, 112.6751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
-	{129.7760f, 112.6751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EOR"},
-	{158.7200f, 112.6751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "REGION"},
+	{ 86.3600f,  52.3000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SEIZED ASSETS"},
+	{ 86.3600f,  69.2782f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LIENS"},
+	{ 16.9105f,  84.8931f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "REGION"},
+	{ 41.8855f,  84.8931f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SPEED"},
+	{ 66.8605f,  84.8931f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GAIN"},
+	{ 91.1405f,  84.8931f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LOOP"},
+	{107.1245f,  84.8931f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "REV"},
+	{131.4045f,  84.8931f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODE"},
+	{156.0095f,  84.8931f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RUN"},
+	{ 86.3600f,  90.7055f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "COLLECTIONS"},
+	{ 18.6981f,  95.7094f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CLOCK"},
+	{ 45.7629f,  95.7094f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RESET"},
+	{ 72.8276f,  95.7094f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "REGION"},
+	{ 99.8924f,  95.7094f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SCAN"},
+	{126.9571f,  95.7094f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SPEED"},
+	{154.0219f,  95.7094f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FIRE"},
+	{ 34.0975f, 112.4751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT L"},
+	{ 55.0025f, 112.4751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT R"},
+	{ 75.9075f, 112.4751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "POS"},
+	{ 96.8125f, 112.4751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
+	{117.7175f, 112.4751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EOR"},
+	{138.6225f, 112.4751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "REGION"},
 };
 
 /** Draws this panel's silkscreen. `static` so each module keeps its own,
@@ -80,34 +87,34 @@ static inline void addLabels(app::ModuleWidget* mw) {
 
 // --- widget positions, by the names used in tools/panels/Repossession.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
-static const Vec BUSY_POS = Vec(98.3956, 52.5685);
-static const Vec SLOT1_POS = Vec(14.0000, 59.8585);
-static const Vec SLOT2_POS = Vec(34.6743, 59.8585);
-static const Vec SLOT3_POS = Vec(55.3486, 59.8585);
-static const Vec SLOT4_POS = Vec(76.0229, 59.8585);
-static const Vec SLOT5_POS = Vec(96.6971, 59.8585);
-static const Vec SLOT6_POS = Vec(117.3714, 59.8585);
-static const Vec SLOT7_POS = Vec(138.0457, 59.8585);
-static const Vec SLOT8_POS = Vec(158.7200, 59.8585);
-static const Vec REGION_POS = Vec(14.0000, 77.3585);
-static const Vec SPEED_POS = Vec(38.1200, 77.3585);
-static const Vec GAIN_POS = Vec(62.2400, 77.3585);
-static const Vec LOOP_POS = Vec(86.3600, 77.3585);
-static const Vec REV_POS = Vec(110.4800, 77.3585);
-static const Vec MODE_POS = Vec(134.6000, 77.3585);
-static const Vec RUN_POS = Vec(158.7200, 77.3585);
-static const Vec CLOCK_IN_POS = Vec(14.0000, 103.0960);
-static const Vec RESET_IN_POS = Vec(42.9440, 103.0960);
-static const Vec REGION_IN_POS = Vec(71.8880, 103.0960);
-static const Vec SCAN_IN_POS = Vec(100.8320, 103.0960);
-static const Vec SPEED_IN_POS = Vec(129.7760, 103.0960);
-static const Vec FIRE_IN_POS = Vec(158.7200, 103.0960);
-static const Vec CLOCK_LED_POS = Vec(19.9396, 96.0060);
-static const Vec OUT_L_POS = Vec(14.0000, 118.6000);
-static const Vec OUT_R_POS = Vec(42.9440, 118.6000);
-static const Vec POS_OUT_POS = Vec(71.8880, 118.6000);
-static const Vec GATE_OUT_POS = Vec(100.8320, 118.6000);
-static const Vec EOR_OUT_POS = Vec(129.7760, 118.6000);
-static const Vec REG_OUT_POS = Vec(158.7200, 118.6000);
+static const Vec BUSY_POS = Vec(98.4956, 51.5685);
+static const Vec SLOT1_POS = Vec(14.4875, 59.2585);
+static const Vec SLOT2_POS = Vec(35.0225, 59.2585);
+static const Vec SLOT3_POS = Vec(55.5575, 59.2585);
+static const Vec SLOT4_POS = Vec(76.0925, 59.2585);
+static const Vec SLOT5_POS = Vec(96.6275, 59.2585);
+static const Vec SLOT6_POS = Vec(117.1625, 59.2585);
+static const Vec SLOT7_POS = Vec(137.6975, 59.2585);
+static const Vec SLOT8_POS = Vec(158.2325, 59.2585);
+static const Vec REGION_POS = Vec(16.9105, 76.4862);
+static const Vec SPEED_POS = Vec(41.8855, 76.4862);
+static const Vec GAIN_POS = Vec(66.8605, 76.4862);
+static const Vec LOOP_POS = Vec(91.1405, 76.4862);
+static const Vec REV_POS = Vec(107.1245, 76.4862);
+static const Vec MODE_POS = Vec(131.4045, 76.4862);
+static const Vec RUN_POS = Vec(156.0095, 76.4862);
+static const Vec CLOCK_IN_POS = Vec(18.6981, 102.0435);
+static const Vec RESET_IN_POS = Vec(45.7629, 102.0435);
+static const Vec REGION_IN_POS = Vec(72.8276, 102.0435);
+static const Vec SCAN_IN_POS = Vec(99.8924, 102.0435);
+static const Vec SPEED_IN_POS = Vec(126.9571, 102.0435);
+static const Vec FIRE_IN_POS = Vec(154.0219, 102.0435);
+static const Vec CLOCK_LED_POS = Vec(24.7377, 94.9535);
+static const Vec OUT_L_POS = Vec(34.0975, 118.6000);
+static const Vec OUT_R_POS = Vec(55.0025, 118.6000);
+static const Vec POS_OUT_POS = Vec(75.9075, 118.6000);
+static const Vec GATE_OUT_POS = Vec(96.8125, 118.6000);
+static const Vec EOR_OUT_POS = Vec(117.7175, 118.6000);
+static const Vec REG_OUT_POS = Vec(138.6225, 118.6000);
 
 } // namespace panel

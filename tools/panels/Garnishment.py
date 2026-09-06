@@ -22,24 +22,19 @@ P = Panel(
     slug="Garnishment",
     title="GARNISHMENT",
     form="FORM 668-W",
-    hp=10,
 )
-
-C2 = P.cols(2, 12.5)     # BIAS and LAG, clear of the MODE switch between them
-C3 = P.cols(3, 12.0)     # 12.00, 25.40, 38.80 -- C3[1] is the midpoint of C2
-C4 = P.cols(4, 8.0)      # 8.00, 19.60, 31.20, 42.80
 
 
 def channel(n, suffix):
-    """One channel: BIAS and LAG flank the MODE switch, which shares its axis
-    with the CV amount/CV in pair below it -- same geometry as Retroactive's
+    """One channel: BIAS and LAG flank the MODE switch, which shares its column
+    with the CV amount / CV in pair below it -- same geometry as Retroactive's
     TIME/OVERDRAFT/DIV row, reused here for a switch instead of a light."""
     return Section("CHANNEL %d" % n, rows=[
-        Row([Knob("bias%s" % suffix, C2[0], "BIAS"),
-             Switch3("mode%s" % suffix, C3[1], "MODE"),
-             Knob("lag%s" % suffix, C2[1], "LAG")]),
-        Row([Trim("cvamt%s" % suffix, C3[1], "CV AMT")], label_side="above"),
-        Row([Jack("cvin%s" % suffix, C3[1])], silent=True),
+        Row([Knob("bias%s" % suffix, "BIAS"),
+             Switch3("mode%s" % suffix, "MODE"),
+             Knob("lag%s" % suffix, "LAG")]),
+        Row([Trim("cvamt%s" % suffix, "CV AMT", col=1)], pair=True),
+        Row([Jack("cvin%s" % suffix, col=1)], silent=True),
     ])
 
 
@@ -51,9 +46,9 @@ P.sections = [
 # The audio the two VCAs actually pass is the module's main I/O, so it sits on
 # the footer band like Retroactive's IN L/IN R/OUT L/OUT R, grouped by type.
 P.footer = [
-    Row([Jack("in1", C4[0], "IN 1"), Jack("in2", C4[1], "IN 2"),
-         Jack("out1", C4[2], "OUT 1", ink="MINT"),
-         Jack("out2", C4[3], "OUT 2", ink="MINT")], y=118.6),
+    Row([Jack("in1", "IN 1"), Jack("in2", "IN 2"),
+         Jack("out1", "OUT 1", ink="MINT"),
+         Jack("out2", "OUT 2", ink="MINT")], y=118.6),
 ]
 
 if __name__ == "__main__":

@@ -33,7 +33,7 @@ from .spec import (BRAND, Panel, Section, Row, Widget, Glass, Trace, FreeLabel, 
 from . import palette
 from .palette import (INK, FELT, BAND, GLASS as GLASS_COLOUR, RULE, LIME, MINT,
                       CLAY, PAPER, SAGE)
-from .layout import solve, SCALE
+from .layout import solve, SCALE, required_hp
 from . import render, emit, preview, lint, rack
 
 __all__ = ["BRAND", "Panel", "Section", "Row", "Widget", "Glass", "Trace", "FreeLabel",
@@ -42,12 +42,23 @@ __all__ = ["BRAND", "Panel", "Section", "Row", "Widget", "Glass", "Trace", "Free
            "Switch", "Switch3",
            "Slider", "RADIUS", "build", "palette", "INK", "FELT", "BAND",
            "GLASS_COLOUR", "RULE", "LIME", "MINT", "CLAY", "PAPER", "SAGE",
-           "PX_PER_MM", "MM_PER_PX", "HP_MM", "PANEL_H"]
+           "PX_PER_MM", "MM_PER_PX", "HP_MM", "PANEL_H", "required_hp"]
 
 
 # --- shorthand constructors, so a spec reads as a list of controls -----------
 def _mk(kind, default_size, default_ink):
-    def f(name, x, label="", ink=None, size=None, **kw):
+    """One control constructor.
+
+    Two call shapes, because a panel almost never wants to name an x any more:
+
+        Knob("time", "TIME")            the solver picks the column centre
+        Knob("time", 21.4, "TIME")      an outside constraint pins it
+
+    The second argument decides which: a string is the label, a number is the x.
+    """
+    def f(name, x=None, label="", ink=None, size=None, **kw):
+        if isinstance(x, str):
+            x, label = None, x
         return Widget(name=name, x=x, kind=kind, label=label,
                       ink=ink or default_ink, size=size or default_size, **kw)
     f.__name__ = kind

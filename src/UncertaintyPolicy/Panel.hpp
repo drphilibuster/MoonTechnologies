@@ -14,31 +14,40 @@
 namespace panel {
 
 // --- identity --------------------------------------------------------------
-static const int   HP = 16;
-static const float W  = 81.2800f;  // mm
+static const int   HP = 12;
+static const float W  = 60.9600f;  // mm
 static const float H  = 128.5000f;  // mm
+
+// --- the read-out well: the spec's numbers, not the widget's ---------------
+// A display used to be positioned by hand in the module's C++, in the same
+// millimetres the spec had already chosen -- two copies of one number, and
+// they drifted. The widget takes them from here now.
+static const float GLASS_X = 4.2000f;
+static const float GLASS_Y = 9.8000f;
+static const float GLASS_W = 52.5600f;
+static const float GLASS_H = 15.0000f;
 
 // --- silkscreen ------------------------------------------------------------
 static const Label LABELS[] = {
-	{ 40.6400f,   5.5000f, 10.50f, 1.50f, PAPER    , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "UNCERTAINTY POLICY"},
+	{ 30.4800f,   5.5000f,  8.06f, 1.50f, PAPER    , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "UNCERTAINTY POLICY"},
 	{ 11.5600f,   8.2500f,  7.40f, 0.00f, LIME     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, true,  "$"},
 	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
-	{ 77.0800f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "SCHEDULE UTP"},
-	{ 40.6400f,  29.3000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EXPOSURE"},
-	{ 14.0000f,  46.4569f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "VARIANCE"},
-	{ 40.6400f,  46.4569f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SPREAD"},
-	{ 67.2800f,  46.4569f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRANSFERS"},
-	{ 40.6400f,  53.2495f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MANDATE"},
-	{ 21.0000f,  67.6114f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BASIS"},
-	{ 60.2800f,  67.6114f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SAFE HARBOR"},
-	{ 40.6400f,  74.3363f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "AMEND"},
-	{ 14.0000f,  88.3956f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CONTROLS"},
-	{ 40.6400f,  88.3956f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BOTH"},
-	{ 67.2800f,  88.3956f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CABLES"},
-	{ 40.6400f,  95.1544f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LAST FILING"},
-	{ 21.0000f, 106.0162f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RESCIND"},
-	{ 60.2800f, 106.0162f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OPINION"},
-	{ 40.6400f, 112.6751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRIG"},
+	{ 56.7600f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "SCHEDULE UTP"},
+	{ 30.4800f,  28.3000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EXPOSURE"},
+	{ 12.1000f,  46.5149f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "VARIANCE"},
+	{ 30.4800f,  46.5149f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SPREAD"},
+	{ 48.8600f,  46.5149f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRANSFERS"},
+	{ 30.4800f,  52.3551f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MANDATE"},
+	{ 15.3362f,  67.7749f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BASIS"},
+	{ 42.1747f,  67.7749f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SAFE HARBOR"},
+	{ 30.4800f,  73.5473f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "AMEND"},
+	{  9.8394f,  88.6647f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CONTROLS"},
+	{ 30.8747f,  88.6647f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BOTH"},
+	{ 51.9100f,  88.6647f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CABLES"},
+	{ 30.4800f,  94.4710f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LAST FILING"},
+	{ 20.9350f, 106.3908f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RESCIND"},
+	{ 40.0250f, 106.3908f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OPINION"},
+	{ 30.4800f, 112.4751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRIG"},
 };
 
 /** Draws this panel's silkscreen. `static` so each module keeps its own,
@@ -49,16 +58,16 @@ static inline void addLabels(app::ModuleWidget* mw) {
 
 // --- widget positions, by the names used in tools/panels/UncertaintyPolicy.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
-static const Vec KNOB_AMOUNT_POS = Vec(14.0000, 37.1000);
-static const Vec SPREAD_POS = Vec(40.6400, 37.1000);
-static const Vec CABLE_COUNT_POS = Vec(67.2800, 37.1000);
-static const Vec BASIS_POS = Vec(21.0000, 59.7495);
-static const Vec SPINE_POS = Vec(60.2800, 59.7495);
-static const Vec ROLL_CONTROLS_POS = Vec(14.0000, 80.6363);
-static const Vec ROLL_ALL_POS = Vec(40.6400, 80.6363);
-static const Vec ROLL_CABLES_POS = Vec(67.2800, 80.6363);
-static const Vec REVERT_POS = Vec(21.0000, 99.9044);
-static const Vec VERDICT_POS = Vec(60.2800, 99.9044);
-static const Vec TRIG_POS = Vec(40.6400, 118.6000);
+static const Vec KNOB_AMOUNT_POS = Vec(12.1000, 36.8080);
+static const Vec SPREAD_POS = Vec(30.4800, 36.8080);
+static const Vec CABLE_COUNT_POS = Vec(48.8600, 36.8080);
+static const Vec BASIS_POS = Vec(15.3362, 59.5631);
+static const Vec SPINE_POS = Vec(42.1747, 59.5631);
+static const Vec ROLL_CONTROLS_POS = Vec(9.8394, 80.5553);
+static const Vec ROLL_ALL_POS = Vec(30.8747, 80.5553);
+static const Vec ROLL_CABLES_POS = Vec(51.9100, 80.5553);
+static const Vec REVERT_POS = Vec(20.9350, 99.9290);
+static const Vec VERDICT_POS = Vec(40.0250, 99.9290);
+static const Vec TRIG_POS = Vec(30.4800, 118.6000);
 
 } // namespace panel

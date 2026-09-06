@@ -25,31 +25,32 @@ P = Panel(
     slug="SixFigures",
     title="SIX FIGURES",
     form="FORM W-2",
-    hp=24,
 )
 
-# Seven columns: six voices and a totals column on the right. The footer puts
-# each voice's OUT under its own column and MIX under the totals.
-C7 = P.cols(7, 10.5)      # the end big knobs' wells clear the frame
-V = C7[:6]
-T = C7[6]
+# Seven columns: six voices and a totals column on the right. Every row names
+# the columns it stands in, so the footer puts each voice's OUT under its own
+# voice and MIX under the totals without a millimetre being typed.
+V = list(range(6))
+T = 6
 
-# Row 4 leads with the DRIFT trim rather than a jack so the solver places the
-# row as a below-labelled one -- which keeps the CV jacks tight under their
-# trims, the paired idiom, while DRIFT still gets its own label.
 P.sections = [
     Section("WAGES, TIPS, OTHER COMPENSATION", rows=[
-        Row([Knob("core%d" % (i + 1), V[i], "CORE %d" % (i + 1)) for i in range(6)]
-            + [Switch("range", T, "RANGE")]),
-        Row([BigKnob("rate%d" % (i + 1), V[i], "RATE", light="led%d" % (i + 1))
-             for i in range(6)]
-            + [Knob("capture", T, "CAPT", light="lock", light_side="left")]),
-        Row([Trim("cv%d" % (i + 1), V[i], "CV") for i in range(6)]
-            + [Jack("sync", T, "SYNC")], label_side="above"),
-        Row([Trim("drift", T, "DRIFT")]
-            + [Jack("cv%d_in" % (i + 1), V[i]) for i in range(6)]),
-        Row([Jack("aux%d" % (i + 1), V[i], "AUX", ink="MINT") for i in range(6)]
-            + [Jack("signal", T, "SIGNAL")]),
+        Row([Knob("core%d" % (i + 1), "CORE %d" % (i + 1), steps=4, col=i)
+             for i in V]
+            + [Switch("range", "RANGE", col=T)]),
+        Row([BigKnob("rate%d" % (i + 1), "RATE", light="led%d" % (i + 1), col=i)
+             for i in V]
+            + [Knob("capture", "CAPT", light="lock", light_side="left",
+                    primary=True, col=T)]),
+        # Each voice's CV trim owns the jack directly below it; the label they
+        # share sits between the two. SYNC has nothing under it, so it keeps
+        # its own name above its head.
+        Row([Trim("cv%d" % (i + 1), "CV", pair=True, col=i) for i in V]
+            + [Jack("sync", "SYNC", col=T)]),
+        Row([Jack("cv%d_in" % (i + 1), col=i) for i in V]
+            + [Trim("drift", "DRIFT", col=T)]),
+        Row([Jack("aux%d" % (i + 1), "AUX", ink="MINT", col=i) for i in V]
+            + [Jack("signal", "SIGNAL", col=T)]),
     ], divide_after=(1,)),
 ]
 
@@ -57,8 +58,8 @@ P.sections = [
 # RACK_GRID_WIDTH puts their top edge at 123.61 mm, so a jack collar centred
 # below 118.6 would run under one.
 P.footer = [
-    Row([Jack("out%d" % (i + 1), V[i], "OUT %d" % (i + 1), ink="MINT") for i in range(6)]
-        + [Jack("mix", T, "MIX", ink="MINT", primary=True)], y=118.6),
+    Row([Jack("out%d" % (i + 1), "OUT %d" % (i + 1), ink="MINT", col=i) for i in V]
+        + [Jack("mix", "MIX", ink="MINT", col=T)], y=118.6),
 ]
 
 if __name__ == "__main__":

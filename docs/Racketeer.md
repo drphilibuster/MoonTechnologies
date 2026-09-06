@@ -2,7 +2,7 @@
 
 **Electric Intonarumori.** A PT2399 delay chip run as a self-sustaining noise
 voice: feedback echo past unity, a low-pass in or after the loop, a chopper, and
-a delay time that bends under CV through an optocoupler's lag. 16 HP, mono.
+a delay time that bends under CV through an optocoupler's lag. 18 HP, mono.
 
 Form 211 is the IRS's *Application for Award for Original Information* — the
 whistleblower form. A racketeer is what it is filed against.

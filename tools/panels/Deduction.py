@@ -26,38 +26,35 @@ P = Panel(
     slug="Deduction",
     title="DEDUCTION",
     form="SCHEDULE A",
-    hp=10,
     density="regular",
     glass=Glass(h=9.2),
 )
 
-C4 = P.cols(4, 8.0)       # jack wells clear the frame
-C3 = P.cols(3, 10.0)      # 10.00, 25.40, 40.80
-C2 = P.cols(2, 14.0)      # 14.00, 36.80
-
 P.sections = [
     # The filter. CUTOFF is the one control you reach for, so it wears the seal;
-    # MODEL is the six-position selector beside it.
+    # MODEL is the six-position selector beside it, and wears the detent ring
+    # that says so. The two big knobs take the outer columns of the three the
+    # row below stands in, so the block reads as one grid rather than two.
     Section("DEDUCTIONS", rows=[
-        Row([BigKnob("freq", C2[0], "CUTOFF", primary=True),
-             BigKnob("model", C2[1], "MODEL")]),
-        Row([Knob("res", C3[0], "RES"),
+        Row([BigKnob("freq", "CUTOFF", primary=True, col=0),
+             BigKnob("model", "MODEL", steps=6, col=2)]),
+        Row([Knob("res", "RES"),
              # DRIVE means something different in every model -- input drive,
              # bias, clip depth -- and the light says when it is doing it.
-             Knob("drive", C3[1], "DRIVE", light="sat"),
-             Switch("response", C3[2], "NRM/INV")]),
+             Knob("drive", "DRIVE", light="sat"),
+             Switch("response", "NRM/INV")]),
     ]),
 
     # What the CV inputs may take off each control. Each trimpot sits directly
-    # over its own jack and they share one label -- the paired idiom. CUTOFF is
-    # 1 V/oct at +100%; the rest are attenuverters over 10 V.
+    # over its own jack, with the label they share set between the two. CUTOFF
+    # is 1 V/oct at +100%; the rest are attenuverters over 10 V.
     Section("WITHHOLDING", rows=[
-        Row([Trim("cv_amt", C4[0], "CUTOFF"),
-             Trim("res_cv", C4[1], "RES"),
-             Trim("drive_cv", C4[2], "DRIVE"),
-             Trim("model_cv", C4[3], "MODEL")], label_side="above"),
-        Row([Jack("cv_in", C4[0]), Jack("res_in", C4[1]),
-             Jack("drive_in", C4[2]), Jack("model_in", C4[3])], silent=True),
+        Row([Trim("cv_amt", "CUTOFF"),
+             Trim("res_cv", "RES"),
+             Trim("drive_cv", "DRIVE"),
+             Trim("model_cv", "MODEL")], pair=True),
+        Row([Jack("cv_in"), Jack("res_in"),
+             Jack("drive_in"), Jack("model_in")], silent=True),
     ]),
 ]
 
@@ -65,8 +62,8 @@ P.sections = [
 # Korg35 / MS-20 convention: a signal at LP IN comes out low-passed, at HP IN
 # high-passed, and the two are summed at OUT.
 P.footer = [
-    Row([Jack("lp_in", C3[0], "LP IN"), Jack("hp_in", C3[1], "HP IN"),
-         Jack("out", C3[2], "OUT", ink="MINT")], y=118.6),
+    Row([Jack("lp_in", "LP IN"), Jack("hp_in", "HP IN"),
+         Jack("out", "OUT", ink="MINT")], y=118.6),
 ]
 
 if __name__ == "__main__":

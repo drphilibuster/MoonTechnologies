@@ -92,7 +92,7 @@ channels' gain; patch channel 2's own CV IN to override it.
   (the schematic is a bare divider, not a filter).
 
 Both options apply to whichever channel is currently in that mode; there is no
-separate per-channel copy of either, since a 10 HP panel repeated twice has no
+separate per-channel copy of either, since an 11 HP panel repeated twice has no
 room for controls the originals didn't have front-panel switches for either.
 
 ## Polyphony

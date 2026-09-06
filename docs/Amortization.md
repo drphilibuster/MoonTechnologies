@@ -8,7 +8,7 @@ and two outputs — the blend and the wet-only signal — the way the original h
 them. It is built to be overwhelmed by: the Tronic loop is allowed past unity,
 and a soft limiter inside it is what keeps "relentless" from becoming "exploded".
 
-Part of the [Moon Technologies](../README.md) plugin. 14 HP.
+Part of the [Moon Technologies](../README.md) plugin. 16 HP.
 
 ## What it is based on
 
@@ -157,7 +157,7 @@ make vcv-preview             # ... build, then render every panel through VCV Ra
 ```
 
 Amortization's panel runs at panelkit's `compact` density: three sections, a
-read-out and a six-jack audio row at 14 HP.
+read-out and a six-jack audio row at 16 HP.
 
 ## Licence
 

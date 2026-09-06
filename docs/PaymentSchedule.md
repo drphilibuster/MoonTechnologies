@@ -1,6 +1,6 @@
 # Payment Schedule
 
-FORM 1040-V. Slug `PaymentSchedule`. 28 HP, monophonic.
+FORM 1040-V. Slug `PaymentSchedule`. 30 HP, monophonic.
 
 > *Modular in a Week*, Day 10: Kristian Blåsol's Baby8 (a 4017 decade counter
 > read out as eight CV/gate steps), the sequential switch built from the same

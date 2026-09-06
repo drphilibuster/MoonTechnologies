@@ -513,6 +513,17 @@ def panel_header(panel, sol):
     a("static const float W  = %.4ff;  // mm" % panel.w)
     a("static const float H  = %.4ff;  // mm" % panel.h)
     a("")
+    if sol.glass:
+        gy, gh = sol.glass
+        a("// --- the read-out well: the spec's numbers, not the widget's ---------------")
+        a("// A display used to be positioned by hand in the module's C++, in the same")
+        a("// millimetres the spec had already chosen -- two copies of one number, and")
+        a("// they drifted. The widget takes them from here now.")
+        a("static const float GLASS_X = 4.2000f;")
+        a("static const float GLASS_Y = %.4ff;" % gy)
+        a("static const float GLASS_W = %.4ff;" % (panel.w - 8.4))
+        a("static const float GLASS_H = %.4ff;" % gh)
+        a("")
     if panel.metrics:
         a("// --- panel metrics, mirrored from tools/panels/%s.py ---" % panel.slug)
         for k in sorted(panel.metrics):

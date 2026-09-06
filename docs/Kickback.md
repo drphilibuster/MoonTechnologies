@@ -4,7 +4,7 @@
 Modular in a Week's Day 9 folder — kick, snare and hat from one three-in-one
 schematic, a bridged-T bass drum, a twin-T tom, an XOR-stacked bell, a
 percussive noise voice and the noise circuit it descends from — filed on one
-panel, one trigger each, one mix. 30 HP, monophonic (drums; no per-channel
+panel, one trigger each, one mix. 33 HP, monophonic (drums; no per-channel
 processing).
 
 Form 1099-NEC is the IRS's *Nonemployee Compensation* form — what a payer
@@ -85,7 +85,7 @@ three-position switch — standing in for which of the three tuned branches is
 sounding (LOW ≈ 90 Hz, MID ≈ 160 Hz, HIGH ≈ 280 Hz center), **PITCH** trimming
 ±a fifth around whichever band is selected, and **DECAY** setting ring time.
 This is the fold the brief allows when three near-identical designs do not
-fit as three separate voices at 30 HP: one voice, one switch, documented here.
+fit as three separate voices at 33 HP: one voice, one switch, documented here.
 
 ### BELL — XORbell
 

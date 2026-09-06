@@ -30,17 +30,9 @@ P = Panel(
     slug="Racketeer",
     title="RACKETEER",
     form="FORM 211",
-    hp=16,
     density="compact",
     glass=Glass(h=8.8),
 )
-
-C6 = P.cols(6, 8.0)       # trims: their wells clear the frame at 8
-C7 = P.cols(7, 8.0)       # 8.00 .. 73.28, the centre column on the panel axis
-C5 = P.cols(5, 8.0)       # 8.00, 24.32, 40.64, 56.96, 73.28
-C3 = P.cols(3, 14.0)      # 14.00, 40.64, 67.28
-# C7[3] == C5[2] == C3[1] == the panel centre: ECHO, the CHOP switch and the
-# RATE CV pair all share one axis.
 
 P.sections = [
     # The loop. ECHO is the feedback -- past noon it self-oscillates, which is
@@ -50,16 +42,18 @@ P.sections = [
     # optocoupler) and how fast the chopper runs. RES and THRESH are trims: a
     # resonance the original never had, and the level the GATE output fires at.
     Section("RACKET", caption_light="loop", rows=[
-        Row([BigKnob("time", C3[0], "TIME"),
-             BigKnob("echo", C3[1], "ECHO", primary=True),
-             BigKnob("cutoff", C3[2], "CUTOFF")]),
+        Row([BigKnob("time", "TIME"),
+             BigKnob("echo", "ECHO", primary=True),
+             BigKnob("cutoff", "CUTOFF")]),
         # Secondary controls, so trimpots: set and left, like a service panel.
-        Row([Trim("lag", C6[0], "LAG"),
-             Trim("drive", C6[1], "DRIVE"),
-             Trim("seed", C6[2], "SEED"),
-             Trim("rate", C6[3], "RATE"),
-             Trim("res", C6[4], "RES"),
-             Trim("thresh", C6[5], "THRESH")]),
+        # Six of them under three big knobs, on a grid of their own -- lining a
+        # trim up with a knob above it would be a coincidence, not a meaning.
+        Row([Trim("lag", "LAG"),
+             Trim("drive", "DRIVE"),
+             Trim("seed", "SEED"),
+             Trim("rate", "RATE"),
+             Trim("res", "RES"),
+             Trim("thresh", "THRESH")], own_grid=True),
     ]),
 
     # The muscle. The three pushbuttons of the original (each also pressed by
@@ -67,42 +61,41 @@ P.sections = [
     # names, and the chopper: the mute button pushed rhythmically by a square
     # LFO, its light ticking with it.
     Section("ENFORCEMENT", rows=[
-        Row([Bezel("noise", C7[0], "NOISE"),
-             Bezel("boost", C7[1], "BOOST"),
-             Bezel("mute", C7[2], "MUTE"),
-             # CHOP takes the centre column so its light, which sits to the
-             # right of the label, stays inside the block.
-             Switch("chop", C7[3], "CHOP", light="chop_led"),
-             Switch("pol", C7[4], "POL"),
-             Switch("filt", C7[5], "FILTER"),
-             Switch("range", C7[6], "RANGE")]),
+        Row([Bezel("noise", "NOISE"),
+             Bezel("boost", "BOOST"),
+             Bezel("mute", "MUTE"),
+             Switch("chop", "CHOP", light="chop_led"),
+             Switch("pol", "POL"),
+             Switch("filt", "FILTER"),
+             Switch("range", "RANGE")]),
     ]),
 
     # What the CV inputs may take off each control: trimpot directly over its
-    # jack, one label serving both -- the paired idiom, four times across. The
-    # three gate jacks that press the buttons sit beside them, named for the
-    # button each one presses.
+    # jack, the label they share set between the two -- the paired idiom, four
+    # times across. The three gate jacks that press the buttons sit beside them,
+    # named for the button each one presses, and own nothing below, so they keep
+    # their names above their heads.
     Section("SKIM", rows=[
-        Row([Trim("time_cv", C7[0], "TIME"),
-             Trim("echo_cv", C7[1], "ECHO"),
-             Trim("cutoff_cv", C7[2], "CUTOFF"),
-             Trim("rate_cv", C7[3], "RATE")], label_side="above"),
-        Row([Jack("time_in", C7[0]), Jack("echo_in", C7[1]),
-             Jack("cutoff_in", C7[2]), Jack("rate_in", C7[3]),
-             Jack("noise_in", C7[4], "NOISE"),
-             Jack("boost_in", C7[5], "BOOST"),
-             Jack("mute_in", C7[6], "MUTE")]),
+        Row([Trim("time_cv", "TIME"),
+             Trim("echo_cv", "ECHO"),
+             Trim("cutoff_cv", "CUTOFF"),
+             Trim("rate_cv", "RATE")], pair=True),
+        Row([Jack("time_in"), Jack("echo_in"),
+             Jack("cutoff_in"), Jack("rate_in"),
+             Jack("noise_in", "NOISE"),
+             Jack("boost_in", "BOOST"),
+             Jack("mute_in", "MUTE")]),
     ]),
 ]
 
 # The audio row sits as low as the bottom screws allow (their top edge is at
 # 123.61 mm). IN on the left, everything that leaves the module to its right.
 P.footer = [
-    Row([Jack("in", C5[0], "IN"),
-         Jack("env_out", C5[1], "ENV", ink="MINT"),
-         Jack("gate_out", C5[2], "GATE", ink="MINT"),
-         Jack("dirty_out", C5[3], "DIRTY", ink="MINT"),
-         Jack("out", C5[4], "OUT", ink="MINT")], y=118.6),
+    Row([Jack("in", "IN"),
+         Jack("env_out", "ENV", ink="MINT"),
+         Jack("gate_out", "GATE", ink="MINT"),
+         Jack("dirty_out", "DIRTY", ink="MINT"),
+         Jack("out", "OUT", ink="MINT")], y=118.6),
 ]
 
 if __name__ == "__main__":

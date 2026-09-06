@@ -88,5 +88,5 @@ all-the-way-open or all-the-way-shut duty cycle. Off by default.
 - BIAS and CV both shift ATTACK and RELEASE together rather than independently, which
   keeps their skew ratio intact under modulation; the original 13700 VCLFO's Bias
   control was read the same way, as an offset on the same axis a CV would reach.
-- No panel read-out: with two full channels and a PWM section already filling 16 HP,
+- No panel read-out: with two full channels and a PWM section already filling 17 HP,
   a digital display did not fit without losing a row of controls.

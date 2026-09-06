@@ -93,7 +93,13 @@ preview-%: panel-%
 # Rack renders every model of the plugin in one pass, but each spec drives its
 # own run, so this is one Rack launch per panel. Slow and thorough, on purpose:
 # it is the last check before a panel is called done.
-vcv-preview: all
+# Regenerate, THEN build, THEN render. The order matters and used to be wrong:
+# `vcv-preview: all` built the plugin from whatever headers were on disk and only
+# then re-ran the specs, so a spec change showed up in the artwork and not in the
+# widget positions -- a panel whose jacks sat beside their own wells, blamed on
+# the solver for as long as it took to notice.
+vcv-preview: panel
+	@$(MAKE) all
 	@for spec in $(PANEL_SPECS); do \
 		$(PYTHON) $$spec --vcv || exit 1; \
 	done

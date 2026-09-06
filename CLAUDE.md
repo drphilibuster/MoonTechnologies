@@ -23,7 +23,11 @@ because the call site owned state it should never have touched.
 ### The rule
 
 1. A module describes its panel once, in `tools/panels/<Module>.py`. That spec
-   is the only file you edit for layout.
+   is the only file you edit for layout. It names controls, rows and sections —
+   not coordinates: the solver works out every x, every y, and how many HP the
+   panel is (`hp` defaults to `"auto"`). A millimetre typed into a spec is a
+   millimetre that will be wrong on the next change; the only one that belongs
+   there is a row the bottom screws pin.
 2. `res/*.svg`, `src/PanelTheme.hpp`, `src/<Module>/Panel.hpp` and
    `tools/previews/*` are **generated**. Never hand-edit them. `make panel`
    regenerates; a hand edit is destroyed on the next run, and CI fails the push.

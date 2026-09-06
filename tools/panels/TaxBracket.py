@@ -31,24 +31,22 @@ P = Panel(
     slug="TaxBracket",
     title="TAX BRACKET",
     form="TAX RATE SCHEDULE X",
-    hp=12,
     glass=Glass(h=6.4),
 )
-
-C4 = P.cols(4, 8.0)       # 8.00, 22.99, 37.97, 52.96
-C2 = P.cols(2, 17.0)      # 17.00, 43.96
 
 
 def pair(bit, col):
     """One hardware jack as a Rack input and output that share a number."""
-    return [Jack("in%d" % bit, C4[col], str(bit)),
-            Jack("out%d" % bit, C4[col + 1], str(bit), ink="MINT")]
+    return [Jack("in%d" % bit, str(bit), col=col),
+            Jack("out%d" % bit, str(bit), ink="MINT", col=col + 1)]
 
 
 P.sections = [
     # The ladder. Low-order bits down the left, high-order down the right; each
-    # row is two hardware jacks, each hardware jack is an [in, out] pair.
-    Section("BRACKETS", rows=[
+    # row is two hardware jacks, each hardware jack is an [in, out] pair. The
+    # two halves are named as runs so they are spaced as pairs, with the gutter
+    # between them saying which output belongs to which input.
+    Section("BRACKETS", groups=(2, 2), rows=[
         Row(pair(1, 0) + pair(16, 2)),
         Row(pair(2, 0) + pair(32, 2)),
         Row(pair(4, 0) + pair(64, 2)),
@@ -57,8 +55,8 @@ P.sections = [
 
     # What the ladder does with jacks nobody has plugged, and how loud it files.
     Section("ADJUSTMENTS", rows=[
-        Row([Switch("ground", C2[0], "GROUND"),
-             Trim("scale", C2[1], "SCALE")]),
+        Row([Switch("ground", "GROUND"),
+             Trim("scale", "SCALE")]),
     ]),
 ]
 
@@ -66,8 +64,8 @@ P.sections = [
 # the family keeps what leaves the module. Same rule as the bits: one number,
 # one pair, the ink says which way it faces.
 P.footer = [
-    Row([Jack("io_in", C2[0], "I/O"),
-         Jack("io_out", C2[1], "I/O", ink="MINT")], y=118.6),
+    Row([Jack("io_in", "I/O"),
+         Jack("io_out", "I/O", ink="MINT")], y=118.6),
 ]
 
 if __name__ == "__main__":

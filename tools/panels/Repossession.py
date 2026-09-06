@@ -43,21 +43,19 @@ W = P.w                         # 172.72 mm
 M = 6.5                         # side margin, inside the glass well's own 4.2
 IW = W - 2 * M                  # 159.72 mm of usable width
 
-# --- inside the read-out well -----------------------------------------------
+# --- inside the read-out well ------------------------------------------------
+# The well's own geometry is the spec's (Glass, above) and reaches the C++ as
+# panel::GLASS_*; only what sits inside it is laid out here.
 # The well runs 10.20 .. 49.80. The video sits left at 16:9; the URL box and the
 # asset report share the column beside it; the timeline spans the full width
 # underneath, because a region is a span of the whole clip and reads as one.
-GLASS_Y0, GLASS_H = 10.2, 39.0
+GLASS_Y0, GLASS_H = 9.8, 39.0
 
-VID_X, VID_Y, VID_W, VID_H = M, 11.7, 56.0, 31.5        # 11.70 .. 43.20, 16:9
-URL_X, URL_Y, URL_W, URL_H = 66.0, 11.7, W - 66.0 - M, 7.0
-INFO_X, INFO_Y = URL_X, 19.6
-INFO_W, INFO_H = URL_W, 43.2 - 19.6
-TL_X, TL_Y, TL_W, TL_H = M, 44.0, IW, 4.9               # 44.00 .. 48.90
-
-C8 = P.cols(8, 14.0)
-C7 = P.cols(7, 14.0)
-C6 = P.cols(6, 14.0)
+VID_X, VID_Y, VID_W, VID_H = M, 11.3, 56.0, 31.5        # 11.30 .. 42.80, 16:9
+URL_X, URL_Y, URL_W, URL_H = 66.0, 11.3, W - 66.0 - M, 7.0
+INFO_X, INFO_Y = URL_X, 19.2
+INFO_W, INFO_H = URL_W, 42.8 - 19.2
+TL_X, TL_Y, TL_W, TL_H = M, 43.6, IW, 4.9               # 43.60 .. 48.50
 
 P.plates = [
     # Glass on glass: only the sage hairline shows, which is the family's well
@@ -73,10 +71,9 @@ P.sections = [
     # them far better than eight digits could, and each button lights when its
     # region is the selected one. The caption light is the fetch/decode state.
     Section("SEIZED ASSETS", caption_light="busy", rows=[
-        Row([Bezel("slot1", C8[0]), Bezel("slot2", C8[1]),
-             Bezel("slot3", C8[2]), Bezel("slot4", C8[3]),
-             Bezel("slot5", C8[4]), Bezel("slot6", C8[5]),
-             Bezel("slot7", C8[6]), Bezel("slot8", C8[7])], silent=True),
+        Row([Bezel("slot1"), Bezel("slot2"), Bezel("slot3"), Bezel("slot4"),
+             Bezel("slot5"), Bezel("slot6"), Bezel("slot7"), Bezel("slot8")],
+            silent=True),
     ]),
 
     # What is charged against the selected region, plus the two controls that
@@ -85,23 +82,23 @@ P.sections = [
     # holds a region or it is empty, and the sequencer only visits the ones that
     # hold something. Emptying a slot IS skipping it.
     Section("LIENS", rows=[
-        Row([Knob("region", C7[0], "REGION"),
-             Knob("speed", C7[1], "SPEED"),
-             Knob("gain", C7[2], "GAIN"),
-             Switch("loop", C7[3], "LOOP"),
-             Switch("rev", C7[4], "REV"),
-             Knob("mode", C7[5], "MODE"),
-             Bezel("run", C7[6], "RUN", primary=True)]),
+        Row([Knob("region", "REGION", steps=8),
+             Knob("speed", "SPEED"),
+             Knob("gain", "GAIN"),
+             Switch("loop", "LOOP"),
+             Switch("rev", "REV"),
+             Knob("mode", "MODE", steps=4),
+             Bezel("run", "RUN", primary=True)]),
     ]),
 
     # Everything that drives the sequence from outside.
     Section("COLLECTIONS", rows=[
-        Row([Jack("clock_in", C6[0], "CLOCK", light="clock_led"),
-             Jack("reset_in", C6[1], "RESET"),
-             Jack("region_in", C6[2], "REGION"),
-             Jack("scan_in", C6[3], "SCAN"),
-             Jack("speed_in", C6[4], "SPEED"),
-             Jack("fire_in", C6[5], "FIRE")]),
+        Row([Jack("clock_in", "CLOCK", light="clock_led"),
+             Jack("reset_in", "RESET"),
+             Jack("region_in", "REGION"),
+             Jack("scan_in", "SCAN"),
+             Jack("speed_in", "SPEED"),
+             Jack("fire_in", "FIRE")]),
     ]),
 ]
 
@@ -110,19 +107,18 @@ P.sections = [
 # below 118.6 would run under one. Everything that leaves the module is here,
 # and all of it is an output -- the "video out" is the screen.
 P.footer = [
-    Row([Jack("out_l", C6[0], "OUT L", ink="MINT"),
-         Jack("out_r", C6[1], "OUT R", ink="MINT"),
-         Jack("pos_out", C6[2], "POS", ink="MINT"),
-         Jack("gate_out", C6[3], "GATE", ink="MINT"),
-         Jack("eor_out", C6[4], "EOR", ink="MINT"),
-         Jack("reg_out", C6[5], "REGION", ink="MINT")], y=118.6),
+    Row([Jack("out_l", "OUT L", ink="MINT"),
+         Jack("out_r", "OUT R", ink="MINT"),
+         Jack("pos_out", "POS", ink="MINT"),
+         Jack("gate_out", "GATE", ink="MINT"),
+         Jack("eor_out", "EOR", ink="MINT"),
+         Jack("reg_out", "REGION", ink="MINT")], y=118.6),
 ]
 
 # Echoed into src/Repossession/Panel.hpp so the live display and the artwork
 # cannot disagree about where a field is.
 P.metrics = dict(
     M=M, IW=IW,
-    GLASS_Y0=GLASS_Y0, GLASS_H=GLASS_H,
     VID_X=VID_X, VID_Y=VID_Y, VID_W=VID_W, VID_H=VID_H,
     URL_X=URL_X, URL_Y=URL_Y, URL_W=URL_W, URL_H=URL_H,
     INFO_X=INFO_X, INFO_Y=INFO_Y, INFO_W=INFO_W, INFO_H=INFO_H,

@@ -157,7 +157,7 @@ which is also where the other two panels in the plugin get theirs. There is no
 per-module copy of any of it.
 
 Retroactive's panel runs at panelkit's `compact` density: six rows of controls
-and a read-out at 14 HP leaves no room for the regular scale.
+and a read-out at 15 HP leaves no room for the regular scale.
 
 One constraint is Retroactive's alone rather than the family's: display numerals
 use DSEG7, and characters missing from its `cmap` do *not* render as tofu — Rack

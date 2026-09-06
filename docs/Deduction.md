@@ -2,7 +2,7 @@
 
 Schedule A: itemised deductions. Six well-known filter/distortion circuits from
 the *Modular in a Week* (MiaW) course, one model at a time behind a single set
-of controls. 10 HP, polyphonic.
+of controls. 13 HP, polyphonic.
 
 Part of the [Moon Technologies](../README.md) plugin.
 

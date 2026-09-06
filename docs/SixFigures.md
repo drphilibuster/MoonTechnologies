@@ -22,7 +22,7 @@ original character available and default, and let VCV do the rest.
 
 ## Layout
 
-24 HP, six identical voice columns and a seventh "totals" column on the right
+26 HP, six identical voice columns and a seventh "totals" column on the right
 that holds the controls shared by all six voices.
 
 ## The four cores
