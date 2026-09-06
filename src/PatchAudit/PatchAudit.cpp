@@ -274,7 +274,7 @@ struct PatchAuditWidget : ModuleWidget, ui_pa::BrowserHost {
 			case ps::InstallPhase::FetchingDetail:
 				display->setError("");
 				display->statusText = "Fetching patch details...";
-				display->statusColor = panel::SAGE;
+				display->statusColor = panel::SAGE_DARK;   // the status line sits on the pale query block
 				return;
 			case ps::InstallPhase::Downloading:
 				display->statusText = string::f("Downloading %s...", r.title.c_str());

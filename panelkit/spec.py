@@ -160,6 +160,9 @@ class FreeLabel:
     ink: str = "SAGE"
     align: str = "center"           # center | left | right
     tracking: float = 0.0
+    #: "light" (the pale face) or "dark" (a band or display). Blank lets the
+    #: solver decide from y, which is right for anything not inside a plate.
+    ground: str = ""
 
 
 @dataclass

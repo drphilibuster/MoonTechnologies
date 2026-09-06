@@ -1,5 +1,11 @@
 """SVG output: the panel face, plus the hardware every panel shares.
 
+The face is a banknote: pale paper, a dark masthead and footer band, section
+blocks framed in sage guilloche with a scroll in each corner, braided ribbons
+running the margins, and every wire between controls drawn as an engraved
+wave rather than a straight rule. Everything is explicit geometry -- filled
+rects, circles and polyline paths -- because of the two constraints below.
+
 Two hard constraints this file is written around, both inherited from Rack's
 renderer and both still binding:
 
@@ -9,6 +15,8 @@ renderer and both still binding:
    last. So a panel is flat fills and explicit geometry only, and every label is
    drawn at runtime from the table in the generated header. `display:none` IS
    honoured, which is what keeps the components layer out of the render.
+   Paths with straight segments and opacity attributes ARE honoured, which is
+   what the guilloche is made of.
 
 2. Nothing may straddle an edge or a screw. lint.py enforces it; this file just
    has to give it honest geometry to check.
@@ -17,19 +25,25 @@ renderer and both still binding:
 import math
 from . import spec as S
 from . import palette as P
-from .layout import cap_h, desc_h, label_box, HEADER_H
+from .layout import cap_h, desc_h, label_box, HEADER_H, SCALE
 
 TAB_W = 7.0             # the index tab on every block: a form's thumb index
 TAB_H = 0.5
 BLOCK_INSET = 3.0       # felt blocks sit this far in from the panel edge
 BLOCK_R = 1.6
 WELL_R = 1.2
-TRACE_W = 0.32
+TRACE_W = 0.30
+TRACE_AMP = 0.28        # how far a trace wave strays from its centreline
+TRACE_PERIOD = 3.2
 TRACE_CLEAR = 0.9       # how far a trace breaks around a label's box
+FRAME_W = 0.22          # the engraved frame round every block
+RIBBON_W = 0.16         # a guilloche strand
+SCREW_CLEAR = 11.2      # x at which the corner screws stop, plus a millimetre
 
 
 def panel_svg(panel, sol):
     w, h = panel.w, panel.h
+    m = SCALE[panel.density]
     o = []
     a = o.append
     a('<?xml version="1.0" encoding="UTF-8"?>')
@@ -38,24 +52,38 @@ def panel_svg(panel, sol):
       'width="%.4fmm" height="%.4fmm" viewBox="0 0 %.4f %.4f" version="1.1">'
       % (w, h, w, h))
     a('<g inkscape:label="panel" inkscape:groupmode="layer" id="panel">')
-    a('  <rect x="0" y="0" width="%.4f" height="%.4f" fill="%s"/>' % (w, h, P.INK))
+    a('  <rect x="0" y="0" width="%.4f" height="%.4f" fill="%s"/>' % (w, h, P.PAPER))
 
-    # --- masthead: a double rule, the way an official form heads a page
+    # --- masthead: the dark band a note prints its denomination on, edged in
+    # an engraved braid between the two screws and closed by a sage rule
     a('  <rect x="0" y="0" width="%.4f" height="%.4f" fill="%s"/>' % (w, HEADER_H, P.BAND))
-    a('  <rect x="0" y="%.4f" width="%.4f" height="0.45" fill="%s"/>'
-      % (HEADER_H - 0.45, w, P.LIME))
-    a('  <rect x="0" y="%.4f" width="%.4f" height="0.18" fill="%s"/>'
-      % (HEADER_H + 0.5, w, P.RULE))
+    _ribbon(a, SCREW_CLEAR, w - SCREW_CLEAR, 1.35, horizontal=True, amp=0.55,
+            period=5.0, ink=P.RULE, opacity=0.9)
+    a('  <rect x="0" y="%.4f" width="%.4f" height="0.35" fill="%s"/>'
+      % (HEADER_H - 0.35, w, P.RULE))
 
     # --- footer band: the signature block, tabbed in mint because what leaves
-    # the module leaves from here
+    # the module leaves from here. A braid runs under the jacks, between the
+    # bottom screws.
     if sol.band_footer is not None:
         a('  <rect x="0" y="%.4f" width="%.4f" height="%.4f" fill="%s"/>'
           % (sol.band_footer, w, h - sol.band_footer, P.BAND))
-        a('  <rect x="0" y="%.4f" width="%.4f" height="0.18" fill="%s"/>'
+        a('  <rect x="0" y="%.4f" width="%.4f" height="0.3" fill="%s"/>'
           % (sol.band_footer, w, P.RULE))
         a('  <rect x="%.4f" y="%.4f" width="%.4f" height="%.4f" rx="0.25" fill="%s"/>'
           % (BLOCK_INSET, sol.band_footer, TAB_W, TAB_H, P.MINT))
+    _ribbon(a, SCREW_CLEAR, w - SCREW_CLEAR, 126.4, horizontal=True, amp=0.55,
+            period=5.0, ink=P.RULE, opacity=0.9)
+
+    # --- the margins: two braided strands running the height of the face, the
+    # way a note's border runs round its engraving. They stop short of the
+    # bands so the frame reads as one closed figure.
+    top = HEADER_H + 1.4
+    bot = (sol.band_footer if sol.band_footer is not None else 123.0) - 1.4
+    if bot - top > 12.0:
+        for x in (1.55, w - 1.55):
+            _ribbon(a, top, bot, x, horizontal=False, amp=0.5, period=6.0,
+                    ink=P.RULE, opacity=0.55)
 
     # --- read-out well
     if sol.glass:
@@ -64,17 +92,28 @@ def panel_svg(panel, sol):
           'stroke="%s" stroke-width="0.3"/>'
           % (gy, w - 8.4, gh, WELL_R, P.GLASS, P.RULE))
 
-    # --- felt section blocks
+    # --- section blocks: pale plates framed in sage, a scroll curled into each
+    # free corner and the thumb-index tab where a scroll would be
+    scroll = max(1.2, min(2.1, m["BOT_CLEAR"] - 0.5))
     for y0, y1 in sol.blocks:
-        a('  <rect x="%.4f" y="%.4f" width="%.4f" height="%.4f" rx="%.2f" fill="%s"/>'
-          % (BLOCK_INSET, y0, w - 2 * BLOCK_INSET, y1 - y0, BLOCK_R, P.FELT))
+        a('  <rect x="%.4f" y="%.4f" width="%.4f" height="%.4f" rx="%.2f" fill="%s" '
+          'stroke="%s" stroke-width="%.2f"/>'
+          % (BLOCK_INSET, y0, w - 2 * BLOCK_INSET, y1 - y0, BLOCK_R, P.FELT,
+             P.RULE, FRAME_W))
         a('  <rect x="%.4f" y="%.4f" width="%.4f" height="%.4f" rx="0.25" fill="%s"/>'
-          % (BLOCK_INSET, y0, TAB_W, TAB_H, P.LIME))
+          % (BLOCK_INSET, y0, TAB_W, TAB_H, P.INK))
+        x0, x1 = BLOCK_INSET, w - BLOCK_INSET
+        _scroll(a, x1, y0, -1, 1, scroll)     # top-right
+        _scroll(a, x0, y1, 1, -1, scroll)     # bottom-left
+        _scroll(a, x1, y1, -1, -1, scroll)    # bottom-right
 
-    # --- subtotal rules inside blocks
+    # --- subtotal rules inside blocks, with a bead at each end
     for y in sol.rules:
-        a('  <rect x="%.4f" y="%.4f" width="%.4f" height="0.22" fill="%s"/>'
-          % (BLOCK_INSET + 3.0, y, w - 2 * BLOCK_INSET - 6.0, P.RULE))
+        xa, xb = BLOCK_INSET + 3.0, w - BLOCK_INSET - 3.0
+        a('  <rect x="%.4f" y="%.4f" width="%.4f" height="0.2" fill="%s"/>'
+          % (xa, y - 0.1, xb - xa, P.RULE))
+        for x in (xa, xb):
+            a('  <circle cx="%.4f" cy="%.4f" r="0.42" fill="%s"/>' % (x, y, P.RULE))
 
     # --- rectangular plates: fields, list wells, buttons on panels that are
     # mostly one live display
@@ -86,27 +125,32 @@ def panel_svg(panel, sol):
             a('  <rect x="%.4f" y="%.4f" width="%.4f" height="%.4f" rx="0.25" fill="%s"/>'
               % (pl.x, pl.y, TAB_W, TAB_H, getattr(P, pl.tab)))
 
-    # --- recessed seats behind every widget
+    # --- recessed seats behind every widget: a dark seal ringed in sage
     for x, y, hw, hh in sol.wells:
         if abs(hw - hh) < 1e-6:
-            a('  <circle cx="%.4f" cy="%.4f" r="%.4f" fill="%s"/>' % (x, y, hw, P.BAND))
+            a('  <circle cx="%.4f" cy="%.4f" r="%.4f" fill="%s" stroke="%s" '
+              'stroke-width="0.2"/>' % (x, y, hw, P.GLASS, P.RULE))
         else:
-            a('  <rect x="%.4f" y="%.4f" width="%.4f" height="%.4f" rx="%.2f" fill="%s"/>'
-              % (x - hw, y - hh, 2 * hw, 2 * hh, min(hw, hh) * 0.35, P.BAND))
+            a('  <rect x="%.4f" y="%.4f" width="%.4f" height="%.4f" rx="%.2f" fill="%s" '
+              'stroke="%s" stroke-width="0.2"/>'
+              % (x - hw, y - hh, 2 * hw, 2 * hh, min(hw, hh) * 0.35, P.GLASS, P.RULE))
 
-    # --- the primary action: one lime ring per panel, so the control you reach
-    # for is the one the eye lands on first
+    # --- the primary action: a double ring, the way a seal is struck twice, so
+    # the control you reach for is the one the eye lands on first
     for x, y, r in sol.rings:
         a('  <circle cx="%.4f" cy="%.4f" r="%.4f" fill="none" stroke="%s" '
-          'stroke-width="0.32"/>' % (x, y, r, P.LIME))
+          'stroke-width="0.32"/>' % (x, y, r, P.RULE))
+        a('  <circle cx="%.4f" cy="%.4f" r="%.4f" fill="none" stroke="%s" '
+          'stroke-width="0.16"/>' % (x, y, r - 0.6, P.RULE))
 
-    # --- traces, broken around any label they would otherwise cross
+    # --- traces, engraved as waves and broken around any label they would
+    # otherwise cross; a rosette wherever a wire is tied off
     boxes = _label_boxes(sol)
     for tr in panel.traces:
         for seg in _break_polyline(tr.points, boxes):
             _emit_seg(a, seg)
         for dx, dy in tr.dots:
-            a('  <circle cx="%.4f" cy="%.4f" r="0.62" fill="%s"/>' % (dx, dy, P.LIME))
+            _rosette(a, dx, dy)
 
     a('</g>')
 
@@ -120,6 +164,74 @@ def panel_svg(panel, sol):
     a('</g>')
     a('</svg>')
     return "\n".join(o) + "\n"
+
+
+# --- ornament ---------------------------------------------------------------
+# All of it is polyline <path> data: nanosvg keeps M/L paths and their stroke
+# attributes, and a wave sampled every 0.35 mm is indistinguishable from a
+# curve at any zoom Rack offers.
+
+def _wave(lo, hi, c, amp, period, phase, horizontal, step=0.35):
+    """Points of a sine along [lo, hi] at cross-axis position c."""
+    n = max(2, int((hi - lo) / step))
+    pts = []
+    for i in range(n + 1):
+        t = lo + (hi - lo) * i / n
+        d = amp * math.sin(2 * math.pi * (t - lo) / period + phase)
+        pts.append((t, c + d) if horizontal else (c + d, t))
+    return pts
+
+
+def _path(a, pts, ink, width, opacity=1.0, close=False):
+    d = "M %.3f %.3f " % pts[0] + " ".join("L %.3f %.3f" % p for p in pts[1:])
+    if close:
+        d += " Z"
+    op = "" if opacity >= 0.999 else ' stroke-opacity="%.2f"' % opacity
+    a('  <path d="%s" fill="none" stroke="%s" stroke-width="%.2f" '
+      'stroke-linecap="round" stroke-linejoin="round"%s/>' % (d, ink, width, op))
+
+
+def _ribbon(a, lo, hi, c, horizontal, amp, period, ink, opacity=1.0):
+    """Two strands a half-cycle apart: the braid every banknote border is made of."""
+    if hi - lo < period:
+        return
+    # Snap the run to whole periods so both strands meet at the ends.
+    cycles = max(1, int(round((hi - lo) / period)))
+    period = (hi - lo) / cycles
+    for phase in (0.0, math.pi):
+        _path(a, _wave(lo, hi, c, amp, period, phase, horizontal), ink, RIBBON_W, opacity)
+    for t in (lo, hi):
+        x, y = (t, c) if horizontal else (c, t)
+        a('  <circle cx="%.4f" cy="%.4f" r="0.36" fill="%s"%s/>'
+          % (x, y, ink, "" if opacity >= 0.999 else ' fill-opacity="%.2f"' % opacity))
+
+
+def _scroll(a, cx, cy, sx, sy, size):
+    """A scroll curled into a block corner: an Archimedean spiral whose outer
+    turn is tangent to the frame. (cx, cy) is the corner; (sx, sy) the
+    direction into the block."""
+    turns = 1.85
+    n = 40
+    pts = []
+    r_out = size * 0.5
+    ox = cx + sx * (r_out + 0.45)
+    oy = cy + sy * (r_out + 0.45)
+    for i in range(n + 1):
+        t = i / n
+        th = 2 * math.pi * turns * t
+        r = r_out * (1.0 - 0.82 * t)
+        # start on the frame side and wind inward
+        x = ox - sx * r * math.cos(th)
+        y = oy - sy * r * math.sin(th)
+        pts.append((x, y))
+    _path(a, pts, P.RULE, RIBBON_W)
+    a('  <circle cx="%.4f" cy="%.4f" r="0.22" fill="%s"/>' % (pts[-1][0], pts[-1][1], P.RULE))
+
+
+def _rosette(a, x, y):
+    a('  <circle cx="%.4f" cy="%.4f" r="0.75" fill="none" stroke="%s" '
+      'stroke-width="0.18"/>' % (x, y, P.RULE))
+    a('  <circle cx="%.4f" cy="%.4f" r="0.36" fill="%s"/>' % (x, y, P.RULE))
 
 
 # --- trace routing ----------------------------------------------------------
@@ -171,13 +283,18 @@ def _break_seg(x0, y0, x1, y1, boxes):
 
 
 def _emit_seg(a, seg):
+    """One run of wire, engraved as a wave along its own centreline. Short runs
+    stay straight: a wave that cannot complete a cycle reads as a kink."""
     x0, y0, x1, y1 = seg
-    if abs(x1 - x0) < 1e-6:
-        a('  <rect x="%.4f" y="%.4f" width="%.4f" height="%.4f" fill="%s"/>'
-          % (x0 - TRACE_W / 2, y0, TRACE_W, y1 - y0, P.LIME))
-    else:
-        a('  <rect x="%.4f" y="%.4f" width="%.4f" height="%.4f" fill="%s"/>'
-          % (x0, y0 - TRACE_W / 2, x1 - x0, TRACE_W, P.LIME))
+    vertical = abs(x1 - x0) < 1e-6
+    lo, hi = (y0, y1) if vertical else (x0, x1)
+    if hi - lo < TRACE_PERIOD:
+        _path(a, [(x0, y0), (x1, y1)], P.RULE, TRACE_W)
+        return
+    cycles = max(1, int(round((hi - lo) / TRACE_PERIOD)))
+    period = (hi - lo) / cycles
+    pts = _wave(lo, hi, x0 if vertical else y0, TRACE_AMP, period, 0.0, not vertical)
+    _path(a, pts, P.RULE, TRACE_W)
 
 
 # --- shared hardware --------------------------------------------------------
@@ -210,7 +327,7 @@ def screw_svg():
 def port_svg(accent=None):
     """A brass-collared jack on the stock PJ301M canvas (23.7 px square).
 
-    The stock port's chrome collar is the loudest off-palette object on a green
+    The stock port's chrome collar is the loudest off-palette object on the
     panel; brass puts it in the same drawer as the screws. `accent` rings the
     throat in mint to mark an output.
     """
@@ -224,7 +341,6 @@ def port_svg(accent=None):
         '  <circle cx="%.4f" cy="%.4f" r="11.85" fill="%s"/>' % (c, c, P.BRASS_DARK),
         '  <circle cx="%.4f" cy="%.4f" r="11.10" fill="%s"/>' % (c, c, P.BRASS),
         '  <circle cx="%.4f" cy="%.4f" r="9.60" fill="%s"/>' % (c, c, ring),
-        '  <circle cx="%.4f" cy="%.4f" r="7.70" fill="%s"/>' % (c, c, P.BAND),
+        '  <circle cx="%.4f" cy="%.4f" r="7.70" fill="%s"/>' % (c, c, P.GLASS),
         '  <circle cx="%.4f" cy="%.4f" r="4.40" fill="#000000"/>' % (c, c),
         '</svg>', ""])
-

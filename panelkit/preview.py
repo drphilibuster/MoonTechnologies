@@ -23,9 +23,9 @@ K = S.PX_PER_MM
 
 #: how the browser mock draws each widget class, so it reads like Rack does
 FACE = {
-    "knob_large": ("#123a20", 0.13, -0.58),
-    "knob": ("#123a20", 0.13, -0.58),
-    "trim": ("#123a20", 0.13, -0.58),
+    "knob_large": ("#2a2a2a", 0.13, -0.58),
+    "knob": ("#2a2a2a", 0.13, -0.58),
+    "trim": ("#2a2a2a", 0.13, -0.58),
     "slider": ("#d8d4c6", 0.0, 0.0),
     "button": ("#3a3a3a", 0.0, 0.0),
     "bezel": ("#3a3a3a", 0.55, 0.0),
@@ -82,12 +82,14 @@ def html(panel, sol, svg, labels):
             o.append('<text transform="translate(%.2f,%.2f) scale(-1,1)" x="0" y="0" '
                      'font-family="Nunito" font-size="%.2f" fill="%s" text-anchor="%s"'
                      '>%s</text>'
-                     % (l["x"] * K, l["y"] * K, l["size"], P.INKS[l["ink"]],
+                     % (l["x"] * K, l["y"] * K, l["size"],
+                        P.ink(l["ink"], l.get("ground", "light"))[1],
                         flip[ANCHOR[l["align"]]], _esc(l["text"])))
             continue
         o.append('<text x="%.2f" y="%.2f" font-family="Nunito" font-size="%.2f" '
                  'fill="%s" text-anchor="%s" letter-spacing="%.2f">%s</text>'
-                 % (l["x"] * K, l["y"] * K, l["size"], P.INKS[l["ink"]],
+                 % (l["x"] * K, l["y"] * K, l["size"],
+                    P.ink(l["ink"], l.get("ground", "light"))[1],
                     ANCHOR[l["align"]], l["tracking"], _esc(l["text"])))
 
     n_lab = len([l for l in labels if l["text"]])

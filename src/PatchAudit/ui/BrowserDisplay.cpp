@@ -191,7 +191,7 @@ struct SearchField : ui::TextField {
 
 BrowserDisplay::BrowserDisplay(Rect boxIn, BrowserHost* host) : host(host) {
 	box = boxIn;
-	statusColor = panel::SAGE;
+	statusColor = panel::SAGE_DARK;   // the status line sits on the pale query block
 	// In Rack's module browser there is no Module, so there is no client and no
 	// state. The panel still has to look like itself, so the chrome is built
 	// either way and only the wiring is skipped.
@@ -596,19 +596,19 @@ void BrowserDisplay::updateStatus() {
 		return;
 	if (!errorText.empty()) {
 		statusText = errorText;
-		statusColor = panel::CLAY;
+		statusColor = panel::CLAY_DARK;
 		return;
 	}
-	statusColor = panel::SAGE;
+	statusColor = panel::SAGE_DARK;   // the status line sits on the pale query block
 
 	if (result.status == ps::ApiStatus::Network) {
 		statusText = result.message;
-		statusColor = panel::CLAY;
+		statusColor = panel::CLAY_DARK;
 		return;
 	}
 	if (result.status != ps::ApiStatus::Ok) {
 		statusText = result.message;
-		statusColor = panel::CLAY;
+		statusColor = panel::CLAY_DARK;
 		return;
 	}
 	if (result.patches.empty()) {
@@ -672,7 +672,7 @@ void BrowserDisplay::drawLayer(const DrawArgs& args, int layer) {
 		// The query block's caption row carries the live status line: on a panel
 		// with no knobs, what the block reports IS its caption. It is centred and
 		// inked like every other block caption in the family.
-		static const panel::TextStyle STATUS(panel::Face::Ui, 6.6f, panel::SAGE,
+		static const panel::TextStyle STATUS(panel::Face::Ui, 6.6f, panel::SAGE_DARK,
 			NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0.6f);
 		static const panel::TextStyle PAGE(panel::Face::Ui, 8.6f, panel::SAGE,
 			NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);

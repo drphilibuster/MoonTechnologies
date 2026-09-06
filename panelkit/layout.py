@@ -129,7 +129,8 @@ def solve(panel):
         sec.y0 = cursor
         if sec.caption:
             cap = dict(x=panel.w / 2, y=sec.y0 + m["CAP_BASE"], text=sec.caption,
-                       size=6.0, ink="SAGE", align="center", tracking=0.6)
+                       size=6.0, ink="SAGE", align="center", tracking=0.6,
+                       ground="light")
             out.labels.append(cap)
             if sec.caption_light:
                 _lit_label(out, cap, sec.caption_light)
@@ -193,8 +194,21 @@ def solve(panel):
 
     for fl in panel.extra_labels:
         out.labels.append(dict(x=fl.x, y=fl.y, text=fl.text, size=fl.size,
-                               ink=fl.ink, align=fl.align, tracking=fl.tracking))
+                               ink=fl.ink, align=fl.align, tracking=fl.tracking,
+                               ground=fl.ground or ground_at(out, fl.y)))
     return out
+
+
+def ground_at(sol, y):
+    """Which ground a label at baseline y sits on: the pale face ("light") or a
+    dark band ("dark"). The emitter resolves the label's ink role against this,
+    so PAPER means "primary" everywhere and lands as dark ink on the face and
+    pale ink on the bands."""
+    if y < HEADER_H + 0.5:
+        return "dark"
+    if sol.band_footer is not None and y > sol.band_footer:
+        return "dark"
+    return "light"
 
 
 def _ink_r(it):
@@ -263,7 +277,8 @@ def _place_row(out, panel, m, row, inner, pinned=False):
                 base = y + this_r + m["BELOW_GAP"]
                 lowest = max(lowest, base + desc_h(size))
             lab = dict(x=x, y=base, text=text, size=size, ink=ink,
-                       align="center", tracking=0.0)
+                       align="center", tracking=0.0,
+                       ground="dark" if pinned else "light")
             out.labels.append(lab)
             for it in row.items:
                 if it.light and it.x == x:

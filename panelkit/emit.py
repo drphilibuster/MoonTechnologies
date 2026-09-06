@@ -52,8 +52,8 @@ def masthead(panel):
         out.append(dict(x=panel.w / 2, y=TITLE_Y, text=panel.title,
                         size=title_size(panel), ink="PAPER", align="center",
                         tracking=TITLE_TRACK))
-    # The masthead reads like a form's header: the issuing office bottom-left,
-    # the form number bottom-right, the title across the top.
+    # The masthead reads like a note's header: the issuing office bottom-left,
+    # the series number bottom-right, the denomination across the top.
     if panel.brand:
         out.append(dict(x=SCREW_CLEAR + 0.4, y=LOGO_Y, text="$", size=LOGO_SIZE,
                         ink="LIME", align="left", tracking=0.0, mirror=True))
@@ -63,6 +63,9 @@ def masthead(panel):
     if panel.form:
         out.append(dict(x=panel.w - 4.2, y=STUB_Y, text=panel.form,
                         size=STUB_SIZE, ink="SAGE", align="right", tracking=0.4))
+    # Everything in the masthead sits on the dark band.
+    for l in out:
+        l["ground"] = "dark"
     return out
 
 
@@ -405,11 +408,13 @@ def common():
     a("/** Every stock light derives from GrayModuleLightWidget, which hard-codes a")
     a("    #333333 socket that reads as a grey hole punched in a green panel. These")
     a("    restyle the socket as well as the emitter. */")
+    gr, gg, gb = P.rgb(P.GLASS)
+    rr, rg, rb = P.rgb(P.RULE)
     a("template <typename TBase = GrayModuleLightWidget>")
     a("struct TSocketLight : TBase {")
     a("\tTSocketLight() {")
-    a("\t\tthis->bgColor = nvgRGBA(0x00, 0x23, 0x0b, 0xff);")
-    a("\t\tthis->borderColor = nvgRGBA(0x00, 0x14, 0x06, 0x80);")
+    a("\t\tthis->bgColor = nvgRGBA(0x%02x, 0x%02x, 0x%02x, 0xff);" % (gr, gg, gb))
+    a("\t\tthis->borderColor = nvgRGBA(0x%02x, 0x%02x, 0x%02x, 0xa0);" % (rr, rg, rb))
     a("\t}")
     a("};")
     a("")
@@ -520,8 +525,11 @@ def panel_header(panel, sol):
     a("// --- silkscreen ------------------------------------------------------------")
     a("static const Label LABELS[] = {")
     for l in masthead(panel) + [x for x in sol.labels if x["text"]]:
-        a('\t{%8.4ff, %8.4ff, %5.2ff, %.2ff, %-5s, %-17s %-6s "%s"},'
-          % (l["x"], l["y"], l["size"], l["tracking"], l["ink"],
+        # The role is what the spec said; the constant is what it lands as on
+        # the ground it sits on -- dark ink on the face, pale on the bands.
+        cname = P.ink(l["ink"], l.get("ground", "light"))[0]
+        a('\t{%8.4ff, %8.4ff, %5.2ff, %.2ff, %-9s, %-17s %-6s "%s"},'
+          % (l["x"], l["y"], l["size"], l["tracking"], cname,
              ALIGN[l["align"]] + " | NVG_ALIGN_BASELINE,",
              "true," if l.get("mirror") else "false,",
              l["text"].replace("\\", "\\\\").replace('"', '\\"')))

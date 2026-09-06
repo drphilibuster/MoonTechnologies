@@ -38,16 +38,20 @@ static const float PANEL_H = 128.5000f;  // mm
 // the Rack SDK compiles plugins as -- so these cannot be inline variables and
 // each translation unit gets its own copy. The values are generated, so the
 // copies cannot disagree.
-static const NVGcolor INK    = nvgRGB(0x00, 0x35, 0x12);   // panel base
-static const NVGcolor FELT   = nvgRGB(0x00, 0x5d, 0x1f);   // section blocks
-static const NVGcolor BAND   = nvgRGB(0x00, 0x23, 0x0b);   // bands and widget wells
-static const NVGcolor GLASS  = nvgRGB(0x00, 0x15, 0x05);   // displays
-static const NVGcolor RULE   = nvgRGB(0x2b, 0x7a, 0x45);   // dividers and well borders
-static const NVGcolor LIME   = nvgRGB(0xd2, 0xfa, 0x52);   // accents, index tabs, the primary action
-static const NVGcolor MINT   = nvgRGB(0x00, 0xe9, 0x5c);   // affirmatives
-static const NVGcolor CLAY   = nvgRGB(0xe0, 0x9a, 0x3c);   // action required
-static const NVGcolor PAPER  = nvgRGB(0xf6, 0xf4, 0xe9);   // primary label ink
-static const NVGcolor SAGE   = nvgRGB(0x8f, 0xb9, 0x9c);   // secondary label ink
+static const NVGcolor INK    = nvgRGB(0x18, 0x1e, 0x15);   // engraving ink: the dark bands, and primary text on the face
+static const NVGcolor PAPER  = nvgRGB(0xe4, 0xea, 0xe1);   // the face, and primary text on dark ground
+static const NVGcolor FELT   = nvgRGB(0xe7, 0xe1, 0xea);   // section blocks
+static const NVGcolor BAND   = nvgRGB(0x18, 0x1e, 0x15);   // masthead and footer bands
+static const NVGcolor GLASS  = nvgRGB(0x1b, 0x15, 0x1e);   // displays and widget wells
+static const NVGcolor RULE   = nvgRGB(0x7b, 0x9a, 0x6d);   // the guilloche: rules, frames, traces
+static const NVGcolor LIME   = nvgRGB(0xaa, 0xbe, 0xa1);   // accent on dark ground; LED emitters
+static const NVGcolor MINT   = nvgRGB(0xa9, 0xbd, 0xa0);   // affirmatives: outputs
+static const NVGcolor CLAY   = nvgRGB(0x99, 0x93, 0x9c);   // action required
+static const NVGcolor SAGE   = nvgRGB(0x7b, 0x9a, 0x6d);   // secondary text on dark ground
+static const NVGcolor SAGE_DARK = nvgRGB(0x4e, 0x62, 0x45);   // secondary text on the face
+static const NVGcolor LIME_DARK = nvgRGB(0x62, 0x7b, 0x57);   // accent text on the face
+static const NVGcolor MINT_DARK = nvgRGB(0x59, 0x66, 0x54);   // output text on the face
+static const NVGcolor CLAY_DARK = nvgRGB(0x62, 0x5c, 0x65);   // warning text on the face
 
 inline NVGcolor alpha(NVGcolor c, float a) { c.a = a; return c; }
 
@@ -303,8 +307,8 @@ struct PortOut : app::SvgPort {
 template <typename TBase = GrayModuleLightWidget>
 struct TSocketLight : TBase {
 	TSocketLight() {
-		this->bgColor = nvgRGBA(0x00, 0x23, 0x0b, 0xff);
-		this->borderColor = nvgRGBA(0x00, 0x14, 0x06, 0x80);
+		this->bgColor = nvgRGBA(0x1b, 0x15, 0x1e, 0xff);
+		this->borderColor = nvgRGBA(0x7b, 0x9a, 0x6d, 0xa0);
 	}
 };
 

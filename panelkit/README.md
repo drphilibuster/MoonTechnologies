@@ -49,26 +49,36 @@ and draws one module's silkscreen on all three panels.
 
 ## The design language
 
-Every panel in the family is the same object: an official form, on a deep green
-board, filled in on raised felt.
+Every panel in the family is the same object: a banknote. Pale engraved paper,
+dark bands top and bottom that the denomination and the signatures print on,
+sage guilloche round every field, and a scroll curled into each corner. The
+five colours are the "High Contrast" palette (icolorpalette.com/color/7b9a6d):
+two near-blacks, two off-whites, one sage. Everything else is derived from them.
 
 | element | rule |
 |---|---|
-| board | `INK`, the whole face |
-| masthead | `BAND` to y=9.0, closed by a lime rule and a muted rule. Title in `PAPER`, auto-sized to clear both top screws. The form number sits under it on the right in `SAGE` |
-| section block | `FELT`, inset 3 mm, rounded 1.6, with a 7 × 0.5 mm **lime index tab** at its top-left |
-| section caption | `SAGE`, 6 px, centred on the block, 3.3–3.6 mm below its top edge |
-| control label | `PAPER` for a primary control, `SAGE` for a secondary. **Below** knobs, buttons and switches; **above** jacks, where a cable would cover it |
+| the paper | `PAPER`, the whole face |
+| masthead | `BAND` to y=9.0, a braided ribbon between the top screws, closed by a sage rule. Title in `PAPER`, auto-sized to clear both screws. The form number sits under it on the right in `SAGE` |
+| margins | a braided sage ribbon runs each side of the face between the bands, the way a note's border frames its engraving |
+| section block | `FELT`, inset 3 mm, rounded 1.6, framed in a sage hairline, a **scroll** in three corners and a 7 × 0.5 mm **ink index tab** at the fourth (top-left) |
+| section caption | secondary ink, 6 px, centred on the block, 3.3–3.6 mm below its top edge |
+| control label | primary ink for a primary control, secondary for a secondary. **Below** knobs, buttons and switches; **above** jacks, where a cable would cover it |
+| ink and ground | a label's role (`PAPER` primary, `SAGE` secondary, `LIME` accent, `MINT` output, `CLAY` warning) is what the spec says; what it lands as depends on where it sits. On the pale face it is `INK` / `SAGE_DARK` / `LIME_DARK` / `MINT_DARK` / `CLAY_DARK`; on a band or in a display it is `PAPER` / `SAGE` / `LIME` / `MINT` / `CLAY`. The solver tags every label with its ground; the emitter resolves it |
 | paired control | a trimpot directly over its jack shares one label, placed above the pair |
 | lit label | a small light immediately right of a label names what it reports |
-| the primary action | exactly one control per panel wears a lime ring |
-| trace | a lime wire between controls the panel wants to relate, breaking itself around any label it crosses |
+| the primary action | exactly one control per panel wears a double sage ring, a seal struck twice |
+| trace | a sage wire between controls the panel wants to relate, engraved as a wave, tied off with a rosette, breaking itself around any label it crosses |
+| well | every widget sits in a dark `GLASS` seat ringed in sage |
 | read-out | `GLASS` well under the masthead, `RULE` border. Words in Share Tech Mono, numerals in DSEG7 |
-| footer band | `BAND`, with a **mint** index tab. Holds the I/O and anything that leaves the module |
+| footer band | `BAND`, with a **mint** index tab, a braided ribbon under the jacks between the bottom screws. Holds the I/O and anything that leaves the module |
 | hardware | brass hex screws and brass-collared jacks; outputs ring mint |
-| masthead footing | the mark, then the brand, bottom-left; the form number bottom-right — a form's issuing office and its number |
+| masthead footing | the mark, then the brand, bottom-left; the form number bottom-right — a note's issuing office and its series |
 | the mark | a dollar sign, backwards: the real ASCII `$` set in the panel's own face and drawn through a `scale(-1, 1)`, in `LIME` |
 | form number | every panel carries a real IRS form number matching its verb — `FORM 1040-X` (amended return), `SCHEDULE UTP` (uncertain tax position), `FORM 4564` (document request) |
+
+All of the ornament is polyline `<path>` data and filled primitives, because
+that is what Rack's renderer keeps (see the two constraints below); a wave
+sampled every 0.35 mm is indistinguishable from a curve at any zoom Rack has.
 
 Colours live in `palette.py` and nowhere else. A label may only be inked in one of
 the five named roles; the generator rejects any other.

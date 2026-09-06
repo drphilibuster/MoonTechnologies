@@ -2,10 +2,10 @@
 
 Three modules for [VCV Rack 2](https://vcvrack.com), by **Taxxess**.
 
-They share a panel language borrowed from tax stationery — a green form you fill
-in, a lime index tab on every block, a form number in the corner — because all
-three are, one way or another, about filing something and finding out what it
-cost you.
+They share a panel language borrowed from money — a pale engraved note, sage
+guilloche round every field, a scroll in every corner, a form number in the
+masthead — because all of them are, one way or another, about filing something
+and finding out what it cost you.
 
 | | | |
 | --- | --- | --- |

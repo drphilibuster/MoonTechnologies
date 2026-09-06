@@ -48,11 +48,11 @@ static const float STATUS_Y       = 13.6000f;
 
 // --- silkscreen ------------------------------------------------------------
 static const Label LABELS[] = {
-	{ 11.5600f,   5.5000f, 10.50f, 1.50f, PAPER, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "PATCHAUDIT"},
-	{120.5200f,   5.5000f,  6.00f, 0.00f, SAGE , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "PATCHSTORAGE RETURNS"},
-	{ 11.5600f,   8.2500f,  7.40f, 0.00f, LIME , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, true,  "$"},
-	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
-	{127.8800f,   8.0000f,  4.60f, 0.40f, SAGE , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 4564"},
+	{ 11.5600f,   5.5000f, 10.50f, 1.50f, PAPER    , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "PATCHAUDIT"},
+	{120.5200f,   5.5000f,  6.00f, 0.00f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "PATCHSTORAGE RETURNS"},
+	{ 11.5600f,   8.2500f,  7.40f, 0.00f, LIME     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, true,  "$"},
+	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
+	{127.8800f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 4564"},
 };
 
 /** Draws this panel's silkscreen. `static` so each module keeps its own,

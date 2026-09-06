@@ -75,8 +75,9 @@ P.plates = [
     Plate("next", W - M - NAV_W, PAGE_Y, NAV_W, PAGE_H, fill=BAND, r=0.8),
     # The two actions sit on the footer band and wear the index tab, because on
     # this panel they are the sections -- there are no knobs to group.
-    Plate("import", M, BTN_Y, BTN_W, BTN_H, fill=FELT, r=1.0, tab="LIME"),
-    Plate("save", M + BTN_W + 2.0, BTN_Y, BTN_W, BTN_H, fill=FELT, r=1.0, tab="LIME"),
+    # Dark plates, because the button text the display draws on them is pale.
+    Plate("import", M, BTN_Y, BTN_W, BTN_H, fill=GLASS_COLOUR, r=1.0, tab="LIME"),
+    Plate("save", M + BTN_W + 2.0, BTN_Y, BTN_W, BTN_H, fill=GLASS_COLOUR, r=1.0, tab="LIME"),
     Plate("progress", PROG_X, PROG_Y, PROG_W, PROG_H, fill=GLASS_COLOUR, r=0.9,
           stroke=False),
 ]

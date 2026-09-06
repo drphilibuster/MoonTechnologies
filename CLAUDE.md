@@ -30,12 +30,18 @@ because the call site owned state it should never have touched.
    `loadFont` directly. `make panel` prints every place that does.
 4. **If the kit can't express what a panel needs, improve the kit** —
    `panelkit/emit.py` for anything emitted into the headers,
-   `panelkit/render.py` for artwork, `panelkit/layout.py` for the solver. Then
-   regenerate all three panels so they all get it. Do not open-code the gap in
+   `panelkit/render.py` for artwork, `panelkit/layout.py` for the solver,
+   `panelkit/palette.py` for colour (five anchors, everything else derived).
+   Then regenerate every panel so they all get it. Do not open-code the gap in
    one module.
 5. A UI improvement — including a performance one — belongs in the tool by
    default, so all three panels get it at once. Ellipsizing, text measurement
    caching and the letter-spacing discipline all live in the kit for this reason.
+6. **Ink follows ground.** A spec names a label's *role* (`PAPER` primary,
+   `SAGE` secondary, `LIME`, `MINT`, `CLAY`); the solver tags where it sits and
+   the emitter picks the dark or pale variant. Module C++ drawing its own text
+   does the same by hand: `panel::PAPER`/`SAGE`/`LIME` on a dark display,
+   `panel::INK`/`SAGE_DARK`/`LIME_DARK` on the pale face or a `FELT` plate.
 
 ### Two headers, and why
 
