@@ -45,6 +45,19 @@
       ]
     },
     {
+      "slug": "Diversified",
+      "name": "Diversified",
+      "description": "Modular in a Week effects: the DSP99 program bank plus Echomatic echo, Little Angel chorus, spring reverb, MXR Distortion+, Talk Funny, bitcrusher and 4011 ring modulator",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Diversified.md",
+      "tags": [
+        "Effect",
+        "Delay",
+        "Reverb",
+        "Chorus",
+        "Distortion"
+      ]
+    },
+    {
       "slug": "Dividend",
       "name": "Dividend",
       "description": "Pulsar-synthesis VCO: pulsaret trains with formant, duty, masking and stochastic payout",

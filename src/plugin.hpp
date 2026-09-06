@@ -11,6 +11,7 @@ extern Plugin* pluginInstance;
 extern Model* modelAmortization;
 extern Model* modelConsolidation;
 extern Model* modelDeduction;
+extern Model* modelDiversified;
 extern Model* modelDividend;
 extern Model* modelGarnishment;
 extern Model* modelGross;
