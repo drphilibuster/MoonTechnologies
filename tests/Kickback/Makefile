@@ -1,13 +1,17 @@
-# Kickback's eight percussion voices, tested without Rack.
+# Kickback's nine percussion voices and its pattern engine, tested without Rack.
 #
-# Voices.hpp is pure DSP -- no Rack types, no allocation, no I/O -- so it needs
-# no <rack.hpp> shim at all; it compiles against the host toolchain as it
-# stands. `make test` at the repo root runs this.
+# Drum.hpp (shared, at src/), Voices.hpp and Payroll.hpp are pure DSP -- no Rack types, no
+# allocation, no I/O -- so they need no <rack.hpp> shim at all; they compile
+# against the host toolchain as they stand. `make test` at the repo root runs
+# this. All three are listed below: a header left out of CORE is one whose
+# edits do not rebuild the test, and a negative control against a stale binary
+# passes for the wrong reason.
 CXX ?= c++
 CXXFLAGS := -std=c++11 -O2 -Wall -Wextra -g
 SAN := -fsanitize=address,undefined -fno-omit-frame-pointer
 
-CORE := ../../src/Kickback/Voices.hpp ../../src/DspCache.hpp
+CORE := ../../src/Drum.hpp ../../src/Kickback/Voices.hpp \
+        ../../src/Kickback/Payroll.hpp ../../src/DspCache.hpp
 
 all: test_voices
 
