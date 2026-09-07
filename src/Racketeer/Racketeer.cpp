@@ -37,12 +37,13 @@ struct Racketeer : Module {
 		LAG_PARAM, DRIVE_PARAM, SEED_PARAM, RES_PARAM, THRESH_PARAM,
 		POL_PARAM, FILT_PARAM, RANGE_PARAM, RATE_PARAM, CHOP_PARAM,
 		TIME_CV_PARAM, ECHO_CV_PARAM, CUTOFF_CV_PARAM, RATE_CV_PARAM,
+		RES_CV_PARAM, LAG_CV_PARAM,
 		NOISE_PARAM, BOOST_PARAM, MUTE_PARAM,
 		PARAMS_LEN
 	};
 	enum InputId {
 		IN_INPUT, TIME_INPUT, ECHO_INPUT, CUTOFF_INPUT, RATE_INPUT,
-		NOISE_INPUT, BOOST_INPUT, MUTE_INPUT,
+		NOISE_INPUT, BOOST_INPUT, RES_INPUT, LAG_INPUT, MUTE_INPUT,
 		INPUTS_LEN
 	};
 	enum OutputId {
@@ -125,6 +126,8 @@ struct Racketeer : Module {
 		configParam(ECHO_CV_PARAM, -1.f, 1.f, 0.f, "Echo CV", "%", 0.f, 100.f);
 		configParam(CUTOFF_CV_PARAM, -1.f, 1.f, 0.f, "Cutoff CV", "%", 0.f, 100.f);
 		configParam(RATE_CV_PARAM, -1.f, 1.f, 0.f, "Chopper rate CV", "%", 0.f, 100.f);
+		configParam(RES_CV_PARAM, -1.f, 1.f, 0.f, "Resonance CV", "%", 0.f, 100.f);
+		configParam(LAG_CV_PARAM, -1.f, 1.f, 0.f, "Time lag CV", "%", 0.f, 100.f);
 		getParamQuantity(TIME_CV_PARAM)->randomizeEnabled = false;
 		getParamQuantity(ECHO_CV_PARAM)->randomizeEnabled = false;
 		getParamQuantity(CUTOFF_CV_PARAM)->randomizeEnabled = false;
@@ -141,6 +144,8 @@ struct Racketeer : Module {
 		configInput(RATE_INPUT, "Chopper rate CV (1 V/oct)");
 		configInput(NOISE_INPUT, "Noise gate");
 		configInput(BOOST_INPUT, "Boost gate");
+		configInput(RES_INPUT, "Resonance CV");
+		configInput(LAG_INPUT, "Time lag CV");
 		configInput(MUTE_INPUT, "Mute gate");
 
 		configOutput(OUT_OUTPUT, "Audio");
@@ -212,6 +217,9 @@ struct Racketeer : Module {
 		// the R pot: more light, less R, shorter delay. Light comes on faster
 		// than it goes off, so a jump to shorter is quicker than one to longer.
 		float lag = params[LAG_PARAM].getValue();
+		if (inputs[LAG_INPUT].isConnected())
+			lag += inputs[LAG_INPUT].getVoltage() / 10.f * params[LAG_CV_PARAM].getValue();
+		lag = clamp(lag, 0.f, 1.f);
 		if (lag <= 0.001f) {
 			timeSlew = t;
 		}
@@ -247,7 +255,13 @@ struct Racketeer : Module {
 			cut += inputs[CUTOFF_INPUT].getVoltage() * params[CUTOFF_CV_PARAM].getValue();
 		cut = clamp(cut, kCutMinLog2, kCutMaxLog2);
 		// CUTOFF is already log2, so this is exp2 -- no need for the general pow.
-		loop.setFilter(dsp::exp2_taylor5(cut), params[RES_PARAM].getValue());
+		// Resonance under CV is the one that turns this from a delay into a
+		// voice: swept against the feedback it whistles, and the optocoupler lag
+		// under CV smears the pitch of whatever it is whistling.
+		float res = params[RES_PARAM].getValue();
+		if (inputs[RES_INPUT].isConnected())
+			res += inputs[RES_INPUT].getVoltage() / 10.f * params[RES_CV_PARAM].getValue();
+		loop.setFilter(dsp::exp2_taylor5(cut), clamp(res, 0.f, 1.f));
 
 		// --- the chopper: the mute button pressed by a square LFO -----------
 		bool chopOn = params[CHOP_PARAM].getValue() > 0.5f;
@@ -439,6 +453,8 @@ struct RacketeerWidget : ModuleWidget {
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::ECHO_CV_POS.x, panel::ECHO_CV_POS.y), module, Racketeer::ECHO_CV_PARAM));
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::CUTOFF_CV_POS.x, panel::CUTOFF_CV_POS.y), module, Racketeer::CUTOFF_CV_PARAM));
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::RATE_CV_POS.x, panel::RATE_CV_POS.y), module, Racketeer::RATE_CV_PARAM));
+		addParam(createParamCentered<Trimpot>(panel::mm(panel::RES_CV_POS.x, panel::RES_CV_POS.y), module, Racketeer::RES_CV_PARAM));
+		addParam(createParamCentered<Trimpot>(panel::mm(panel::LAG_CV_POS.x, panel::LAG_CV_POS.y), module, Racketeer::LAG_CV_PARAM));
 
 		addParam(createLightParamCentered<VCVLightBezel<panel::PaperLight> >(
 		             panel::mm(panel::NOISE_POS.x, panel::NOISE_POS.y), module, Racketeer::NOISE_PARAM, Racketeer::NOISE_LIGHT));
@@ -451,15 +467,17 @@ struct RacketeerWidget : ModuleWidget {
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::ECHO_IN_POS.x, panel::ECHO_IN_POS.y), module, Racketeer::ECHO_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::CUTOFF_IN_POS.x, panel::CUTOFF_IN_POS.y), module, Racketeer::CUTOFF_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::RATE_IN_POS.x, panel::RATE_IN_POS.y), module, Racketeer::RATE_INPUT));
+		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::RES_IN_POS.x, panel::RES_IN_POS.y), module, Racketeer::RES_INPUT));
+		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::LAG_IN_POS.x, panel::LAG_IN_POS.y), module, Racketeer::LAG_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::NOISE_IN_POS.x, panel::NOISE_IN_POS.y), module, Racketeer::NOISE_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::BOOST_IN_POS.x, panel::BOOST_IN_POS.y), module, Racketeer::BOOST_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::MUTE_IN_POS.x, panel::MUTE_IN_POS.y), module, Racketeer::MUTE_INPUT));
 
-		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::IN_POS.x, panel::IN_POS.y), module, Racketeer::IN_INPUT));
+		addInput(createInputCentered<panel::PortInMain>(panel::mm(panel::IN_POS.x, panel::IN_POS.y), module, Racketeer::IN_INPUT));
 		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::ENV_OUT_POS.x, panel::ENV_OUT_POS.y), module, Racketeer::ENV_OUTPUT));
 		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::GATE_OUT_POS.x, panel::GATE_OUT_POS.y), module, Racketeer::GATE_OUTPUT));
 		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::DIRTY_OUT_POS.x, panel::DIRTY_OUT_POS.y), module, Racketeer::DIRTY_OUTPUT));
-		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::OUT_POS.x, panel::OUT_POS.y), module, Racketeer::OUT_OUTPUT));
+		addOutput(createOutputCentered<panel::PortOutMain>(panel::mm(panel::OUT_POS.x, panel::OUT_POS.y), module, Racketeer::OUT_OUTPUT));
 
 		addChild(createLightCentered<SmallLight<panel::LimeLight> >(
 		             panel::mm(panel::LOOP_POS.x, panel::LOOP_POS.y), module, Racketeer::LOOP_LIGHT));

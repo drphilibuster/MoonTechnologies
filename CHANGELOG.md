@@ -5,6 +5,93 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Fixed: Amortization changed mode by fading into a tank that was switched off
+
+The hardware does not crossfade. Run the feedback up until the loop is ringing,
+change algorithm, and the energy already in one structure arrives in the other
+and is rung as something it was never given -- metallic tails, delay trails,
+tones that were not in the input. This module went quiet instead.
+
+The comment in the code said the opposite of what the code did:
+
+> Both always run, so a mode change is a crossfade between two live tails
+> rather than a cut into a cold one
+
+The input to each tank was scaled by the fade, so the *inactive* tank received
+nothing and was silent. The outputs were then crossfaded as well -- a second
+attenuation on top of the first, quarter gain at the midpoint. Every mode change
+was a fade through a hole into a tank that had never been fed.
+
+Three changes, in `Tanks.hpp` as a `ModeCollider` so they can be measured:
+both tanks are fed the whole input at all times, so the one being arrived at is
+already ringing; the fade is equal power; and during a change the two are
+cross-fed, each tank's output driven into the other's input, scaled by how far
+across the change we are and by how hot the loop already was. Zero at either
+end, so it costs nothing when the mode is not moving.
+
+At FEEDBACK 0.95, measured over the 200 ms after a change against the 200 ms
+before it: **0.39x before this, 1.87x after**. The tail half a second later went
+from nothing at all to 1.85x. Both figures come from a negative control that
+puts the old path back.
+
+Worth recording a wrong turn, because it was stated as a finding before it was
+checked: the two tanks were first measured at the same *raw* parameter, where
+TRONIC looked fifty times quieter, and that was reported as the cause. The
+module never drives them that way -- FEEDBACK maps into `cDecay = 0.97 * fb` and
+`cGain = 1.10 * (1 - (1 - fb)^2)` -- and at matched knob positions TRONIC is the
+*louder* of the two above about 0.7. The measurement said nothing about the
+module and the real fault was in the input scaling all along.
+
+### Changed: Amortization is twice as loud
+
+The tanks return between 0.23 and 0.50 of what goes in across the FEEDBACK
+range. The output gain of 5 made that unity overall -- the input is scaled by
+0.2 on the way in -- so a fully wet setting was always quieter than the signal it
+replaced, which is not what the hardware does. Doubled.
+
+`Tanks.hpp` no longer includes `<rack.hpp>`; it wanted one `clamp` from it. It
+is testable on its own now, and `tests/Amortization` is ten checks against the
+tanks and the collider.
+
+### Added: Racketeer takes CV on RES and LAG
+
+Resonance under CV is what turns the delay into a voice -- swept against the
+feedback it whistles -- and the optocoupler lag under CV smears the pitch of
+whatever it is whistling. Both get an attenuverter over a jack, as the four CV
+inputs there already had.
+
+Fitting them is the part worth writing down. A third row in SKIM overruns the
+face by 1.2 mm *however wide the panel is made*, because the height is fixed and
+the width does not buy any of it back. Nine jacks on one row instead costs four
+HP. What worked was adding no new row at all: the three gate jacks that press
+the buttons upstairs moved down to the footer band, which is external control
+coming in and is what that band carries on every other panel. 17 -> 18 HP.
+
+### Added: the main jacks are struck in gold
+
+A panel with four voice outputs and a mix has one cable you reach for first; a
+stereo pair has two. Those are gold now, against the brass of everything else --
+`PortInMain`, `PortOutMain` and the two trigger variants. It is the collar that
+changes rather than the throat, so the mint in/out band and the lime timing line
+both still read: being the important one is a third fact about a port, not a
+replacement for the other two.
+
+Colour rather than a ring, because a ring costs 2.2 mm a side and this had to be
+affordable on every panel in the family.
+
+Thirty-nine ports across fifteen modules. Nine modules get none, deliberately:
+Audit Logic's four equal gates, Tax Bracket's passive ladder where every jack is
+an in/out pair, Volatility's six unrelated outputs. A panel where everything is
+gold says the same as a panel where nothing is.
+
+### Fixed: Gross had its inputs two thirds of the way along
+
+The footer ran DRIVE, BIAS, WET, TONE, ENV, IN L, IN R, OUT L, OUT R -- so the
+audio inputs sat next to the outputs they were about to become, and read as two
+more modulation jacks. Signal in at the left edge, signal out at the right, CV
+between. The rest of the family was audited for the same fault; Gross was the
+only one.
+
 ### Added: BURST, and the ratios finally earn the top of their range
 
 The RATIO knobs only meant anything at FILL 0, in grid mode, where the patterns

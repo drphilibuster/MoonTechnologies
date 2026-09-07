@@ -79,19 +79,30 @@ P.sections = [
         Row([Trim("time_cv", "TIME"),
              Trim("echo_cv", "ECHO"),
              Trim("cutoff_cv", "CUTOFF"),
-             Trim("rate_cv", "RATE")], pair=True),
+             Trim("rate_cv", "RATE"),
+             Trim("res_cv", "RES"),
+             Trim("lag_cv", "LAG")], pair=True),
         Row([Jack("time_in"), Jack("echo_in"),
              Jack("cutoff_in"), Jack("rate_in"),
-             Jack("noise_in", "NOISE"),
-             Jack("boost_in", "BOOST"),
-             Jack("mute_in", "MUTE")]),
+             Jack("res_in"), Jack("lag_in")]),
     ]),
 ]
 
 # The audio row sits as low as the bottom screws allow (their top edge is at
 # 123.61 mm). IN on the left, everything that leaves the module to its right.
+# The three gate jacks that press the buttons upstairs moved down here. They
+# are external control coming in, which is what this band is for on every other
+# panel in the family, and putting them on a row that already existed is what
+# let SKIM grow two more CV pairs without the panel growing at all: a fourth row
+# up there overran the face by a millimetre however wide the panel was made, and
+# nine jacks on one row up there cost four HP.
+#
+# Inputs left, outputs right, as everywhere else.
 P.footer = [
     Row([Jack("in", "IN"),
+         Jack("noise_in", "NOISE"),
+         Jack("boost_in", "BOOST"),
+         Jack("mute_in", "MUTE"),
          Jack("env_out", "ENV", ink="MINT"),
          Jack("gate_out", "GATE", ink="MINT"),
          Jack("dirty_out", "DIRTY", ink="MINT"),

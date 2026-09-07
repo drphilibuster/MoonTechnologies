@@ -83,7 +83,9 @@ attenuverter (−100 % to +100 %).
 | **ECHO** | ±10 V spans 0–150 % at 100 %. |
 | **CUTOFF** | 1 V/oct, scaled by the trim. |
 | **RATE** | 1 V/oct on the chopper, scaled by the trim. |
-| **NOISE / BOOST / MUTE** | Gates that press the button of the same name. High above 1 V, low below 0.1 V (Schmitt). Button and gate are ORed. |
+| **RES** | ±10 V spans 0–100 % at 100 %. Swept against a high ECHO this is what turns the delay into a voice. |
+| **LAG** | ±10 V spans 0–100 % at 100 %. Modulating the optocoupler's slew smears the pitch of whatever the loop is whistling. |
+| **NOISE / BOOST / MUTE** | Gates that press the button of the same name, in the footer band with the rest of what comes in from outside. High above 1 V, low below 0.1 V (Schmitt). Button and gate are ORed. |
 
 ### Footer
 
