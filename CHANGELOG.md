@@ -5,6 +5,44 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Added: Reconciliation -- a just-intonation quantizer
+
+21 HP, Schedule M-1, polyphonic. Most quantizers answer one question and the
+only interesting thing about them is which scale was loaded. This one splits it
+in two and puts a knob on each.
+
+Which pitches exist (BASIS): Partch's eleven-limit tonality diamond, his
+43-tone scale, one Otonality or Utonality hexad out of that diamond, Erv
+Wilson's hexany and eikosany, or the raw harmonic series -- transposed onto any
+of Partch's six identities by NEXUS, mirrored by UTONAL, and pruned by prime
+limit.
+
+How one gets chosen (RECONCILE): five published measures of what "simpler"
+means, which disagree with each other -- Euler's gradus suavitatis (1739),
+Tenney's harmonic distance, Barlow's harmonicity, Sethares' sensory dissonance
+against an assumed timbre, and adaptive tuning from the last note rather than
+from the root -- plus plain NEAREST to compare them against. WINDOW bounds how
+far a rule may reach; BIAS is how hard it pulls once it gets there, and at zero
+every rule collapses to NEAREST.
+
+* The read-out names the ratio -- 11/8, not "a bit flat of a tritone" -- with
+  its cents and its distance from 12-TET.
+* ADAPTIVE tunes every interval pure from where the last one landed, so the
+  tonal centre walks; DRIFT is that comma as a voltage and RESET puts it back.
+* PURITY reports how consonant the chosen ratio is, as CV.
+* HYST is a dead band given as a fraction of the local step rather than in
+  cents, because these sets are wildly uneven and any absolute setting wide
+  enough to steady the 43 would make a hexad unplayable.
+
+tests/Reconciliation checks the tables against the properties their authors
+stated rather than against a copy of the same list: no step in the 43 smaller
+than 121/120 or larger than 45/44, 29 distinct pitches in the diamond and every
+inversion present, the 43 containing it and adding exactly fourteen, and -- for
+Sethares -- every minimum of the dissonance curve landing on a diamond ratio
+within two cents, with the count of minima following the assumed timbre (0 for
+a sine, 3 at four partials, 5 at seven, 9 at twelve).
+
+
 ### Added: Collusion — six LFOs that listen to each other
 
 21 HP, Form 211. Six phase oscillators as a *population* rather than six

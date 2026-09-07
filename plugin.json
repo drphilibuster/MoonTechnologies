@@ -166,6 +166,17 @@
       ]
     },
     {
+      "slug": "Reconciliation",
+      "name": "Reconciliation",
+      "description": "Just-intonation quantizer: Partch's tonality diamond, 43-tone scale and Otonal/Utonal hexads, Wilson's combination product sets, and five published measures of consonance to choose between them",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Reconciliation.md",
+      "tags": [
+        "Quantizer",
+        "Polyphonic",
+        "Utility"
+      ]
+    },
+    {
       "slug": "Repossession",
       "name": "Repossession",
       "description": "YouTube sampler: paste a link, chop the audio and video into regions, sequence and modulate them, watch the frames",

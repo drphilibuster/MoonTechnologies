@@ -64,9 +64,9 @@ Six devices built to order, and the whole of Kristian Blåsol's [Modular in a We
 |---|---|---|---|
 | **[Audit Logic](docs/AuditLogic.md)** · 29 HP | **[Kickback](docs/Kickback.md)** · 33 HP | **[Payment Schedule](docs/PaymentSchedule.md)** · 30 HP | **[Sign Here](docs/SignHere.md)** · 20 HP |
 
-| <img src="tools/previews/Diversified.png" width="162"> | <img src="tools/previews/Collusion.png" width="227"> |
-|---|---|
-| **[Diversified](docs/Diversified.md)** · 15 HP | **[Collusion](docs/Collusion.md)** · 21 HP |
+| <img src="tools/previews/Diversified.png" width="162"> | <img src="tools/previews/Collusion.png" width="227"> | <img src="tools/previews/Reconciliation.png" width="227"> |
+|---|---|---|
+| **[Diversified](docs/Diversified.md)** · 15 HP | **[Collusion](docs/Collusion.md)** · 21 HP | **[Reconciliation](docs/Reconciliation.md)** · 21 HP |
 
 ### [Dividend](docs/Dividend.md) — 15 HP · *Oscillator, Synth voice*
 
@@ -139,6 +139,10 @@ Days 12 and 13: a stereo multi-effect with 106 programs — the DSP99 board's ca
 ### [Collusion](docs/Collusion.md) — 21 HP · *LFO, Oscillator, Random*
 
 Six LFOs that listen to each other. Each has its own natural rate; COUPLING says how hard each is pulled toward the rest, and past a threshold set entirely by SPREAD the population stops drifting and locks — Kuramoto's phase transition, on one knob and six lamps. Four wirings (all-to-all, ring, one-way cascade, and Mirollo–Strogatz pulse coupling), a phase lag that buys partial order, LFO and audio ranges, and a Benjolin rungler whose bits are written from how much the swarm currently agrees, so the melody it plays *is* the phase transition.
+
+### [Reconciliation](docs/Reconciliation.md) — 21 HP · *Quantizer, Polyphonic, Utility*
+
+A polyphonic just-intonation quantizer that splits "which note?" into two questions and puts a knob on each. Which pitches exist: Partch's eleven-limit tonality diamond, his 43-tone scale, one Otonality or Utonality hexad, Wilson's hexany and eikosany, or the raw harmonic series — transposed onto any of Partch's six identities and pruned by prime limit. How one gets chosen: Euler's gradus suavitatis, Tenney's harmonic distance, Barlow's harmonicity, Sethares' sensory dissonance against an assumed timbre, or adaptive tuning from the last note played, which tunes every interval pure and lets the tonal centre drift by the comma it costs. The read-out names the ratio.
 
 ---
 

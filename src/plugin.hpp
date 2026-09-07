@@ -22,6 +22,7 @@ extern Model* modelKickback;
 extern Model* modelPatchAudit;
 extern Model* modelPaymentSchedule;
 extern Model* modelRacketeer;
+extern Model* modelReconciliation;
 extern Model* modelRepossession;
 extern Model* modelScheduleA;
 extern Model* modelRetroactive;
