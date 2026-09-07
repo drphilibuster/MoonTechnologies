@@ -10,6 +10,7 @@ extern Plugin* pluginInstance;
 // One Model per module. Each is defined in src/<Module>/<Module>.cpp.
 extern Model* modelAmortization;
 extern Model* modelAuditLogic;
+extern Model* modelCollusion;
 extern Model* modelConsolidation;
 extern Model* modelDeduction;
 extern Model* modelDiversified;

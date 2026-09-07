@@ -1,11 +1,11 @@
 # Moon Technologies
 
 One VCV Rack 2 plugin, slug `MoonTechnologies`, brand **Moon Technologies**,
-author **Taxxess**. Twenty-one modules sharing one panel pipeline: the three
-originals (`PatchAudit`, `Retroactive`, `UncertaintyPolicy`), six built to
+author **Taxxess**. Twenty-two modules sharing one panel pipeline: the three
+originals (`PatchAudit`, `Retroactive`, `UncertaintyPolicy`), seven built to
 order (`Dividend`, `TaxBracket`, `Racketeer`, `Gross`, `Amortization`,
-`Repossession`), one expander (`ScheduleA`, which attaches to `Repossession`)
-and eleven Modular-in-a-Week banks (`SixFigures`,
+`Repossession`, `Collusion`), one expander (`ScheduleA`, which attaches to
+`Repossession`) and eleven Modular-in-a-Week banks (`SixFigures`,
 `Garnishment`, `Consolidation`, `Installment`, `Volatility`, `Deduction`,
 `AuditLogic`, `Kickback`, `PaymentSchedule`, `SignHere`, `Diversified`).
 
@@ -97,7 +97,7 @@ one. A screenshot showing old behaviour after a fix usually means exactly this.
 
 ## Slugs are permanent
 
-`MoonTechnologies` and the twenty-one module slugs listed at the top of this file.
+`MoonTechnologies` and the twenty-two module slugs listed at the top of this file.
 Changing any of them orphans every saved patch that used it: Rack's fallback table
 (`Rack/src/plugin.cpp:374`) is maintained by VCV, not by plugin authors.
 

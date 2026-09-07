@@ -35,6 +35,17 @@
       ]
     },
     {
+      "slug": "Collusion",
+      "name": "Collusion",
+      "description": "Six coupled LFOs: a Kuramoto swarm that locks or scatters on one knob, with a Benjolin rungler reading out what they agree on",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Collusion.md",
+      "tags": [
+        "Low-frequency oscillator",
+        "Oscillator",
+        "Random"
+      ]
+    },
+    {
       "slug": "Consolidation",
       "name": "Consolidation",
       "description": "Modular in a Week mixer and multiples: four-channel mixer with normal and inverted sums, plus buffered and passive-style multiples",

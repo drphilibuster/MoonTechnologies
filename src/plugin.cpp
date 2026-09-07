@@ -12,6 +12,7 @@ void init(Plugin* p) {
 	// alphabetical rather than in the order they were written.
 	p->addModel(modelAmortization);
 	p->addModel(modelAuditLogic);
+	p->addModel(modelCollusion);
 	p->addModel(modelConsolidation);
 	p->addModel(modelDeduction);
 	p->addModel(modelDiversified);

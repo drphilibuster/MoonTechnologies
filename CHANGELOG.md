@@ -5,6 +5,33 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Added: Collusion — six LFOs that listen to each other
+
+21 HP, Form 211. Six phase oscillators as a *population* rather than six
+independent modulators: each has its own natural rate, and COUPLING says how
+hard each is pulled toward the others. The threshold at which they stop
+drifting and lock is Kuramoto's, and it depends only on how far apart the
+natural rates are — so COUPLING and SPREAD are a phase diagram rather than two
+gain controls, and ORDER puts the order parameter itself out as CV.
+
+* Four SCHEMEs: all-to-all (Kuramoto), a ring (travelling waves), a one-way
+  cascade whose head is a clean LFO, and Mirollo–Strogatz pulse coupling.
+* EVASION is the Sakaguchi phase lag, which buys clusters and partial order
+  instead of all-or-nothing.
+* SHAPE warps the cycle from a sine toward a relaxation spike, with a ceiling
+  that falls with frequency so sweeping into the audio band grits rather than
+  aliases.
+* A Benjolin/Turing Machine rungler whose written bit comes from the whole
+  population's mean field, so the register fills with noise below the
+  transition and a repeating figure above it. LEVERAGE feeds it back into the
+  rates, per filer rather than common mode, which is what stops a locked swarm
+  staying locked.
+* `tests/Collusion` measures the phase transition itself, not just finiteness:
+  the order parameter has to sit near 1/sqrt(N) uncoupled and above 0.9 locked,
+  a wide fan must fail to lock where a narrow one succeeds, and the cascade's
+  head must not move at all.
+
+
 ### Fixed: Consolidation crashed Rack the moment it was added
 
 `configBypass` was called once per mixer channel with the same `OUT` as the
