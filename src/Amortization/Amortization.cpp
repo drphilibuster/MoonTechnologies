@@ -27,7 +27,17 @@ static const float kPredelayMaxMs = 250.f;
 static const float kLoopTiltDb = 6.f;     // the tilt inside the tanks, cut only
 static const float kOutTiltDb  = 6.f;     // the tilt on the wet output, boost and cut
 static const float kLimitKnee  = 1.f;     // Tronic limiter knee, in +-5 V units
-static const float kXfadeSec   = 0.03f;   // mode change crossfade
+// A mode change is not a crossfade on the hardware, so this is not really a
+// fade time -- it is how long the two structures are driven into each other on
+// the way past. Short enough to be a change rather than a morph, long enough
+// for the collision to put something in the tank that then rings on its own.
+static const float kXfadeSec   = 0.11f;
+//: How hard each tank is driven into the other at the middle of a change,
+//: before the feedback setting scales it. Past about 1.2 the pair will not
+//: settle at high feedback -- which is arguably correct for this box, but it is
+//: the difference between a module that screams when asked and one that cannot
+//: be turned down again.
+static const float kCollide    = 0.95f;
 
 static const float kRt60Ln = -6.907755f;  // ln(0.001)
 
@@ -67,7 +77,9 @@ struct Amortization : Module {
 	dsp::ClockDivider controlDivider, lightDivider;
 
 	// --- state ---------------------------------------------------------------
-	float xfade = 0.f;          // 0 = Verb, 1 = Tronic; slews on a mode change
+	amortization::ModeCollider collider;
+	//: last sample out of each tank, for the cross-feed during a mode change
+	float lastVL = 0.f, lastVR = 0.f, lastTL = 0.f, lastTR = 0.f;
 	float sizeSmooth = 1.f;
 	float preSmooth = 0.f;      // predelay, samples
 	float outTiltK = 0.1f;
@@ -178,7 +190,8 @@ struct Amortization : Module {
 		verb.reset();
 		tronic.reset();
 		resetState();
-		xfade = 0.f;
+		collider.reset();
+		lastVL = lastVR = lastTL = lastTR = 0.f;
 	}
 
 	/** Attenuverted CV: `cv` volts scaled by a +-1 trimmer onto `range`. */
@@ -269,10 +282,7 @@ struct Amortization : Module {
 		// Both always run, so a mode change is a crossfade between two live
 		// tails rather than a cut into a cold one, and the tail you left keeps
 		// ringing down for when the gate brings you back.
-		float target = cTronic ? 1.f : 0.f;
-		float slew = args.sampleTime / kXfadeSec;
-		if (xfade < target) xfade = std::fmin(xfade + slew, target);
-		else if (xfade > target) xfade = std::fmax(xfade - slew, target);
+		collider.step(cTronic, args.sampleTime, kXfadeSec);
 
 		float decay = cFrozen ? 1.f : cDecay;
 		float gain = cFrozen ? 1.f : cGain;
@@ -284,23 +294,44 @@ struct Amortization : Module {
 		float m2 = lfo[2].step(0.71f, args.sampleTime);
 		float m3 = lfo[3].step(1.09f, args.sampleTime);
 
+		// The collision. Each tank is fed the whole input at all times -- so the
+		// one being arrived at is already ringing rather than starting cold --
+		// plus, while a change is in progress, the other tank's last output.
+		// Scaled by the feedback setting, because that is the condition the
+		// hardware does this under: run the loop up until it is ringing, change
+		// mode, and what was in one structure arrives in the other.
+		float hot = std::fmax(decay, gain);
+		float k = collider.collide() * kCollide * hot;
+
 		float vL, vR;
-		verb.process(xMono * (1.f - xfade), decay, sizeSmooth,
+		verb.process(xMono + k * lastTL, decay, sizeSmooth,
 		             cModVerb * m0, cModVerb * m1, loopLo, loopHi, interp, vL, vR);
 
 		float tMod[4] = {cModTronic * m0, cModTronic * m2, cModTronic * m1, cModTronic * m3};
 		float tL, tR;
-		tronic.process(xL * xfade, xR * xfade, gain, sizeSmooth, tMod,
+		tronic.process(xL + k * lastVL, xR + k * lastVR, gain, sizeSmooth, tMod,
 		               loopLo, loopHi, kLimitKnee, interp, tL, tR);
 
-		float wetL = vL * (1.f - xfade) + tL * xfade;
-		float wetR = vR * (1.f - xfade) + tR * xfade;
+		lastVL = vL; lastVR = vR; lastTL = tL; lastTR = tR;
+
+		// Equal power, so the middle of a change is not a hole.
+		float gv = collider.gVerb(), gt = collider.gTronic();
+		float wetL = vL * gv + tL * gt;
+		float wetR = vR * gv + tR * gt;
 
 		// --- tonal tilt on the way out --------------------------------------------
 		wetL = outTiltL.process(wetL, outTiltK, cOutLo, cOutHi);
 		wetR = outTiltR.process(wetR, outTiltK, cOutLo, cOutHi);
-		wetL = clamp(wetL * 5.f, -12.f, 12.f);
-		wetR = clamp(wetR * 5.f, -12.f, 12.f);
+		// The wet is quiet against the dry, and the hardware is not: measured
+		// through tests/Amortization, the tanks return between 0.23 and 0.50 of
+		// what goes in across the FEEDBACK range. At the old gain of 5 that came
+		// out at unity overall -- the input is scaled by 0.2 on the way in -- so
+		// a fully wet setting was always softer than the signal it replaced.
+		// Doubled: the wet now roughly matches the dry at high feedback and is
+		// still under it at low, which is the way round it should be. The clamp
+		// is the only thing between this and the rails, and it is meant to be.
+		wetL = clamp(wetL * 10.f, -12.f, 12.f);
+		wetR = clamp(wetR * 10.f, -12.f, 12.f);
 
 		// --- outputs -------------------------------------------------------------
 		float mix = clamp(params[MIX_PARAM].getValue() + cvAmount(MIX_INPUT, MIX_CV_PARAM, 1.f), 0.f, 1.f);
@@ -466,10 +497,10 @@ struct AmortizationWidget : ModuleWidget {
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::FREEZE_IN_POS.x, panel::FREEZE_IN_POS.y), module, Amortization::FREEZE_INPUT));
 
 		// Footer
-		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::IN_L_POS.x, panel::IN_L_POS.y), module, Amortization::IN_L_INPUT));
-		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::IN_R_POS.x, panel::IN_R_POS.y), module, Amortization::IN_R_INPUT));
-		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::MIX_L_POS.x, panel::MIX_L_POS.y), module, Amortization::MIX_L_OUTPUT));
-		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::MIX_R_POS.x, panel::MIX_R_POS.y), module, Amortization::MIX_R_OUTPUT));
+		addInput(createInputCentered<panel::PortInMain>(panel::mm(panel::IN_L_POS.x, panel::IN_L_POS.y), module, Amortization::IN_L_INPUT));
+		addInput(createInputCentered<panel::PortInMain>(panel::mm(panel::IN_R_POS.x, panel::IN_R_POS.y), module, Amortization::IN_R_INPUT));
+		addOutput(createOutputCentered<panel::PortOutMain>(panel::mm(panel::MIX_L_POS.x, panel::MIX_L_POS.y), module, Amortization::MIX_L_OUTPUT));
+		addOutput(createOutputCentered<panel::PortOutMain>(panel::mm(panel::MIX_R_POS.x, panel::MIX_R_POS.y), module, Amortization::MIX_R_OUTPUT));
 		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::VERB_L_POS.x, panel::VERB_L_POS.y), module, Amortization::VERB_L_OUTPUT));
 		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::VERB_R_POS.x, panel::VERB_R_POS.y), module, Amortization::VERB_R_OUTPUT));
 	}

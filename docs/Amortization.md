@@ -34,9 +34,31 @@ to the description rather than transcribed:
   loop is FEEDBACK and the tilt — and FEEDBACK is allowed past unity, with a soft
   limiter on every line.
 
-Both tanks always run. A mode change is a 30 ms crossfade between two live tails,
-so flipping the switch or the gate never cuts into a cold tank, and the tail you
-left keeps ringing down for when the gate brings you back.
+### A mode change is a collision, not a crossfade
+
+The hardware does not hand over gently. Run FEEDBACK up until the loop is
+ringing on its own, change algorithm, and what was in one structure arrives in
+the other and gets rung as something it was never given — metallic tails, delay
+trails, tones that were not in the input. That is most of what the box is for.
+
+Three things make that happen here, and none of them is a fade:
+
+* **Both tanks are fed the whole input, always.** The one you are arriving at is
+  already ringing when you get there. (This module used to scale each tank's
+  input by the fade, which meant the inactive tank received *nothing* — every
+  mode change faded into a tank that had been switched off.)
+* **The fade is equal power**, so the middle of a change is not a hole.
+* **The two are cross-fed while the change is in progress** — each tank's output
+  driven into the other's input, scaled by how far across you are and by how hot
+  the loop already was. Zero at either end, so it costs nothing when you are not
+  changing mode, and loudest exactly halfway across.
+
+Measured at FEEDBACK 0.95, the 200 ms after a mode change is **1.87×** the level
+of the 200 ms before it, and half a second later the tail is still 1.85×. It
+gets louder, and it rings on.
+
+The MODE GATE is the interesting way to play this: hold the loop just under
+oscillation and pulse the gate to collide the two structures rhythmically.
 
 ## Sections
 

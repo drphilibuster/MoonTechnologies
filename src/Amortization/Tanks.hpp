@@ -6,8 +6,6 @@
 // while the engine is not calling process() on this module (Engine.cpp holds
 // its write lock around every onSampleRateChange dispatch).
 #pragma once
-#include <rack.hpp>
-
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -15,7 +13,12 @@
 
 namespace amortization {
 
-using namespace rack;
+/** The one thing this header wanted from Rack. Having it locally is what lets
+    the tanks be tested without an engine around them, the way the rest of the
+    plugin's DSP headers already are. */
+inline float clampf(float x, float lo, float hi) {
+    return x < lo ? lo : (x > hi ? hi : x);
+}
 
 /** Interpolation used for every fractional delay read. */
 enum Interp { INTERP_LINEAR = 0, INTERP_CUBIC = 1 };
@@ -51,7 +54,7 @@ struct DelayLine {
 	float at(uint32_t back) const { return buf[(w - back) & mask]; }
 
 	float read(float d, Interp interp) const {
-		d = clamp(d, 2.f, maxDelay());
+		d = clampf(d, 2.f, maxDelay());
 		uint32_t i = (uint32_t)d;
 		float f = d - (float)i;
 		float y1 = at(i);
@@ -102,7 +105,7 @@ struct DcBlock {
 
 /** Odd, monotonic, unit slope at zero, saturates at +-1. Cheap tanh stand-in. */
 inline float softClip(float x) {
-	x = clamp(x, -3.f, 3.f);
+	x = clampf(x, -3.f, 3.f);
 	return x * (27.f + x * x) / (27.f + 9.f * x * x);
 }
 
@@ -268,6 +271,58 @@ struct VerbTank {
 
 
 // ---------------------------------------------------------------------------
+/** What a mode change does, which on the hardware is not a crossfade.
+
+    The Verbtronic has no soft handover between its two algorithms. Drive the
+    feedback up until the loop is ringing and then change mode and the energy
+    already in one structure arrives in the other, which rings it as something
+    it was never given: metallic tails, delay trails, tones that were not in
+    the input. It is loud and it is not careful -- the board has been burnt out
+    doing it.
+
+    This module crossfaded instead, and worse, twice over: the input to each
+    tank was scaled by the fade *and* the two outputs were crossfaded by it. At
+    the midpoint each tank received half the signal and contributed half of
+    that, so a mode change was a quarter-gain hole. It went quiet and arrived,
+    which is the opposite of what the hardware does.
+
+    Three parts to the fix, all of them here so they can be measured:
+
+    * the fade is **equal power**, so the middle of a change is not a dip;
+    * both tanks are fed the whole input the whole time, so the one you are
+      arriving at is already ringing when you get there rather than starting
+      cold; and
+    * during a change the two are **cross-fed** -- each tank's output driven
+      into the other's input -- scaled by how far into the change we are and by
+      how hot the loop already was. That is the collision. It is zero at either
+      end, so it costs nothing when you are not changing mode, and it is
+      loudest exactly where the old code was quietest.
+*/
+struct ModeCollider {
+    //: 0 = Verb, 1 = Tronic.
+    float x = 0.f;
+
+    /** Advance toward `tronic` over `sec` seconds. */
+    float step(bool tronic, float dt, float sec) {
+        float target = tronic ? 1.f : 0.f;
+        float slew = (sec > 1e-6f) ? dt / sec : 1.f;
+        if (x < target) x = std::fmin(x + slew, target);
+        else if (x > target) x = std::fmax(x - slew, target);
+        return x;
+    }
+
+    /** Equal-power gains: gVerb^2 + gTronic^2 == 1 everywhere. */
+    float gVerb() const { return std::cos(x * 1.57079633f); }
+    float gTronic() const { return std::sin(x * 1.57079633f); }
+
+    /** How hard the two are driven into each other: nothing at either end,
+        everything halfway across. */
+    float collide() const { return 4.f * x * (1.f - x); }
+
+    void reset() { x = 0.f; }
+};
+
+
 /** TRONIC: an eight-line feedback delay network with a Householder reflection
     for its mixing matrix. The reflection is orthogonal, so the only loss in the
     loop is the feedback gain and the tilt -- and the feedback gain is allowed
