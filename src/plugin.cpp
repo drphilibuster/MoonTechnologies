@@ -15,6 +15,7 @@ void init(Plugin* p) {
 	p->addModel(modelCollusion);
 	p->addModel(modelConsolidation);
 	p->addModel(modelDeduction);
+	p->addModel(modelDependents);
 	p->addModel(modelDiversified);
 	p->addModel(modelDividend);
 	p->addModel(modelGarnishment);

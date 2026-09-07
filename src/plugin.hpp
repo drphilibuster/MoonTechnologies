@@ -13,6 +13,7 @@ extern Model* modelAuditLogic;
 extern Model* modelCollusion;
 extern Model* modelConsolidation;
 extern Model* modelDeduction;
+extern Model* modelDependents;
 extern Model* modelDiversified;
 extern Model* modelDividend;
 extern Model* modelGarnishment;

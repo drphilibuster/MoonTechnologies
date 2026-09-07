@@ -5,6 +5,54 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Added: Dependents, a chord made by distorting one inaudible sine
+
+After Astrobear Music (Aspen Instruments), "This distortion plays chords using
+Chebyshev harmonic exciters" -- https://youtu.be/O0QLnR406pQ -- and the
+per-harmonic shaping in their Black Diamond Distortion. Their demonstration is
+the reason this exists: a synth playing one sub-octave nobody can hear, and
+every note of the chord progression coming out of the distortion. The
+mathematics is public and old; this is that mathematics as a Rack voice, not a
+copy of their plugin, which is a general transfer-function editor and does a
+great deal more.
+
+Chebyshev polynomials of the first kind satisfy T_n(cos x) = cos(n x), so a
+unit-amplitude sine through the nth of them comes out as exactly the nth
+harmonic -- measured with a DFT, 1.000 at that harmonic and nothing above the
+floor anywhere else. A waveshaper is therefore a harmonic recipe, and harmonic
+numbers in small whole ratios are chords: 4:5:6 a just major triad, 10:12:15 a
+minor, 4:5:6:7 the dominant seventh with the flat 7:4 no keyboard has.
+
+Two things in it are ours rather than theirs. The recipe is held as a *weight
+vector* instead of a list of members, so two chords can be crossfaded: MORPH
+interpolates the weights, and major to minor is the third fading down while the
+flat third comes up, with every position between a real spectrum rather than two
+chords playing at once. And twelve per-harmonic trims form a CUSTOM slot that
+morphs against the presets, so a named triad on one side and a drawn spectrum on
+the other.
+
+The identity holds only at unit amplitude -- at half amplitude the same
+T_4+T_5+T_6 measures as harmonics 1 through 5 at wrong weights, which is why the
+demonstration's sine is at 0 dB. HOLD normalises the input; off, the chord
+dissolves as the signal quietens, which is an instrument in itself.
+
+The normaliser catches peaks instantly and releases over a second, which is the
+opposite of the obvious design and was arrived at by measuring: with the members
+of a major triad at 0.33, stray energy between them goes 0.11 at a 2 ms attack,
+0.23 at 10 ms, 0.41 at 120 ms. A follower that lags never reaches the true peak,
+and everything under unity collapses the chord. Held instantly, a signal at 12 %
+of full scale gives 0.006 of stray against 0.334 of member.
+
+With nothing patched in, the module does not waveshape at all: T_n(cos p) *is*
+cos(n p), and the phase is already known, so the chord is summed straight from
+it -- exact, with any member above Nyquist left out rather than folded back as
+an alias. External input goes through the real waveshaper at 4x. Feed that
+anything but a sine and every partial already there grows its own set of
+harmonics, which is chaos, and is not defended against.
+
+Twenty-six checks in tests/Dependents, including one that measures the collapse
+deliberately so the reason for HOLD cannot quietly stop being true.
+
 ### Fixed: Amortization changed mode by fading into a tank that was switched off
 
 The hardware does not crossfade. Run the feedback up until the loop is ringing,

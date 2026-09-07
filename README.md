@@ -1,6 +1,6 @@
 # Moon Technologies
 
-Twenty-four modules for [VCV Rack 2](https://vcvrack.com), by **Taxxess**.
+Twenty-five modules for [VCV Rack 2](https://vcvrack.com), by **Taxxess**.
 
 They share a panel language borrowed from money — a pale engraved note, sage
 guilloche round every field, a scroll in every corner, a form number in the
@@ -9,7 +9,7 @@ and finding out what it cost you.
 
 ## Where they come from
 
-**Eleven are built for this plugin.** Some are original; some are a piece of
+**Twelve are built for this plugin.** Some are original; some are a piece of
 hardware or a paper worked out properly — the Olegtron R2R as a real resistor
 ladder, Curtis Roads' pulsar synthesis, Partch's tonality diamond. Where one is
 modelled on something, it says so and says what.
@@ -31,7 +31,7 @@ so is anything wrong with them.
 **Two grew out of the family** — an expander, and a voice that turned out to
 deserve its own panel.
 
-## All twenty-four
+## All twenty-five
 
 *(Every panel below is rendered by Rack itself, not mocked up.)*
 
@@ -49,7 +49,7 @@ deserve its own panel.
 
 | <img src="tools/previews/Garnishment.png" width="84"> | <img src="tools/previews/Consolidation.png" width="109"> | <img src="tools/previews/Installment.png" width="134"> | <img src="tools/previews/Volatility.png" width="118"> |
 |---|---|---|---|
-| **[Garnishment](docs/Garnishment.md)** · 10 HP | **[Consolidation](docs/Consolidation.md)** · 13 HP | **[Installment](docs/Installment.md)** · 16 HP | **[Volatility](docs/Volatility.md)** · 14 HP |
+| **[Garnishment](docs/Garnishment.md)** · 10 HP | **[Consolidation](docs/Consolidation.md)** · 14 HP | **[Installment](docs/Installment.md)** · 16 HP | **[Volatility](docs/Volatility.md)** · 14 HP |
 
 | <img src="tools/previews/Deduction.png" width="101"> | <img src="tools/previews/AuditLogic.png" width="210"> | <img src="tools/previews/Kickback.png" width="252"> | <img src="tools/previews/PaymentSchedule.png" width="244"> |
 |---|---|---|---|
@@ -58,6 +58,11 @@ deserve its own panel.
 | <img src="tools/previews/SignHere.png" width="168"> | <img src="tools/previews/Diversified.png" width="118"> | <img src="tools/previews/Toll.png" width="92"> | <img src="tools/previews/ScheduleA.png" width="118"> |
 |---|---|---|---|
 | **[Sign Here](docs/SignHere.md)** · 20 HP | **[Diversified](docs/Diversified.md)** · 14 HP | **[Toll](docs/Toll.md)** · 11 HP | **[Schedule A](docs/ScheduleA.md)** · 14 HP |
+
+| <img src="tools/previews/Dependents.png" width="134"> |
+|---|
+| **[Dependents](docs/Dependents.md)** · 16 HP |
+
 
 ## Built for this plugin
 
@@ -119,6 +124,13 @@ Six LFOs that listen to each other. Each has its own natural rate; COUPLING says
 
 A polyphonic just-intonation quantizer that splits "which note?" into two questions and puts a knob on each. Which pitches exist: Partch's eleven-limit tonality diamond, his 43-tone scale, one Otonality or Utonality hexad, Wilson's hexany and eikosany, or the raw harmonic series — transposed onto any of Partch's six identities and pruned by prime limit. How one gets chosen: Euler's *gradus suavitatis*, Tenney's harmonic distance, Barlow's harmonicity, sensory dissonance against an assumed timbre, or adaptive tuning from the last note played, which tunes every interval pure and lets the tonal centre drift by the comma it costs. The read-out names the ratio.
 
+### [Dependents](docs/Dependents.md) — 16 HP · *Distortion, Waveshaper, Oscillator, Synth voice*
+
+*After [Astrobear Music](https://www.youtube.com/watch?v=O0QLnR406pQ) and Aspen Instruments' Black Diamond Distortion.*
+
+A chord made by distorting one sine you cannot hear. Chebyshev polynomials of the first kind satisfy Tₙ(cos x) = cos(nx), so a unit-amplitude sine through the nth of them comes out as exactly the nth harmonic — which makes a waveshaper a harmonic recipe, and harmonic numbers in small whole ratios are chords. 4:5:6 is a just major triad, 10:12:15 a minor. Put the root two octaves below hearing and the only thing audible is the chord. Two chord slots and a MORPH that interpolates the *weights* between them, so major to minor passes through spectra with no name; twelve per-harmonic trims as a CUSTOM slot to morph against; and a HOLD that keeps the input at unity, because the identity is only true there — switch it off and the chord dissolves as the signal quietens. Feed it anything but a sine and it is chaos, which is not defended against.
+
+
 ## Out of Modular in a Week
 
 Marked with the day each came from, and how far it has moved since.
@@ -135,7 +147,7 @@ Six voices, each a 40106 Schmitt square, a 4069 triangle core, a 4046 PLL that l
 
 Two VCA channels, each an LM13700 OTA, a vactrol low-pass gate or the I-AM-O JFET multiplier, with bias, lag and CV amount. Three builds, one per MODE position.
 
-### [Consolidation](docs/Consolidation.md) — 13 HP · *Mixer, Multiple, Utility*
+### [Consolidation](docs/Consolidation.md) — 14 HP · *Mixer, Multiple, Utility*
 
 *Day 3, consolidated.*
 

@@ -67,6 +67,19 @@
       ]
     },
     {
+      "slug": "Dependents",
+      "name": "Dependents",
+      "description": "A chord made by distorting one inaudible sine: Chebyshev harmonic exciters tuned to just triads, with a morph between two chords",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Dependents.md",
+      "tags": [
+        "Distortion",
+        "Waveshaper",
+        "Oscillator",
+        "Synth voice",
+        "Effect"
+      ]
+    },
+    {
       "slug": "Diversified",
       "name": "Diversified",
       "description": "Modular in a Week effects: the DSP99 program bank plus Echomatic echo, Little Angel chorus, spring reverb, MXR Distortion+, Talk Funny, bitcrusher and 4011 ring modulator",
@@ -190,17 +203,6 @@
       ]
     },
     {
-      "slug": "ScheduleA",
-      "name": "Schedule A",
-      "description": "Repossession expander: discrete per-step CV inputs and per-step audio outputs for all eight regions",
-      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/ScheduleA.md",
-      "tags": [
-        "Expander",
-        "Sampler",
-        "Sequencer"
-      ]
-    },
-    {
       "slug": "Retroactive",
       "name": "Retroactive",
       "description": "Windowed sample-permutation effect",
@@ -209,6 +211,17 @@
         "Effect",
         "Delay",
         "Granular"
+      ]
+    },
+    {
+      "slug": "ScheduleA",
+      "name": "Schedule A",
+      "description": "Repossession expander: discrete per-step CV inputs and per-step audio outputs for all eight regions",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/ScheduleA.md",
+      "tags": [
+        "Expander",
+        "Sampler",
+        "Sequencer"
       ]
     },
     {
