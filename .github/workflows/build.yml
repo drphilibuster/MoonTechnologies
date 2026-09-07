@@ -55,6 +55,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # Almost every suite is SDK-free by design and compiles with nothing but
+      # a C++ compiler. tests/Diversified is the exception on purpose: its shim
+      # pulls dsp/resampler.hpp and math.hpp from the real SDK so that what it
+      # sweeps is the shipping signal path rather than a stand-in of it. Those
+      # two headers are header-only and nothing here links against libRack, so
+      # unpacking the SDK is all this needs -- but it does need it, and without
+      # this step the whole `make test` target failed at that one suite.
+      - name: Download the Rack SDK (headers only, for tests/Diversified)
+        run: |
+          curl -fsSL -o Rack-SDK.zip \
+            "https://vcvrack.com/downloads/Rack-SDK-${RACK_SDK_VERSION}-lin-x64.zip"
+          unzip -q Rack-SDK.zip -d ..
+          test -f ../Rack-SDK/include/dsp/resampler.hpp
+
       - name: Run the host-side tests
         run: make test
 
