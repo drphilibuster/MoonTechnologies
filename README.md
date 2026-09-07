@@ -57,7 +57,7 @@ deserve its own panel.
 
 | <img src="tools/previews/SignHere.png" width="168"> | <img src="tools/previews/Diversified.png" width="118"> | <img src="tools/previews/Toll.png" width="92"> | <img src="tools/previews/ScheduleA.png" width="118"> |
 |---|---|---|---|
-| **[Sign Here](docs/SignHere.md)** · 20 HP | **[Diversified](docs/Diversified.md)** · 14 HP | **[Toll](docs/Toll.md)** · 11 HP | **[Schedule A](docs/ScheduleA.md)** · 14 HP |
+| **[Sign Here](docs/SignHere.md)** · 20 HP | **[Diversified](docs/Diversified.md)** · 16 HP | **[Toll](docs/Toll.md)** · 11 HP | **[Schedule A](docs/ScheduleA.md)** · 14 HP |
 
 | <img src="tools/previews/Dependents.png" width="134"> |
 |---|
@@ -195,7 +195,7 @@ The Baby8 with the 4017 sequential switch falling out of the same counter in bot
 
 The button and pedal, the offset-scaler joystick as an XY pad, and four touch pads. Three gesture controllers that share nothing electrically in the original.
 
-### [Diversified](docs/Diversified.md) — 14 HP · *Effect, Delay, Reverb, Chorus, Distortion*
+### [Diversified](docs/Diversified.md) — 16 HP · *Effect, Delay, Reverb, Chorus, Distortion*
 
 *Days 12 and 13, consolidated.*
 

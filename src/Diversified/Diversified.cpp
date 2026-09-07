@@ -87,15 +87,29 @@ struct MacroQuantity : ParamQuantity {
 };
 
 
+//: What DIV multiplies the incoming clock period by. Halving the period is
+//: twice the speed, so the labels read the way a musician says them: "1/2" is
+//: half a clock, "x2" is two of them, "dotted" is one and a half.
+static const int kClockDivCount = 9;
+static const float kClockDiv[kClockDivCount] = {
+	0.25f, 1.f / 3.f, 0.5f, 2.f / 3.f, 1.f, 1.5f, 2.f, 3.f, 4.f
+};
+
 struct Diversified : Module {
 	enum ParamId {
-		PROGRAM_PARAM, P1_PARAM, P2_PARAM, P3_PARAM, MIX_PARAM,
-		PROGRAM_CV_PARAM, P1_CV_PARAM, P2_CV_PARAM, P3_CV_PARAM, MIX_CV_PARAM,
+		PROGRAM_PARAM, P1_PARAM,                      // + kMacros
+		MIX_PARAM = P1_PARAM + divfx::kMacros,
+		PROGRAM_CV_PARAM,
+		P1_CV_PARAM,                                  // + kMacros
+		MIX_CV_PARAM = P1_CV_PARAM + divfx::kMacros,
+		CLOCK_DIV_PARAM,
 		PARAMS_LEN
 	};
 	enum InputId {
 		IN_L_INPUT, IN_R_INPUT, RET_INPUT,
-		PROGRAM_INPUT, P1_INPUT, P2_INPUT, P3_INPUT, MIX_INPUT,
+		PROGRAM_INPUT,
+		P1_INPUT,                                     // + kMacros
+		MIX_INPUT = P1_INPUT + divfx::kMacros,
 		AUX_INPUT, TAP_INPUT,
 		INPUTS_LEN
 	};
@@ -135,7 +149,7 @@ struct Diversified : Module {
 	// read by the UI: all scalars and pointers into the static program table.
 	int dispProgram;
 	const char* dispName;
-	const char* dispMac[3];
+	const char* dispMac[divfx::kMacros];
 	bool dispClocked;
 
 	Diversified() : activeVoice(0), fading(false), fadePos(0.f),
@@ -158,7 +172,7 @@ struct Diversified : Module {
 		configParam(PROGRAM_CV_PARAM, -1.f, 1.f, 0.f, "Program CV", "%", 0.f, 100.f);
 		getParamQuantity(PROGRAM_CV_PARAM)->randomizeEnabled = false;
 
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < divfx::kMacros; i++) {
 			MacroQuantity* q = configParam<MacroQuantity>(
 			    P1_PARAM + i, 0.f, 1.f, 0.5f,
 			    string::f("Macro %d", i + 1), "%", 0.f, 100.f);
@@ -169,6 +183,23 @@ struct Diversified : Module {
 		}
 
 		configParam(MIX_PARAM, 0.f, 1.f, 0.5f, "Mix", "%", 0.f, 100.f);
+		// What the incoming clock is worth. A delay exactly on the beat is
+		// rarely the one you want, and until now the clock's own tempo was the
+		// only one on offer.
+		{
+			std::vector<std::string> divLabels;
+			divLabels.push_back("1/4");
+			divLabels.push_back("1/3");
+			divLabels.push_back("1/2");
+			divLabels.push_back("2/3");
+			divLabels.push_back("x1");
+			divLabels.push_back("dotted");
+			divLabels.push_back("x2");
+			divLabels.push_back("x3");
+			divLabels.push_back("x4");
+			configSwitch(CLOCK_DIV_PARAM, 0.f, (float)(kClockDivCount - 1), 4.f,
+			             "Clock division", divLabels);
+		}
 		configParam(MIX_CV_PARAM, -1.f, 1.f, 0.f, "Mix CV", "%", 0.f, 100.f);
 		getParamQuantity(MIX_CV_PARAM)->randomizeEnabled = false;
 
@@ -176,9 +207,9 @@ struct Diversified : Module {
 		configInput(IN_R_INPUT, "Right audio (normalled to left)");
 		configInput(RET_INPUT, "Effects loop return (normalled to send)");
 		configInput(PROGRAM_INPUT, "Program CV");
-		configInput(P1_INPUT, "Macro 1 CV");
-		configInput(P2_INPUT, "Macro 2 CV");
-		configInput(P3_INPUT, "Macro 3 CV");
+		for (int i = 0; i < divfx::kMacros; i++)
+			configInput(P1_INPUT + i, string::f("Macro %d CV", i + 1));
+
 		configInput(MIX_INPUT, "Mix CV");
 		configInput(AUX_INPUT, "Aux gate / CV");
 		configInput(TAP_INPUT, "Tap / clock");
@@ -211,7 +242,7 @@ struct Diversified : Module {
 	void publish(const Patch& p) {
 		dispProgram = p.index;
 		dispName = p.name;
-		for (int i = 0; i < 3; i++)
+		for (int i = 0; i < divfx::kMacros; i++)
 			dispMac[i] = p.mac[i];
 	}
 
@@ -305,27 +336,32 @@ struct Diversified : Module {
 			bctx.aux = inputs[AUX_INPUT].getVoltage();
 			bctx.auxConnected = inputs[AUX_INPUT].isConnected();
 			bctx.auxGate = auxGate;
-			bctx.tapSec = tapSec;
+			// The clock, through DIV. Zero stays zero: an unpatched or lost
+			// clock is not a very fast one.
+			float clocked = tapSec * kClockDiv[clamp(
+				(int)std::round(params[CLOCK_DIV_PARAM].getValue()),
+				0, kClockDivCount - 1)];
+			bctx.tapSec = clocked;
 
 			tmpl.aux = bctx.aux;
 			tmpl.auxConnected = bctx.auxConnected;
 			tmpl.auxGate = auxGate;
-			tmpl.tapSec = tapSec;
+			tmpl.tapSec = clocked;
 			tmpl.retConnected = inputs[RET_INPUT].isConnected();
 			tmpl.inRConnected = rConnected;
 			tmpl.crushSwap = crushSwap;
 			tmpl.crushLpf = crushLpf;
 			tmpl.ringSmooth = ringSmooth;
 
-			float m[3];
-			for (int i = 0; i < 3; i++)
+			float m[divfx::kMacros];
+			for (int i = 0; i < divfx::kMacros; i++)
 				m[i] = macro(i);
 
 			int last = fading ? 2 : 1;
 			for (int k = 0; k < last; k++) {
 				int v = (k == 0) ? activeVoice : (1 - activeVoice);
 				work[v] = base[v];
-				for (int i = 0; i < 3; i++)
+				for (int i = 0; i < divfx::kMacros; i++)
 					work[v].setMacro(i, m[i]);
 				voice[v].setParams(work[v], bctx, tmpl);
 			}
@@ -414,7 +450,7 @@ struct Diversified : Module {
 		int other = 1 - activeVoice;
 		divfx::programAt(want, base[other]);
 		work[other] = base[other];
-		for (int i = 0; i < 3; i++)
+		for (int i = 0; i < divfx::kMacros; i++)
 			work[other].setMacro(i, macro(i));
 		voice[other].prepare(base[other]);
 		voice[other].setParams(work[other], bctx, tmpl);
@@ -500,13 +536,12 @@ struct DiversifiedDisplay : LedDisplay {
 		if (clocked)
 			panel::text(args.vg, TAG, pad, 24.f, "CLK");
 
-		// Each macro's name sits over the knob it belongs to: the display starts
-		// 4.2 mm from the left edge, so a knob at x mm is at x - 4.2 mm here.
-		static const float knobX[3] = {34.48f, 56.96f, 79.44f};
-		for (int i = 0; i < 3; i++) {
-			const char* m = module ? module->dispMac[i] : "--";
-			panel::text(args.vg, MAC, panel::mm(knobX[i] - 4.2f, 0.f).x, 24.f, m);
-		}
+		// The macro names used to be listed here, over the three knobs, with
+		// their x positions typed in. Each knob wears its own little display
+		// now: six of them will not fit on one line, two rows of knobs cannot
+		// both be under it, and a typed coordinate goes wrong the moment the
+		// panel moves. This line is the program's, and the clock tag's.
+		(void) MAC;
 	}
 };
 
@@ -526,21 +561,43 @@ struct DiversifiedWidget : ModuleWidget {
 		addChild(display);
 
 		addParam(createParamCentered<ProgramKnob>(panel::mm(panel::PROGRAM_POS.x, panel::PROGRAM_POS.y), module, Diversified::PROGRAM_PARAM));
-		addParam(createParamCentered<PanelKnob>(panel::mm(panel::P1_POS.x, panel::P1_POS.y), module, Diversified::P1_PARAM));
-		addParam(createParamCentered<PanelKnob>(panel::mm(panel::P2_POS.x, panel::P2_POS.y), module, Diversified::P2_PARAM));
-		addParam(createParamCentered<PanelKnob>(panel::mm(panel::P3_POS.x, panel::P3_POS.y), module, Diversified::P3_PARAM));
+		// Six macro knobs, each wearing its own little display: what a macro
+		// means changes with the program, so the panel does not engrave it.
+		static const Vec* macPos[divfx::kMacros] = {
+			&panel::P1_POS, &panel::P2_POS, &panel::P3_POS,
+			&panel::P4_POS };
+		static const Vec* macDisp[divfx::kMacros] = {
+			&panel::P1_NAME_POS, &panel::P2_NAME_POS, &panel::P3_NAME_POS,
+			&panel::P4_NAME_POS };
+		for (int i = 0; i < divfx::kMacros; i++) {
+			addParam(createParamCentered<PanelKnob>(
+				panel::mm(macPos[i]->x, macPos[i]->y), module, Diversified::P1_PARAM + i));
+			panel::MiniDisplay* d = new panel::MiniDisplay;
+			d->box.size = panel::mm(panel::READOUT_W, panel::READOUT_H);
+			d->box.pos = panel::mm(macDisp[i]->x, macDisp[i]->y).minus(d->box.size.div(2.f));
+			d->name = module ? &module->dispMac[i] : NULL;
+			addChild(d);
+		}
 		addParam(createParamCentered<PanelKnob>(panel::mm(panel::MIX_POS.x, panel::MIX_POS.y), module, Diversified::MIX_PARAM));
+		addParam(createParamCentered<PanelKnob>(panel::mm(panel::CLOCK_DIV_POS.x, panel::CLOCK_DIV_POS.y), module, Diversified::CLOCK_DIV_PARAM));
 
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::PROGRAM_CV_POS.x, panel::PROGRAM_CV_POS.y), module, Diversified::PROGRAM_CV_PARAM));
-		addParam(createParamCentered<Trimpot>(panel::mm(panel::P1_CV_POS.x, panel::P1_CV_POS.y), module, Diversified::P1_CV_PARAM));
-		addParam(createParamCentered<Trimpot>(panel::mm(panel::P2_CV_POS.x, panel::P2_CV_POS.y), module, Diversified::P2_CV_PARAM));
-		addParam(createParamCentered<Trimpot>(panel::mm(panel::P3_CV_POS.x, panel::P3_CV_POS.y), module, Diversified::P3_CV_PARAM));
+		static const Vec* macCv[divfx::kMacros] = {
+			&panel::P1_CV_POS, &panel::P2_CV_POS, &panel::P3_CV_POS,
+			&panel::P4_CV_POS };
+		static const Vec* macIn[divfx::kMacros] = {
+			&panel::P1_IN_POS, &panel::P2_IN_POS, &panel::P3_IN_POS,
+			&panel::P4_IN_POS };
+		for (int i = 0; i < divfx::kMacros; i++) {
+			addParam(createParamCentered<Trimpot>(
+				panel::mm(macCv[i]->x, macCv[i]->y), module, Diversified::P1_CV_PARAM + i));
+			addInput(createInputCentered<panel::PortIn>(
+				panel::mm(macIn[i]->x, macIn[i]->y), module, Diversified::P1_INPUT + i));
+		}
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::MIX_CV_POS.x, panel::MIX_CV_POS.y), module, Diversified::MIX_CV_PARAM));
 
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::PROGRAM_IN_POS.x, panel::PROGRAM_IN_POS.y), module, Diversified::PROGRAM_INPUT));
-		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::P1_IN_POS.x, panel::P1_IN_POS.y), module, Diversified::P1_INPUT));
-		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::P2_IN_POS.x, panel::P2_IN_POS.y), module, Diversified::P2_INPUT));
-		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::P3_IN_POS.x, panel::P3_IN_POS.y), module, Diversified::P3_INPUT));
+
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::MIX_IN_POS.x, panel::MIX_IN_POS.y), module, Diversified::MIX_INPUT));
 
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::AUX_IN_POS.x, panel::AUX_IN_POS.y), module, Diversified::AUX_INPUT));

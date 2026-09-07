@@ -36,12 +36,57 @@ enum TnChar { TN_LP, TN_BP, TN_HP, TN_WAH };
 /** Where one macro knob lands. */
 enum MacroTarget { MA0, MA1, MA2, MA3, MB0, MB1, MB2, MB3, MNONE = 255 };
 
+//: How many macro knobs the panel has. Three are named by the program table and
+//: the fourth is worked out below from what the running algorithm actually
+//: reads -- not hand-authored into forty-eight program records, which would be
+//: forty-eight decisions drifting out of step with the algorithms the first
+//: time one of them changed.
+//:
+//: Four and not six. Six was tried: the panel does not hold the rows, and more
+//: to the point thirty-one of the forty-eight programs have no second block at
+//: all, so a fifth and sixth knob would read "--" on two thirds of the bank. A
+//: fourth is real almost everywhere -- reverb, delay, modulation, phaser and
+//: pitch all read their fourth slot; tone, crush and the MiaW boards do not,
+//: and on those it says so.
+static const int kMacros = 4;
+
+/** What slot `i` of algorithm `alg` means, or NULL if that algorithm never
+    reads it.
+
+    Taken from the blocks themselves rather than invented: ReverbFx reads p[0]
+    as size, p[1] as decay, p[2] as tone and p[3] as its character's own extra;
+    DelayFx reads p[3] as stereo spread; ToneFx and CrushFx read only three and
+    the fourth is genuinely nothing. NULL is what makes a knob say "--" instead
+    of pretending to control something. */
+inline const char* slotName(uint8_t alg, int i) {
+    if (i < 0 || i > 3) return NULL;
+    switch (alg) {
+        case A_REVERB: { static const char* n[4] = {"SIZE", "DECAY", "TONE", "SHAPE"};
+                         return n[i]; }
+        case A_DELAY:  { static const char* n[4] = {"TIME", "FEEDBK", "TONE", "SPREAD"};
+                         return n[i]; }
+        case A_MOD:    { static const char* n[4] = {"RATE", "DEPTH", "VOICES", "TONE"};
+                         return n[i]; }
+        case A_PHASER: { static const char* n[4] = {"RATE", "DEPTH", "FEEDBK", "STAGES"};
+                         return n[i]; }
+        case A_TONE:   { static const char* n[4] = {"FREQ", "Q", "ENV", NULL};
+                         return n[i]; }
+        case A_PITCH:  { static const char* n[4] = {"PITCH", "MIX", "FEEDBK", "WINDOW"};
+                         return n[i]; }
+        case A_CRUSH:  { static const char* n[4] = {"BITS", "RATE", "TONE", NULL};
+                         return n[i]; }
+        case A_MIAW:   { static const char* n[4] = {"P1", "P2", "P3", NULL};
+                         return n[i]; }
+        default:       return NULL;
+    }
+}
+
 /** What the module and the read-out know about the running program. */
 struct Patch {
 	int index;
 	const char* name;
-	const char* mac[3];
-	uint8_t tgt[3];
+	const char* mac[kMacros];
+	uint8_t tgt[kMacros];
 	uint8_t absMask;     // bit i: macro i is the control itself, not a trim
 	uint8_t algA, chrA;
 	uint8_t algB, chrB;
@@ -50,8 +95,7 @@ struct Patch {
 
 	Patch() : index(0), name("--"), absMask(0), algA(A_NONE), chrA(0),
 	          algB(A_NONE), chrB(0) {
-		mac[0] = mac[1] = mac[2] = "--";
-		tgt[0] = tgt[1] = tgt[2] = MNONE;
+		for (int i = 0; i < kMacros; i++) { mac[i] = "--"; tgt[i] = MNONE; }
 		for (int i = 0; i < 4; i++) {
 			a[i] = 0.5f;
 			b[i] = 0.5f;
@@ -69,6 +113,7 @@ struct Patch {
 	 * On the seven dedicated boards a macro is the board's own knob, absolute,
 	 * because there FEEDBACK means feedback and nothing else. */
 	inline void setMacro(int i, float v) {
+		if (i < 0 || i >= kMacros) return;
 		uint8_t t = tgt[i];
 		if (t >= 8)
 			return;
@@ -1039,6 +1084,30 @@ inline void programAt(int n, Patch& out) {
 	for (int i = 0; i < 3; i++) {
 		out.mac[i] = row->mac[i];
 		out.tgt[i] = row->tgt[i];
+	}
+
+	// The three the program names are the three the sheet gave it. The rest are
+	// whatever that program still has and is not already spending: every slot
+	// its two blocks really read, in order, skipping the ones already claimed.
+	// A program whose second block is A_NONE -- most of them -- simply runs out,
+	// and the knobs that run out say "--".
+	bool taken[8] = {false, false, false, false, false, false, false, false};
+	for (int i = 0; i < 3; i++)
+		if (out.tgt[i] < 8) taken[out.tgt[i]] = true;
+
+	int m = 3;
+	for (int slot = 0; slot < 8 && m < kMacros; slot++) {
+		if (taken[slot]) continue;
+		uint8_t alg = (slot < 4) ? out.algA : out.algB;
+		const char* nm = slotName(alg, slot & 3);
+		if (!nm) continue;                 // that block does not read it
+		out.tgt[m] = (uint8_t) slot;
+		out.mac[m] = nm;
+		m++;
+	}
+	for (; m < kMacros; m++) {
+		out.tgt[m] = MNONE;
+		out.mac[m] = "--";
 	}
 }
 

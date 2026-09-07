@@ -2,7 +2,7 @@
 
 **One hundred and six effects behind one knob.** The ninety-nine programs of the
 DSP99 board, then the seven dedicated Modular in a Week effect circuits, in one
-stereo multi-effect with three macro knobs whose meaning changes with the
+stereo multi-effect with four macro knobs whose meaning changes with the
 program. 15 HP, stereo in, stereo out, plus an effects loop.
 
 Form 1099-B is the IRS's *Proceeds From Broker and Barter Exchange
@@ -45,7 +45,7 @@ and from the boards and sheets published with it.
 | control | what it does |
 |---|---|
 | **PROGRAM** | 0–105. The primary control: 0–98 is the DSP99 sheet, 99–105 the dedicated boards. Changing it crossfades over about 30 ms, so a reverb tail survives the change |
-| **P1 P2 P3** | The three macros. What each one *is* changes with the program and is named on the read-out, over the knob it belongs to |
+| **P1–P4** | The four macros. Nothing is engraved on them: what each one *is* changes with the program, so each wears a small lit plate that the module writes the running program's own name into |
 | **ACTIVE** | Beside the caption; follows the level of the wet signal |
 
 **The macros work differently on the two banks, on purpose.**
@@ -58,6 +58,32 @@ positions — turn PROGRAM with the macros untouched and the sound really change
 
 On **99–105** a macro is the board's own knob, absolute, because on the
 Echomatic FEEDBACK means feedback and nothing else.
+
+### The fourth macro, and why some knobs say `--`
+
+Every program carries eight parameters — four in each of its two blocks — and
+the program sheet names three of them. **P4 is whichever slot that program still
+has and is not already spending**, worked out from what the running algorithm
+actually reads rather than hand-authored into the table:
+
+| algorithm | slot 1 | slot 2 | slot 3 | slot 4 |
+|---|---|---|---|---|
+| reverb | SIZE | DECAY | TONE | SHAPE |
+| delay | TIME | FEEDBK | TONE | SPREAD |
+| modulation | RATE | DEPTH | VOICES | TONE |
+| phaser | RATE | DEPTH | FEEDBK | STAGES |
+| pitch | PITCH | MIX | FEEDBK | WINDOW |
+| tone | FREQ | Q | ENV | — |
+| bitcrusher | BITS | RATE | TONE | — |
+| MiaW boards | P1 | P2 | P3 | — |
+
+Three of those algorithms only ever read three parameters. On their programs P4
+has nothing to control and its plate says `--`, which is the honest thing for a
+panel to say — better than a knob that turns and does nothing.
+
+There is no P5 or P6 for the same reason, only more so: thirty-one of the
+forty-eight program records have no second block at all, so two more knobs would
+have read `--` across two thirds of the bank.
 
 ### ALLOCATION
 
@@ -72,7 +98,8 @@ programs. The trimmers are excluded from randomisation.
 |---|---|
 | **MIX** | Dry to wet, 0–100 %. Default 50 % |
 | **AUX** | A gate or a CV, whichever the running program wants — see the table below. Gate threshold 1 V, Schmitt hysteresis down to 0.1 V |
-| **TAP** | A clock. Two edges give a period, and every delay-based program uses it in place of its TIME macro. The light beside it is lit while a clock is locked; pull the cable or stop clocking for 3 s and the knob takes over again |
+| **CLOCK** | A clock or a tap. Two edges give a period, and every delay-based program uses it in place of its TIME macro. The light beside it is lit while a clock is locked; pull the cable or stop clocking for 3 s and the knob takes over again |
+| **DIV** | What that clock is worth: 1/4, 1/3, 1/2, 2/3, ×1, dotted, ×2, ×3, ×4. A delay exactly on the beat is rarely the one you want, and without this the clock's own tempo was the only one on offer |
 
 ### The footer
 
@@ -97,11 +124,16 @@ to mono; that is the trade, and leaving RETURN empty avoids it.
 
 Bypass (Rack's own) passes IN L and IN R straight to OUT L and OUT R.
 
-## The read-out
+## The read-outs
 
-The program number in seven-segment, the program's name beside it, and the three
-macro names sitting over the knobs they belong to. `CLK` appears at the left when
-a TAP clock is locked.
+The big one carries the program number in seven-segment and the program's name
+beside it. `CLK` appears at the left when a clock is locked.
+
+The macro names used to live there too, in a row over the three knobs. They are
+on the knobs now — a small lit plate under each — because that is the only
+arrangement that stays true: a name typed at a fixed x on the big display goes
+wrong the moment the panel moves, and a knob that says `--` needs to say it
+where the knob is rather than in a list somewhere above.
 
 ## The programs
 

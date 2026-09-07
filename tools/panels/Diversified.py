@@ -34,38 +34,41 @@ P = Panel(
 )
 
 P.sections = [
-    # The program is the one control you reach for, so it wears the ring. The
-    # three macros beside it mean something different for every program; the
-    # read-out above says what. PROGRAM has 106 positions, far too many to
-    # engrave, which is exactly why the read-out names the one you are on.
+    # PROGRAM wears the ring. The four macros mean something different for every
+    # one of the hundred and six programs, so none of them is engraved: each
+    # carries a little lit plate and the module writes the running program's own
+    # name for that knob into it -- or "--" where that program has nothing for
+    # the knob to do, which is the honest thing for a panel to say.
     Section("PORTFOLIO", caption_light="active", rows=[
         Row([BigKnob("program", "PROGRAM", primary=True),
-             Knob("p1", "P1"),
-             Knob("p2", "P2"),
-             Knob("p3", "P3")]),
+             Knob("p1", ""), Knob("p2", ""), Knob("p3", ""), Knob("p4", "")]),
+        Row([Readout("p1_name", col=1), Readout("p2_name", col=2),
+             Readout("p3_name", col=3), Readout("p4_name", col=4)], silent=True),
     ]),
 
-    # What CV may take off each control on the way in. Each trimpot sits
-    # directly over its own jack, with the label they share set in the gap
-    # between the two of them.
+    # What CV may take off each control on the way in: a trimpot directly over
+    # its own jack, in the same column as the knob it attenuates.
     Section("ALLOCATION", rows=[
-        Row([Trim("program_cv", "PROG"),
-             Trim("p1_cv", "P1"),
-             Trim("p2_cv", "P2"),
-             Trim("p3_cv", "P3"),
-             Trim("mix_cv", "MIX")], pair=True),
-        Row([Jack("program_in"), Jack("p1_in"),
-             Jack("p2_in"), Jack("p3_in"),
-             Jack("mix_in")], silent=True),
+        Row([Trim("program_cv", "PROG"), Trim("p1_cv", "1"), Trim("p2_cv", "2"),
+             Trim("p3_cv", "3"), Trim("p4_cv", "4")], pair=True),
+        Row([Jack("program_in"), Jack("p1_in"), Jack("p2_in"),
+             Jack("p3_in"), Jack("p4_in")], silent=True),
     ]),
 
-    # The blend, and the two gates. AUX is whatever the running program wants a
-    # gate or a CV for; TAP sets the time of every delay, and its light shows
-    # the clock it has locked to.
+    # AUX is whatever the running program wants a gate or a CV for. CLOCK sets
+    # the time of every delay and its light shows what it has locked to; DIV is
+    # what that clock is worth -- a delay exactly on the beat is rarely the one
+    # you want, and without this the clock's own tempo was the only one offered.
     Section("HOLDINGS", rows=[
+        # MIX's CV sits beside it rather than stacked over its jack the way the
+        # ALLOCATION block does: a second row here overruns the face by a
+        # millimetre, and moving it up there instead costs two HP. Both are
+        # named outright, which is what the paired idiom was buying.
         Row([Knob("mix", "MIX"),
+             Trim("mix_cv", "CV AMT"), Jack("mix_in", "CV IN"),
              Jack("aux_in", "AUX"),
-             Jack("tap_in", "TAP", light="tap_led")]),
+             Jack("tap_in", "CLOCK", light="tap_led"),
+             Knob("clock_div", "DIV", steps=9)]),
     ]),
 ]
 
