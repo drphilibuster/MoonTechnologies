@@ -28,19 +28,44 @@ Rönnberg (multiples). Part of the [Moon Technologies](../README.md) plugin.
 
 | Control | Range | Default |
 |---|---|---|
-| LVL 1–4 | 0–100 % | 0 % |
+| LVL 1–4 | 0–100 % | 100 % |
+| MUTE 1–4 | latching | passing |
+
+Each level knob wears its channel's meter as a lime arc struck into the seat
+ring around it — the dark band already there between the knob and its well, so
+the read-out costs the panel nothing. The arc sweeps the knob's own travel, so
+full scale is where the pointer sits at maximum. It rises instantly and falls
+slowly: a meter on a mixer is there to say which channel is the loud one.
+
+## Mixer, VCA, or both at once
+
+Each channel has a **LEVEL CV** input and a **direct output**, and between them
+they decide what the module is being.
+
+**LEVEL CV multiplies the knob** rather than adding to it. The knob is the
+depth, so an unpatched jack leaves the channel exactly as it was and a patched
+one turns that strip into a VCA with the knob as its ceiling. There is no
+attenuator on top, deliberately — the knob already is one, and a second would
+have cost a row this panel could not spare.
+
+**A patched direct output takes that channel out of the mix.** Leave it empty
+and the channel sums as it always did. So the same four strips are a four-input
+mixer, four independent VCAs, or any split of the two, with no mode switch to
+say which — patch two direct outs and you have a two-channel mix and two VCAs.
+
+MUTE is a latch per channel and silences it wherever it is going.
 
 ## Jacks
 
 | Jack | Notes |
 |---|---|
 | IN 1–4 | mixer channel inputs, polyphonic |
-| OUT | the mix, normal polarity |
-| INV OUT | the mix, inverted — the first stage's own output |
-| MULT A | multiple A's input |
-| (3 unlabeled outputs below MULT A) | A's three legs — electrically identical |
+| LEVEL CV 1–4 | 0–10 V multiplies that channel's knob; unpatched leaves it alone |
+| 1–4 (band) | that channel's direct output. Patched, the channel leaves the mix |
+| MIX | the mix, normal polarity — the main output |
+| INV | the mix, inverted — the first stage's own output |
+| MULT A | multiple A's input, with its three legs on the same row |
 | MULT B | multiple B's input; **normals from MULT A's input** when unpatched |
-| (3 unlabeled outputs below MULT B) | B's three legs |
 
 ## Voltage conventions and polyphony
 

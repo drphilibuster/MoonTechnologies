@@ -29,19 +29,31 @@ static const int NUM_CH = 4;
 
 struct Consolidation : Module {
 	enum ParamId {
-		LVL1_PARAM, LVL2_PARAM, LVL3_PARAM, LVL4_PARAM, PARAMS_LEN
+		LVL1_PARAM, LVL2_PARAM, LVL3_PARAM, LVL4_PARAM,
+		MUTE1_PARAM, MUTE2_PARAM, MUTE3_PARAM, MUTE4_PARAM, PARAMS_LEN
 	};
 	enum InputId {
 		IN1_INPUT, IN2_INPUT, IN3_INPUT, IN4_INPUT,
+		CV1_INPUT, CV2_INPUT, CV3_INPUT, CV4_INPUT,
 		MULT_A_IN_INPUT, MULT_B_IN_INPUT, INPUTS_LEN
 	};
 	enum OutputId {
 		OUT_OUTPUT, INV_OUT_OUTPUT,
+		CH1_OUTPUT, CH2_OUTPUT, CH3_OUTPUT, CH4_OUTPUT,
 		MULT_A_OUT1_OUTPUT, MULT_A_OUT2_OUTPUT, MULT_A_OUT3_OUTPUT,
 		MULT_B_OUT1_OUTPUT, MULT_B_OUT2_OUTPUT, MULT_B_OUT3_OUTPUT,
 		OUTPUTS_LEN
 	};
-	enum LightId { LIGHTS_LEN };
+	enum LightId {
+		MUTE1_LIGHT, MUTE2_LIGHT, MUTE3_LIGHT, MUTE4_LIGHT,
+		LIGHTS_LEN
+	};
+
+	//: What each channel is currently passing, smoothed, for the arc drawn in
+	//: the seat ring around its level knob. Peak-ish rather than RMS: a meter
+	//: on a mixer is there to say "this one is the loud one", and a fast rise
+	//: with a slow fall is what reads as that.
+	float meter[NUM_CH] = {};
 
 	// Options: neither schematic had a front-panel switch for either.
 	bool softClip = false;     // MIXER: soft-clamp at the op-amp rails, ~11 V
@@ -59,6 +71,15 @@ struct Consolidation : Module {
 			configParam(LVL1_PARAM + i, 0.f, 1.f, 1.f,
 			            string::f("Channel %d level", i + 1), "%", 0.f, 100.f);
 			configInput(IN1_INPUT + i, string::f("Channel %d", i + 1));
+			configInput(CV1_INPUT + i, string::f("Channel %d level CV", i + 1));
+			// Patched, a direct output takes that channel out of the mix. The
+			// name says so, because a jack that quietly removes a channel from
+			// somewhere else is the sort of thing a manual gets read for.
+			configOutput(CH1_OUTPUT + i,
+			             string::f("Channel %d direct (removes it from the mix)", i + 1));
+			configSwitch(MUTE1_PARAM + i, 0.f, 1.f, 0.f,
+			             string::f("Channel %d mute", i + 1),
+			             {"Passing", "Muted"});
 		}
 		configOutput(OUT_OUTPUT, "Mix");
 		configOutput(INV_OUT_OUTPUT, "Inverted mix");
@@ -93,16 +114,39 @@ struct Consolidation : Module {
 		outputs[INV_OUT_OUTPUT].setChannels(channels);
 
 		float level[NUM_CH];
-		for (int i = 0; i < NUM_CH; i++)
+		bool direct[NUM_CH];
+		for (int i = 0; i < NUM_CH; i++) {
 			level[i] = params[LVL1_PARAM + i].getValue();
+			// CV multiplies the knob rather than adding to it, so the knob is
+			// the depth and an unpatched jack leaves the channel alone. That is
+			// what makes the same strip a mixer channel and a VCA without a
+			// mode switch to say which it is being.
+			if (inputs[CV1_INPUT + i].isConnected())
+				level[i] *= clamp(inputs[CV1_INPUT + i].getVoltage() / 10.f, 0.f, 1.f);
+			if (params[MUTE1_PARAM + i].getValue() > 0.5f)
+				level[i] = 0.f;
+			lights[MUTE1_LIGHT + i].setBrightness(
+				params[MUTE1_PARAM + i].getValue() > 0.5f ? 1.f : 0.f);
+			direct[i] = outputs[CH1_OUTPUT + i].isConnected();
+			if (direct[i]) outputs[CH1_OUTPUT + i].setChannels(channels);
+		}
 
 		for (int c = 0; c < channels; c++) {
 			// Unity gain per channel (10k in, 10k feedback), attenuated by
 			// each channel's own level pot before it reaches the summing node
 			// -- the ASMR topology, with a knob standing in for the pot.
 			float sum = 0.f;
-			for (int i = 0; i < NUM_CH; i++)
-				sum += inputs[IN1_INPUT + i].getPolyVoltage(c) * level[i];
+			for (int i = 0; i < NUM_CH; i++) {
+				float v = inputs[IN1_INPUT + i].getPolyVoltage(c) * level[i];
+				if (direct[i]) outputs[CH1_OUTPUT + i].setVoltage(clamp(v, -12.f, 12.f), c);
+				else sum += v;
+				float mag = std::fabs(v) / 10.f;
+				// Fast up, slow down: a meter on a mixer answers "which one is
+				// the loud one", and a peak that falls slowly is what reads as
+				// that. Rise is immediate so a transient is not missed between
+				// two frames of the panel being drawn.
+				if (mag > meter[i]) meter[i] = mag;
+			}
 
 			if (softClip) {
 				// The op-amps' own supply rails: TL07x output swing tops out
@@ -148,6 +192,10 @@ struct Consolidation : Module {
 
 	void process(const ProcessArgs& args) override {
 		processMixer();
+
+		// The fall, once per sample rather than once per channel.
+		for (int i = 0; i < NUM_CH; i++)
+			meter[i] = std::fmax(0.f, meter[i] - args.sampleTime * 1.6f);
 
 		static const int legsA[3] = {MULT_A_OUT1_OUTPUT, MULT_A_OUT2_OUTPUT, MULT_A_OUT3_OUTPUT};
 		static const int legsB[3] = {MULT_B_OUT1_OUTPUT, MULT_B_OUT2_OUTPUT, MULT_B_OUT3_OUTPUT};
@@ -198,6 +246,35 @@ struct ConsolidationWidget : ModuleWidget {
 		addParam(createParamCentered<ConsolidationKnob>(panel::mm(panel::LVL2_POS.x, panel::LVL2_POS.y), module, Consolidation::LVL2_PARAM));
 		addParam(createParamCentered<ConsolidationKnob>(panel::mm(panel::LVL3_POS.x, panel::LVL3_POS.y), module, Consolidation::LVL3_PARAM));
 		addParam(createParamCentered<ConsolidationKnob>(panel::mm(panel::LVL4_POS.x, panel::LVL4_POS.y), module, Consolidation::LVL4_PARAM));
+
+		// Each channel's meter, struck into the seat ring around its own level
+		// knob. Placed on the knob's centre and sized to the well, so the arc
+		// sweeps the same travel the pointer does.
+		static const Vec* lvlPos[NUM_CH] = {
+			&panel::LVL1_POS, &panel::LVL2_POS, &panel::LVL3_POS, &panel::LVL4_POS };
+		for (int i = 0; i < NUM_CH; i++) {
+			panel::MeterArc* m = new panel::MeterArc;
+			m->box.size = math::Vec(36.f, 36.f);   // must contain the arc
+			m->box.pos = panel::mm(lvlPos[i]->x, lvlPos[i]->y).minus(m->box.size.div(2.f));
+			m->value = module ? &module->meter[i] : NULL;
+			addChild(m);
+		}
+
+		static const Vec* mutePos[NUM_CH] = {
+			&panel::MUTE1_POS, &panel::MUTE2_POS, &panel::MUTE3_POS, &panel::MUTE4_POS };
+		static const Vec* cvPos[NUM_CH] = {
+			&panel::CV1_POS, &panel::CV2_POS, &panel::CV3_POS, &panel::CV4_POS };
+		static const Vec* chOutPos[NUM_CH] = {
+			&panel::OUT1_POS, &panel::OUT2_POS, &panel::OUT3_POS, &panel::OUT4_POS };
+		for (int i = 0; i < NUM_CH; i++) {
+			addParam(createLightParamCentered<VCVLightLatch<panel::LimeLight> >(
+				panel::mm(mutePos[i]->x, mutePos[i]->y), module,
+				Consolidation::MUTE1_PARAM + i, Consolidation::MUTE1_LIGHT + i));
+			addInput(createInputCentered<panel::PortIn>(
+				panel::mm(cvPos[i]->x, cvPos[i]->y), module, Consolidation::CV1_INPUT + i));
+			addOutput(createOutputCentered<panel::PortOut>(
+				panel::mm(chOutPos[i]->x, chOutPos[i]->y), module, Consolidation::CH1_OUTPUT + i));
+		}
 
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::IN1_POS.x, panel::IN1_POS.y), module, Consolidation::IN1_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::IN2_POS.x, panel::IN2_POS.y), module, Consolidation::IN2_INPUT));

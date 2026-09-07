@@ -345,6 +345,43 @@ struct PortTrigOutMain : app::SvgPort {
 	}
 };
 
+/** A level arc struck into the seat ring around a knob.
+ *
+ *  The recessed seat every widget stands in is already a dark band a
+ *  little wider than the knob it holds; drawing the meter there costs the
+ *  panel no width and no height at all, which is what makes it affordable
+ *  on a control that has four of itself in a row. It sweeps the knob's own
+ *  travel, so full scale is where the pointer would be at maximum.
+ *
+ *  Point `value` at a float the module keeps in 0..1. A null pointer draws
+ *  nothing, which is what a browser preview and a module-less panel want. */
+struct MeterArc : widget::Widget {
+	float* value = NULL;
+	// px. A knob is 4.80 mm and its well 5.70, which at Rack's 2.9528 px
+	// per mm is a band from 14.17 to 16.83 -- the dark seat already drawn
+	// around every widget. The arc runs up the middle of it.
+	float r = 15.5f;
+	NVGcolor ink = LIME;
+
+	void drawLayer(const DrawArgs& args, int layer) override {
+		if (layer != 1 || !value) return;
+		float v = *value;
+		if (!(v > 0.f)) return;
+		if (v > 1.f) v = 1.f;
+		// Rack turns a knob from -0.83*pi to +0.83*pi, measured from
+		// straight up; nvg measures from the positive x axis.
+		const float span = 0.83f * M_PI;
+		float a0 = -M_PI / 2.f - span;
+		nvgBeginPath(args.vg);
+		nvgArc(args.vg, box.size.x / 2.f, box.size.y / 2.f, r,
+		       a0, a0 + 2.f * span * v, NVG_CW);
+		nvgStrokeColor(args.vg, ink);
+		nvgStrokeWidth(args.vg, 1.6f);
+		nvgLineCap(args.vg, NVG_ROUND);
+		nvgStroke(args.vg);
+	}
+};
+
 /** Every stock light derives from GrayModuleLightWidget, which hard-codes a
     #333333 socket that reads as a grey hole punched in a green panel. These
     restyle the socket as well as the emitter. */
