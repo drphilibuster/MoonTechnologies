@@ -194,7 +194,21 @@ struct Payroll {
 	//: Grid mode, and what each voice runs at in it. Set by the caller before
 	//: process(), the way `running` is.
 	bool gridMode = false;
+	//: BURST: the pattern says *when* a voice is live, the ratio says how fast
+	//: it repeats while it is. Without it the ratio knobs only mean anything at
+	//: FILL 0, where the top of their range is six drones and little else; with
+	//: it a fast ratio is a ratchet inside one step and a slow one thins the
+	//: pattern across many, which is where the complicated figures come from.
+	bool burstMode = false;
 	int ratioIndex[V_COUNT] = {};
+	//: Which sub-division of the current step a bursting voice last spoke on.
+	//: Multiplication is counted off the step's own phase rather than a phase
+	//: of its own: a free-running phase fires on its wraps, which fall at 1/R,
+	//: 2/R ... 1 of the step, so the last of them lands on the next boundary
+	//: and every step comes out one hit long. Reading floor(phase * R) instead
+	//: puts them at 0, 1/R ... (R-1)/R, which is where a ratchet belongs, and
+	//: cannot drift or double-count however the samples fall.
+	int burstSub[V_COUNT] = {};
 	uint32_t gridCount[V_COUNT] = {};
 	float humanHeld = 0.f;
 
@@ -208,8 +222,11 @@ struct Payroll {
 		extPeriod = 0.f; sinceEdge = 0.f; extSeen = false;
 		pulseLeft = 0.f;
 		builtSeed = builtFill = builtHuman = -1;
-		gridMode = false; humanHeld = 0.f;
-		for (int v = 0; v < V_COUNT; v++) { ratioIndex[v] = kUnity; gridCount[v] = 0; }
+		liveSeed = wantSeed = 0;
+		gridMode = false; burstMode = false; humanHeld = 0.f;
+		for (int v = 0; v < V_COUNT; v++) {
+			ratioIndex[v] = kUnity; gridCount[v] = 0; burstSub[v] = -1;
+		}
 		for (int v = 0; v < V_COUNT; v++) {
 			fired[v] = false; vel[v] = 0.f;
 			pending[v] = false; pendingIn[v] = 0.f;
@@ -228,7 +245,41 @@ struct Payroll {
 	    what makes E(k,n) a family rather than a single pattern, and rotating
 	    the voices against each other is what stops nine Euclidean rhythms from
 	    landing on the same grid points and sounding like one. */
+	//: The seed the pattern playing right now was built from, and the one the
+	//: knob is asking for. They differ only between a turn of SEED and the bar
+	//: line that acts on it.
+	int liveSeed = 0;
+	int wantSeed = 0;
+
+	/** What the module calls every sample. SEED is held back to the top of the
+	    bar; FILL and HUMAN are not.
+
+	    A new seed rotates every voice at once, so taking it mid-bar cuts the
+	    figure off wherever the knob happened to move and starts another one
+	    out of phase with the bar -- which sounds like a mistake rather than a
+	    change. FILL only ever adds or removes onsets from the pattern already
+	    playing, and HUMAN is a spread applied at the moment a voice speaks, so
+	    both stay live: those are the two you want to hear yourself moving. */
 	void build(float fill, int seed, float human) {
+		wantSeed = seed;
+		// Immediately if there is no bar to wait for: nothing has been built
+		// yet, or the clock is not running, in which case the next thing the
+		// listener hears is step 0 anyway.
+		if (!running || builtSeed < 0) liveSeed = seed;
+		rebuild(fill, liveSeed, human);
+	}
+
+	/** Apply a seed the knob asked for while the bar was still running. */
+	void takeSeed() {
+		if (wantSeed == liveSeed) return;
+		liveSeed = wantSeed;
+		float fill = builtFill / 256.f;
+		float human = builtHuman / 64.f;
+		builtSeed = -1;                 // force the rebuild below
+		rebuild(fill, liveSeed, human);
+	}
+
+	void rebuild(float fill, int seed, float human) {
 		int qf = (int)(fill * 256.f);
 		int qh = (int)(human * 64.f);
 		if (qf == builtFill && seed == builtSeed && qh == builtHuman) return;
@@ -380,6 +431,63 @@ struct Payroll {
 			// and fall through: the step counter still runs, so CLK OUT keeps
 			// ticking and RATIO has a grid to be a ratio *of*.
 		}
+		else if (burstMode) {
+			// --- burst mode ---------------------------------------------------
+			// Grid mode gated by the pattern: every voice's ratio clock runs,
+			// but a voice only sounds while its own Euclidean step is live.
+			//
+			// That reading makes both halves of the ratio range worth having.
+			// Multiplying, the phase is reset to the beat as the step arms (see
+			// advanceInto) so x4 lays four even hits inside that step -- a
+			// ratchet. Dividing, the phase is deliberately *not* reset, so /5
+			// ticks once every five steps and speaks only when that tick lands
+			// on a step the pattern has lit; two voices on coprime divisions
+			// then drift through a figure far longer than sixteen steps.
+			// At x1 the phase turns once per step, which is a single hit on the
+			// beat -- exactly what the module does with BURST off.
+			for (int v = 0; v < V_COUNT; v++) {
+				pending[v] = false;
+				int idx = ratioIndex[v];
+				idx = idx < 0 ? 0 : (idx >= kRatioCount ? kRatioCount - 1 : idx);
+				float ratio = kClockRatio[idx];
+				bool speak = false;
+
+				if (ratio >= 1.f) {
+					// Ratcheting inside the step, counted off the step's phase.
+					if (!on[v][step]) { burstSub[v] = -1; continue; }
+					// Past a quarter of the sample rate a trigger is not a
+					// rhythm any more; the same clamp grid mode uses.
+					double per = (double)ratio;
+					double cap = 0.25 / ((double)dt * (stepHz > 0.0 ? stepHz : 1.0));
+					if (per > cap) per = cap;
+					int sub = (int)(phase * per);
+					if (sub != burstSub[v]) { burstSub[v] = sub; speak = true; }
+				}
+				else {
+					// Dividing spans steps, so this one keeps a phase of its
+					// own and the pattern is the gate on it: a tick landing on
+					// a step the voice does not play is spent, not saved, which
+					// is what keeps a divided voice in step with the bar rather
+					// than sliding out of it.
+					burstSub[v] = -1;
+					double hz = stepHz * (double)ratio;
+					if (hz <= 0.0) continue;
+					gridPhase[v] += (double)dt * hz;
+					int guard = 0;
+					while (gridPhase[v] >= 1.0 && guard++ < 4) {
+						gridPhase[v] -= 1.0;
+						if (on[v][step]) speak = true;
+					}
+				}
+
+				if (!speak) continue;
+				float spread = (hash3f((uint32_t)(builtSeed + 101), (uint32_t)v,
+				                       gridCount[v] & 15u) - 0.5f) * humanHeld * 0.8f;
+				vel[v] = clampf(amp[v][step] + spread, 0.14f, 1.f);
+				gridCount[v]++;
+				if (!gate[v]) fired[v] = true;
+			}
+		}
 		else {
 			// --- release anything whose microtiming offset has come due ------
 			for (int v = 0; v < V_COUNT; v++) {
@@ -398,6 +506,10 @@ struct Payroll {
 		while (phase >= 1.0) {
 			phase -= 1.0;
 			step = (step + 1) % kSteps;
+			// The bar line, and the only place a new seed is allowed in. It
+			// runs before the step is armed, so step 0 of the new figure is
+			// the first thing the new pattern plays.
+			if (step == 0) takeSeed();
 			advanceInto(step, swing);
 		}
 	}
@@ -411,6 +523,19 @@ struct Payroll {
 		// ratios both need it -- but the patterns are not what is playing, so
 		// nothing is armed from them.
 		if (gridMode) return;
+		// In burst mode the ratio clock does the firing, so nothing is armed
+		// with a microtiming offset. A voice multiplying starts its burst on
+		// the beat -- the phase is pulled back to zero and the first hit is
+		// this one; a voice dividing keeps the phase it had, because the whole
+		// point of dividing is to span steps rather than restart on each.
+		if (burstMode) {
+			// Nothing is armed here: a multiplying voice counts its hits off
+			// the step's phase in process(), and a dividing one is running a
+			// phase that deliberately spans steps. All this boundary does is
+			// clear the sub-division counter so the new step starts on a hit.
+			for (int v = 0; v < V_COUNT; v++) { pending[v] = false; burstSub[v] = -1; }
+			return;
+		}
 		float stepSec = stepHz > 1e-6 ? (float)(1.0 / stepHz) : 0.f;
 		// Swing pushes the odd sixteenths later; the even ones never move, so
 		// the pulse on CLK OUT stays where a downbeat should be.

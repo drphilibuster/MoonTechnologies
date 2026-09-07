@@ -93,6 +93,7 @@
   <circle cx="84.2514" cy="99.4426" r="3.7200" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="99.8666" cy="99.4426" r="3.7200" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="116.1117" cy="99.4426" r="3.7200" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <rect x="121.2964" y="95.2426" width="6.1400" height="8.4000" rx="1.07" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="143.1100" cy="99.4426" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="11.8000" cy="118.6000" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="25.5056" cy="118.6000" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
@@ -369,6 +370,13 @@
   <path d="M 118.000 101.331 L 118.565 101.896" fill="none" stroke="#7B9A6D" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round"/>
   <circle cx="11.8000" cy="39.3332" r="7.0000" fill="none" stroke="#7B9A6D" stroke-width="0.32"/>
   <circle cx="11.8000" cy="39.3332" r="6.4000" fill="none" stroke="#7B9A6D" stroke-width="0.16"/>
+  <path d="M 18.653 74.051 L 21.286 74.051" fill="none" stroke="#7B9A6D" stroke-width="0.30" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 18.653 74.051 L 18.843 74.405 L 18.932 74.759 L 18.873 75.113 L 18.697 75.466 L 18.498 75.820 L 18.381 76.174 L 18.408 76.528 L 18.565 76.881 L 18.768 77.235 L 18.911 77.589 L 18.916 77.943 L 18.782 78.296 L 18.579 78.650 L 18.415 79.004 L 18.378 79.358 L 18.486 79.711 L 18.683 80.065 L 18.864 80.419 L 18.933 80.773 L 18.853 81.126 L 18.668 81.480 L 18.474 81.834 L 18.375 82.188 L 18.424 82.541 L 18.594 82.895 L 18.795 83.249 L 18.921 83.603 L 18.905 83.956 L 18.755 84.310 L 18.551 84.664 L 18.401 85.018 L 18.385 85.371 L 18.511 85.725 L 18.712 86.079 L 18.882 86.433 L 18.930 86.786 L 18.832 87.140 L 18.638 87.494 L 18.452 87.848 L 18.373 88.201 L 18.442 88.555 L 18.623 88.909 L 18.820 89.263 L 18.928 89.616 L 18.890 89.970 L 18.726 90.324 L 18.524 90.678 L 18.389 91.031 L 18.395 91.385 L 18.537 91.739 L 18.741 92.093 L 18.898 92.446 L 18.925 92.800 L 18.808 93.154 L 18.608 93.508 L 18.433 93.861 L 18.374 94.215 L 18.463 94.569 L 18.653 94.923" fill="none" stroke="#7B9A6D" stroke-width="0.30" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 18.653 94.923 L 19.004 95.103 L 19.356 95.198 L 19.708 95.165 L 20.059 95.018 L 20.411 94.827 L 20.762 94.680 L 21.114 94.647 L 21.466 94.743 L 21.817 94.923 L 22.169 95.103 L 22.521 95.198 L 22.872 95.165 L 23.224 95.018 L 23.575 94.827 L 23.927 94.680 L 24.279 94.647 L 24.630 94.743 L 24.982 94.923 L 25.334 95.103 L 25.685 95.198 L 26.037 95.165 L 26.388 95.018 L 26.740 94.827 L 27.092 94.680 L 27.443 94.647 L 27.795 94.743 L 28.146 94.923 L 28.498 95.103 L 28.850 95.198 L 29.201 95.165 L 29.553 95.018 L 29.905 94.827 L 30.256 94.680 L 30.608 94.647 L 30.959 94.743 L 31.311 94.923 L 31.663 95.103 L 32.014 95.198 L 32.366 95.165 L 32.717 95.018 L 33.069 94.827 L 33.421 94.680 L 33.772 94.647 L 34.124 94.743 L 34.476 94.923" fill="none" stroke="#7B9A6D" stroke-width="0.30" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="18.6528" cy="94.9226" r="0.75" fill="none" stroke="#7B9A6D" stroke-width="0.18"/>
+  <circle cx="18.6528" cy="94.9226" r="0.36" fill="#7B9A6D"/>
+  <circle cx="34.4756" cy="94.9226" r="0.75" fill="none" stroke="#7B9A6D" stroke-width="0.18"/>
+  <circle cx="34.4756" cy="94.9226" r="0.36" fill="#7B9A6D"/>
 </g>
 <g inkscape:label="components" inkscape:groupmode="layer" id="components" style="display:none">
   <circle inkscape:label="run" cx="11.8000" cy="23.2200" r="1" fill="#ff0000"/>
@@ -430,6 +438,7 @@
   <circle inkscape:label="tom1_ratio" cx="84.2514" cy="99.4426" r="1" fill="#ff0000"/>
   <circle inkscape:label="tom2_ratio" cx="99.8666" cy="99.4426" r="1" fill="#ff0000"/>
   <circle inkscape:label="tom3_ratio" cx="116.1117" cy="99.4426" r="1" fill="#ff0000"/>
+  <circle inkscape:label="burst" cx="124.3664" cy="99.4426" r="1" fill="#ff0000"/>
   <circle inkscape:label="tom3_gate" cx="143.1100" cy="99.4426" r="1" fill="#00ff00"/>
   <circle inkscape:label="clk_out" cx="11.8000" cy="118.6000" r="1" fill="#00ff00"/>
   <circle inkscape:label="mix_out" cx="25.5056" cy="118.6000" r="1" fill="#00ff00"/>

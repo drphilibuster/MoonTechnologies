@@ -27,6 +27,7 @@ struct Kickback : Module {
 	enum ParamId {
 		RUN_PARAM, LEVEL_PARAM, RATE_PARAM, ACCENT_PARAM,
 		DIV_PARAM, FILL_PARAM, SWING_PARAM, SEED_PARAM, HUMAN_PARAM, GATELEN_PARAM,
+		BURST_PARAM,
 		TUNE_PARAM,                                   // + V_COUNT
 		DECAY_PARAM = TUNE_PARAM + V_COUNT,           // + V_COUNT
 		BEND_PARAM = DECAY_PARAM + V_COUNT,           // + V_COUNT
@@ -87,6 +88,8 @@ struct Kickback : Module {
 		configSwitch(DIV_PARAM, 0.f, (float)(kDivCount - 1), 3.f, "Clock division",
 			{"1/4", "1/8", "1/8 triplet", "1/16", "1/16 triplet", "1/32"});
 		configParam(FILL_PARAM, 0.f, 1.f, 0.45f, "Pattern fill", "%", 0.f, 100.f);
+		configSwitch(BURST_PARAM, 0.f, 1.f, 0.f, "Ratios drive the steps",
+			{"Off -- one hit per step", "Burst -- each step runs at its voice's ratio"});
 		configParam(SWING_PARAM, 0.f, 1.f, 0.f, "Swing", "%", 0.f, 100.f);
 		configParam(SEED_PARAM, 0.f, 15.f, 0.f, "Pattern seed");
 		paramQuantities[SEED_PARAM]->snapEnabled = true;
@@ -209,6 +212,13 @@ struct Kickback : Module {
 		// replaces it.
 		float fill = params[FILL_PARAM].getValue();
 		payroll.gridMode = (fill <= 0.001f);
+		// BURST is what makes the top of the ratio range worth reaching. On its
+		// own a fast ratio is only useful at FILL 0, where the six voices become
+		// six drones; handed the pattern to run against, it is a ratchet on the
+		// steps that voice already plays. Grid mode wins if both are asked for
+		// -- there is no pattern left to burst against down there.
+		payroll.burstMode = !payroll.gridMode
+		                    && params[BURST_PARAM].getValue() > 0.5f;
 		for (int v = 0; v < V_COUNT; v++)
 			payroll.ratioIndex[v] = (int)clamp(std::round(params[RATIO_PARAM + v].getValue()),
 			                                   0.f, (float)(kRatioCount - 1));
@@ -433,6 +443,11 @@ struct KickbackWidget : ModuleWidget {
 			addOutput(createOutputCentered<panel::PortTrigOut>(
 				panel::mm(gatePos[v]->x, gatePos[v]->y), module, Kickback::GATE_OUTPUT + v));
 		}
+
+		// BURST sits in the gutter between the ratio knobs and the gate column,
+		// which is the only part of that gap the panel was not already using.
+		addParam(createParamCentered<CKSS>(
+			panel::mm(panel::BURST_POS.x, panel::BURST_POS.y), module, Kickback::BURST_PARAM));
 
 		// --- the payroll strip -------------------------------------------------
 		addParam(createLightParamCentered<VCVLightBezelLatch<panel::LimeLight> >(

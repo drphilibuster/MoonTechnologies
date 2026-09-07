@@ -244,7 +244,8 @@ those.
 | **DIV** (6 detents) | 1/4, 1/8, 1/8 triplet, 1/16, 1/16 triplet, 1/32 — how the beat is subdivided. |
 | **SWING** | Pushes the odd sixteenths later, up to about 62% of a step. The even ones never move, so CLK OUT stays where a downbeat should be. |
 | **FILL** | Every voice's Euclidean onset count at once, and at its bottom stop, grid mode. Monotone: turning it up may only ever add onsets. |
-| **SEED** (16 detents) | Rotates each voice's necklace by a different amount. Same density, different beat. |
+| **BURST** (switch) | Hands each voice's steps to its own RATIO: an onset becomes a ratchet at that multiple, or thins out at that division. Ignored at FILL 0, which is grid mode already. |
+| **SEED** (16 detents) | Rotates each voice's necklace by a different amount. Same density, different beat. **Takes effect at the top of the next bar**, not under your hand — see below. |
 | **HUMAN** | Velocity spread and microtiming, together. Downbeats move least, as a player's do. Works in both modes. |
 | **GATE** | How long the gate outputs stay high: 5 to 100 ms. |
 | **RST** (input) | Resets the grid, and every voice's grid-mode phase, to the top. |
@@ -276,6 +277,21 @@ one *with microtiming and velocity in it*, and train on E-GMD because that is
 what human playing has) and Kirby & Sandler from the other, on avoiding "the
 machine gun effect."
 
+### SEED waits for the bar line
+
+A new seed rotates every voice at once. Taken the instant the knob moves it cuts
+the figure off wherever your hand happened to be and starts a different one out
+of phase with the bar, which sounds like a mistake rather than a change — so
+Kickback holds the new seed and swaps patterns at the top of the next bar. The
+swap happens *before* step 0 is armed, so the first thing you hear of the new
+figure is its own downbeat.
+
+FILL and HUMAN are not held back, deliberately. FILL only ever adds onsets to or
+removes them from the pattern already playing, and HUMAN is a spread applied at
+the moment a voice speaks; those are the two you want to hear yourself moving.
+And a stopped module takes a seed at once — there is no bar to wait for, and the
+next thing anyone hears is step 0 regardless.
+
 ### Grid mode: FILL at zero
 
 Turn FILL all the way down and the pattern engine switches off. Every voice now
@@ -305,6 +321,38 @@ further; the engine clamps at a quarter of the sample rate so it cannot try.
 
 HUMAN still spreads the velocities in grid mode, so even ×1 on everything is not
 a machine gun unless you ask for one.
+
+A wire on the face runs from FILL's own zero mark down to the box around the
+RATIO knobs, because a mode you can only find by turning a knob to its stop and
+noticing the module behaves differently is a mode nobody finds.
+
+### BURST: the ratios drive the pattern
+
+Grid mode is all or nothing — you get the ratios *instead of* the patterns. The
+**BURST** switch, beside the RATIO row, gives you both: the Euclidean pattern
+still says *when* each voice speaks, and its RATIO says how fast it repeats
+while it is speaking.
+
+| RATIO | with BURST on |
+|---|---|
+| **×1** | one hit per onset — exactly what the module does with BURST off |
+| **×N** | N evenly spaced hits inside that step, the first on the beat: a ratchet |
+| **/N** | the voice's clock ticks once every N steps and speaks only when that tick lands on an onset the pattern has lit |
+
+Multiplying is counted off the step's own phase, so the hits land at 0, 1/N …
+(N−1)/N of the step — a ratchet that starts *on* the beat, and cannot drift or
+double-count however the samples fall. Dividing keeps a phase that deliberately
+spans steps, so a tick falling on a step that voice does not play is spent
+rather than saved; that is what keeps a divided voice in step with the bar
+instead of sliding out of it, and it is where figures far longer than sixteen
+steps come from. Two voices on /5 and /7 against the same pattern do not agree
+again for thirty-five bars.
+
+This is what makes the top of the RATIO range worth reaching. On its own a fast
+ratio is only good for grid mode, where the six voices become six drones; handed
+a pattern to run against, ×16 on TOM III is a roll on the steps that tom already
+plays. BURST is ignored at FILL 0 — there is no pattern left down there to burst
+against.
 
 ## Panel
 

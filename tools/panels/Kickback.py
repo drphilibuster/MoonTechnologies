@@ -155,6 +155,11 @@ P.sections = [
              Trim("tom1_ratio", "", col=TOM1, steps=39),
              Trim("tom2_ratio", "", col=TOM2, steps=39),
              Trim("tom3_ratio", "", col=TOM3, steps=39),
+             # BURST belongs beside the knobs it arms, and there was a column's
+             # worth of empty face between the ratio row and the gate outs to
+             # put it in. `between` hangs it in that gap rather than opening a
+             # column for it, so the switch costs the panel no width at all.
+             Switch("burst", "BURST", between=(TOM3, GATE)),
              Jack("tom3_gate", "TOM III", ink="MINT", side="left", col=GATE)]),
 
     ]),
@@ -163,6 +168,46 @@ P.sections = [
 # The I/O row sits as low as the bottom screws allow: RACK_GRID_HEIGHT -
 # RACK_GRID_WIDTH puts their top edge at 123.61 mm, so a jack collar centred
 # below 118.6 runs under one -- 118.9 already clips the corners.
+def grid_trace(pos, m):
+    """FILL at zero is where the pattern engine switches off and the RATIO knobs
+    take over, and nothing on the face said so -- a mode you can only find by
+    turning a knob to its stop and noticing the module behaves differently is a
+    mode nobody finds. The wire runs from FILL's own zero mark to the box round
+    the ratio knobs, which is what that setting hands the module to.
+
+    It leaves FILL on the side the pointer faces at minimum (Rack turns a knob
+    from -0.83*pi), crosses into the channel between the two left-hand columns
+    -- the one lane down this side with no ink and no labels in it -- and comes
+    back in above the gate trim to meet the box's top corner. Routing it under
+    FILL instead is the obvious thing and does not work: FILL's own label is
+    directly there, and the renderer breaks a wire around any label it crosses,
+    so the end that mattered was the end that vanished.
+    """
+    fx, fy = pos["fill"]
+    dx, _ = pos["div"]
+    gx, gy = pos["gatelen"]
+    rx, ry = pos["kick_ratio"]
+    r = RADIUS["trim"]
+
+    # It leaves on the low side of the knob's travel but *level* with it, not
+    # under it: a label's box is padded by TRACE_CLEAR and FILL's begins a
+    # fifth of a millimetre below the well, so a wire dropping straight out of
+    # the bottom starts inside that padding and the renderer eats the very end
+    # that had to be visible.
+    start = (fx - (r + 1.2), fy + 1.6)
+    lane = (dx + fx) / 2                     # between the two columns of trims
+    bus = gy - r - 1.5                       # clear above the gate trim's well
+    edge = rx - r - 0.9 - GROUP_PAD          # the group box's left side
+
+    return [
+        Trace([start, (lane, start[1])]),
+        Trace([(lane, start[1]), (lane, bus)]),
+        Trace([(lane, bus), (edge, bus)], dots=[(lane, bus), (edge, bus)]),
+    ]
+
+
+P.traces = [grid_trace]
+
 P.footer = [
     Row([Jack("clk_out", "CLK", ink="MINT", col=CLK),
          Jack("mix_out", "MIX", ink="MINT", col=PAT),

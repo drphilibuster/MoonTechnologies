@@ -641,6 +641,185 @@ static void patternTests() {
 		}
 	}
 
+	// --- BURST: the ratios drive the pattern's own steps ---------------------
+	// The contract has three parts, and each is a separate way to get it wrong:
+	// at unity a burst is one hit per lit step (so BURST changes nothing you did
+	// not ask it to); multiplying puts that many hits inside each lit step; and
+	// nothing at all comes out of a step the pattern left dark.
+	{
+		const float fs = 48000.f;
+		bool none[V_COUNT] = {};
+
+		// how many steps of sixteen this voice's pattern actually lights
+		Payroll ref;
+		ref.reset(); ref.running = true; ref.build(0.6f, 0, 0.f);
+		int lit = 0;
+		for (int i = 0; i < kSteps; i++) if (ref.on[0][i]) lit++;
+
+		// The multipliers are read out of kClockRatio, not assumed from the
+		// index: the table interleaves twos, threes, fives and sevens, so
+		// kUnity+2 is three and not two. Writing the expectation by hand got
+		// that wrong and reported a fault in code that was behaving correctly.
+		int mul[8], nmul = 0;
+		for (int i = kUnity; i < kRatioCount && nmul < 4; i++) {
+			float r = kClockRatio[i];
+			if (r >= 1.f && r <= 8.f && std::fabs(r - std::floor(r + 0.5f)) < 1e-4f)
+				mul[nmul++] = i;
+		}
+		for (int c = 0; c < nmul; c++) {
+			Payroll b;
+			b.reset(); b.running = true; b.burstMode = true;
+			b.build(0.6f, 0, 0.f);
+			for (int v = 0; v < V_COUNT; v++) b.ratioIndex[v] = mul[c];
+			// 120 BPM, 1/16: eight steps a second, so two seconds is one pass
+			// of the sixteen-step pattern.
+			int fires = 0;
+			for (int i = 0; i < (int)(fs * 2.f); i++) {
+				b.process(1.f / fs, false, false, false, 120.f, 3, 0.f, none);
+				if (b.fired[0]) fires++;
+			}
+			float want = (float)lit * kClockRatio[mul[c]];
+			checks++;
+			if (std::fabs((float)fires - want) > 1.5f) {
+				char d[160];
+				snprintf(d, sizeof d, "x%g over a 16-step pass gave %d hits,"
+				         " wanted about %.0f (%d lit steps)",
+				         (double)kClockRatio[mul[c]], fires, (double)want, lit);
+				fail("burst", d);
+			}
+		}
+
+		// A ratchet has to start *on* the beat. Counting off a phase of its own
+		// puts the hits at 1/R, 2/R ... 1 of the step, so the first is late by a
+		// sub-division and the last lands on the next step -- audibly a
+		// different figure from the same number of hits placed from zero.
+		{
+			Payroll b;
+			b.reset(); b.running = true; b.burstMode = true;
+			b.build(0.6f, 0, 0.f);
+			int idx = mul[nmul - 1];
+			for (int v = 0; v < V_COUNT; v++) b.ratioIndex[v] = idx;
+			int firstStep = -1, sinceStep = -1, lastStep = -1;
+			for (int i = 0; i < (int)(fs * 2.f); i++) {
+				b.process(1.f / fs, false, false, false, 120.f, 3, 0.f, none);
+				if (b.step != lastStep) { lastStep = b.step; sinceStep = 0; }
+				else if (sinceStep >= 0) sinceStep++;
+				if (b.fired[0] && firstStep < 0 && sinceStep >= 0) {
+					firstStep = sinceStep;
+					break;
+				}
+			}
+			// eight steps a second at 48 kHz is 6000 samples a step; the first
+			// hit of a burst belongs in the first handful of them.
+			checks++;
+			if (firstStep < 0 || firstStep > 4) {
+				char d[128];
+				snprintf(d, sizeof d, "the first hit of a burst landed %d samples"
+				         " into the step, not on it", firstStep);
+				fail("burst", d);
+			}
+		}
+
+		// A voice whose pattern is empty stays silent however fast its ratio is.
+		// This is the one that fails if the gate is dropped and burst mode turns
+		// into grid mode wearing a different name.
+		{
+			Payroll b;
+			b.reset(); b.running = true; b.burstMode = true;
+			b.build(0.f, 0, 0.f);            // fill 0 -> every pattern empty
+			for (int v = 0; v < V_COUNT; v++) b.ratioIndex[v] = kUnity + 6;
+			int fires = 0;
+			for (int i = 0; i < (int)(fs * 2.f); i++) {
+				b.process(1.f / fs, false, false, false, 120.f, 3, 0.f, none);
+				if (b.fired[0]) fires++;
+			}
+			checks++;
+			if (fires != 0) {
+				char d[128];
+				snprintf(d, sizeof d, "an empty pattern still fired %d times", fires);
+				fail("burst", d);
+			}
+		}
+
+		// Dividing thins the pattern rather than thickening it: /4 must speak
+		// strictly less often than the same pattern at unity.
+		{
+			int at[2] = {0, 0};
+			const int idx[2] = { kUnity, kUnity - 4 };
+			for (int k = 0; k < 2; k++) {
+				Payroll b;
+				b.reset(); b.running = true; b.burstMode = true;
+				b.build(0.6f, 0, 0.f);
+				for (int v = 0; v < V_COUNT; v++) b.ratioIndex[v] = idx[k];
+				for (int i = 0; i < (int)(fs * 8.f); i++) {
+					b.process(1.f / fs, false, false, false, 120.f, 3, 0.f, none);
+					if (b.fired[0]) at[k]++;
+				}
+			}
+			checks++;
+			if (at[1] >= at[0] || at[1] == 0) {
+				char d[160];
+				snprintf(d, sizeof d, "/%g gave %d hits against unity's %d --"
+				         " dividing must thin the pattern, not silence or thicken it",
+				         1.0 / (double)kClockRatio[kUnity - 4], at[1], at[0]);
+				fail("burst", d);
+			}
+		}
+	}
+
+	// --- SEED lands on the bar line, not under your hand ---------------------
+	{
+		const float fs = 48000.f;
+		bool none[V_COUNT] = {};
+		Payroll p;
+		p.reset(); p.running = true; p.build(0.6f, 0, 0.f);
+
+		bool before[V_COUNT][kSteps];
+		for (int v = 0; v < V_COUNT; v++)
+			for (int i = 0; i < kSteps; i++) before[v][i] = p.on[v][i];
+
+		// run to somewhere in the middle of the bar, then turn SEED
+		while (p.step < 5)
+			p.process(1.f / fs, false, false, false, 120.f, 3, 0.f, none);
+		p.build(0.6f, 3, 0.f);
+
+		bool same = true;
+		for (int v = 0; v < V_COUNT; v++)
+			for (int i = 0; i < kSteps; i++) same &= (p.on[v][i] == before[v][i]);
+		checks++;
+		if (!same) fail("seed", "a new seed took effect in the middle of the bar");
+
+		// and it must still be the old pattern right up to the bar line
+		while (p.step != kSteps - 1)
+			p.process(1.f / fs, false, false, false, 120.f, 3, 0.f, none);
+		same = true;
+		for (int v = 0; v < V_COUNT; v++)
+			for (int i = 0; i < kSteps; i++) same &= (p.on[v][i] == before[v][i]);
+		checks++;
+		if (!same) fail("seed", "the pattern changed before the last step of the bar");
+
+		// over the line, and it is the new one
+		while (p.step != 0)
+			p.process(1.f / fs, false, false, false, 120.f, 3, 0.f, none);
+		bool changed = false;
+		for (int v = 0; v < V_COUNT; v++)
+			for (int i = 0; i < kSteps; i++) changed |= (p.on[v][i] != before[v][i]);
+		checks++;
+		if (!changed) fail("seed", "the new seed never arrived at the bar line");
+
+		// A stopped clock has no bar to wait for: the seed has to take at once,
+		// or the knob does nothing at all until you press RUN.
+		Payroll q;
+		q.reset(); q.build(0.6f, 0, 0.f);
+		bool stopped[kSteps];
+		for (int i = 0; i < kSteps; i++) stopped[i] = q.on[0][i];
+		q.build(0.6f, 5, 0.f);
+		changed = false;
+		for (int i = 0; i < kSteps; i++) changed |= (q.on[0][i] != stopped[i]);
+		checks++;
+		if (!changed) fail("seed", "a stopped module ignored the seed knob");
+	}
+
 	// The internal clock has to land the right number of steps in a second.
 	// 120 BPM at four steps to the beat is eight steps a second.
 	{
