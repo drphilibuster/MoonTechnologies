@@ -5,6 +5,336 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Changed: panelkit sits at VCV's pitch, and the whole family got narrower
+
+Measured against Rack's own Fundamental set rather than set by eye. Across all
+thirty-three of those modules a row of jacks sits at a 10.81 mm pitch and a row
+of knobs at 13.02; this kit could not go below 11.30 and 13.50, and every panel
+in the family was paying that on every column.
+
+Two causes, both in the art rather than the solver:
+
+- **The jacks were drawing a size larger than everyone else's.** Rack's PJ301M
+  sits on a 23.7 px canvas but draws its collar only to r = 11.10, leaving the
+  edge of the canvas empty. Ours filled it to 11.85. On top of that the well
+  drew a 0.69 mm recessed seat *outside* the art, so every jack on these panels
+  wore a ring nobody else in the rack wears -- about thirty per cent wider than
+  the same jack on the module next to it.
+- **The seats were generous everywhere else too.** Trimmed to sit just inside
+  VCV's floor: 10.48 mm minimum jack pitch, 12.90 knob.
+
+The family went from 449 HP to 429. Nothing lost; several panels gained room.
+
+A second fault fell out of it: made narrow enough, TaxBracket's masthead brand
+and its form stub collided. `required_hp` checked that a panel was wide enough
+for its *title* but not for the line under it, so the failure arrived later, in
+the linter, looking like a spec error rather than a width one. It is a width
+constraint now.
+
+### Added: labels beside, and labels that name a run
+
+Two ways to stop a label costing a row a line of text, which is the thing that
+decides how much a 3U face holds.
+
+- **`side="left"` / `side="right"`** puts a label alongside its widget instead
+  of over or under it, on the widget's own centre line, costing the row no
+  height at all.
+- **`Row.span`** names a run of columns once -- `span=[(KICK, TOM3, "DECAY")]`
+  -- instead of printing the same word over each of six identical trims. Unlike
+  `Row.shared` it leaves the rest of the row to carry its own labels, which
+  matters when the row is six of one thing and two of another. It also draws a
+  box round the run, so the grouping is visible rather than inferred from a word
+  sitting between two of the controls -- except on a *paired* row, where the
+  label names the row below it as well and a box round only the upper one would
+  say the opposite of what the pair idiom is for.
+
+Kickback and SixFigures use both; Kickback dropped from 68 printed labels to 53
+and SixFigures from 41 to 31. SixFigures names its CV and AUX rows once but not
+its RATE row, because each RATE label carries that voice's LED -- a label with
+an indicator on it is holding something up as well as saying something.
+
+### Added: jacks say what they carry, not only which way they go
+
+Four port arts on two axes. The wide throat band is the direction, brass in and
+mint out, as before. A thin lime line inside the throat marks a port that deals
+in *timing* -- a clock, a trigger, a gate, a reset -- as against one that deals
+in levels: audio, CV, a pitch. `panel::PortTrigIn` and `panel::PortTrigOut`.
+
+### Changed: Kickback's gates are six jacks, not one polyphonic bus
+
+A drum machine that needs a split module to drive six external voices is not
+self-contained, and polyphony belongs where the channels are notes of one voice
+-- a quantizer, a V/oct bus -- not where they are six separate drums. The gate
+column is six individual outputs, each held for GATE and scaled by that hit's
+velocity, with their labels standing beside them: that is what made them fit
+where the bus used to be.
+
+### Added: tooling
+
+- `make vcv-<Module>` renders one panel through Rack in about thirty seconds.
+  `make vcv-preview` still does all twenty-four, and takes minutes.
+- `tools/sync_hp.py` reports every HP figure in README.md and docs/ that
+  disagrees with the generated headers, and `--write` fixes them. A panel's
+  width is solved, so one panelkit change moved fourteen modules at once -- and
+  every one of those numbers was also typed into prose, where nothing checked
+  it.
+
+### Added: Toll -- the bell that was pretending to be a snare
+
+12 HP, Form 2290, monophonic. BaSnaHi's snare stage read as a struck metal pipe
+rather than as a snare, which is a fine thing to be and a bad snare, so it left
+Kickback and got a panel with controls for what it actually is.
+
+Sixteen modal partials over one of four objects, chosen by **SET**:
+
+- **MEMBRANE** -- the Bessel-zero ratios of a circular head.
+- **BAR** -- free-free flexural modes, 1, 2.756, 5.404, 8.933 ..., spreading as
+  the squares of the roots of the beam equation. A metallophone.
+- **BELL** -- a tuned bell's own named partials: hum, prime, tierce, quint,
+  nominal, deciem, undeciem, duodeciem. The tierce at 2.4 is the minor third
+  that makes a bell sound like a bell rather than like a pipe.
+- **HARMONIC** -- not an object at all, and the reason to have a mode bank on a
+  panel rather than buried inside a drum.
+
+**SPREAD** then bends whichever set is chosen away from itself: partial n moves
+to n^(1+s). **STRIKE** is where it is hit -- on a membrane the Bessel weighting,
+on a bar or bell the node rule every struck object obeys. **HARD** is the mallet,
+three milliseconds of felt to a third of one of wood. **DAMP** is how much
+faster the upper partials die than the fundamental, which is most of what
+separates bronze from lead. **BUZZ** is the loose layer against the body, and
+**CHOKE** is the hand on it -- damping rather than muting, because a damped
+object still rings briefly and a gated one conspicuously does not.
+
+The structural DSP moved to `src/Drum.hpp`, shared with Kickback: a struck
+membrane and a struck bar want the same contact pulse, the same click, the same
+attack layer and the same tension term, and only the mode ratios differ.
+
+### Changed: Kickback loses the bell and gains a grid
+
+Six voices now. The bell left for Toll, and its column became what the rest of
+the rack sees: a polyphonic **GATES** bus with one velocity-scaled channel per
+voice, a **VEL** output carrying the loudest velocity sounding, and the kick's
+gate on its own. The pattern engine can now play things that are not in this
+module.
+
+**Grid mode**, at FILL's bottom stop. The pattern engine switches off, every
+voice hits on every step, and each voice's own **RATIO** knob multiplies or
+divides that -- thirty-nine detents from /256 to x256, symmetric about x1, in
+steps of 2, 3, 5 and 7. The odd factors are the point: powers of two never
+produce anything the Euclidean engine could not, while a voice on /5 against one
+on /7 takes thirty-five steps to come round and one on /256 is a hit every
+sixteen bars. Each voice free-runs its own phase rather than counting steps, so
+those long patterns really drift; RST puts them back in line. x256 on a
+sixteenth grid at 120 BPM is two kilohertz, which is where dividing a clock
+stops being rhythm, and the engine clamps at a quarter of the sample rate.
+
+It replaced the V/OCT row. Every voice still takes 1 V/oct internally, but
+Kickback is a rhythm instrument and the pitched voice that wanted a keyboard is
+Toll.
+
+### Fixed, from playing it
+
+- **The model selectors are toggles.** They were detented trims, which are
+  smaller and fit better and are the wrong control: you cannot see where a trim
+  is standing and you cannot flick it. Paid for by shrinking the TUNE row's
+  seats -- RATE keeps the lime primary ring, so the panel still says which knob
+  to reach for.
+- **The pattern engine never played the toms.** Their roles started at FILL
+  0.44, 0.54 and 0.64, and the module ships at 0.45, so all three computed to
+  zero onsets at the default -- a voice silent at the default is a voice the
+  module does not appear to have. All six now speak by the middle of the knob.
+- **A tom's STRIKE at zero is silent now.** That end of the knob is a drum hit
+  dead centre with a soft mallet, and a beater still audible there is the
+  control failing at the one thing its bottom is for. The click comes back
+  within a tenth of a turn rather than fading in over the first third.
+- **MIX was ten decibels under a single voice's OUT.** Six drum voices rarely
+  peak together, so summing them and dividing by six is the sum for six sine
+  waves in phase, not for a kit. A full kit now lands within a couple of
+  decibels of its loudest single voice.
+
+### Changed: Kickback's roster, on listening
+
+Seven voices now, not nine, and two of them are not the circuit their name
+suggests -- which is the point.
+
+- **The snare is three circuits under one selector.** BaSnaHi's snare stage, a
+  modal shell with wires against it, read as a struck metal pipe rather than as
+  a snare. So it moved to **BELL**, where being a struck metal pipe is exactly
+  what is wanted and its amplitude-dependent collision layer is a feature: a
+  soft strike rings clean, a hard one clatters. The SNARE column took the three
+  circuits that *do* sound like snares -- the XOR bell's clangy crack, the
+  vactrol noise voice's wash, and Karplus-Strong's rattle at the long end of its
+  delay, which the 1983 paper itself calls "the effect of a snare drum".
+- **The Tiny Dazzler is no longer a voice of its own.** Its two halves went
+  where they belong: the long end of its delay line is the snare's DAZZLE mode,
+  the short end -- "a brushed tom-tom", in the paper's words -- is the top of
+  the hat's RATTLE.
+- **The hat's RATTLE is a three-way sweep**, metal to noise to Dazzler, rather
+  than a switch. The hat had no control to spare for a mode selector and RATTLE
+  was already the texture control; the upside is that both boundaries are
+  playable rather than stepped.
+- **ACCENT opens the hat.** There is one hi-hat, so how hard it is struck is
+  what decides whether it reads closed or open, as a pedal would: velocity
+  multiplies the ring time better than three to one.
+- **The three toms are three drums, not one transposed.** They were identical
+  circuits at different default tunings, which is the wrong reading of a
+  schematic whose three branches are captioned "change these 3 resistors as
+  you'd like your sound." Each now has its own TUNE range -- 42-150, 80-290 and
+  150-520 Hz, overlapping by about a fourth at each join so a kit tunes across
+  them -- its own ring time, its own upper-mode damping, and its own beater
+  hardness. The damping is most of it: a floor tom holds its overtones and a
+  small rack tom is all fundamental and gone.
+
+The panel is 34 HP, down from 41: nine columns, the payroll strip left of the
+gutter and seven voices right of it. KICK's MODEL and SNARE's MODE are detented
+trims rather than toggles, because a toggle is a millimetre and a half taller
+than a trim seat and that row had neither to give.
+
+### Fixed: a tom at full BEND never stopped ringing
+
+A single strike was still at three and a half volts six seconds later, at any
+DECAY past about 0.9. The tension term followed the instantaneous peak of the
+mode bank with an instant attack, so it re-peaked on every cycle of the
+waveform and modulated the resonator's frequency at the resonator's own
+frequency -- which is a parametric amplifier, pumping energy in faster than the
+decay took it out.
+
+Berger's term is the *mean square* displacement, an average by definition, so
+following the peak was wrong physics as well as unstable. Two poles of
+mean-square smoothing at 8 Hz put the ripple 46 dB under the average. Every
+voice that uses tension had it, not only the toms -- KICK and BELL both
+self-oscillated at their own corners of the knob grid -- and `tests/Kickback`
+now renders every voice at every setting and fails anything still audible six
+seconds after one strike.
+
+### Fixed: the wire bed's level followed the sample rate
+
+Two normalisations, and the difference between them is the trap. `sin(w)` makes
+a resonator *struck by an impulse* ring to a rate-independent height, which is
+what the mode banks get from the strike pulse. The wires are not struck, they
+are leaned on -- the collision force pushes for as long as the head is past
+them -- so `sin(w)` alone left the bed proportional to the sample rate, 2.7x
+over 44.1 to 192 kHz, while the full continuous-drive form `(1-r)*sin(w)`
+overshot 1.8x the other way.
+
+Neither is right, because a contact is a train of bursts of fixed duration in
+seconds: between an impulse and a steady tone. The exponent was swept and
+measured instead, and holds the bed flat to 1.15x. That is documented as an
+empirical constant rather than dressed up as a derivation.
+
+### Changed: Kickback rebuilt -- nine voices, a clock, and drums that sound struck
+
+The complaint was the right one: the kick and the toms "sounded like bass
+oscillators" with no hit on the front of them. They did, and the reason is in
+the literature. A drum was a single two-pole resonator shocked with a one-sample
+impulse -- and a single mode, with no attack layer and no pitch glide, *is* a
+plucked bass note. Nothing about that could be fixed with a knob.
+
+Every voice now sits on a shared physical vocabulary (`src/Kickback/Drum.hpp`):
+
+- **A contact pulse, not an impulse.** Bilbao's raised cosine of duration T0
+  (JASA 131(1), 2012), three milliseconds of felt to a third of a millisecond of
+  wood, shortening further with velocity. Finite contact time is a lowpass on
+  the excitation, so hitting harder gets brighter rather than only louder.
+- **The click, summed in directly.** A mode bank is narrow resonators well under
+  a kilohertz, so it filters the stick out of its own strike. The derivative of
+  the contact pulse is one cycle of a sine at 1/T0 -- a felt beater thumps at
+  330 Hz, a hard stick cracks at 2.9 kHz -- and it goes to the output on its own
+  path, which is the transient component Shier et al. (Forum Acusticum 2023)
+  argue has to be modelled rather than hoped for.
+- **A stochastic attack layer**, standing in for the dense 1-8 kHz partials
+  Kirby & Sandler (DAFx-20) find in a real tom's onset. Their listening test
+  could not tell a modelled fundamental from a real one, and caught the loss of
+  everything above 2 kHz 98.4% of the time.
+- **Eight modes at the Bessel-zero ratios**, with strike position deciding which
+  ones sound: dead centre wakes only the circular modes and is one boomy
+  partial; toward the rim the radial modes come in and it goes hollow.
+- **Pitch glide driven by the drum's own energy**, so a hard hit dives and a
+  ghost note does not, rather than by a fixed envelope.
+
+Measured through a 24 dB/oct band at 2 kHz, a default kick now has 165 times
+more energy at the strike than a fifth of a second later. It had 1.1 times.
+
+What else changed, and why:
+
+- **KICK and SMURF are one voice with a MODEL switch.** A ringing filter and a
+  starved oscillator both make a bass drum; which one a patch wants is a switch,
+  not two columns of panel.
+- **Three TOMs, all at once.** TomTomTom is three separate twin-T branches, and
+  folding them into one voice with a range switch was the wrong fold -- a kit
+  needs three toms sounding together, not one tom that can be moved.
+- **Every voice has a V/OCT input.** Bell needed one most (an XOR bell played
+  chromatically is a cowbell line) but the row is uniform, so a keyboard
+  transposes the whole kit -- including the noise voices, where 1 V/oct moves a
+  filter corner.
+- **DAZZLER is Karplus-Strong.** The Tiny Dazzler's backwards-wired transistor
+  read through the 1983 drum recurrence. Its sheet's own Snare/HiHat switch
+  becomes MODE, picking which end of the delay length TUNE sweeps -- the paper
+  itself calls large p a snare and small p a brushed tom-tom. BEND is the
+  stretch factor S, and takes the blend factor b out toward the "plucked bottle"
+  with it.
+- **SNARE has wires.** Bilbao's one-sided power-law collision, so ghost notes
+  stay pitched and hard hits sizzle, instead of a fixed noise crossfade that
+  rattled identically at every velocity.
+- **HAT has metal in it**, three multiplied squares against the noise tap, on
+  two envelopes.
+- **Every voice keeps its level across its tuning range.** A two-pole resonator
+  rings at 1/sin(w), so the mode bank used to be eighteen decibels louder at the
+  bottom of a sweep than the top: TUNE was a volume control with a pitch
+  side-effect.
+- **The nine voices are level-matched**, kick and snare loudest, hats and the
+  colour voices below them, the way a kit sits.
+
+### Fixed: Kickback sounded different at different sample rates
+
+Three faults of the same shape, none of them audible at the rate they were
+written at, all found by rendering every voice at 44.1, 48, 88.2, 96 and
+192 kHz and comparing.
+
+- A pole radius written as a constant is a decay per *sample*: the snare's wire
+  rattle ran four times shorter at 192 kHz than at 44.1.
+- A resonator struck by an impulse rings at 1/sin(w), so a drive written as a
+  constant made the same wires seventeen decibels louder there. The mode banks
+  had this too, in the same place their level used to follow their tuning.
+- A PRNG has constant variance per sample, so its power spectral *density*
+  halves each time the rate doubles. Where the noise ends in a filter with a
+  corner in hertz -- the noise voice's vactrol, the Dazzler's snare-side
+  lowpass -- that cost five decibels at 192 kHz. Where it ends in a highpass,
+  whose band grows with the rate, the plain stream was already right and
+  correcting it made things worse; both were measured rather than reasoned
+  about, and the correction is applied only where it helps.
+
+Every voice now holds within 1.2 dB from 44.1 kHz to 192 kHz; the noise voice
+was 4.9 dB. `tests/Kickback` renders all nine at five rates and bounds both the
+full-band level and the high band after the strike -- the second because the
+first cannot see it: the snare's wires being seven times hot moved its total by
+less than a decibel, since the shell buries them.
+
+### Added: Kickback's payroll -- an internal clock and Euclidean patterns
+
+Kickback plays on its own now. A voice whose TRIG jack is empty is played by the
+pattern engine; a voice with something patched into its TRIG is played by that
+and nothing else, so an unpatched module runs a kit and patching one jack takes
+one voice over. Nothing has to be switched to move between them.
+
+RUN, RATE (30-300 BPM), DIV (six subdivisions), SWING, and a CLK input that
+measures the external period and subdivides it -- so a quarter-note clock still
+drives a sixteenth-note grid -- plus RST in and a CLK output that makes Kickback
+the rack's clock.
+
+The patterns are Bjorklund's E(k,16). FILL sets every voice's k at once and is
+monotone, so turning it up only ever adds onsets; SEED rotates each voice's
+necklace by a different amount. Each voice has a role -- the FILL at which it
+enters and the rotation that puts its default where a player would, E(4,16) for
+four on the floor, E(2,16) turned by four for the backbeat -- so FILL fills a
+kit out in the order a kit fills out rather than spreading nine identical
+polyrhythms. HUMAN is velocity spread and microtiming together, with the
+downbeats moving least.
+
+The panel is 41 HP: eleven columns, the payroll strip at the left of a gutter
+and one column per voice to the right of it, every column reading top to bottom
+the same way.
+
 ### Added: Reconciliation -- a just-intonation quantizer
 
 21 HP, Schedule M-1, polyphonic. Most quantizers answer one question and the

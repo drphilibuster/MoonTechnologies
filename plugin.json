@@ -126,11 +126,13 @@
     {
       "slug": "Kickback",
       "name": "Kickback",
-      "description": "Modular in a Week drum bank: BaSnaHi kick, snare and hat, SmurfDrum, TomTomTom, XORbell, the percussive noise voice and the Tiny Dazzler, with a mix",
+      "description": "Modular in a Week drum bank and drum machine: seven modal percussion voices with V/oct, an internal clock and a Euclidean pattern engine",
       "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Kickback.md",
       "tags": [
         "Drum",
-        "Synth voice"
+        "Synth voice",
+        "Sequencer",
+        "Clock generator"
       ]
     },
     {
@@ -238,6 +240,17 @@
         "Utility",
         "Mixer",
         "Attenuator"
+      ]
+    },
+    {
+      "slug": "Toll",
+      "name": "Toll",
+      "description": "Struck-metal voice: sixteen modal partials over a membrane, bar, bell or harmonic series, with strike position, mallet hardness and a buzzing second layer",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Toll.md",
+      "tags": [
+        "Drum",
+        "Synth voice",
+        "Physical modeling"
       ]
     },
     {
