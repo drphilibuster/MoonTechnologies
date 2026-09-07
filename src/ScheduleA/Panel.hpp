@@ -14,8 +14,8 @@
 namespace panel {
 
 // --- identity --------------------------------------------------------------
-static const int   HP = 16;
-static const float W  = 81.2800f;  // mm
+static const int   HP = 14;
+static const float W  = 71.1200f;  // mm
 static const float H  = 128.5000f;  // mm
 
 // --- panel metrics, mirrored from tools/panels/ScheduleA.py ---
@@ -24,16 +24,16 @@ static const int   NUM_SLOTS      = 8;
 // --- silkscreen ------------------------------------------------------------
 static const Label LABELS[] = {
 	{ 11.5600f,   5.5000f, 10.50f, 1.50f, PAPER    , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "SCHEDULE A"},
-	{ 69.7200f,   5.5000f,  6.00f, 0.00f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "ITEMIZED LIENS"},
+	{ 59.5600f,   5.5000f,  6.00f, 0.00f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "ITEMIZED LIENS"},
 	{ 11.5600f,   8.2500f,  7.40f, 0.00f, LIME     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, true,  "$"},
 	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
-	{ 77.0800f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 1099-A"},
-	{ 40.6400f,  14.0000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ITEMIZED"},
-	{ 20.4760f,  17.5698f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SPEED"},
-	{ 33.1520f,  17.5698f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GAIN"},
-	{ 45.8280f,  17.5698f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "START"},
-	{ 58.5040f,  17.5698f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LENGTH"},
-	{ 71.1800f,  17.5698f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
+	{ 66.9200f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 1099-A"},
+	{ 35.5600f,  14.0000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ITEMIZED"},
+	{ 16.6140f,  17.0618f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SPEED"},
+	{ 27.8180f,  17.0618f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GAIN"},
+	{ 39.0220f,  17.0618f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "START"},
+	{ 50.2260f,  17.0618f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LENGTH"},
+	{ 61.4300f,  17.0618f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
 };
 
 /** Draws this panel's silkscreen. `static` so each module keeps its own,
@@ -44,53 +44,53 @@ static inline void addLabels(app::ModuleWidget* mw) {
 
 // --- widget positions, by the names used in tools/panels/ScheduleA.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
-static const Vec STEP1_POS = Vec(7.8000, 23.7947);
-static const Vec SPEED1_POS = Vec(20.4760, 23.7947);
-static const Vec GAIN1_POS = Vec(33.1520, 23.7947);
-static const Vec START1_POS = Vec(45.8280, 23.7947);
-static const Vec LEN1_POS = Vec(58.5040, 23.7947);
-static const Vec OUT1_POS = Vec(71.1800, 23.7947);
-static const Vec STEP2_POS = Vec(7.8000, 36.5954);
-static const Vec SPEED2_POS = Vec(20.4760, 36.5954);
-static const Vec GAIN2_POS = Vec(33.1520, 36.5954);
-static const Vec START2_POS = Vec(45.8280, 36.5954);
-static const Vec LEN2_POS = Vec(58.5040, 36.5954);
-static const Vec OUT2_POS = Vec(71.1800, 36.5954);
-static const Vec STEP3_POS = Vec(7.8000, 49.3961);
-static const Vec SPEED3_POS = Vec(20.4760, 49.3961);
-static const Vec GAIN3_POS = Vec(33.1520, 49.3961);
-static const Vec START3_POS = Vec(45.8280, 49.3961);
-static const Vec LEN3_POS = Vec(58.5040, 49.3961);
-static const Vec OUT3_POS = Vec(71.1800, 49.3961);
-static const Vec STEP4_POS = Vec(7.8000, 62.1967);
-static const Vec SPEED4_POS = Vec(20.4760, 62.1967);
-static const Vec GAIN4_POS = Vec(33.1520, 62.1967);
-static const Vec START4_POS = Vec(45.8280, 62.1967);
-static const Vec LEN4_POS = Vec(58.5040, 62.1967);
-static const Vec OUT4_POS = Vec(71.1800, 62.1967);
-static const Vec STEP5_POS = Vec(7.8000, 74.9974);
-static const Vec SPEED5_POS = Vec(20.4760, 74.9974);
-static const Vec GAIN5_POS = Vec(33.1520, 74.9974);
-static const Vec START5_POS = Vec(45.8280, 74.9974);
-static const Vec LEN5_POS = Vec(58.5040, 74.9974);
-static const Vec OUT5_POS = Vec(71.1800, 74.9974);
-static const Vec STEP6_POS = Vec(7.8000, 87.7980);
-static const Vec SPEED6_POS = Vec(20.4760, 87.7980);
-static const Vec GAIN6_POS = Vec(33.1520, 87.7980);
-static const Vec START6_POS = Vec(45.8280, 87.7980);
-static const Vec LEN6_POS = Vec(58.5040, 87.7980);
-static const Vec OUT6_POS = Vec(71.1800, 87.7980);
-static const Vec STEP7_POS = Vec(7.8000, 100.5987);
-static const Vec SPEED7_POS = Vec(20.4760, 100.5987);
-static const Vec GAIN7_POS = Vec(33.1520, 100.5987);
-static const Vec START7_POS = Vec(45.8280, 100.5987);
-static const Vec LEN7_POS = Vec(58.5040, 100.5987);
-static const Vec OUT7_POS = Vec(71.1800, 100.5987);
-static const Vec STEP8_POS = Vec(7.8000, 113.3993);
-static const Vec SPEED8_POS = Vec(20.4760, 113.3993);
-static const Vec GAIN8_POS = Vec(33.1520, 113.3993);
-static const Vec START8_POS = Vec(45.8280, 113.3993);
-static const Vec LEN8_POS = Vec(58.5040, 113.3993);
-static const Vec OUT8_POS = Vec(71.1800, 113.3993);
+static const Vec STEP1_POS = Vec(7.5500, 22.3518);
+static const Vec SPEED1_POS = Vec(16.6140, 22.3518);
+static const Vec GAIN1_POS = Vec(27.8180, 22.3518);
+static const Vec START1_POS = Vec(39.0220, 22.3518);
+static const Vec LEN1_POS = Vec(50.2260, 22.3518);
+static const Vec OUT1_POS = Vec(61.4300, 22.3518);
+static const Vec STEP2_POS = Vec(7.5500, 35.2816);
+static const Vec SPEED2_POS = Vec(16.6140, 35.2816);
+static const Vec GAIN2_POS = Vec(27.8180, 35.2816);
+static const Vec START2_POS = Vec(39.0220, 35.2816);
+static const Vec LEN2_POS = Vec(50.2260, 35.2816);
+static const Vec OUT2_POS = Vec(61.4300, 35.2816);
+static const Vec STEP3_POS = Vec(7.5500, 48.2114);
+static const Vec SPEED3_POS = Vec(16.6140, 48.2114);
+static const Vec GAIN3_POS = Vec(27.8180, 48.2114);
+static const Vec START3_POS = Vec(39.0220, 48.2114);
+static const Vec LEN3_POS = Vec(50.2260, 48.2114);
+static const Vec OUT3_POS = Vec(61.4300, 48.2114);
+static const Vec STEP4_POS = Vec(7.5500, 61.1411);
+static const Vec SPEED4_POS = Vec(16.6140, 61.1411);
+static const Vec GAIN4_POS = Vec(27.8180, 61.1411);
+static const Vec START4_POS = Vec(39.0220, 61.1411);
+static const Vec LEN4_POS = Vec(50.2260, 61.1411);
+static const Vec OUT4_POS = Vec(61.4300, 61.1411);
+static const Vec STEP5_POS = Vec(7.5500, 74.0709);
+static const Vec SPEED5_POS = Vec(16.6140, 74.0709);
+static const Vec GAIN5_POS = Vec(27.8180, 74.0709);
+static const Vec START5_POS = Vec(39.0220, 74.0709);
+static const Vec LEN5_POS = Vec(50.2260, 74.0709);
+static const Vec OUT5_POS = Vec(61.4300, 74.0709);
+static const Vec STEP6_POS = Vec(7.5500, 87.0007);
+static const Vec SPEED6_POS = Vec(16.6140, 87.0007);
+static const Vec GAIN6_POS = Vec(27.8180, 87.0007);
+static const Vec START6_POS = Vec(39.0220, 87.0007);
+static const Vec LEN6_POS = Vec(50.2260, 87.0007);
+static const Vec OUT6_POS = Vec(61.4300, 87.0007);
+static const Vec STEP7_POS = Vec(7.5500, 99.9305);
+static const Vec SPEED7_POS = Vec(16.6140, 99.9305);
+static const Vec GAIN7_POS = Vec(27.8180, 99.9305);
+static const Vec START7_POS = Vec(39.0220, 99.9305);
+static const Vec LEN7_POS = Vec(50.2260, 99.9305);
+static const Vec OUT7_POS = Vec(61.4300, 99.9305);
+static const Vec STEP8_POS = Vec(7.5500, 112.8602);
+static const Vec SPEED8_POS = Vec(16.6140, 112.8602);
+static const Vec GAIN8_POS = Vec(27.8180, 112.8602);
+static const Vec START8_POS = Vec(39.0220, 112.8602);
+static const Vec LEN8_POS = Vec(50.2260, 112.8602);
+static const Vec OUT8_POS = Vec(61.4300, 112.8602);
 
 } // namespace panel

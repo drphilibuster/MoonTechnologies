@@ -76,17 +76,32 @@ H_SCALE = {
         EDGE_PAD=2.2,      # frame (or panel edge) to the nearest ink on a row
         ITEM_GAP=2.0,      # between neighbouring cells inside one run
         GROUP_GAP=4.4,     # the gutter where a row changes gear
-        PITCH_CAP=2.00,    # most a run's pitch may grow to fill the width
+        PITCH_CAP=1.30,    # most a run's pitch may grow to fill the width
         MARGIN_SHARE=0.55,  # how much of the left-over a side margin takes
     ),
     "compact": dict(
         EDGE_PAD=1.8,
         ITEM_GAP=1.5,
         GROUP_GAP=3.6,
-        PITCH_CAP=1.85,
+        PITCH_CAP=1.25,
         MARGIN_SHARE=0.55,
     ),
 }
+
+#: VCV's Fundamental panels are laid out on a fixed column grid rather than on
+#: clearances: measured across all 33 of them, every jack and trim column sits
+#: at 10.84 mm (exactly 32 px at Rack's 75 dpi) and every knob column at 13.02,
+#: with almost no variance. Ours are derived from ink plus a gap, which lands
+#: *under* all three on compact density -- trims by a millimetre and a half.
+#: These floors put the family on VCV's grid where our own arithmetic would
+#: come out tighter, so nothing here is more crowded than a Fundamental module.
+#: Keyed off ink size rather than class, because VCV put trims on the small
+#: grid with the jacks and only true knobs on the wide one.
+VCV_PITCH_SMALL = 10.84
+VCV_PITCH_KNOB = 13.02
+VCV_KNOB_INK = 5.0      # half-width at which a column counts as knob-sized
+VCV_SMALL_INK = 4.2     # below this, a column holds no VCV-sized hardware
+
 
 #: Two columns belong to one evenly spaced run when they hold the same sort of
 #: hardware, or when they are close enough in width that spacing them evenly
@@ -142,7 +157,23 @@ def cap_h(size_px):
     return size_px * S.MM_PER_PX * CAP_FRAC
 
 
-def desc_h(size_px):
+#: Glyphs that actually put ink below the baseline. Kept deliberately wide --
+#: the punctuation and the tailed capitals are in here so a label that might
+#: descend is never clipped, at the cost of the odd word paying for room it
+#: does not use. Everything not listed sits on the baseline.
+DESC_GLYPHS = frozenset("gjpqy Q,;()[]{}/@$&_".replace(" ", ""))
+
+
+def desc_h(size_px, text=None):
+    """Room below a label's baseline.
+
+    A panel of uppercase words does not need any: not one control label in the
+    family contains a descender, and reserving the space regardless cost every
+    labelled row half a millimetre it never used. Pass the text and the room is
+    reserved only when a glyph actually claims it -- captions in sentence case
+    ("Explanation of Items") still get theirs."""
+    if text is not None and not (DESC_GLYPHS & set(text)):
+        return 0.0
     return size_px * S.MM_PER_PX * DESC_FRAC
 
 
@@ -165,16 +196,27 @@ def label_box(l):
         x0 = l["x"] - w
     else:
         x0 = l["x"]
-    return (x0, l["y"] - cap_h(l["size"]), x0 + w, l["y"] + desc_h(l["size"]))
+    return (x0, l["y"] - cap_h(l["size"]), x0 + w,
+            l["y"] + desc_h(l["size"], l["text"]))
 
 
 def seat(kind):
-    """How far the recessed well extends past the widget's own art."""
+    """How far the recessed well extends past the widget's own art.
+
+    These are the numbers that decide how close two controls can sit, and they
+    were set by eye. Measured against Rack's own Fundamental set they were too
+    generous: a jack row there sits at a 10.81 mm pitch and a knob row at 13.02,
+    and this kit could not go below 11.30 and 13.50. The seat is where that
+    difference lived -- it is drawn *outside* the component's own art, so every
+    control was wearing a ring nobody else in the rack wears.
+
+    Trimmed to sit just inside VCV's floor, so a panel of this family packs at
+    least as tightly as the modules it will be racked next to."""
     if kind == "jack":
-        return 0.69          # matches the stock port's shoulder
+        return 0.28          # 10.5 mm minimum jack pitch; Fundamental's is 10.81
     if kind in ("light", "light_small"):
-        return 0.80
-    return 1.00
+        return 0.55
+    return 0.70              # 12.9 mm minimum knob pitch; Fundamental's is 13.02
 
 
 def well_extent(kind):
@@ -200,15 +242,45 @@ def ink_hw(it):
     return hw
 
 
+#: Between a widget's ink and a label standing beside it.
+SIDE_GAP = 1.1
+
+#: How far the box round a named run stands off the ink it encloses.
+GROUP_PAD = 0.9
+
+#: How far the pair rule holds off the label ink it breaks around.
+TIE_PAD = 0.7
+
+#: A tie segment shorter than this is a speck, not a line: drop it.
+TIE_MIN = 0.8
+
+#: How much *visible* line a pair rule needs on each side of the label it breaks
+#: around. Below this the tie is a speck under the seats -- measured at 0.20 mm
+#: a side on Collusion before the paired gap was made to allow for it, which is
+#: to say it was drawn, correct, and invisible.
+TIE_SHOW = 1.4
+
+
 def label_ext(it):
-    """(left, right) reach of the label under or over a widget, from its centre.
+    """(left, right) reach of the label beside, under or over a widget, from its
+    centre.
 
     Asymmetric on purpose: a lit label's light hangs off one end only, and
     treating it as if it stood on both sides is what used to make a column a
     couple of millimetres wider than anything in it actually was.
+
+    A label placed to one *side* reaches its whole width that way and nothing
+    the other -- and, more to the point, it costs the row no height at all. A
+    column of jacks that would otherwise spend a line of text on every row can
+    put its names alongside and pay for them once, horizontally, which is what
+    a stack of outputs down the edge of a panel wants.
     """
     if not it.label:
         return 0.0, 0.0
+    side = it.label_side
+    if side in ("left", "right"):
+        reach = ink_hw(it) + SIDE_GAP + text_w(it.label, it.size)
+        return (reach, 0.0) if side == "left" else (0.0, reach)
     w = text_w(it.label, it.size) / 2
     l = r = w
     if it.light:
@@ -220,13 +292,54 @@ def label_ext(it):
     return l, r
 
 
+#: Between an interstitial widget's ink and the columns either side of it. It
+#: is tighter than ITEM_GAP on purpose: the thing in the gap is an accessory to
+#: its neighbours, and reads as one by sitting closer to them than they do to
+#: each other.
+INTER_GAP = 0.9
+
+
+def _cols_of(row):
+    """Column index for each item in a row; None for an interstitial one.
+
+    Implicit indices skip the interstitial items, so a light dropped between
+    two jacks does not push every column after it along by one."""
+    out, nxt = [], 0
+    for it in row.items:
+        if getattr(it, "between", None):
+            out.append(None)
+            continue
+        c = nxt if it.col is None else it.col
+        out.append(c)
+        nxt = c + 1
+    return out
+
+
+def _inter(rowset):
+    """(a, b) -> the widest half-extent any row hangs in that gap."""
+    out = {}
+    for row in rowset:
+        for it in row.items:
+            b = getattr(it, "between", None)
+            if not b:
+                continue
+            hw = ink_hw(it)
+            if not row.silent:
+                ll, rr = label_ext(it)
+                hw = max(hw, ll, rr)
+            key = (min(b), max(b))
+            out[key] = max(out.get(key, 0.0), hw)
+    return out
+
+
 def _cells(rowset):
     """Column index -> (left reach, right reach, class), taking the widest of
     everything any row puts in that column."""
     cells = {}
     for row in rowset:
-        for i, it in enumerate(row.items):
-            c = i if it.col is None else it.col
+        for c, it in zip(_cols_of(row), row.items):
+            if c is None:      # lives in a gap, not a column
+                continue
             hw = ink_hw(it)
             ll, rr = (0.0, 0.0) if row.silent else label_ext(it)
             L, R, cls, top = cells.get(c, (0.0, 0.0, None, -1.0))
@@ -234,7 +347,9 @@ def _cells(rowset):
                 cls, top = CLASS[it.kind], hw
             cells[c] = (max(L, hw, ll), max(R, hw, rr), cls, top)
     n = max(cells) + 1 if cells else 0
-    return [cells.get(c, (0.0, 0.0, "knob", 0.0))[:3] for c in range(n)]
+    # the 4th element is the widest *ink* on the column -- label overhang is in
+    # L and R, and a floor keyed off ink must not see it
+    return [cells.get(c, (0.0, 0.0, "knob", 0.0)) for c in range(n)]
 
 
 def _runs(cols, groups=()):
@@ -254,8 +369,8 @@ def _runs(cols, groups=()):
             runs.append(list(range(c, len(cols))))
         return [r for r in runs if r]
     runs = []
-    for c, (L, R, cls) in enumerate(cols):
-        pl, pr, prev_cls = cols[c - 1] if c else (0.0, 0.0, None)
+    for c, (L, R, cls, _ink) in enumerate(cols):
+        pl, pr, prev_cls = (cols[c - 1][:3] if c else (0.0, 0.0, None))
         a, b = max(L, R), max(pl, pr)
         if c and (cls == prev_cls or "light" in (cls, prev_cls)
                   or min(a, b) / max(a, b, 1e-6) >= GROUP_RATIO):
@@ -265,15 +380,47 @@ def _runs(cols, groups=()):
     return runs
 
 
-def _run_pitch(cols, run, hm):
+def _run_pitch(cols, run, hm, inter=None):
     """The tightest even pitch a run can be spaced at: wide enough for its
     widest neighbouring pair, so an even run really is even."""
     if len(run) < 2:
         return 0.0
-    return max(cols[a][1] + cols[b][0] for a, b in zip(run, run[1:])) + hm["ITEM_GAP"]
+    return max(_run_gaps(cols, run, hm, inter))
 
 
-def natural_span(cols, hm, groups=()):
+def _run_gaps(cols, run, hm, inter=None):
+    """The tightest each gap in a run may be, one figure per gap.
+
+    A run used to be spaced at a single pitch -- the widest neighbouring pair,
+    applied to every gap in it. That reads well when the run really is a row of
+    like things, and costs a great deal when it is not: on AuditLogic the four
+    indicator lights between the gate inputs sit in columns of their own, and
+    charging each of them the pitch a *knob* needs bought six HP of empty panel.
+    Sizing every gap to the two columns it actually separates keeps a run of
+    like things exactly as even as it was -- their gaps are all equal anyway --
+    and lets a row that mixes hardware close up round the small parts.
+    """
+    out = []
+    for a, b in zip(run, run[1:]):
+        g = cols[a][1] + cols[b][0] + hm["ITEM_GAP"]
+
+        # VCV's grid is a floor between two pieces of real hardware -- jack to
+        # jack, knob to knob. A light wedged between two jacks is not on that
+        # grid and never was: forcing it there buys a column of empty panel and
+        # costs the width of one.
+        ia, ib = cols[a][3], cols[b][3]
+        if min(ia, ib) >= VCV_SMALL_INK:
+            g = max(g, VCV_PITCH_KNOB if max(ia, ib) >= VCV_KNOB_INK
+                    else VCV_PITCH_SMALL)
+        # something living in this gap has to fit in it
+        hw = (inter or {}).get((min(a, b), max(a, b)))
+        if hw:
+            g = max(g, cols[a][1] + INTER_GAP + 2 * hw + INTER_GAP + cols[b][0])
+        out.append(g)
+    return out or [0.0]
+
+
+def natural_span(cols, hm, groups=(), inter=None):
     """How much width the columns need at their tightest -- the number that
     decides how many HP a panel actually is."""
     if not cols:
@@ -282,7 +429,7 @@ def natural_span(cols, hm, groups=()):
     total = 0.0
     for run in runs:
         total += (cols[run[0]][0] + cols[run[-1]][1]
-                  + (len(run) - 1) * _run_pitch(cols, run, hm))
+                  + sum(_run_gaps(cols, run, hm, inter)))
     return total + (len(runs) - 1) * hm["GROUP_GAP"] + 2 * hm["EDGE_PAD"]
 
 
@@ -293,32 +440,36 @@ def place_columns(rowset, x_lo, x_hi, hm, groups=()):
     cols = _cells(rowset)
     if not cols:
         return [], 0.0
+    inter = _inter(rowset)
     runs = _runs(cols, groups)
-    pitch = [_run_pitch(cols, r, hm) for r in runs]
+    gaps = [_run_gaps(cols, r, hm, inter) for r in runs]
     ends = [cols[r[0]][0] + cols[r[-1]][1] for r in runs]
 
     avail = (x_hi - x_lo) - 2 * hm["EDGE_PAD"]
-    need = sum(ends) + sum(p * (len(r) - 1) for p, r in zip(pitch, runs)) \
+    need = sum(ends) + sum(sum(g) for g in gaps) \
         + (len(runs) - 1) * hm["GROUP_GAP"]
     if need > avail:
         return None, need - avail
 
     # 1. let every run breathe, in step, until each hits its own cap. A run that
-    #    caps out stops taking slack; the rest keep growing.
+    #    caps out stops taking slack; the rest keep growing. Every gap in a run
+    #    grows by the same amount, so a run that started even stays even; the
+    #    cap is set by the *tightest* gap, which is the one that would look
+    #    stretched first.
     slack = avail - need
-    caps = [p * hm["PITCH_CAP"] for p in pitch]
+    grow = [0.0] * len(runs)
+    room = [min(g) * (hm["PITCH_CAP"] - 1.0) if g else 0.0 for g in gaps]
     live = [i for i, r in enumerate(runs) if len(r) > 1]
     while live and slack > 1e-6:
-        steps = sum(len(runs[i]) - 1 for i in live)
+        steps = sum(len(gaps[i]) for i in live)
         want = slack / steps
-        room = min(caps[i] - pitch[i] for i in live)
-        take = min(want, room)
+        take = min(want, min(room[i] - grow[i] for i in live))
         for i in live:
-            pitch[i] += take
+            grow[i] += take
         slack -= take * steps
         if take >= want - 1e-9:
             break
-        live = [i for i in live if caps[i] - pitch[i] > 1e-6]
+        live = [i for i in live if room[i] - grow[i] > 1e-6]
 
     # 2. whatever is still over goes to the gutters between runs and, at a
     #    discount, to the two side margins -- so a row that changes gear collects
@@ -330,10 +481,12 @@ def place_columns(rowset, x_lo, x_hi, hm, groups=()):
 
     centres = [0.0] * len(cols)
     x = x_lo + margin
-    for run, p in zip(runs, pitch):
+    for i, run in enumerate(runs):
         x += cols[run[0]][0]
-        for k, c in enumerate(run):
-            centres[c] = x + k * p
+        centres[run[0]] = x
+        for k, c in enumerate(run[1:]):
+            x += gaps[i][k] + grow[i]
+            centres[c] = x
         x = centres[run[-1]] + cols[run[-1]][1] + gutter
     return centres, 0.0
 
@@ -368,18 +521,47 @@ def solve_x(panel):
     at its tightest spacing. Zero means it fits."""
     hm = H_SCALE[panel.density]
     short = 0.0
+    solved = []          # the centres each block grid came out at
     for rows, kind, groups in _rowsets(panel):
         items = [it for row in rows for it in row.items]
         if not items or all(it.x is not None for it in items):
             continue
-        x_lo, x_hi = _bounds(panel, kind, hm)
-        centres, miss = place_columns(rows, x_lo, x_hi, hm, groups)
+
+        # The footer may borrow the grid of a section instead of solving its
+        # own. A band solved independently agrees with the block above it only
+        # by luck: the two are inset differently and hold different numbers of
+        # things, so their pitches differ and the columns walk apart across the
+        # panel. Borrowing is the only thing that actually keeps a jack under
+        # the control it belongs to.
+        centres = None
+        if kind == "band" and panel.footer_grid:
+            want = {c for row in rows for c in _cols_of(row) if c is not None}
+            for cs in solved:
+                if want and max(want) < len(cs):
+                    centres = cs
+                    break
+            if centres is None:
+                out_of_range = sorted(want)
+                raise ValueError(
+                    "%s: footer_grid is set but no section grid covers "
+                    "columns %s -- the footer's col= indices must be the "
+                    "section's own" % (panel.slug, out_of_range))
+
         if centres is None:
-            short = max(short, miss)
-            continue
+            x_lo, x_hi = _bounds(panel, kind, hm)
+            centres, miss = place_columns(rows, x_lo, x_hi, hm, groups)
+            if centres is None:
+                short = max(short, miss)
+                continue
+            if kind == "block":
+                solved.append(centres)
         for row in rows:
-            for i, it in enumerate(row.items):
-                it.x = centres[i if it.col is None else it.col]
+            for c, it in zip(_cols_of(row), row.items):
+                if c is None:
+                    a, b = it.between
+                    it.x = (centres[a] + centres[b]) / 2.0
+                else:
+                    it.x = centres[c]
     return short
 
 
@@ -392,12 +574,27 @@ def required_hp(panel, floor=4):
     for rows, kind, groups in _rowsets(panel):
         cols = _cells(rows)
         pad = 2 * BLOCK_INSET if kind == "block" else 2.0
-        need = max(need, natural_span(cols, hm, groups) + pad)
-    # the masthead has to hold the title between the two top screws at its
-    # smallest legible size, or the panel is too narrow to be named
-    from .emit import SCREW_CLEAR, TITLE_MIN, TITLE_TRACK
+        need = max(need, natural_span(cols, hm, groups, _inter(rows)) + pad)
+    # The masthead has to hold the title between the two top screws at its
+    # smallest legible size, or the panel is too narrow to be named -- and it
+    # has to hold the line *under* the title too. The brand sits bottom-left and
+    # the form stub bottom-right on the same baseline, so a panel narrow enough
+    # for them to meet is as unbuildable as one too narrow for its own name; it
+    # just fails later, in the linter, as an overlap that looks like a spec
+    # error rather than a width one.
+    from .emit import (SCREW_CLEAR, TITLE_MIN, TITLE_TRACK, STUB_SIZE,
+                       LOGO_W, LOGO_GAP)
+
     need = max(need, 2 * SCREW_CLEAR
                + len(panel.title) * (0.60 * TITLE_MIN + TITLE_TRACK) * S.MM_PER_PX)
+    stub = 0.0
+    if panel.brand:
+        stub += SCREW_CLEAR + 0.4 + LOGO_W + LOGO_GAP + text_w(panel.brand, STUB_SIZE, 0.4)
+    if panel.form:
+        stub += text_w(panel.form, STUB_SIZE, 0.4) + 4.2
+    if panel.brand and panel.form:
+        stub += 3.0          # they must not merely miss, they must read apart
+    need = max(need, stub)
     import math
     return max(floor, int(math.ceil(need / S.HP_MM - 1e-6)))
 
@@ -417,6 +614,8 @@ class Solved:
         self.band_footer = None
         self.overflow = []  # complaints for the linter
         self.steps = []     # (x, y, r, n) detent rings round stepped knobs
+        self.groups = []    # (x0, y0, x1, y1) the box round a run named once
+        self.ties = []      # (x, y0, y1) hairline joining a control to its pair
         self.justified = 0.0   # how much every gap grew to fill the face
 
     # -- convenience views ---------------------------------------------------
@@ -474,7 +673,7 @@ def _solve(panel, m):
             # descenders actually land, not typed next to CAP_BASE and left to
             # drift out of step with it.
             inner = sec.y0 + max(m["CAP_CLEAR"],
-                                 m["CAP_BASE"] + desc_h(6.0) + TEXT_CLEAR)
+                                 m["CAP_BASE"] + desc_h(6.0, sec.caption) + TEXT_CLEAR)
             if sec.caption_light:
                 # The light's well is ink under the caption: the first row starts
                 # below it, not below the caption's baseline.
@@ -494,8 +693,10 @@ def _solve(panel, m):
                 if prev.pair:
                     # the shared label sits between the two rows: the same gap
                     # under it as over it, so it cannot be read as belonging to
-                    # the row above instead
-                    gap = max(m["BELOW_GAP"], TEXT_CLEAR)
+                    # the row above instead -- and wide enough for the pair rule
+                    # to show either side of it, which is the same figure the
+                    # label's own clearance uses above.
+                    gap = max(m["BELOW_GAP"], TEXT_CLEAR, TIE_PAD + TIE_SHOW)
                 elif low_text and _tops_with_text(row):
                     gap = max(m["ROW_CLEAR"], TEXT_TEXT)
                 elif low_text:
@@ -515,7 +716,7 @@ def _solve(panel, m):
                 # the caption's descenders; hold it off by a line's worth.
                 if _tops_with_text(row):
                     inner = max(inner,
-                                sec.y0 + m["CAP_BASE"] + desc_h(6.0) + TEXT_TEXT)
+                                sec.y0 + m["CAP_BASE"] + desc_h(6.0, sec.caption) + TEXT_TEXT)
             lowest, low_text = _place_row(out, panel, m, row, inner)
             if i + 1 < len(sec.rows):
                 rows_gaps += 1
@@ -540,10 +741,11 @@ def _solve(panel, m):
                 # it shares with the pinned row below, equidistant from both, so
                 # neither y has to be typed
                 nxt = panel.footer[i + 1]
-                gap = max(m["BELOW_GAP"], TEXT_CLEAR)
+                gap = max(m["BELOW_GAP"], TEXT_CLEAR, TIE_PAD + TIE_SHOW)
                 sz = max([it.size for it in row.items if it.label] or [6.2])
+                txt = "".join(it.label for it in row.items if it.label)
                 below_top = nxt.y - max(_ink_r(it) for it in nxt.items)
-                row.y = (below_top - gap - desc_h(sz) - cap_h(sz) - gap
+                row.y = (below_top - gap - desc_h(sz, txt) - cap_h(sz) - gap
                          - max(_ink_r(it) for it in row.items))
         for row in panel.footer:
             top, _ = _place_row(out, panel, m, row, None, pinned=True)
@@ -577,6 +779,58 @@ def _solve(panel, m):
         if panel.sections:
             last = cursor - m["BLOCK_GAP"]
             slack = FOOT_Y - m["BLOCK_GAP"] - last
+
+    # --- the pair rule ------------------------------------------------------
+    # VCV join a trimpot to the jack it attenuates with a hairline down the
+    # column the two share (Fundamental's VCF, res/VCF.svg, is three of them
+    # side by side). It says "these are one control" before you have read a
+    # word, which is the whole reason the paired idiom exists -- and it is the
+    # piece we were missing: the label in the gap told you the pair was a pair
+    # only once you read it.
+    #
+    # Ours is derived rather than hand-placed. It runs from the upper widget's
+    # centre to the lower one's and is drawn beneath the seats, so both ends
+    # vanish under their widgets and only the span between them shows -- the
+    # same trick VCV pull by ending their segment on the trimpot's centre. Where
+    # the pair's own label sits in that gap the rule breaks around its ink,
+    # since a line through a word costs more than the tie gains.
+    for sec in panel.sections:
+        for i, row in enumerate(sec.rows):
+            cols = getattr(row, "_pair_cols", set())
+            if not cols or i + 1 >= len(sec.rows):
+                continue
+            nxt = sec.rows[i + 1]
+            y0, y1 = getattr(row, "_y", None), getattr(nxt, "_y", None)
+            if y0 is None or y1 is None or y1 <= y0:
+                continue
+            below = {(j if it.col is None else it.col)
+                     for j, it in enumerate(nxt.items)}
+            for j, it in enumerate(row.items):
+                c = j if it.col is None else it.col
+                if c not in cols or c not in below or it.x is None:
+                    continue
+                # every label whose ink the rule would otherwise strike through
+                cuts = []
+                for lab in out.labels:
+                    bx0, by0, bx1, by1 = label_box(lab)
+                    if (bx0 - TIE_PAD <= it.x <= bx1 + TIE_PAD
+                            and by1 > y0 and by0 < y1):
+                        cuts.append((by0 - TIE_PAD, by1 + TIE_PAD))
+                segs = [(y0, y1)]
+                for c0, c1 in sorted(cuts):
+                    kept = []
+                    for s0, s1 in segs:
+                        if c1 <= s0 or c0 >= s1:
+                            kept.append((s0, s1))
+                            continue
+                        if s0 < c0:
+                            kept.append((s0, c0))
+                        if c1 < s1:
+                            kept.append((c1, s1))
+                    segs = kept
+                for s0, s1 in segs:
+                    if s1 - s0 >= TIE_MIN:
+                        out.ties.append((it.x, s0, s1))
 
     out.blocks.extend(panel.extra_blocks)
 
@@ -624,11 +878,11 @@ def _pair_cols(row, nxt):
     the same line, simply does not."""
     if nxt is None:
         return set()
-    below = {(j if it.col is None else it.col) for j, it in enumerate(nxt.items)}
+    below = {c for c in _cols_of(nxt) if c is not None}
     if row.pair:
         return below
-    return below & {(j if it.col is None else it.col)
-                    for j, it in enumerate(row.items) if it.pair}
+    return below & {c for c, it in zip(_cols_of(row), row.items)
+                    if c is not None and it.pair}
 
 
 def _tops_with_text(row):
@@ -639,9 +893,10 @@ def _tops_with_text(row):
     paired = getattr(row, "_pair_cols", set())
     if row.shared:
         return (row.label_side or row.items[0].label_side) == "above"
-    return any((i if it.col is None else it.col) not in paired
+    return any(c not in paired
                and (row.label_side or it.label_side) == "above" and it.label
-               for i, it in enumerate(row.items))
+               for c, it in zip(_cols_of(row), row.items))
+
 
 
 def _ink_r(it):
@@ -663,21 +918,27 @@ def _place_row(out, panel, m, row, inner, pinned=False):
     they need and no more."""
     light_hh = well_extent("light_small")[1]
 
-    def above_parts(it, size):
+    def above_parts(it, size, text=None):
         """(well-to-baseline, baseline-to-top) for a label above `it`."""
-        cap, desc = cap_h(size), desc_h(size)
+        cap, desc = cap_h(size), desc_h(size, text)
         lit = it is not None and bool(it.light)
         off = max(max(m["ABOVE_GAP"], TEXT_CLEAR) + desc,
                   light_hh - cap / 2 if lit else 0.0)
         head = max(cap, cap / 2 + light_hh if lit else 0.0)
         return off, head
 
-    def below_parts(it, size):
-        """(well-to-baseline, baseline-to-bottom) for a label below `it`."""
-        cap, desc = cap_h(size), desc_h(size)
+    def below_parts(it, size, tied=False, text=None):
+        """(well-to-baseline, baseline-to-bottom) for a label below `it`.
+
+        A tied control needs more: the pair rule runs down this same gap and
+        breaks around the label, so the gap has to hold the line's visible run
+        and its standoff as well as the clearance the text alone would want."""
+        cap, desc = cap_h(size), desc_h(size, text)
         lit = it is not None and bool(it.light)
-        off = max(max(m["BELOW_GAP"], TEXT_CLEAR) + cap,
-                  light_hh + cap / 2 + 0.2 if lit else 0.0)
+        clear = max(m["BELOW_GAP"], TEXT_CLEAR)
+        if tied:
+            clear = max(clear, TIE_PAD + TIE_SHOW)
+        off = max(clear + cap, light_hh + cap / 2 + 0.2 if lit else 0.0)
         foot = max(desc, light_hh - cap / 2 if lit else 0.0)
         return off, foot
 
@@ -687,9 +948,14 @@ def _place_row(out, panel, m, row, inner, pinned=False):
     # really have a partner below move: a jack sharing the row but owning nothing
     # keeps its label over its head, where a patch cable cannot cover it.
     paired = getattr(row, "_pair_cols", set())
+    #: (x0, x1, half-height) of each run this row names once, filled in beside
+    #: the span's label and turned into a box once the row's y is known.
+    spans = []
+
+    at_col = _cols_of(row)
 
     def _side(it, i):
-        if (i if it.col is None else it.col) in paired:
+        if at_col[i] in paired:
             return "below"
         return row.label_side or it.label_side
 
@@ -702,6 +968,25 @@ def _place_row(out, panel, m, row, inner, pinned=False):
     else:
         texts = [(it.x, it.label, it.size, it.ink, _side(it, i), it)
                  for i, it in enumerate(row.items) if it.label]
+        # A run named once. Its x is the midpoint of the run's own columns, not
+        # of the panel, so it sits over what it names even when the row has
+        # other things on it.
+        by_col = {}
+        for c, it in zip(at_col, row.items):
+            if c is not None:
+                by_col[c] = it
+        for entry in getattr(row, "span", ()):
+            c0, c1, text = entry[0], entry[1], entry[2]
+            a, b = by_col.get(c0), by_col.get(c1)
+            if a is None or b is None or a.x is None or b.x is None:
+                continue
+            size = entry[3] if len(entry) > 3 else row.shared_size
+            ink = entry[4] if len(entry) > 4 else row.shared_ink
+            texts.append(((a.x + b.x) / 2, text, size, ink, side, None))
+            spans.append((min(a.x - ink_hw(a), b.x - ink_hw(b)),
+                          max(a.x + ink_hw(a), b.x + ink_hw(b)),
+                          max(_ink_r(by_col[c]) for c in range(c0, c1 + 1)
+                              if c in by_col)))
 
     # The row's half-height above and below its centre line: the tallest well
     # or ring, plus whatever an above-label (and its light) needs. Labels on a
@@ -709,14 +994,24 @@ def _place_row(out, panel, m, row, inner, pinned=False):
     # mixed hardware on one row reads as one row.
     r = max(_ink_r(it) for it in row.items)
     # A shared label belongs to the whole row, so it clears the row's tallest well.
-    lift = max([(_ink_r(it) if it is not None else r) + above_parts(it, sz)[0]
-                for _, _, sz, _, sd, it in texts if sd == "above"] or [0.0])
-    head = max([above_parts(it, sz)[1] for _, _, sz, _, sd, it in texts if sd == "above"]
-               or [0.0])
-    drop = max([(_ink_r(it) if it is not None else r) + below_parts(it, sz)[0]
-                for _, _, sz, _, sd, it in texts if sd != "above"] or [0.0])
-    foot = max([below_parts(it, sz)[1] for _, _, sz, _, sd, it in texts if sd != "above"]
-               or [0.0])
+    # Labels standing to one side sit on their widget's own centre line and add
+    # nothing to the row's height, so they take no part in any of these four.
+    stacked = [t for t in texts if t[4] not in ("left", "right")]
+    lift = max([(_ink_r(it) if it is not None else r) + above_parts(it, sz, tx)[0]
+                for _, tx, sz, _, sd, it in stacked if sd == "above"] or [0.0])
+    head = max([above_parts(it, sz, tx)[1]
+                for _, tx, sz, _, sd, it in stacked if sd == "above"] or [0.0])
+    def _tied(it):
+        if it is None:
+            return False
+        i = next((k for k, o in enumerate(row.items) if o is it), None)
+        return i is not None and at_col[i] in paired
+
+    drop = max([(_ink_r(it) if it is not None else r)
+                + below_parts(it, sz, _tied(it), tx)[0]
+                for _, tx, sz, _, sd, it in stacked if sd != "above"] or [0.0])
+    foot = max([below_parts(it, sz, _tied(it), tx)[1]
+                for _, tx, sz, _, sd, it in stacked if sd != "above"] or [0.0])
 
     if pinned or row.y is not None:
         y = row.y
@@ -739,6 +1034,20 @@ def _place_row(out, panel, m, row, inner, pinned=False):
     highest = y - r
     low_text = high_text = False
     for x, text, size, ink, this_side, it in texts:
+        if this_side in ("left", "right"):
+            # Vertically centred on the widget: the baseline sits half a cap
+            # height below its centre line, which is what puts the word's
+            # optical middle level with the jack's.
+            hw = ink_hw(it) if it is not None else r
+            lab = dict(x=(x - hw - SIDE_GAP) if this_side == "left"
+                         else (x + hw + SIDE_GAP),
+                       y=y + cap_h(size) / 2, text=text, size=size, ink=ink,
+                       align="right" if this_side == "left" else "left",
+                       tracking=0.0, ground="dark" if pinned else "light")
+            out.labels.append(lab)
+            if it is not None and it.light:
+                _lit_label(out, lab, it.light, it.light_side)
+            continue
         if this_side == "above":
             base = y - lift
             if base - head <= highest:
@@ -755,6 +1064,26 @@ def _place_row(out, panel, m, row, inner, pinned=False):
         out.labels.append(lab)
         if it is not None and it.light:
             _lit_label(out, lab, it.light, it.light_side)
+
+    # The box round a run named once. It encloses the run's widgets and the one
+    # word that names them, so the label is visibly a caption for those columns
+    # rather than a stray word floating between two of them.
+    #
+    # Not on a paired row, though. There the label sits *between* two rows
+    # because it names both -- the trim and the jack it owns -- and a box drawn
+    # round only the upper one says the opposite of what the pair idiom is for.
+    # Better no box than a box that draws the wrong line.
+    for x0, x1, hh in (() if paired else spans):
+        if side == "above":
+            top, bot = y - lift - head - GROUP_PAD, y + hh + GROUP_PAD
+        else:
+            top, bot = y - hh - GROUP_PAD, y + drop + foot + GROUP_PAD
+        out.groups.append((x0 - GROUP_PAD, top, x1 + GROUP_PAD, bot))
+
+    # Where this row actually landed, for the pair rule -- which is drawn once
+    # every row is placed, because it needs the row below this one as well.
+    row._y = y
+
     return (highest, high_text) if pinned else (lowest, low_text)
 
 

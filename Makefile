@@ -74,6 +74,8 @@ endif
 #   make preview-Retroactive   ... and open the browser mock
 #   make vcv-preview           render every panel through VCV Rack itself,
 #                              which is the only preview that cannot lie
+#   make vcv-<Module>          render just that one -- what you want while you
+#                              are working on it
 PYTHON ?= python3
 PANEL_SPECS := $(wildcard tools/panels/*.py)
 
@@ -103,6 +105,14 @@ vcv-preview: panel
 	@for spec in $(PANEL_SPECS); do \
 		$(PYTHON) $$spec --vcv || exit 1; \
 	done
+
+# One panel, which is what you want while you are working on one. Rendering all
+# twenty-four takes minutes and puts a Rack window up for each; `make vcv-Toll`
+# regenerates that spec, rebuilds the plugin so the widget positions match the
+# artwork, and renders only that panel.
+vcv-%: panel-%
+	@$(MAKE) all
+	$(PYTHON) tools/panels/$*.py --vcv
 
 # Derived from uname rather than from the SDK's ARCH_MAC, so that opening a
 # preview does not require the SDK.
@@ -139,6 +149,7 @@ help:
 	@echo "  make panel           regenerate every panel from tools/panels/*.py"
 	@echo "  make panel-<Module>  regenerate one"
 	@echo "  make vcv-preview     render every panel through VCV Rack itself"
+	@echo "  make vcv-NAME        render just one panel (e.g. make vcv-Toll)"
 	@echo
 	@echo "  make test            run the host-side unit tests"
 	@echo

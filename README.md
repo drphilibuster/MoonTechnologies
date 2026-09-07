@@ -1,6 +1,6 @@
 # Moon Technologies
 
-Twenty modules for [VCV Rack 2](https://vcvrack.com), by **Taxxess**.
+Twenty-four modules for [VCV Rack 2](https://vcvrack.com), by **Taxxess**.
 
 They share a panel language borrowed from money — a pale engraved note, sage
 guilloche round every field, a scroll in every corner, a form number in the
@@ -10,7 +10,7 @@ and finding out what it cost you.
 | | | |
 | --- | --- | --- |
 | <img src="tools/previews/PatchAudit.png" width="260"> | <img src="tools/previews/Retroactive.png" width="140"> | <img src="tools/previews/UncertaintyPolicy.png" width="160"> |
-| **[PatchAudit](docs/PatchAudit.md)** · 26 HP | **[Retroactive](docs/Retroactive.md)** · 15 HP | **[Uncertainty Policy](docs/UncertaintyPolicy.md)** · 12 HP |
+| **[PatchAudit](docs/PatchAudit.md)** · 26 HP | **[Retroactive](docs/Retroactive.md)** · 15 HP | **[Uncertainty Policy](docs/UncertaintyPolicy.md)** · 11 HP |
 
 *(Panels above are rendered by Rack itself, not mocked up.)*
 
@@ -50,23 +50,23 @@ Six devices built to order, and the whole of Kristian Blåsol's [Modular in a We
 
 | <img src="tools/previews/Dividend.png" width="144"> | <img src="tools/previews/TaxBracket.png" width="108"> | <img src="tools/previews/Racketeer.png" width="144"> | <img src="tools/previews/Gross.png" width="162"> |
 |---|---|---|---|
-| **[Dividend](docs/Dividend.md)** · 15 HP | **[Tax Bracket](docs/TaxBracket.md)** · 12 HP | **[Racketeer](docs/Racketeer.md)** · 18 HP | **[Gross](docs/Gross.md)** · 21 HP |
+| **[Dividend](docs/Dividend.md)** · 15 HP | **[Tax Bracket](docs/TaxBracket.md)** · 12 HP | **[Racketeer](docs/Racketeer.md)** · 17 HP | **[Gross](docs/Gross.md)** · 20 HP |
 
 | <img src="tools/previews/Amortization.png" width="126"> | <img src="tools/previews/Repossession.png" width="306"> | <img src="tools/previews/SixFigures.png" width="216"> | <img src="tools/previews/Garnishment.png" width="90"> |
 |---|---|---|---|
-| **[Amortization](docs/Amortization.md)** · 16 HP | **[Repossession](docs/Repossession.md)** · 34 HP | **[Six Figures](docs/SixFigures.md)** · 26 HP | **[Garnishment](docs/Garnishment.md)** · 11 HP |
+| **[Amortization](docs/Amortization.md)** · 15 HP | **[Repossession](docs/Repossession.md)** · 34 HP | **[Six Figures](docs/SixFigures.md)** · 25 HP | **[Garnishment](docs/Garnishment.md)** · 10 HP |
 
 | <img src="tools/previews/Consolidation.png" width="108"> | <img src="tools/previews/Installment.png" width="144"> | <img src="tools/previews/Volatility.png" width="126"> | <img src="tools/previews/Deduction.png" width="90"> |
 |---|---|---|---|
-| **[Consolidation](docs/Consolidation.md)** · 13 HP | **[Installment](docs/Installment.md)** · 17 HP | **[Volatility](docs/Volatility.md)** · 15 HP | **[Deduction](docs/Deduction.md)** · 13 HP |
+| **[Consolidation](docs/Consolidation.md)** · 13 HP | **[Installment](docs/Installment.md)** · 16 HP | **[Volatility](docs/Volatility.md)** · 14 HP | **[Deduction](docs/Deduction.md)** · 12 HP |
 
-| <img src="tools/previews/AuditLogic.png" width="198"> | <img src="tools/previews/Kickback.png" width="270"> | <img src="tools/previews/PaymentSchedule.png" width="252"> | <img src="tools/previews/SignHere.png" width="180"> |
+| <img src="tools/previews/AuditLogic.png" width="198"> | <img src="tools/previews/Kickback.png" width="240"> | <img src="tools/previews/PaymentSchedule.png" width="252"> | <img src="tools/previews/SignHere.png" width="180"> |
 |---|---|---|---|
-| **[Audit Logic](docs/AuditLogic.md)** · 29 HP | **[Kickback](docs/Kickback.md)** · 33 HP | **[Payment Schedule](docs/PaymentSchedule.md)** · 30 HP | **[Sign Here](docs/SignHere.md)** · 20 HP |
+| **[Audit Logic](docs/AuditLogic.md)** · 25 HP | **[Kickback](docs/Kickback.md)** · 30 HP | **[Payment Schedule](docs/PaymentSchedule.md)** · 29 HP | **[Sign Here](docs/SignHere.md)** · 20 HP |
 
 | <img src="tools/previews/Diversified.png" width="162"> | <img src="tools/previews/Collusion.png" width="227"> | <img src="tools/previews/Reconciliation.png" width="227"> |
 |---|---|---|
-| **[Diversified](docs/Diversified.md)** · 15 HP | **[Collusion](docs/Collusion.md)** · 21 HP | **[Reconciliation](docs/Reconciliation.md)** · 21 HP |
+| **[Diversified](docs/Diversified.md)** · 14 HP | **[Collusion](docs/Collusion.md)** · 18 HP | **[Reconciliation](docs/Reconciliation.md)** · 19 HP |
 
 ### [Dividend](docs/Dividend.md) — 15 HP · *Oscillator, Synth voice*
 
@@ -76,15 +76,15 @@ A pulsar-synthesis VCO after Curtis Roads: trains of pulsarets whose formant is 
 
 The Olegtron R2R as a genuine resistor network. Every jack is an in/out pair on a passive 8-bit ladder, so it is a DAC, a weighted mixer, a programmable attenuator and a labile multiple at once; checked against the manual's attenuator table.
 
-### [Racketeer](docs/Racketeer.md) — 18 HP · *Noise, Delay, Synth voice*
+### [Racketeer](docs/Racketeer.md) — 17 HP · *Noise, Delay, Synth voice*
 
 Wolfgang Spahn's PB701 Electric Intonarumori: a PT2399 delay run as a self-sustaining noise voice, with the chip's clock and word length falling as the delay grows, an optocoupler lag on TIME, a chopper, three enforcement buttons with gate inputs, and DIRTY, ENV and GATE outputs.
 
-### [Gross](docs/Gross.md) — 21 HP · *Distortion, Waveshaper, Effect*
+### [Gross](docs/Gross.md) — 20 HP · *Distortion, Waveshaper, Effect*
 
 A Wiener–Hammerstein distortion built from the Eichas–Zölzer piecewise-tanh mapping and the dynamic bias of Comunità, Steinmetz and Reiss: input EQ, drive, static and dynamic bias, knees and slopes per polarity, five curve families, output EQ, device presets, and a live transfer-curve read-out.
 
-### [Amortization](docs/Amortization.md) — 16 HP · *Reverb, Effect*
+### [Amortization](docs/Amortization.md) — 15 HP · *Reverb, Effect*
 
 A Verbtronic-style reverb: a Dattorro plate for VERB and an eight-line FDN with a limiter for TRONIC, tonal tilt inside the loop, feedback past unity, predelay, freeze, the mode gate, and wet-only outputs beside the mix.
 
@@ -92,11 +92,11 @@ A Verbtronic-style reverb: a Dattorro plate for VERB and an eight-line FDN with 
 
 Paste a YouTube link. The module fetches it with yt-dlp and ffmpeg, shows the video on the panel, lets you drag regions on the timeline, and sequences those regions — audio and picture together — by clock, CV, scan and fire, with position, gate, end-of-region and region outputs.
 
-### [Six Figures](docs/SixFigures.md) — 26 HP · *Oscillator*
+### [Six Figures](docs/SixFigures.md) — 25 HP · *Oscillator*
 
 Modular in a Week, Day 1, folded into one bank: six voices, each a 40106 Schmitt square, a 4069 triangle core, a 4046 PLL that locks to the SIGNAL input, or a reverse-avalanche saw, with sync, capture, drift and a mix.
 
-### [Garnishment](docs/Garnishment.md) — 11 HP · *VCA, Low-pass gate, Dual*
+### [Garnishment](docs/Garnishment.md) — 10 HP · *VCA, Low-pass gate, Dual*
 
 Day 2: two VCA channels, each an LM13700 OTA, a vactrol low-pass gate or the I-AM-O JFET multiplier, with bias, lag and CV amount.
 
@@ -104,27 +104,31 @@ Day 2: two VCA channels, each an LM13700 OTA, a vactrol low-pass gate or the I-A
 
 Day 3: the ASMR four-channel mixer with normal and inverted sums, and two 1:3 buffered multiples with B normalled to A.
 
-### [Installment](docs/Installment.md) — 17 HP · *Envelope generator, LFO, Function generator, Dual*
+### [Installment](docs/Installment.md) — 16 HP · *Envelope generator, LFO, Function generator, Dual*
 
 Days 4 and 5: two function generators, each LFO, AR or AD with loop, range, bias and CV, plus the Day 12 tape-motor PWM driver with duty CV.
 
-### [Volatility](docs/Volatility.md) — 15 HP · *Noise, Sample and hold, Random*
+### [Volatility](docs/Volatility.md) — 14 HP · *Noise, Sample and hold, Random*
 
 Day 6: an 18-bit 4006-style shift-register noise source, the YASH sample and hold, and the PHObos random gate, on one shared clock.
 
-### [Deduction](docs/Deduction.md) — 13 HP · *Filter, Distortion*
+### [Deduction](docs/Deduction.md) — 12 HP · *Filter, Distortion*
 
 Day 7: six filters under one MODEL knob with CV — PAiA 2720-3L, Escobedo Q&D, Korg35, MS-20 OTA, EFM Moog-type high-pass, Synthrotek DIRT — with LP and HP inputs, a CV response switch and a read-out.
 
-### [Audit Logic](docs/AuditLogic.md) — 29 HP · *Logic, Switch, Clock modulator*
+### [Audit Logic](docs/AuditLogic.md) — 25 HP · *Logic, Switch, Clock modulator*
 
 Day 8 and the 4066: four logic gates with selectable functions and the 0 V / 12 V reference, two gated switches, and the Emiz CV2 clock divider.
 
-### [Kickback](docs/Kickback.md) — 33 HP · *Drum, Synth voice*
+### [Kickback](docs/Kickback.md) — 30 HP · *Drum, Synth voice, Sequencer, Clock generator*
 
-Day 9: eight drum voices with a mix — BaSnaHi kick, snare and hat, SmurfDrum, TomTomTom, XORbell, the percussive noise voice and the Tiny Dazzler.
+Day 9: six drum voices over a mode bank struck by a real contact pulse — the BaSnaHi kick with the SmurfDrum as its second model, a snare that switches between XORbell, the percussive noise voice and Karplus-Strong, a hi-hat whose one knob sweeps metal to noise to the Tiny Dazzler, and all three TomTomTom rings at once as three differently-sized drums. Plus its own clock, a Euclidean pattern engine, and a grid mode where each voice runs at its own multiple or division of the clock from /256 to ×256. Gates out for the rest of the rack; anything you patch a TRIG into plays that voice instead.
 
-### [Payment Schedule](docs/PaymentSchedule.md) — 30 HP · *Sequencer, Switch, Quantizer*
+### [Toll](docs/Toll.md) — 11 HP · *Drum, Synth voice, Physical modeling*
+
+BaSnaHi's snare stage, which was always a better bell than a snare, given a module of its own: sixteen modal partials over a membrane, a bar, a tuned bell or a bare harmonic series, with strike position, mallet hardness, per-partial damping, an inharmonicity stretch, a buzzing second layer and a choke. No clock and no patterns — Kickback has those.
+
+### [Payment Schedule](docs/PaymentSchedule.md) — 29 HP · *Sequencer, Switch, Quantizer*
 
 Day 10: the Baby8 with the 4017 sequential switch falling out of the same counter in both directions, the 4031 tap looper, and the varimode quantizer.
 
@@ -132,15 +136,15 @@ Day 10: the Baby8 with the 4017 sequential switch falling out of the same counte
 
 Day 11: the button and pedal, the offset-scaler joystick as an XY pad, and four touch pads.
 
-### [Diversified](docs/Diversified.md) — 15 HP · *Effect, Delay, Reverb, Chorus, Distortion*
+### [Diversified](docs/Diversified.md) — 14 HP · *Effect, Delay, Reverb, Chorus, Distortion*
 
 Days 12 and 13: a stereo multi-effect with 106 programs — the DSP99 board's categories as twenty algorithms, then the Echomatic echo, Little Angel chorus, spring reverb, MXR Distortion+, Talk Funny, the MW bitcrusher and the 4011 ring modulator, each faithful to its schematic.
 
-### [Collusion](docs/Collusion.md) — 21 HP · *LFO, Oscillator, Random*
+### [Collusion](docs/Collusion.md) — 18 HP · *LFO, Oscillator, Random*
 
 Six LFOs that listen to each other. Each has its own natural rate; COUPLING says how hard each is pulled toward the rest, and past a threshold set entirely by SPREAD the population stops drifting and locks — Kuramoto's phase transition, on one knob and six lamps. Four wirings (all-to-all, ring, one-way cascade, and Mirollo–Strogatz pulse coupling), a phase lag that buys partial order, LFO and audio ranges, and a Benjolin rungler whose bits are written from how much the swarm currently agrees, so the melody it plays *is* the phase transition.
 
-### [Reconciliation](docs/Reconciliation.md) — 21 HP · *Quantizer, Polyphonic, Utility*
+### [Reconciliation](docs/Reconciliation.md) — 19 HP · *Quantizer, Polyphonic, Utility*
 
 A polyphonic just-intonation quantizer that splits "which note?" into two questions and puts a knob on each. Which pitches exist: Partch's eleven-limit tonality diamond, his 43-tone scale, one Otonality or Utonality hexad, Wilson's hexany and eikosany, or the raw harmonic series — transposed onto any of Partch's six identities and pruned by prime limit. How one gets chosen: Euler's gradus suavitatis, Tenney's harmonic distance, Barlow's harmonicity, Sethares' sensory dissonance against an assumed timbre, or adaptive tuning from the last note played, which tunes every interval pure and lets the tonal centre drift by the comma it costs. The read-out names the ratio.
 

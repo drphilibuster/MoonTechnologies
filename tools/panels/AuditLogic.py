@@ -46,22 +46,27 @@ P.sections = [
     # are, not how wide they are, so the section says so outright rather than
     # leaving the solver to guess from twelve identical jacks.
     Section("FINDINGS", caption_light="verdict", groups=(3, 3, 3, 3), rows=[
-        Row([Jack("a1", "A", col=0), Light("out1_led", col=1),
-             Jack("b1", "B", col=2),
-             Jack("a2", "A", col=3), Light("out2_led", col=4),
-             Jack("b2", "B", col=5),
-             Jack("a3", "A", col=6), Light("out3_led", col=7),
-             Jack("b3", "B", col=8),
-             Jack("a4", "A", col=9), Light("out4_led", col=10),
-             Jack("b4", "B", col=11)]),
+        # Each gate's light sits between its own A and B, which is what says the
+        # two inputs belong to one gate. It is an accessory to that pair, not a
+        # column of the panel: `between` hangs it in the gap and widens only
+        # that gap to hold it, where owning a column charged it the full pitch
+        # of the knob below -- four columns of mostly empty panel.
+        Row([Jack("a1", "A", col=0), Light("out1_led", between=(0, 1)),
+             Jack("b1", "B", col=1),
+             Jack("a2", "A", col=2), Light("out2_led", between=(2, 3)),
+             Jack("b2", "B", col=3),
+             Jack("a3", "A", col=4), Light("out3_led", between=(4, 5)),
+             Jack("b3", "B", col=5),
+             Jack("a4", "A", col=6), Light("out4_led", between=(6, 7)),
+             Jack("b4", "B", col=7)]),
         Row([Knob("fn1", "FN", steps=7, col=0),
-             Jack("out1", "OUT", ink="MINT", col=2),
-             Knob("fn2", "FN", steps=7, col=3),
-             Jack("out2", "OUT", ink="MINT", col=5),
-             Knob("fn3", "FN", steps=7, col=6),
-             Jack("out3", "OUT", ink="MINT", col=8),
-             Knob("fn4", "FN", steps=7, col=9),
-             Jack("out4", "OUT", ink="MINT", col=11)]),
+             Jack("out1", "OUT", ink="MINT", col=1),
+             Knob("fn2", "FN", steps=7, col=2),
+             Jack("out2", "OUT", ink="MINT", col=3),
+             Knob("fn3", "FN", steps=7, col=4),
+             Jack("out3", "OUT", ink="MINT", col=5),
+             Knob("fn4", "FN", steps=7, col=6),
+             Jack("out4", "OUT", ink="MINT", col=7)]),
     ]),
 
     # Two 4066 gated switches -- the original board ganged four into one quad

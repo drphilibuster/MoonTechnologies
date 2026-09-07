@@ -14,8 +14,8 @@
 namespace panel {
 
 // --- identity --------------------------------------------------------------
-static const int   HP = 21;
-static const float W  = 106.6800f;  // mm
+static const int   HP = 20;
+static const float W  = 101.6000f;  // mm
 static const float H  = 128.5000f;  // mm
 
 // --- the read-out well: the spec's numbers, not the widget's ---------------
@@ -24,45 +24,45 @@ static const float H  = 128.5000f;  // mm
 // they drifted. The widget takes them from here now.
 static const float GLASS_X = 4.2000f;
 static const float GLASS_Y = 9.8000f;
-static const float GLASS_W = 98.2800f;
+static const float GLASS_W = 93.2000f;
 static const float GLASS_H = 10.0000f;
 
 // --- silkscreen ------------------------------------------------------------
 static const Label LABELS[] = {
-	{ 53.3400f,   5.5000f, 10.50f, 1.50f, PAPER    , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GROSS"},
+	{ 50.8000f,   5.5000f, 10.50f, 1.50f, PAPER    , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GROSS"},
 	{ 11.5600f,   8.2500f,  7.40f, 0.00f, LIME     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, true,  "$"},
 	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
-	{102.4800f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "SCHEDULE C"},
-	{ 53.3400f,  23.3000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GROSS RECEIPTS"},
-	{ 10.8000f,  40.9149f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LOW"},
-	{ 31.8200f,  40.9149f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MID"},
-	{ 52.8400f,  40.9149f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MID F"},
-	{ 73.8600f,  40.9149f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "HIGH"},
-	{ 94.8800f,  40.9149f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DRIVE"},
-	{ 53.3400f,  46.3075f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ADJUSTMENTS"},
-	{ 10.8000f,  62.7590f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OFFSET"},
-	{ 32.0700f,  62.7590f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DYN"},
-	{ 53.3400f,  62.7590f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ATTACK"},
-	{ 74.6100f,  62.7590f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RELEASE"},
-	{ 95.8800f,  62.7590f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CURVE"},
-	{ 25.7565f,  77.3974f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "KNEE+"},
-	{ 44.1455f,  77.3974f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "KNEE-"},
-	{ 62.5345f,  77.3974f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SHAPE+"},
-	{ 80.9235f,  77.3974f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SHAPE-"},
-	{ 53.3400f,  82.7223f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "NET"},
-	{ 15.8775f,  98.3372f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "WET"},
-	{ 40.8525f,  98.3372f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "POST"},
-	{ 65.8275f,  98.3372f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TONE"},
-	{ 90.8025f,  98.3372f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LO CUT"},
-	{  7.7000f, 112.4751f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DRIVE"},
-	{ 19.1100f, 112.4751f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BIAS"},
-	{ 30.5200f, 112.4751f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "WET"},
-	{ 41.9300f, 112.4751f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TONE"},
-	{ 53.3400f, 112.4751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ENV"},
-	{ 64.7500f, 112.4751f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN L"},
-	{ 76.1600f, 112.4751f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN R"},
-	{ 87.5700f, 112.4751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT L"},
-	{ 98.9800f, 112.4751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT R"},
+	{ 97.4000f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "SCHEDULE C"},
+	{ 50.8000f,  23.3000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GROSS RECEIPTS"},
+	{ 17.0100f,  40.6069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LOW"},
+	{ 33.2850f,  40.6069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MID"},
+	{ 49.5600f,  40.6069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MID F"},
+	{ 65.8350f,  40.6069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "HIGH"},
+	{ 83.2900f,  40.6069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DRIVE"},
+	{ 50.8000f,  46.1475f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ADJUSTMENTS"},
+	{ 17.8032f,  61.4410f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OFFSET"},
+	{ 34.0782f,  61.4410f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DYN"},
+	{ 51.2468f,  61.4410f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ATTACK"},
+	{ 67.5218f,  61.4410f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RELEASE"},
+	{ 83.7968f,  61.4410f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CURVE"},
+	{ 33.2875f,  75.9700f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "KNEE+"},
+	{ 44.9625f,  75.9700f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "KNEE-"},
+	{ 56.6375f,  75.9700f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SHAPE+"},
+	{ 68.3125f,  75.9700f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SHAPE-"},
+	{ 50.8000f,  81.5107f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "NET"},
+	{ 26.3875f,  96.2175f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "WET"},
+	{ 42.6625f,  96.2175f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "POST"},
+	{ 58.9375f,  96.2175f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TONE"},
+	{ 75.2125f,  96.2175f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LO CUT"},
+	{  7.2900f, 112.0100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DRIVE"},
+	{ 18.1675f, 112.0100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BIAS"},
+	{ 29.0450f, 112.0100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "WET"},
+	{ 39.9225f, 112.0100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TONE"},
+	{ 50.8000f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ENV"},
+	{ 61.6775f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN L"},
+	{ 72.5550f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN R"},
+	{ 83.4325f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT L"},
+	{ 94.3100f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT R"},
 };
 
 /** Draws this panel's silkscreen. `static` so each module keeps its own,
@@ -73,37 +73,37 @@ static inline void addLabels(app::ModuleWidget* mw) {
 
 // --- widget positions, by the names used in tools/panels/Gross.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
-static const Vec LOW_POS = Vec(10.8000, 31.5080);
-static const Vec MID_POS = Vec(31.8200, 31.5080);
-static const Vec MIDF_POS = Vec(52.8400, 31.5080);
-static const Vec HIGH_POS = Vec(73.8600, 31.5080);
-static const Vec DRIVE_POS = Vec(94.8800, 31.5080);
-static const Vec OFFSET_POS = Vec(10.8000, 53.5155);
-static const Vec DYN_POS = Vec(32.0700, 53.5155);
-static const Vec ATTACK_POS = Vec(53.3400, 53.5155);
-static const Vec RELEASE_POS = Vec(74.6100, 53.5155);
-static const Vec CURVE_POS = Vec(95.8800, 53.5155);
-static const Vec ENV_LED_POS = Vec(37.0936, 61.9055);
-static const Vec KP_POS = Vec(25.7565, 70.9655);
-static const Vec KN_POS = Vec(44.1455, 70.9655);
-static const Vec GP_POS = Vec(62.5345, 70.9655);
-static const Vec GN_POS = Vec(80.9235, 70.9655);
-static const Vec WET_POS = Vec(15.8775, 89.9303);
-static const Vec POST_POS = Vec(40.8525, 89.9303);
-static const Vec TONE_POS = Vec(65.8275, 89.9303);
-static const Vec LOCUT_POS = Vec(90.8025, 89.9303);
-static const Vec DRIVE_CV_POS = Vec(7.7000, 106.0433);
-static const Vec BIAS_CV_POS = Vec(19.1100, 106.0433);
-static const Vec WET_CV_POS = Vec(30.5200, 106.0433);
-static const Vec TONE_CV_POS = Vec(41.9300, 106.0433);
-static const Vec DRIVE_IN_POS = Vec(7.7000, 118.6000);
-static const Vec BIAS_IN_POS = Vec(19.1100, 118.6000);
-static const Vec WET_IN_POS = Vec(30.5200, 118.6000);
-static const Vec TONE_IN_POS = Vec(41.9300, 118.6000);
-static const Vec ENV_OUT_POS = Vec(53.3400, 118.6000);
-static const Vec IN_L_POS = Vec(64.7500, 118.6000);
-static const Vec IN_R_POS = Vec(76.1600, 118.6000);
-static const Vec OUT_L_POS = Vec(87.5700, 118.6000);
-static const Vec OUT_R_POS = Vec(98.9800, 118.6000);
+static const Vec LOW_POS = Vec(17.0100, 31.2000);
+static const Vec MID_POS = Vec(33.2850, 31.2000);
+static const Vec MIDF_POS = Vec(49.5600, 31.2000);
+static const Vec HIGH_POS = Vec(65.8350, 31.2000);
+static const Vec DRIVE_POS = Vec(83.2900, 31.2000);
+static const Vec OFFSET_POS = Vec(17.8032, 52.7475);
+static const Vec DYN_POS = Vec(34.0782, 52.7475);
+static const Vec ATTACK_POS = Vec(51.2468, 52.7475);
+static const Vec RELEASE_POS = Vec(67.5218, 52.7475);
+static const Vec CURVE_POS = Vec(83.7968, 52.7475);
+static const Vec ENV_LED_POS = Vec(38.8518, 60.5875);
+static const Vec KP_POS = Vec(33.2875, 69.8382);
+static const Vec KN_POS = Vec(44.9625, 69.8382);
+static const Vec GP_POS = Vec(56.6375, 69.8382);
+static const Vec GN_POS = Vec(68.3125, 69.8382);
+static const Vec WET_POS = Vec(26.3875, 88.1107);
+static const Vec POST_POS = Vec(42.6625, 88.1107);
+static const Vec TONE_POS = Vec(58.9375, 88.1107);
+static const Vec LOCUT_POS = Vec(75.2125, 88.1107);
+static const Vec DRIVE_CV_POS = Vec(7.2900, 104.4782);
+static const Vec BIAS_CV_POS = Vec(18.1675, 104.4782);
+static const Vec WET_CV_POS = Vec(29.0450, 104.4782);
+static const Vec TONE_CV_POS = Vec(39.9225, 104.4782);
+static const Vec DRIVE_IN_POS = Vec(7.2900, 118.6000);
+static const Vec BIAS_IN_POS = Vec(18.1675, 118.6000);
+static const Vec WET_IN_POS = Vec(29.0450, 118.6000);
+static const Vec TONE_IN_POS = Vec(39.9225, 118.6000);
+static const Vec ENV_OUT_POS = Vec(50.8000, 118.6000);
+static const Vec IN_L_POS = Vec(61.6775, 118.6000);
+static const Vec IN_R_POS = Vec(72.5550, 118.6000);
+static const Vec OUT_L_POS = Vec(83.4325, 118.6000);
+static const Vec OUT_R_POS = Vec(94.3100, 118.6000);
 
 } // namespace panel

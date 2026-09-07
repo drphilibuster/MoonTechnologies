@@ -125,6 +125,25 @@ def panel_svg(panel, sol):
             a('  <rect x="%.4f" y="%.4f" width="%.4f" height="%.4f" rx="0.25" fill="%s"/>'
               % (pl.x, pl.y, TAB_W, TAB_H, getattr(P, pl.tab)))
 
+    # --- the box round a run the panel names once, drawn before the wells so
+    # it reads as the ground those controls stand on rather than as a frame laid
+    # over them. Sage at a hairline, like every other rule on the face; a fill a
+    # shade off the block keeps it legible without turning into a second block.
+    for x0, y0, x1, y1 in sol.groups:
+        a('  <rect x="%.4f" y="%.4f" width="%.4f" height="%.4f" rx="1.1" '
+          'fill="%s" fill-opacity="0.55" stroke="%s" stroke-width="0.18" '
+          'stroke-opacity="0.75"/>'
+          % (x0, y0, x1 - x0, y1 - y0, P.PAPER, P.RULE))
+
+    # --- the pair rule: a hairline down the column a control shares with its
+    # partner below, drawn before the wells so both ends run under their widgets
+    # and only the span between them shows. Sage, and a touch narrower than the
+    # subtotal rules -- it is a tie, not a divider, and should read as the
+    # quietest line on the face.
+    for x, y0, y1 in sol.ties:
+        a('  <rect x="%.4f" y="%.4f" width="0.26" height="%.4f" fill="%s" '
+          'fill-opacity="0.8"/>' % (x - 0.13, y0, y1 - y0, P.RULE))
+
     # --- recessed seats behind every widget: a dark seal ringed in sage
     for x, y, hw, hh, _name in sol.wells:
         if abs(hw - hh) < 1e-6:
@@ -358,23 +377,45 @@ def screw_svg():
         '</svg>', ""])
 
 
-def port_svg(accent=None):
+def port_svg(accent=None, event=False):
     """A brass-collared jack on the stock PJ301M canvas (23.7 px square).
 
     The stock port's chrome collar is the loudest off-palette object on the
-    panel; brass puts it in the same drawer as the screws. `accent` rings the
-    throat in mint to mark an output.
+    panel; brass puts it in the same drawer as the screws.
+
+    Two things about a jack are worth knowing before you read its label, and
+    they are on different axes, so they get different marks:
+
+    * **Which way it goes.** `accent` rings the throat in mint to mark an
+      output. That is the wide band, because it is the thing you are most often
+      looking for.
+    * **What it carries.** `event` cuts a thin lime line inside the throat to
+      mark a port that deals in *timing* -- a clock, a trigger, a gate, a reset
+      -- as against one that deals in levels: audio, CV, a pitch. Lime is the
+      family's accent for something happening, which is exactly what these
+      carry, and a thin line reads as a qualifier rather than competing with
+      the band for the same job.
+
+    A patch is mostly a question of which cable goes where, and those two
+    facts answer most of it without reading a word.
     """
     d = 23.7
     c = d / 2
     ring = accent or P.BRASS_MID
+    # The outermost circle stops at 11.10, not at 11.85. Rack's own PJ301M
+    # leaves the corners of its 23.7 px canvas empty and draws its collar to
+    # 11.10; filling the canvas edge to edge made every jack on these panels
+    # read a size larger than every jack in the rest of the rack, and with the
+    # recessed seat drawn outside that, half again.
     return "\n".join([
         '<?xml version="1.0" encoding="UTF-8"?>',
         '<svg xmlns="http://www.w3.org/2000/svg" width="%gpx" height="%gpx" '
         'viewBox="0 0 %g %g" version="1.1">' % (d, d, d, d),
-        '  <circle cx="%.4f" cy="%.4f" r="11.85" fill="%s"/>' % (c, c, P.BRASS_DARK),
-        '  <circle cx="%.4f" cy="%.4f" r="11.10" fill="%s"/>' % (c, c, P.BRASS),
+        '  <circle cx="%.4f" cy="%.4f" r="11.10" fill="%s"/>' % (c, c, P.BRASS_DARK),
+        '  <circle cx="%.4f" cy="%.4f" r="10.45" fill="%s"/>' % (c, c, P.BRASS),
         '  <circle cx="%.4f" cy="%.4f" r="9.60" fill="%s"/>' % (c, c, ring),
+        ('  <circle cx="%.4f" cy="%.4f" r="8.60" fill="%s"/>' % (c, c, P.LIME))
+        if event else '',
         '  <circle cx="%.4f" cy="%.4f" r="7.70" fill="%s"/>' % (c, c, P.GLASS),
         '  <circle cx="%.4f" cy="%.4f" r="4.40" fill="#000000"/>' % (c, c),
         '</svg>', ""])

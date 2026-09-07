@@ -192,6 +192,113 @@ Useful keywords:
 | `Section(..., divide_after=(0,))` | a subtotal rule |
 | `Section(..., caption_light="name")` | a light beside the caption |
 
+## The footer band and the section above it
+
+Each section solves its own column grid, and so, by default, does the footer.
+That is fine when the band holds things of its own -- a CLOCK and a RESET -- and
+wrong the moment it holds one jack per column of the section, because the two
+grids agree only by luck: the band is inset differently and holds a different
+number of things, so its pitch differs and the columns walk apart across the
+panel. On Kickback the OUT jacks drifted from 3.6 mm under their voice at the
+left to 11.1 mm at the right, which is wider than a jack, so the last OUT sat
+nearer TOM II's column than TOM III's.
+
+`Panel(footer_grid=True)` solves the band on the section's columns instead, and
+every jack lands under what it belongs to. Use it wherever the footer's `col=`
+indices are the section's own -- both Kickback and SixFigures were written that
+way already and were only ever misaligned because nothing acted on it. It raises
+a `ValueError` naming the columns if no section grid covers them, rather than
+falling back to a grid that would silently drift again.
+
+## Columns, and things that are not columns
+
+A row's items land in columns, and the solver spaces each gap to the two columns
+it separates -- a run of like things comes out even because their gaps are all
+equal, and a row that mixes hardware closes up round the small parts instead of
+paying the widest thing's pitch everywhere.
+
+Some things are not columns at all. An indicator light tucked between a gate's
+two inputs is an accessory to that pair, not a station on the grid, and giving
+it a column charges it whatever the widest widget in that run costs -- on
+AuditLogic, the knob below it. `between` hangs it in the gap instead:
+
+```python
+Row([Jack("a1", "A", col=0), Light("out1_led", between=(0, 1)),
+     Jack("b1", "B", col=1),
+     ...
+```
+
+Only that one gap grows, and only by enough to hold the light. AuditLogic went
+from 28 HP to 25 on this, and each gate now reads as `A (*) B` rather than as
+four inputs and four lights sharing a row. Give every other item in such a row
+an explicit `col`; the interstitial ones are skipped when implicit indices are
+worked out, but being explicit is clearer to read.
+
+The floors are VCV's own, measured across all 33 Fundamental panels: 10.84 mm
+between two small widgets, 13.02 between knobs, applied per *adjacent pair* so
+a light between two jacks is exempt -- it was never on that grid.
+
+## Labels: over, under, or beside — and how many
+
+The family rule is in `LABEL_SIDE`: a jack's label goes above it, where a patch
+cable cannot cover it; a knob's goes below, clear of the hand turning it. Two
+escape hatches exist, and both are about the same thing — a label costs a row a
+line of text, and sometimes that line is the difference between a panel fitting
+and not.
+
+**`side="left"` / `side="right"`** stands a label alongside its widget, on the
+widget's own centre line. It costs the row *no height at all*; it is paid for
+once, in width. That is what a column of jacks running down the edge of a panel
+wants — six labels stacked over six jacks is six lines of text, and beside them
+it is none. Kickback's gate column is six individual outputs rather than one
+polyphonic bus because of this: three of the six sit in rows whose height is set
+by a trimpot, where a label above would have added a line each.
+
+**`Row.span`** names a *run* of columns once instead of naming each of them:
+
+```python
+Row(span=[(KICK, TOM3, "DECAY")],
+    items=[Trim("div", "DIV", col=CLK),
+           Trim("fill", "FILL", col=PAT)]
+        + [Trim("%s_decay" % v, "", col=c) for v, c in VOICES]),
+```
+
+Six identical trims side by side is the panel saying the same word six times.
+One word centred over the six says it better, and unlike `Row.shared` it does
+not silence the whole row — DIV and FILL keep their own names, because they are
+not six of anything. Give the items in the run `label=""`.
+
+A span also draws a box round its run, so the grouping is visible at a glance
+rather than inferred from a word sitting between two of the controls. The one
+exception is a **paired** row: there the label sits between two rows because it
+names both, and a box round only the upper one says the opposite of what the
+pair idiom is for, so the box is left off.
+
+The one thing to check before reaching for it: a label that carries a **lit
+indicator** is holding something up as well as saying something. SixFigures
+names its CV and AUX rows once but not its RATE row, because each RATE label
+carries that voice's LED.
+
+## Jacks say two things before you read them
+
+There are four port arts, on two axes, because two facts about a jack answer
+most of "which cable goes where" without reading a word:
+
+| | carries a level | carries timing |
+|---|---|---|
+| **input** | `panel::PortIn` | `panel::PortTrigIn` |
+| **output** | `panel::PortOut` | `panel::PortTrigOut` |
+
+The wide throat band is the direction — brass in, mint out — because that is
+what you look for most often. A thin lime line inside the throat marks a port
+that deals in *timing*: a clock, a trigger, a gate, a reset. Audio, CV and V/oct
+are levels and stay plain.
+
+The choice is made in the module's C++, at the `createInput`/`createOutput`
+call, not in the spec — the spec's `ink="MINT"` is about the *label*, and the
+two are deliberately separate so a panel can name a thing one way and wire it
+another.
+
 ## Columns, runs and gutters
 
 `hp` defaults to `"auto"`, and that is how every panel in the family is written.

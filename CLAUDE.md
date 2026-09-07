@@ -1,13 +1,14 @@
 # Moon Technologies
 
 One VCV Rack 2 plugin, slug `MoonTechnologies`, brand **Moon Technologies**,
-author **Taxxess**. Twenty-three modules sharing one panel pipeline: the three
+author **Taxxess**. Twenty-four modules sharing one panel pipeline: the three
 originals (`PatchAudit`, `Retroactive`, `UncertaintyPolicy`), eight built to
 order (`Dividend`, `TaxBracket`, `Racketeer`, `Gross`, `Amortization`,
 `Repossession`, `Collusion`, `Reconciliation`), one expander (`ScheduleA`, which
-attaches to `Repossession`) and eleven Modular-in-a-Week banks (`SixFigures`,
+attaches to `Repossession`), eleven Modular-in-a-Week banks (`SixFigures`,
 `Garnishment`, `Consolidation`, `Installment`, `Volatility`, `Deduction`,
-`AuditLogic`, `Kickback`, `PaymentSchedule`, `SignHere`, `Diversified`).
+`AuditLogic`, `Kickback`, `PaymentSchedule`, `SignHere`, `Diversified`) and one
+voice that split off from a bank (`Toll`, out of `Kickback`).
 
 ## VCV Rack UI: use the tool, always
 
@@ -56,7 +57,7 @@ because the call site owned state it should never have touched.
 
 `src/PanelTheme.hpp` is shared and entirely `inline`/template: one definition for
 the whole plugin. `src/<Module>/Panel.hpp` is that panel's own numbers, all
-`static`: one copy per translation unit, so twenty silkscreen tables cannot
+`static`: one copy per translation unit, so two dozen silkscreen tables cannot
 collide. Both are `namespace panel`, so call sites are unchanged.
 
 **A translation unit may include exactly one `Panel.hpp`.** Two is a
@@ -67,13 +68,24 @@ silkscreen on every panel.
 ### After any UI change
 
 ```bash
-make panel && make -j8 && make vcv-preview
+make panel && make -j8 && make vcv-Kickback     # one panel, ~30 s
+make panel && make -j8 && make vcv-preview      # all of them, minutes
 ```
+
+`make vcv-<Module>` renders just that one. Use it while you are working;
+`vcv-preview` puts a Rack window up for every panel in turn and takes minutes,
+which is not what you want between two edits to one spec.
+
+A panel's width is solved, not typed, so a `panelkit/` change can move half the
+family at once -- and those numbers are also written out in prose, where nothing
+checks them. `tools/sync_hp.py` reports every HP figure in README.md and docs/
+that disagrees with the generated headers, and `--write` fixes them. Run it
+after any change that moves a panel's width.
 
 Look at `tools/previews/<Module>.png` before calling a panel done — it goes
 through the real widget tree, so it is the only preview that cannot lie. Do this
 for **every** module whose header the change touched, not just the one you were
-working in; a `panelkit/` change reaches all twenty.
+working in; a `panelkit/` change reaches all twenty-four.
 
 See `panelkit/README.md` for the design language, the spec API and what the
 linter checks.
@@ -97,7 +109,7 @@ one. A screenshot showing old behaviour after a fix usually means exactly this.
 
 ## Slugs are permanent
 
-`MoonTechnologies` and the twenty-three module slugs listed at the top of this file.
+`MoonTechnologies` and the twenty-four module slugs listed at the top of this file.
 Changing any of them orphans every saved patch that used it: Rack's fallback table
 (`Rack/src/plugin.cpp:374`) is maintained by VCV, not by plugin authors.
 
@@ -115,6 +127,15 @@ plugins never having been ported.
 `src/plugin.cpp`; an entry in `plugin.json` with tags from `Rack/src/tag.cpp`; a
 spec in `tools/panels/<New>.py`; a manual in `docs/<New>.md`. The Makefile globs
 `src/*/*.cpp` and `tools/panels/*.py`, so nothing there needs touching.
+
+## Shared DSP lives at src/, not inside a module
+
+`src/DspCache.hpp` and `src/Drum.hpp` are used by more than one module --
+Drum.hpp by `Kickback` and `Toll`, which are the same struck-object physics at
+different scales. A header two modules need does not belong inside either of
+them. If a test's Makefile lists the headers it depends on, list *all* of them:
+one left out is one whose edits do not rebuild the test, and a suite that does
+not rebuild passes for the wrong reason.
 
 ## Local checkouts (outside this repo)
 

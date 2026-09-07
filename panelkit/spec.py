@@ -55,6 +55,11 @@ EXTENT = {
 #: reason it is a table rather than a per-panel choice: a jack's label has to
 #: clear the cable plugged into it, so it goes above; a knob's has to clear the
 #: hand turning it, so it goes below.
+#:
+#: A spec may override it per widget with `side=` -- including "left" and
+#: "right", which put the label alongside instead of over or under. That is the
+#: escape hatch for a stack of controls in one column, where a label per row is
+#: a line of text per row and the panel would rather spend the width once.
 LABEL_SIDE = {
     "knob_large": "below", "knob": "below", "trim": "below",
     "slider": "below", "button": "below", "bezel": "below",
@@ -80,7 +85,13 @@ class Widget:
     ink: str = "PAPER"
     size: float = 7.0               # label size in Rack px
     well: bool = True               # draw the recessed seat behind it
-    side: str = ""                  # override LABEL_SIDE; leave blank for the rule
+    #: Override LABEL_SIDE; blank follows the family rule. "above" and "below"
+    #: stack the label over or under the widget and cost the row a line of text
+    #: each; "left" and "right" stand it alongside, on the widget's own centre
+    #: line, and cost the row no height at all. A column of jacks running down
+    #: the edge of a panel wants the latter -- it pays for its names once,
+    #: horizontally, instead of once per row.
+    side: str = ""
     #: The one control on the panel you actually reach for. Gets a lime ring, and
     #: there should never be more than one per panel -- lint checks.
     primary: bool = False
@@ -97,6 +108,15 @@ class Widget:
     #: the row, which is right whenever a row is written left to right; set it
     #: only for a row that skips a column or lists its items out of order.
     col: int = None
+
+    #: Sit in the *gap* between two columns, as (first, second), owning no
+    #: column of its own. An indicator light tucked between a gate's two inputs
+    #: is not a column of the panel -- it is an accessory to the pair either
+    #: side of it -- and giving it one costs the full pitch of whatever the
+    #: widest thing in that run happens to be. The solver widens just that one
+    #: gap enough to hold it and centres it there. `col` is ignored when this
+    #: is set; give every other item in the row an explicit `col`.
+    between: tuple = None
 
     #: This control owns the widget directly below it and shares a label with
     #: it -- the paired idiom, opted into one control at a time. `Row(pair=True)`
@@ -140,6 +160,17 @@ class Row:
     #: When set, one label serves the whole row and is centred on the panel
     #: rather than on each widget -- the paired trim/jack idiom.
     shared: str = ""
+    #: Name a *run* of columns once instead of naming each of them, as
+    #: (first_col, last_col, text) triples. Six identical DECAY trims side by
+    #: side is the panel saying the same word six times; one word centred over
+    #: the six says it better and leaves the rest of the row -- which is usually
+    #: not six of anything -- to carry its own labels. The items in the run
+    #: should be given `label=""`, and the span label lands on the row's own
+    #: baseline, so it lines up with whatever else the row names.
+    #:
+    #: Unlike `shared`, this does not silence the row: it is a label for those
+    #: columns, not for all of them.
+    span: list = field(default_factory=list)
     shared_ink: str = "SAGE"
     shared_size: float = 6.2
     #: Rows normally get their y from the solver. Pin it only when an external
@@ -269,6 +300,18 @@ class Panel:
     extra_blocks: list = field(default_factory=list)
     #: Pin the footer band instead of deriving it from footer rows.
     band_footer: float = None
+
+    #: Solve the footer band on the columns of the section above it, instead of
+    #: on a grid of its own.
+    #:
+    #: The band is inset differently from a block and holds a different number
+    #: of things, so two independent solves put column 2 in two different places
+    #: -- on Kickback the OUT jacks drifted from 3.6 mm under their voice to
+    #: 11.1 mm, which is more than a jack's width, so the rightmost OUT sat
+    #: nearer the wrong voice than its own. Set this where the footer's `col=`
+    #: indices are the section's own, and every jack lands under what it
+    #: belongs to.
+    footer_grid: bool = False
     #: Named millimetre constants echoed into the generated C++ header, for
     #: panels whose C++ needs to lay out its own sub-widgets.
     metrics: dict = field(default_factory=dict)

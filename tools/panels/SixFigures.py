@@ -25,6 +25,9 @@ P = Panel(
     slug="SixFigures",
     title="SIX FIGURES",
     form="FORM W-2",
+    # The OUT jacks carry the voice column indices, so they belong under
+    # their own voice rather than on a grid of the band's own.
+    footer_grid=True,
 )
 
 # Seven columns: six voices and a totals column on the right. Every row names
@@ -45,11 +48,18 @@ P.sections = [
         # Each voice's CV trim owns the jack directly below it; the label they
         # share sits between the two. SYNC has nothing under it, so it keeps
         # its own name above its head.
-        Row([Trim("cv%d" % (i + 1), "CV", pair=True, col=i) for i in V]
+        #
+        # And the six of them are named once, over the run, rather than six
+        # times over six identical trims. The RATE row above cannot do the
+        # same: each of its labels carries that voice's LED, so the words are
+        # holding something up as well as saying something.
+        Row(span=[(0, 5, "CV")],
+            items=[Trim("cv%d" % (i + 1), "", pair=True, col=i) for i in V]
             + [Jack("sync", "SYNC", col=T)]),
         Row([Jack("cv%d_in" % (i + 1), col=i) for i in V]
             + [Trim("drift", "DRIFT", col=T)]),
-        Row([Jack("aux%d" % (i + 1), "AUX", ink="MINT", col=i) for i in V]
+        Row(span=[(0, 5, "AUX", 6.2, "MINT")],
+            items=[Jack("aux%d" % (i + 1), "", ink="MINT", col=i) for i in V]
             + [Jack("signal", "SIGNAL", col=T)]),
     ], divide_after=(1,)),
 ]

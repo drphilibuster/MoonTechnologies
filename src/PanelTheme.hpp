@@ -295,6 +295,21 @@ struct PortIn : app::SvgPort {
 		setSvg(Svg::load(asset::plugin(pluginInstance, "res/PortIn.svg")));
 	}
 };
+
+/** The same jacks, with a thin lime line inside the throat: this one
+ *  carries timing -- a clock, a trigger, a gate, a reset -- rather than
+ *  a level. The band still says which way it goes. */
+struct PortTrigIn : app::SvgPort {
+	PortTrigIn() {
+		setSvg(Svg::load(asset::plugin(pluginInstance, "res/PortTrigIn.svg")));
+	}
+};
+
+struct PortTrigOut : app::SvgPort {
+	PortTrigOut() {
+		setSvg(Svg::load(asset::plugin(pluginInstance, "res/PortTrigOut.svg")));
+	}
+};
 struct PortOut : app::SvgPort {
 	PortOut() {
 		setSvg(Svg::load(asset::plugin(pluginInstance, "res/PortOut.svg")));

@@ -14,35 +14,35 @@
 namespace panel {
 
 // --- identity --------------------------------------------------------------
-static const int   HP = 15;
-static const float W  = 76.2000f;  // mm
+static const int   HP = 14;
+static const float W  = 71.1200f;  // mm
 static const float H  = 128.5000f;  // mm
 
 // --- silkscreen ------------------------------------------------------------
 static const Label LABELS[] = {
-	{ 38.1000f,   5.5000f, 10.50f, 1.50f, PAPER    , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "VOLATILITY"},
+	{ 35.5600f,   5.5000f, 10.50f, 1.50f, PAPER    , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "VOLATILITY"},
 	{ 11.5600f,   8.2500f,  7.40f, 0.00f, LIME     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, true,  "$"},
 	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
-	{ 72.0000f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "SCHEDULE D"},
-	{ 38.1000f,  13.3000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "NOISE"},
-	{ 14.9022f,  28.9149f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RATE"},
-	{ 61.2978f,  28.9149f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BITS"},
-	{ 38.1000f,  33.3140f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CLOCK IN"},
-	{ 38.1000f,  50.5836f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SAMPLE & HOLD"},
-	{ 17.5350f,  54.1534f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SRC"},
-	{ 38.4400f,  54.1534f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRIG"},
-	{ 59.3450f,  66.7101f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SLEW"},
-	{ 38.1000f,  73.4797f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RND GATE"},
-	{ 15.7100f,  89.0946f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PROB"},
-	{ 38.6500f,  89.0946f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SRC"},
-	{ 61.5900f,  89.0946f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PROB CV"},
-	{ 38.6500f,  93.4937f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SRC IN"},
-	{  7.7000f, 112.4751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RND"},
-	{ 19.8600f, 112.4751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DAC"},
-	{ 32.0200f, 112.4751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "S&H"},
-	{ 44.1800f, 112.4751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "NOISE"},
-	{ 56.3400f, 112.4751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CLK"},
-	{ 68.5000f, 112.4751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
+	{ 66.9200f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "SCHEDULE D"},
+	{ 35.5600f,  13.3000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "NOISE"},
+	{ 19.2850f,  28.0069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RATE"},
+	{ 51.8350f,  28.0069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BITS"},
+	{ 35.5600f,  32.7687f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CLOCK IN"},
+	{ 35.5600f,  49.6487f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SAMPLE & HOLD"},
+	{ 22.9925f,  53.2185f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SRC"},
+	{ 36.3100f,  53.2185f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRIG"},
+	{ 48.6975f,  64.5403f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SLEW"},
+	{ 35.5600f,  71.7403f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RND GATE"},
+	{ 21.5250f,  86.4472f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PROB"},
+	{ 37.2550f,  86.4472f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SRC"},
+	{ 50.8050f,  86.4472f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PROB CV"},
+	{ 37.2550f,  91.2090f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SRC IN"},
+	{  7.2900f, 112.8851f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RND"},
+	{ 18.5980f, 112.8851f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DAC"},
+	{ 29.9060f, 112.8851f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "S&H"},
+	{ 41.2140f, 112.8851f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "NOISE"},
+	{ 52.5220f, 112.8851f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CLK"},
+	{ 63.8300f, 112.8851f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
 };
 
 /** Draws this panel's silkscreen. `static` so each module keeps its own,
@@ -53,22 +53,22 @@ static inline void addLabels(app::ModuleWidget* mw) {
 
 // --- widget positions, by the names used in tools/panels/Volatility.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
-static const Vec RATE_POS = Vec(14.9022, 20.5080);
-static const Vec BITS_POS = Vec(61.2978, 20.5080);
-static const Vec CLOCK_IN_POS = Vec(38.1000, 39.4389);
-static const Vec SH_SRC_IN_POS = Vec(17.5350, 60.2783);
-static const Vec SH_TRIG_IN_POS = Vec(38.4400, 60.2783);
-static const Vec SH_SLEW_POS = Vec(59.3450, 60.2783);
-static const Vec PROBABILITY_POS = Vec(15.7100, 80.6877);
-static const Vec RND_SRC_POS = Vec(38.6500, 80.6877);
-static const Vec PROB_CV_AMT_POS = Vec(61.5900, 80.6877);
-static const Vec RND_SRC_IN_POS = Vec(38.6500, 99.6186);
-static const Vec PROB_CV_IN_POS = Vec(61.5900, 99.6186);
-static const Vec RND_OUT_POS = Vec(7.7000, 118.6000);
-static const Vec DAC_OUT_POS = Vec(19.8600, 118.6000);
-static const Vec SH_OUT_POS = Vec(32.0200, 118.6000);
-static const Vec NOISE_OUT_POS = Vec(44.1800, 118.6000);
-static const Vec CLOCK_OUT_POS = Vec(56.3400, 118.6000);
-static const Vec GATE_OUT_POS = Vec(68.5000, 118.6000);
+static const Vec RATE_POS = Vec(19.2850, 19.9000);
+static const Vec BITS_POS = Vec(51.8350, 19.9000);
+static const Vec CLOCK_IN_POS = Vec(35.5600, 37.9587);
+static const Vec SH_SRC_IN_POS = Vec(22.9925, 58.4085);
+static const Vec SH_TRIG_IN_POS = Vec(36.3100, 58.4085);
+static const Vec SH_SLEW_POS = Vec(48.6975, 58.4085);
+static const Vec PROBABILITY_POS = Vec(21.5250, 78.3403);
+static const Vec RND_SRC_POS = Vec(37.2550, 78.3403);
+static const Vec PROB_CV_AMT_POS = Vec(50.8050, 78.3403);
+static const Vec RND_SRC_IN_POS = Vec(37.2550, 96.3990);
+static const Vec PROB_CV_IN_POS = Vec(50.8050, 96.3990);
+static const Vec RND_OUT_POS = Vec(7.2900, 118.6000);
+static const Vec DAC_OUT_POS = Vec(18.5980, 118.6000);
+static const Vec SH_OUT_POS = Vec(29.9060, 118.6000);
+static const Vec NOISE_OUT_POS = Vec(41.2140, 118.6000);
+static const Vec CLOCK_OUT_POS = Vec(52.5220, 118.6000);
+static const Vec GATE_OUT_POS = Vec(63.8300, 118.6000);
 
 } // namespace panel

@@ -14,8 +14,8 @@
 namespace panel {
 
 // --- identity --------------------------------------------------------------
-static const int   HP = 13;
-static const float W  = 66.0400f;  // mm
+static const int   HP = 12;
+static const float W  = 60.9600f;  // mm
 static const float H  = 128.5000f;  // mm
 
 // --- the read-out well: the spec's numbers, not the widget's ---------------
@@ -24,29 +24,29 @@ static const float H  = 128.5000f;  // mm
 // they drifted. The widget takes them from here now.
 static const float GLASS_X = 4.2000f;
 static const float GLASS_Y = 9.8000f;
-static const float GLASS_W = 57.6400f;
+static const float GLASS_W = 52.5600f;
 static const float GLASS_H = 9.2000f;
 
 // --- silkscreen ------------------------------------------------------------
 static const Label LABELS[] = {
-	{ 33.0200f,   5.5000f, 10.50f, 1.50f, PAPER    , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DEDUCTION"},
+	{ 30.4800f,   5.5000f, 10.50f, 1.50f, PAPER    , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DEDUCTION"},
 	{ 11.5600f,   8.2500f,  7.40f, 0.00f, LIME     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, true,  "$"},
 	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
-	{ 61.8400f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "SCHEDULE A"},
-	{ 33.0200f,  23.2000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DEDUCTIONS"},
+	{ 56.7600f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "SCHEDULE A"},
+	{ 30.4800f,  23.2000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DEDUCTIONS"},
 	{ 13.5000f,  43.7069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CUTOFF"},
-	{ 53.5400f,  43.7069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODEL"},
-	{ 13.5000f,  63.8447f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RES"},
-	{ 33.5200f,  63.8447f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DRIVE"},
-	{ 53.5400f,  63.8447f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "NRM/INV"},
-	{ 33.0200f,  75.6830f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "WITHHOLDING"},
-	{ 10.1000f,  87.8348f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CUTOFF"},
-	{ 25.3800f,  87.8348f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RES"},
-	{ 40.6600f,  87.8348f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DRIVE"},
-	{ 55.9400f,  87.8348f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODEL"},
-	{  9.4200f, 112.3751f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LP IN"},
-	{ 33.0200f, 112.3751f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "HP IN"},
-	{ 56.6200f, 112.3751f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
+	{ 48.7600f,  43.7069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODEL"},
+	{ 13.5000f,  62.8952f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RES"},
+	{ 30.5620f,  62.8952f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DRIVE"},
+	{ 48.7600f,  62.8952f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "NRM/INV"},
+	{ 30.4800f,  74.9766f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "WITHHOLDING"},
+	{  9.6900f,  87.8284f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CUTOFF"},
+	{ 23.5500f,  87.8284f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RES"},
+	{ 37.4100f,  87.8284f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DRIVE"},
+	{ 51.2700f,  87.8284f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODEL"},
+	{ 16.2060f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LP IN"},
+	{ 30.4800f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "HP IN"},
+	{ 44.7540f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
 };
 
 /** Draws this panel's silkscreen. `static` so each module keeps its own,
@@ -58,21 +58,21 @@ static inline void addLabels(app::ModuleWidget* mw) {
 // --- widget positions, by the names used in tools/panels/Deduction.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
 static const Vec FREQ_POS = Vec(13.5000, 32.9000);
-static const Vec MODEL_POS = Vec(53.5400, 32.9000);
-static const Vec RES_POS = Vec(13.5000, 54.6013);
-static const Vec DRIVE_POS = Vec(33.5200, 54.6013);
-static const Vec RESPONSE_POS = Vec(53.5400, 54.6013);
-static const Vec SAT_POS = Vec(39.9660, 62.9913);
-static const Vec CV_AMT_POS = Vec(10.1000, 81.3030);
-static const Vec RES_CV_POS = Vec(25.3800, 81.3030);
-static const Vec DRIVE_CV_POS = Vec(40.6600, 81.3030);
-static const Vec MODEL_CV_POS = Vec(55.9400, 81.3030);
-static const Vec CV_IN_POS = Vec(10.1000, 94.0598);
-static const Vec RES_IN_POS = Vec(25.3800, 94.0598);
-static const Vec DRIVE_IN_POS = Vec(40.6600, 94.0598);
-static const Vec MODEL_IN_POS = Vec(55.9400, 94.0598);
-static const Vec LP_IN_POS = Vec(9.4200, 118.6000);
-static const Vec HP_IN_POS = Vec(33.0200, 118.6000);
-static const Vec OUT_POS = Vec(56.6200, 118.6000);
+static const Vec MODEL_POS = Vec(48.7600, 32.9000);
+static const Vec RES_POS = Vec(13.5000, 54.2018);
+static const Vec DRIVE_POS = Vec(30.5620, 54.2018);
+static const Vec RESPONSE_POS = Vec(48.7600, 54.2018);
+static const Vec SAT_POS = Vec(36.7580, 62.0418);
+static const Vec CV_AMT_POS = Vec(9.6900, 80.2966);
+static const Vec RES_CV_POS = Vec(23.5500, 80.2966);
+static const Vec DRIVE_CV_POS = Vec(37.4100, 80.2966);
+static const Vec MODEL_CV_POS = Vec(51.2700, 80.2966);
+static const Vec CV_IN_POS = Vec(9.6900, 94.4184);
+static const Vec RES_IN_POS = Vec(23.5500, 94.4184);
+static const Vec DRIVE_IN_POS = Vec(37.4100, 94.4184);
+static const Vec MODEL_IN_POS = Vec(51.2700, 94.4184);
+static const Vec LP_IN_POS = Vec(16.2060, 118.6000);
+static const Vec HP_IN_POS = Vec(30.4800, 118.6000);
+static const Vec OUT_POS = Vec(44.7540, 118.6000);
 
 } // namespace panel

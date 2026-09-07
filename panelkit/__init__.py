@@ -5,8 +5,10 @@ Running that file regenerates, from that single description:
 
     res/<slug>.svg                 the panel artwork, plus the components layer
     res/ScrewHex.svg               the family screw
-    res/PortIn.svg                 the family jacks
-    res/PortOut.svg
+    res/PortIn.svg                 the family jacks: in/out by the throat band,
+    res/PortOut.svg                level/timing by the thin lime line inside it
+    res/PortTrigIn.svg
+    res/PortTrigOut.svg
     src/PanelTheme.hpp             palette, hardware and the text kit -- shared
     src/<Module>/Panel.hpp         this panel's geometry and silkscreen
     tools/previews/<slug>.html     a browser mock at true radii and true fonts
@@ -122,6 +124,8 @@ def build(panel, root=None, vcv=False, force=False, quiet=False):
     write("res/ScrewHex.svg", render.screw_svg())
     write("res/PortIn.svg", render.port_svg())
     write("res/PortOut.svg", render.port_svg(accent=palette.MINT))
+    write("res/PortTrigIn.svg", render.port_svg(event=True))
+    write("res/PortTrigOut.svg", render.port_svg(accent=palette.MINT, event=True))
     # Two headers, split by linkage: the shared vocabulary once for the whole
     # plugin, this panel's numbers next to the module that uses them. See the
     # note above emit.common(). PanelTheme.hpp is byte-identical whichever panel
