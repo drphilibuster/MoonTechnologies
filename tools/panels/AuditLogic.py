@@ -45,7 +45,7 @@ P.sections = [
     # Twelve columns, in four runs of three: the grouping here is what the gates
     # are, not how wide they are, so the section says so outright rather than
     # leaving the solver to guess from twelve identical jacks.
-    Section("FINDINGS", caption_light="verdict", groups=(3, 3, 3, 3), rows=[
+    Section("FINDINGS", caption_light="verdict", groups=(2, 2, 2, 2), rows=[
         # Each gate's light sits between its own A and B, which is what says the
         # two inputs belong to one gate. It is an accessory to that pair, not a
         # column of the panel: `between` hangs it in the gap and widens only

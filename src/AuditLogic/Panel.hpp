@@ -26,20 +26,20 @@ static const Label LABELS[] = {
 	{122.8000f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 886-A"},
 	{ 63.5000f,  13.3000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FINDINGS"},
 	{ 10.5000f,  16.7203f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "A"},
-	{ 27.8940f,  16.7203f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "B"},
-	{ 41.6180f,  16.7203f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "A"},
-	{ 55.4080f,  16.7203f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "B"},
-	{ 69.1320f,  16.7203f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "A"},
-	{ 86.5260f,  16.7203f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "B"},
-	{100.3160f,  16.7203f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "A"},
+	{ 26.9600f,  16.7203f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "B"},
+	{ 40.7500f,  16.7203f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "A"},
+	{ 57.2100f,  16.7203f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "B"},
+	{ 71.0000f,  16.7203f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "A"},
+	{ 87.4600f,  16.7203f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "B"},
+	{101.2500f,  16.7203f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "A"},
 	{117.7100f,  16.7203f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "B"},
 	{ 10.5000f,  44.4590f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FN"},
-	{ 27.8940f,  31.1621f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
-	{ 41.6180f,  44.4590f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FN"},
-	{ 55.4080f,  31.1621f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
-	{ 69.1320f,  44.4590f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FN"},
-	{ 86.5260f,  31.1621f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
-	{100.3160f,  44.4590f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FN"},
+	{ 26.9600f,  31.1621f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
+	{ 40.7500f,  44.4590f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FN"},
+	{ 57.2100f,  31.1621f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
+	{ 71.0000f,  44.4590f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FN"},
+	{ 87.4600f,  31.1621f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
+	{101.2500f,  44.4590f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FN"},
 	{117.7100f,  31.1621f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
 	{ 63.5000f,  51.6590f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "REFERRAL"},
 	{ 53.4500f,  64.5793f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "POLARITY"},
@@ -75,24 +75,24 @@ static inline void addLabels(app::ModuleWidget* mw) {
 // Positions are mm; feed them to mm() or createParamCentered.
 static const Vec VERDICT_POS = Vec(71.8296, 12.5685);
 static const Vec A1_POS = Vec(10.5000, 21.9103);
-static const Vec OUT1_LED_POS = Vec(19.1970, 21.9103);
-static const Vec B1_POS = Vec(27.8940, 21.9103);
-static const Vec A2_POS = Vec(41.6180, 21.9103);
-static const Vec OUT2_LED_POS = Vec(48.5130, 21.9103);
-static const Vec B2_POS = Vec(55.4080, 21.9103);
-static const Vec A3_POS = Vec(69.1320, 21.9103);
-static const Vec OUT3_LED_POS = Vec(77.8290, 21.9103);
-static const Vec B3_POS = Vec(86.5260, 21.9103);
-static const Vec A4_POS = Vec(100.3160, 21.9103);
-static const Vec OUT4_LED_POS = Vec(109.0130, 21.9103);
+static const Vec OUT1_LED_POS = Vec(18.7300, 21.9103);
+static const Vec B1_POS = Vec(26.9600, 21.9103);
+static const Vec A2_POS = Vec(40.7500, 21.9103);
+static const Vec OUT2_LED_POS = Vec(48.9800, 21.9103);
+static const Vec B2_POS = Vec(57.2100, 21.9103);
+static const Vec A3_POS = Vec(71.0000, 21.9103);
+static const Vec OUT3_LED_POS = Vec(79.2300, 21.9103);
+static const Vec B3_POS = Vec(87.4600, 21.9103);
+static const Vec A4_POS = Vec(101.2500, 21.9103);
+static const Vec OUT4_LED_POS = Vec(109.4800, 21.9103);
 static const Vec B4_POS = Vec(117.7100, 21.9103);
 static const Vec FN1_POS = Vec(10.5000, 36.3521);
-static const Vec OUT1_POS = Vec(27.8940, 36.3521);
-static const Vec FN2_POS = Vec(41.6180, 36.3521);
-static const Vec OUT2_POS = Vec(55.4080, 36.3521);
-static const Vec FN3_POS = Vec(69.1320, 36.3521);
-static const Vec OUT3_POS = Vec(86.5260, 36.3521);
-static const Vec FN4_POS = Vec(100.3160, 36.3521);
+static const Vec OUT1_POS = Vec(26.9600, 36.3521);
+static const Vec FN2_POS = Vec(40.7500, 36.3521);
+static const Vec OUT2_POS = Vec(57.2100, 36.3521);
+static const Vec FN3_POS = Vec(71.0000, 36.3521);
+static const Vec OUT3_POS = Vec(87.4600, 36.3521);
+static const Vec FN4_POS = Vec(101.2500, 36.3521);
 static const Vec OUT4_POS = Vec(117.7100, 36.3521);
 static const Vec ACTIVE_POS = Vec(71.8296, 50.9275);
 static const Vec POLARITY_POS = Vec(53.4500, 57.9675);

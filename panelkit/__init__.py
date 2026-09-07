@@ -35,7 +35,7 @@ from .spec import (BRAND, Panel, Section, Row, Widget, Glass, Trace, FreeLabel, 
 from . import palette
 from .palette import (INK, FELT, BAND, GLASS as GLASS_COLOUR, RULE, LIME, MINT,
                       CLAY, PAPER, SAGE)
-from .layout import solve, SCALE, required_hp
+from .layout import solve, SCALE, required_hp, GROUP_PAD, INTER_GAP
 from . import render, emit, preview, lint, rack
 
 __all__ = ["BRAND", "Panel", "Section", "Row", "Widget", "Glass", "Trace", "FreeLabel",
@@ -44,7 +44,8 @@ __all__ = ["BRAND", "Panel", "Section", "Row", "Widget", "Glass", "Trace", "Free
            "Switch", "Switch3",
            "Slider", "RADIUS", "build", "palette", "INK", "FELT", "BAND",
            "GLASS_COLOUR", "RULE", "LIME", "MINT", "CLAY", "PAPER", "SAGE",
-           "PX_PER_MM", "MM_PER_PX", "HP_MM", "PANEL_H", "required_hp"]
+           "PX_PER_MM", "MM_PER_PX", "HP_MM", "PANEL_H", "required_hp",
+           "GROUP_PAD", "INTER_GAP"]
 
 
 # --- shorthand constructors, so a spec reads as a list of controls -----------

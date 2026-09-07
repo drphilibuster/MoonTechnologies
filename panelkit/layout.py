@@ -315,10 +315,30 @@ def _cols_of(row):
     return out
 
 
+def _reach(row, it, side):
+    """How far one item reaches to the left or right of its own centre."""
+    if it is None:
+        return 0.0
+    hw = ink_hw(it)
+    if row.silent:
+        return hw
+    ll, rr = label_ext(it)
+    return max(hw, ll if side == "L" else rr)
+
+
 def _inter(rowset):
-    """(a, b) -> the widest half-extent any row hangs in that gap."""
+    """(a, b) -> (half-extent, the gap that pair needs to hold it).
+
+    The gap is measured against what *that row* puts either side of it, not
+    against the columns' reaches. A column's reach is the widest thing any row
+    puts in it, and on Kickback that is a lit "TOM III" on the trigger row and a
+    side-label on the gate column -- 23 mm of text that the BURST switch, four
+    rows below both, never has to clear. Sized off the columns the switch cost
+    five HP; sized off its own row it costs none."""
     out = {}
     for row in rowset:
+        at = _cols_of(row)
+        by_col = {c: o for c, o in zip(at, row.items) if c is not None}
         for it in row.items:
             b = getattr(it, "between", None)
             if not b:
@@ -327,8 +347,11 @@ def _inter(rowset):
             if not row.silent:
                 ll, rr = label_ext(it)
                 hw = max(hw, ll, rr)
-            key = (min(b), max(b))
-            out[key] = max(out.get(key, 0.0), hw)
+            a0, b0 = min(b), max(b)
+            ra = _reach(row, by_col.get(a0), "R")
+            rb = _reach(row, by_col.get(b0), "L")
+            phw, pra, prb = out.get((a0, b0), (0.0, 0.0, 0.0))
+            out[(a0, b0)] = (max(phw, hw), max(pra, ra), max(prb, rb))
     return out
 
 
@@ -352,7 +375,7 @@ def _cells(rowset):
     return [cells.get(c, (0.0, 0.0, "knob", 0.0)) for c in range(n)]
 
 
-def _runs(cols, groups=()):
+def _runs(cols, groups=(), inter=None):
     """Split the columns into evenly spaced runs, breaking where a row changes
     gear. Comparable columns stay together even across classes, because three
     knobs and a jack of nearly the same size still want one even pitch, and an
@@ -378,6 +401,27 @@ def _runs(cols, groups=()):
         else:
             runs.append([c])
     return runs
+
+
+def _gutters(cols, runs, hm, inter=None):
+    """The width of each boundary between runs.
+
+    A gutter is where a row changes gear, and it is usually the same everywhere
+    on a row. It is not, when something is placed in one: Kickback's BURST
+    switch sits between the ratio knobs and the column of gate outputs, which
+    are deliberately separate runs. Sizing the boundaries individually is what
+    lets a widget live in a gutter rather than only in a gap inside a run."""
+    out = []
+    for r, nxt in zip(runs, runs[1:]):
+        g = hm["GROUP_GAP"]
+        a, b = r[-1], nxt[0]
+        held = (inter or {}).get((min(a, b), max(a, b)))
+        if held:
+            hw, ra, rb = held
+            spare = (cols[a][1] - ra) + (cols[b][0] - rb)
+            g = max(g, 2 * INTER_GAP + 2 * hw - spare)
+        out.append(g)
+    return out
 
 
 def _run_pitch(cols, run, hm, inter=None):
@@ -413,9 +457,10 @@ def _run_gaps(cols, run, hm, inter=None):
             g = max(g, VCV_PITCH_KNOB if max(ia, ib) >= VCV_KNOB_INK
                     else VCV_PITCH_SMALL)
         # something living in this gap has to fit in it
-        hw = (inter or {}).get((min(a, b), max(a, b)))
-        if hw:
-            g = max(g, cols[a][1] + INTER_GAP + 2 * hw + INTER_GAP + cols[b][0])
+        held = (inter or {}).get((min(a, b), max(a, b)))
+        if held:
+            hw, ra, rb = held
+            g = max(g, ra + INTER_GAP + 2 * hw + INTER_GAP + rb)
         out.append(g)
     return out or [0.0]
 
@@ -425,12 +470,13 @@ def natural_span(cols, hm, groups=(), inter=None):
     decides how many HP a panel actually is."""
     if not cols:
         return 0.0
-    runs = _runs(cols, groups)
+    runs = _runs(cols, groups, inter)
     total = 0.0
     for run in runs:
         total += (cols[run[0]][0] + cols[run[-1]][1]
                   + sum(_run_gaps(cols, run, hm, inter)))
-    return total + (len(runs) - 1) * hm["GROUP_GAP"] + 2 * hm["EDGE_PAD"]
+    return (total + sum(_gutters(cols, runs, hm, inter))
+            + 2 * hm["EDGE_PAD"])
 
 
 def place_columns(rowset, x_lo, x_hi, hm, groups=()):
@@ -441,13 +487,13 @@ def place_columns(rowset, x_lo, x_hi, hm, groups=()):
     if not cols:
         return [], 0.0
     inter = _inter(rowset)
-    runs = _runs(cols, groups)
+    runs = _runs(cols, groups, inter)
     gaps = [_run_gaps(cols, r, hm, inter) for r in runs]
     ends = [cols[r[0]][0] + cols[r[-1]][1] for r in runs]
 
     avail = (x_hi - x_lo) - 2 * hm["EDGE_PAD"]
-    need = sum(ends) + sum(sum(g) for g in gaps) \
-        + (len(runs) - 1) * hm["GROUP_GAP"]
+    gutters = _gutters(cols, runs, hm, inter)
+    need = sum(ends) + sum(sum(g) for g in gaps) + sum(gutters)
     if need > avail:
         return None, need - avail
 
@@ -476,7 +522,7 @@ def place_columns(rowset, x_lo, x_hi, hm, groups=()):
     #    its slack where the change happens instead of at one end.
     units = (len(runs) - 1) + 2 * hm["MARGIN_SHARE"]
     unit = slack / units if units > 1e-6 else 0.0
-    gutter = hm["GROUP_GAP"] + unit
+    gutters = [g + unit for g in gutters]
     margin = hm["EDGE_PAD"] + hm["MARGIN_SHARE"] * unit
 
     centres = [0.0] * len(cols)
@@ -487,7 +533,8 @@ def place_columns(rowset, x_lo, x_hi, hm, groups=()):
         for k, c in enumerate(run[1:]):
             x += gaps[i][k] + grow[i]
             centres[c] = x
-        x = centres[run[-1]] + cols[run[-1]][1] + gutter
+        if i < len(gutters):
+            x = centres[run[-1]] + cols[run[-1]][1] + gutters[i]
     return centres, 0.0
 
 
@@ -555,11 +602,21 @@ def solve_x(panel):
                 continue
             if kind == "block":
                 solved.append(centres)
+        cols = _cells(rows)
         for row in rows:
             for c, it in zip(_cols_of(row), row.items):
                 if c is None:
+                    # Centred in the *clear* space, not between the two column
+                    # centres: a column whose label reaches out sideways (a jack
+                    # naming itself to its left, say) owns ground well past its
+                    # own centre, and splitting centre to centre drops the
+                    # widget straight onto that text.
                     a, b = it.between
-                    it.x = (centres[a] + centres[b]) / 2.0
+                    at = _cols_of(row)
+                    by_col = {k: o for k, o in zip(at, row.items) if k is not None}
+                    lo = centres[a] + _reach(row, by_col.get(a), "R")
+                    hi = centres[b] - _reach(row, by_col.get(b), "L")
+                    it.x = (lo + hi) / 2.0
                 else:
                     it.x = centres[c]
     return short
