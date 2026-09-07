@@ -5,6 +5,74 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Added: BURST, and the ratios finally earn the top of their range
+
+The RATIO knobs only meant anything at FILL 0, in grid mode, where the patterns
+are switched off entirely. That made most of the range ornamental: a voice at
+x64 with no pattern to play against is a drone, and there is no way to modulate
+those knobs to make it into anything else.
+
+BURST hands each voice's Euclidean steps to its own ratio. The pattern still
+says *when* a voice speaks; the ratio says how fast it repeats while it is
+speaking. Multiplying is a ratchet inside the step -- x4 is four even hits, the
+first on the beat. Dividing spans steps: /5 ticks once every five and speaks
+only when that tick lands on an onset the pattern lit, so two voices on coprime
+divisions drift through a figure far longer than sixteen steps. At x1 it is one
+hit per onset, which is what the module did before, so the switch changes
+nothing it was not asked to.
+
+Multiplication is counted off the step's own phase rather than a free-running
+one. A phase of its own fires on its wraps, which fall at 1/N, 2/N ... 1 of the
+step -- the first hit late by a sub-division and the last landing on the next
+step. Reading floor(phase * N) puts them at 0, 1/N ... (N-1)/N, which is where a
+ratchet belongs, and cannot drift or double-count however the samples fall.
+
+The switch sits in the gutter between the ratio knobs and the gate outputs,
+which was the one part of that gap the panel was not already using, so it costs
+no width.
+
+### Changed: SEED waits for the bar line
+
+A new seed rotates every voice at once, and taking it the instant the knob moved
+cut the figure off mid-bar and started another out of phase with it. Kickback
+now holds the new seed and swaps at the top of the next bar, before step 0 is
+armed, so the first thing heard of the new pattern is its own downbeat. FILL and
+HUMAN stay live -- FILL only adds or removes onsets from the pattern already
+playing, HUMAN is applied as a voice speaks, and those are the two you want to
+hear yourself moving. A stopped module takes a seed at once; there is no bar to
+wait for.
+
+### Added: a wire from FILL's zero to the RATIO box
+
+Grid mode was a mode you could only find by turning a knob to its stop and
+noticing the module behaved differently, which is a mode nobody finds. A routed
+wire now runs from FILL's own minimum mark, down the channel between the two
+left-hand columns, to the box around the ratio knobs -- the thing that setting
+hands the module to.
+
+### Fixed: AuditLogic's run grouping was left over from a wider layout
+
+`groups=(3, 3, 3, 3)` described four gates of three columns. When the indicator
+lights stopped owning columns of their own the row became eight wide, and the
+stale grouping put the gutters through the middle of gates rather than between
+them. It is `(2, 2, 2, 2)`, and the panel is 26 HP rather than a 25 that had
+never reserved the width it was using.
+
+### Added: panelkit places a widget in a gutter, not only in a gap
+
+`between=` already hung a widget in the gap between two columns inside a run.
+A boundary *between* runs is also a gap, and a wider one -- but it was a single
+figure shared by every boundary on the row, so nothing could be put in one.
+Gutters are sized individually now.
+
+Two faults found while using it, both the same mistake in different places: an
+interstitial was sized and centred against the *columns* either side of it, and
+a column's reach is the widest thing any row puts in it. On Kickback that is a
+lit "TOM III" four rows above the switch and a side-label on the gate column --
+23 mm of text the switch never has to clear. Sized off its own row it costs
+nothing; sized off the columns it cost five HP, and centred off them it landed
+on the label.
+
 ### Changed: panelkit sits at VCV's pitch, and the whole family got narrower
 
 Measured against Rack's own Fundamental set rather than set by eye. Across all
