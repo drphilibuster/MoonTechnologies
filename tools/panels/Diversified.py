@@ -30,29 +30,29 @@ P = Panel(
     title="DIVERSIFIED",
     form="FORM 1099-B",
     density="compact",
-    glass=Glass(h=9.2),
+    glass=Glass(h=5.6),
 )
 
 P.sections = [
-    # PROGRAM wears the ring. The four macros mean something different for every
+    # PROGRAM wears the ring. The eight macros mean something different for every
     # one of the hundred and six programs, so none of them is engraved: each
     # carries a little lit plate and the module writes the running program's own
     # name for that knob into it -- or "--" where that program has nothing for
     # the knob to do, which is the honest thing for a panel to say.
     Section("PORTFOLIO", caption_light="active", rows=[
-        Row([BigKnob("program", "PROGRAM", primary=True),
-             Knob("p1", ""), Knob("p2", ""), Knob("p3", ""), Knob("p4", "")]),
-        Row([Readout("p1_name", col=1), Readout("p2_name", col=2),
-             Readout("p3_name", col=3), Readout("p4_name", col=4)], silent=True),
+        Row([BigKnob("program", "PROGRAM", primary=True, side="left"),
+             ] + [Knob("p%d" % n, "", readout="p%d_name" % n) for n in range(1, 5)]),
+        Row([Knob("p%d" % n, "", readout="p%d_name" % n, col=n - 4)
+             for n in range(5, 9)]),
     ]),
 
     # What CV may take off each control on the way in: a trimpot directly over
     # its own jack, in the same column as the knob it attenuates.
     Section("ALLOCATION", rows=[
-        Row([Trim("program_cv", "PROG"), Trim("p1_cv", "1"), Trim("p2_cv", "2"),
-             Trim("p3_cv", "3"), Trim("p4_cv", "4")], pair=True),
-        Row([Jack("program_in"), Jack("p1_in"), Jack("p2_in"),
-             Jack("p3_in"), Jack("p4_in")], silent=True),
+        Row([Trim("program_cv", "PROG")]
+            + [Trim("p%d_cv" % n, str(n)) for n in range(1, 9)], pair=True),
+        Row([Jack("program_in")]
+            + [Jack("p%d_in" % n) for n in range(1, 9)], silent=True),
     ]),
 
     # AUX is whatever the running program wants a gate or a CV for. CLOCK sets

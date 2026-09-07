@@ -565,10 +565,12 @@ struct DiversifiedWidget : ModuleWidget {
 		// means changes with the program, so the panel does not engrave it.
 		static const Vec* macPos[divfx::kMacros] = {
 			&panel::P1_POS, &panel::P2_POS, &panel::P3_POS,
-			&panel::P4_POS };
+			&panel::P4_POS,
+			&panel::P5_POS, &panel::P6_POS, &panel::P7_POS, &panel::P8_POS };
 		static const Vec* macDisp[divfx::kMacros] = {
 			&panel::P1_NAME_POS, &panel::P2_NAME_POS, &panel::P3_NAME_POS,
-			&panel::P4_NAME_POS };
+			&panel::P4_NAME_POS,
+			&panel::P5_NAME_POS, &panel::P6_NAME_POS, &panel::P7_NAME_POS, &panel::P8_NAME_POS };
 		for (int i = 0; i < divfx::kMacros; i++) {
 			addParam(createParamCentered<PanelKnob>(
 				panel::mm(macPos[i]->x, macPos[i]->y), module, Diversified::P1_PARAM + i));
@@ -584,10 +586,12 @@ struct DiversifiedWidget : ModuleWidget {
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::PROGRAM_CV_POS.x, panel::PROGRAM_CV_POS.y), module, Diversified::PROGRAM_CV_PARAM));
 		static const Vec* macCv[divfx::kMacros] = {
 			&panel::P1_CV_POS, &panel::P2_CV_POS, &panel::P3_CV_POS,
-			&panel::P4_CV_POS };
+			&panel::P4_CV_POS,
+			&panel::P5_CV_POS, &panel::P6_CV_POS, &panel::P7_CV_POS, &panel::P8_CV_POS };
 		static const Vec* macIn[divfx::kMacros] = {
 			&panel::P1_IN_POS, &panel::P2_IN_POS, &panel::P3_IN_POS,
-			&panel::P4_IN_POS };
+			&panel::P4_IN_POS,
+			&panel::P5_IN_POS, &panel::P6_IN_POS, &panel::P7_IN_POS, &panel::P8_IN_POS };
 		for (int i = 0; i < divfx::kMacros; i++) {
 			addParam(createParamCentered<Trimpot>(
 				panel::mm(macCv[i]->x, macCv[i]->y), module, Diversified::P1_CV_PARAM + i));

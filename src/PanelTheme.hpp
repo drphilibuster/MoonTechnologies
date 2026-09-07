@@ -346,8 +346,8 @@ struct PortTrigOutMain : app::SvgPort {
 };
 
 //: The plate a MiniDisplay fills, in mm -- the readout widget's own size.
-static const float READOUT_W = 9.6000f;
-static const float READOUT_H = 4.4000f;
+static const float READOUT_W = 8.6000f;
+static const float READOUT_H = 2.7000f;
 
 /** A little lit plate that names the control above it.
  *
@@ -365,7 +365,7 @@ static const float READOUT_H = 4.4000f;
 struct MiniDisplay : widget::Widget {
 	//: Point this at a const char* the module keeps up to date.
 	const char* const* name = NULL;
-	float size = 6.4f;
+	float size = 5.2f;
 	FittedText fitted;
 
 	void drawLayer(const DrawArgs& args, int layer) override {

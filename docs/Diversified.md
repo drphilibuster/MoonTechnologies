@@ -2,7 +2,7 @@
 
 **One hundred and six effects behind one knob.** The ninety-nine programs of the
 DSP99 board, then the seven dedicated Modular in a Week effect circuits, in one
-stereo multi-effect with four macro knobs whose meaning changes with the
+stereo multi-effect with eight macro knobs whose meaning changes with the
 program. 15 HP, stereo in, stereo out, plus an effects loop.
 
 Form 1099-B is the IRS's *Proceeds From Broker and Barter Exchange
@@ -45,7 +45,7 @@ and from the boards and sheets published with it.
 | control | what it does |
 |---|---|
 | **PROGRAM** | 0–105. The primary control: 0–98 is the DSP99 sheet, 99–105 the dedicated boards. Changing it crossfades over about 30 ms, so a reverb tail survives the change |
-| **P1–P4** | The four macros. Nothing is engraved on them: what each one *is* changes with the program, so each wears a small lit plate that the module writes the running program's own name into |
+| **P1–P8** | The eight macros. Nothing is engraved on them: what each one *is* changes with the program, so each wears a small lit plate that the module writes the running program's own name into |
 | **ACTIVE** | Beside the caption; follows the level of the wet signal |
 
 **The macros work differently on the two banks, on purpose.**
@@ -59,12 +59,12 @@ positions — turn PROGRAM with the macros untouched and the sound really change
 On **99–105** a macro is the board's own knob, absolute, because on the
 Echomatic FEEDBACK means feedback and nothing else.
 
-### The fourth macro, and why some knobs say `--`
+### Why some knobs say `--`
 
 Every program carries eight parameters — four in each of its two blocks — and
-the program sheet names three of them. **P4 is whichever slot that program still
-has and is not already spending**, worked out from what the running algorithm
-actually reads rather than hand-authored into the table:
+the program sheet names three of them. **P4 to P8 are whichever slots that
+program still has and is not already spending**, worked out from what the
+running algorithm actually reads rather than hand-authored into the table:
 
 | algorithm | slot 1 | slot 2 | slot 3 | slot 4 |
 |---|---|---|---|---|
@@ -77,13 +77,26 @@ actually reads rather than hand-authored into the table:
 | bitcrusher | BITS | RATE | TONE | — |
 | MiaW boards | P1 | P2 | P3 | — |
 
-Three of those algorithms only ever read three parameters. On their programs P4
-has nothing to control and its plate says `--`, which is the honest thing for a
-panel to say — better than a knob that turns and does nothing.
+Across the bank that comes out as:
 
-There is no P5 or P6 for the same reason, only more so: thirty-one of the
-forty-eight program records have no second block at all, so two more knobs would
-have read `--` across two thirds of the bank.
+| real parameters | programs |
+|---|---|
+| 3 | 11 |
+| 4 | 69 |
+| 6 | 2 |
+| 7 | 2 |
+| 8 | 22 |
+
+So most programs leave several plates reading `--`, and that is fine: a knob
+that says it has nothing to do costs you nothing, while a parameter with no knob
+cannot be reached at all. Twenty-two programs use all eight, and before there
+were eight knobs those five extra parameters were simply unavailable.
+
+The plates are attached to their knobs rather than laid out as a row of their
+own. On the grid every plate in a row has to clear the tallest widget in that
+row, so PROGRAM — a big knob at the left — pushed the whole top row of plates a
+centimetre below the controls they name. Attached, they sit where a label would,
+0.7 mm under their own knob, both rows alike.
 
 ### ALLOCATION
 

@@ -37,18 +37,18 @@ enum TnChar { TN_LP, TN_BP, TN_HP, TN_WAH };
 enum MacroTarget { MA0, MA1, MA2, MA3, MB0, MB1, MB2, MB3, MNONE = 255 };
 
 //: How many macro knobs the panel has. Three are named by the program table and
-//: the fourth is worked out below from what the running algorithm actually
-//: reads -- not hand-authored into forty-eight program records, which would be
-//: forty-eight decisions drifting out of step with the algorithms the first
-//: time one of them changed.
+//: the rest are worked out below from what the running algorithm actually reads
+//: -- not hand-authored into forty-eight program records, which would be two
+//: hundred and forty decisions drifting out of step with the algorithms the
+//: first time one of them changed.
 //:
-//: Four and not six. Six was tried: the panel does not hold the rows, and more
-//: to the point thirty-one of the forty-eight programs have no second block at
-//: all, so a fifth and sixth knob would read "--" on two thirds of the bank. A
-//: fourth is real almost everywhere -- reverb, delay, modulation, phaser and
-//: pitch all read their fourth slot; tone, crush and the MiaW boards do not,
-//: and on those it says so.
-static const int kMacros = 4;
+//: Eight, because eight is what a program can have: four in each block. Most
+//: programs do not fill that -- sixty-nine of the hundred and six have four real
+//: parameters and eleven have three -- but twenty-two have all eight, and until
+//: there were knobs for them those were simply unreachable. A knob reading "--"
+//: on a program that has nothing for it costs nothing; a parameter with no knob
+//: cannot be got at.
+static const int kMacros = 8;
 
 /** What slot `i` of algorithm `alg` means, or NULL if that algorithm never
     reads it.

@@ -1127,6 +1127,20 @@ def _place_row(out, panel, m, row, inner, pinned=False):
         if it is not None and it.light:
             _lit_label(out, lab, it.light, it.light_side)
 
+    # Readouts: a plate that names its own control, placed where that control's
+    # label would go. Sharing one baseline across the row, like labels, so a row
+    # of them lines up -- but computed only from the controls that actually
+    # carry one, so a big knob elsewhere on the row does not push them down.
+    rds = [it for it in row.items if getattr(it, "readout", "")]
+    if rds:
+        rhw, rhh = well_extent("readout")
+        rgap = max(m["BELOW_GAP"], TEXT_CLEAR)
+        rdrop = max(_ink_r(it) + rgap + rhh for it in rds)
+        for it in rds:
+            out.widgets.append((it.readout, it.x, y + rdrop, "readout"))
+            out.wells.append((it.x, y + rdrop, rhw, rhh, it.readout))
+        lowest = max(lowest, y + rdrop + rhh)
+
     # The box round a run named once. It encloses the run's widgets and the one
     # word that names them, so the label is visibly a caption for those columns
     # rather than a stray word floating between two of them.

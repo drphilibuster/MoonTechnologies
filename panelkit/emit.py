@@ -456,7 +456,7 @@ def common():
     a("struct MiniDisplay : widget::Widget {")
     a("\t//: Point this at a const char* the module keeps up to date.")
     a("\tconst char* const* name = NULL;")
-    a("\tfloat size = 6.4f;")
+    a("\tfloat size = 5.2f;")
     a("\tFittedText fitted;")
     a("")
     a("\tvoid drawLayer(const DrawArgs& args, int layer) override {")

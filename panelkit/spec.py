@@ -52,11 +52,10 @@ EXTENT = {
     # wears a small lit plate where its label would go and the module writes
     # the current name into it -- or "--" when the running program has nothing
     # for that knob to do, which is the honest thing for a panel to say.
-    # Exactly a knob's half-width, so a plate naming a knob never widens the
-    # column it stands in -- and with the readout's thinner seat it comes out
-    # narrower than the knob itself, which means free. A longer name ellipsizes
-    # rather than the panel growing to hold it.
-    "readout": (4.80, 2.20),
+    # Sized to a trimpot, which is what a panel dense enough to need runtime
+    # labels is going to be using: the plate never widens the column it stands
+    # in, and a name too long for it shortens rather than the panel growing.
+    "readout": (4.30, 1.35),
     "switch": (2.37, 3.50),
     "switch3": (2.28, 4.80),
     "slider": (2.37, 4.80),
@@ -120,6 +119,19 @@ class Widget:
     #: the row, which is right whenever a row is written left to right; set it
     #: only for a row that skips a column or lists its items out of order.
     col: int = None
+
+    #: A lit plate that names this control, placed where its label would go.
+    #:
+    #: For a control whose meaning is not fixed -- a macro knob that is DECAY on
+    #: one program and SPREAD on the next. It is attached to the widget rather
+    #: than laid out as a row of its own on purpose: on the grid every plate in
+    #: a row has to clear the tallest widget in that row, so one big knob beside
+    #: four small ones pushed all four plates a centimetre below the controls
+    #: they name. A label does not behave that way and neither should this.
+    #:
+    #: The value is the widget name the plate is emitted under, so the module
+    #: can find its position.
+    readout: str = ""
 
     #: Sit in the *gap* between two columns, as (first, second), owning no
     #: column of its own. An indicator light tucked between a gate's two inputs
