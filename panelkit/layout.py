@@ -117,6 +117,9 @@ CLASS = {
     "jack": "jack",
     "button": "button", "bezel": "button",
     "light": "light", "light_small": "light",
+    # A readout is its own class: it is a plate rather than a component, and a
+    # run of them should not be grouped with the knobs they name.
+    "readout": "readout",
 }
 
 #: A stepped knob's detent ring is engraved *inside* its well, in the dark seat
@@ -212,6 +215,8 @@ def seat(kind):
 
     Trimmed to sit just inside VCV's floor, so a panel of this family packs at
     least as tightly as the modules it will be racked next to."""
+    if kind == "readout":
+        return 0.30          # a display, not a component: the well is its bezel
     if kind == "jack":
         return 0.28          # 10.5 mm minimum jack pitch; Fundamental's is 10.81
     if kind in ("light", "light_small"):

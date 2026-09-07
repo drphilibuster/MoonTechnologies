@@ -42,7 +42,7 @@ __all__ = ["BRAND", "Panel", "Section", "Row", "Widget", "Glass", "Trace", "Free
            "Plate",
            "Knob", "BigKnob", "Trim", "Button", "Bezel", "Jack", "Light",
            "Switch", "Switch3",
-           "Slider", "RADIUS", "build", "palette", "INK", "FELT", "BAND",
+           "Slider", "Readout", "RADIUS", "build", "palette", "INK", "FELT", "BAND",
            "GLASS_COLOUR", "RULE", "LIME", "MINT", "CLAY", "PAPER", "SAGE",
            "PX_PER_MM", "MM_PER_PX", "HP_MM", "PANEL_H", "required_hp",
            "GROUP_PAD", "INTER_GAP"]
@@ -76,6 +76,8 @@ Button = _mk("button", 6.2, "SAGE")
 Bezel = _mk("bezel", 6.6, "LIME")
 Jack = _mk("jack", 6.2, "SAGE")
 Light = _mk("light", 5.8, "LIME")
+#: A lit plate that names the control above it, written at runtime.
+Readout = _mk("readout", 6.2, "LIME")
 # Two-position CKSS and three-position CKSSThree. Shorthands like the rest,
 # rather than the bare Widget(name, x, "switch", label) a switch used to need:
 # that form takes its arguments in a different order from every other control

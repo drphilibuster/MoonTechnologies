@@ -40,12 +40,23 @@ RADIUS = {
     "light_small": 1.19,            # SmallLight
     "switch": 3.50,                 # CKSS         14 x 20.64 px -- half its height
     "switch3": 4.80,                # CKSSThree 13.457 x 28.35 px -- ditto
+    "readout": 2.20,                # a little lit plate that names its control
 }
 
 #: Half-extents in mm for the widgets that are not round. Everything else takes
 #: its radius for both axes. Wells and clearance checks use this; label placement
 #: uses RADIUS, which is always the vertical half-extent.
 EXTENT = {
+    # A control whose meaning changes cannot be engraved. Diversified's macro
+    # knobs are a different parameter for every one of its programs, so each
+    # wears a small lit plate where its label would go and the module writes
+    # the current name into it -- or "--" when the running program has nothing
+    # for that knob to do, which is the honest thing for a panel to say.
+    # Exactly a knob's half-width, so a plate naming a knob never widens the
+    # column it stands in -- and with the readout's thinner seat it comes out
+    # narrower than the knob itself, which means free. A longer name ellipsizes
+    # rather than the panel growing to hold it.
+    "readout": (4.80, 2.20),
     "switch": (2.37, 3.50),
     "switch3": (2.28, 4.80),
     "slider": (2.37, 4.80),
@@ -65,6 +76,7 @@ LABEL_SIDE = {
     "slider": "below", "button": "below", "bezel": "below",
     "jack": "above", "light": "below", "light_small": "below",
     "switch": "below", "switch3": "below",
+    "readout": "below",
 }
 
 

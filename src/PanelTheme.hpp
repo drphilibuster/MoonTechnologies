@@ -345,6 +345,42 @@ struct PortTrigOutMain : app::SvgPort {
 	}
 };
 
+//: The plate a MiniDisplay fills, in mm -- the readout widget's own size.
+static const float READOUT_W = 9.6000f;
+static const float READOUT_H = 4.4000f;
+
+/** A little lit plate that names the control above it.
+ *
+ *  For a control whose meaning is not fixed: a macro knob that is DECAY
+ *  on one program and SPREAD on the next cannot be engraved, and a panel
+ *  that engraves it anyway is lying two thirds of the time. The plate
+ *  itself is drawn in the panel art as the widget's own well, so this
+ *  only writes the word into it.
+ *
+ *  Point `name` at a `const char*` the module keeps up to date. A null
+ *  pointer, or a null string, draws the family's own way of saying
+ *  nothing: two dashes. That is deliberate -- a knob the running program
+ *  has no use for should say so where the knob is, not go blank and look
+ *  broken. */
+struct MiniDisplay : widget::Widget {
+	//: Point this at a const char* the module keeps up to date.
+	const char* const* name = NULL;
+	float size = 6.4f;
+	FittedText fitted;
+
+	void drawLayer(const DrawArgs& args, int layer) override {
+		if (layer != 1) return;
+		const char* t = (name && *name) ? *name : "--";
+		TextStyle st(Face::Mono, size, LIME,
+		             NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE, 0.f);
+		// Ellipsized to the plate: a long name shortens rather than
+		// spilling over the two knobs either side of it. Cached, because
+		// this runs every frame and the name changes only on a program.
+		text(args.vg, st, box.size.x / 2.f, box.size.y / 2.f,
+		     fitted.get(args.vg, st, t, box.size.x - 2.f));
+	}
+};
+
 /** A level arc struck into the seat ring around a knob.
  *
  *  The recessed seat every widget stands in is already a dark band a
