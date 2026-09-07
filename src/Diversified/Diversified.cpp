@@ -546,12 +546,12 @@ struct DiversifiedWidget : ModuleWidget {
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::AUX_IN_POS.x, panel::AUX_IN_POS.y), module, Diversified::AUX_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::TAP_IN_POS.x, panel::TAP_IN_POS.y), module, Diversified::TAP_INPUT));
 
-		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::IN_L_POS.x, panel::IN_L_POS.y), module, Diversified::IN_L_INPUT));
-		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::IN_R_POS.x, panel::IN_R_POS.y), module, Diversified::IN_R_INPUT));
+		addInput(createInputCentered<panel::PortInMain>(panel::mm(panel::IN_L_POS.x, panel::IN_L_POS.y), module, Diversified::IN_L_INPUT));
+		addInput(createInputCentered<panel::PortInMain>(panel::mm(panel::IN_R_POS.x, panel::IN_R_POS.y), module, Diversified::IN_R_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::RET_POS.x, panel::RET_POS.y), module, Diversified::RET_INPUT));
 		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::SEND_POS.x, panel::SEND_POS.y), module, Diversified::SEND_OUTPUT));
-		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::OUT_L_POS.x, panel::OUT_L_POS.y), module, Diversified::OUT_L_OUTPUT));
-		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::OUT_R_POS.x, panel::OUT_R_POS.y), module, Diversified::OUT_R_OUTPUT));
+		addOutput(createOutputCentered<panel::PortOutMain>(panel::mm(panel::OUT_L_POS.x, panel::OUT_L_POS.y), module, Diversified::OUT_L_OUTPUT));
+		addOutput(createOutputCentered<panel::PortOutMain>(panel::mm(panel::OUT_R_POS.x, panel::OUT_R_POS.y), module, Diversified::OUT_R_OUTPUT));
 
 		addChild(createLightCentered<SmallLight<panel::LimeLight> >(
 		             panel::mm(panel::ACTIVE_POS.x, panel::ACTIVE_POS.y), module, Diversified::ACTIVE_LIGHT));

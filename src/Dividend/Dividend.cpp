@@ -411,10 +411,10 @@ struct DividendWidget : ModuleWidget {
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::PROB_IN_POS.x, panel::PROB_IN_POS.y), module, Dividend::PROB_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::BURST_IN_POS.x, panel::BURST_IN_POS.y), module, Dividend::BURST_INPUT));
 
-		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::VOCT_POS.x, panel::VOCT_POS.y), module, Dividend::VOCT_INPUT));
+		addInput(createInputCentered<panel::PortInMain>(panel::mm(panel::VOCT_POS.x, panel::VOCT_POS.y), module, Dividend::VOCT_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::SYNC_POS.x, panel::SYNC_POS.y), module, Dividend::SYNC_INPUT));
-		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::OUT_L_POS.x, panel::OUT_L_POS.y), module, Dividend::OUT_L_OUTPUT));
-		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::OUT_R_POS.x, panel::OUT_R_POS.y), module, Dividend::OUT_R_OUTPUT));
+		addOutput(createOutputCentered<panel::PortOutMain>(panel::mm(panel::OUT_L_POS.x, panel::OUT_L_POS.y), module, Dividend::OUT_L_OUTPUT));
+		addOutput(createOutputCentered<panel::PortOutMain>(panel::mm(panel::OUT_R_POS.x, panel::OUT_R_POS.y), module, Dividend::OUT_R_OUTPUT));
 		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::TRIG_POS.x, panel::TRIG_POS.y), module, Dividend::TRIG_OUTPUT));
 		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::ENV_POS.x, panel::ENV_POS.y), module, Dividend::ENV_OUTPUT));
 	}

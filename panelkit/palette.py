@@ -75,6 +75,14 @@ BRASS      = "#a29260"
 BRASS_MID  = "#8d7f52"
 BRASS_DARK = "#3b3520"
 
+# The main jack, and only the main one. A panel with four voice outputs and a
+# mix has one cable you reach for first; a stereo pair has two. Struck in gold
+# against the brass of everything else, so it is found without reading a word --
+# and by colour rather than by a ring, because a ring costs the panel width and
+# this must be affordable on every module in the family.
+GOLD      = "#d5b459"
+GOLD_RIM  = "#5c4a17"
+
 #: Roles a label may be inked in. The generator refuses any other name, which is
 #: what stops a one-off hex creeping into a single panel. The role is what the
 #: spec says; the hex it lands as depends on whether the label sits on the pale

@@ -461,10 +461,10 @@ struct InstallmentWidget : ModuleWidget {
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::GATE2_IN_POS.x, panel::GATE2_IN_POS.y), module, Installment::GATE2_IN_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::PWM_CV_IN_POS.x, panel::PWM_CV_IN_POS.y), module, Installment::PWM_CV_IN_INPUT));
 
-		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::ENV1_OUT_POS.x, panel::ENV1_OUT_POS.y), module, Installment::ENV1_OUT_OUTPUT));
+		addOutput(createOutputCentered<panel::PortOutMain>(panel::mm(panel::ENV1_OUT_POS.x, panel::ENV1_OUT_POS.y), module, Installment::ENV1_OUT_OUTPUT));
 		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::INV1_OUT_POS.x, panel::INV1_OUT_POS.y), module, Installment::INV1_OUT_OUTPUT));
 		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::EOC1_OUT_POS.x, panel::EOC1_OUT_POS.y), module, Installment::EOC1_OUT_OUTPUT));
-		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::ENV2_OUT_POS.x, panel::ENV2_OUT_POS.y), module, Installment::ENV2_OUT_OUTPUT));
+		addOutput(createOutputCentered<panel::PortOutMain>(panel::mm(panel::ENV2_OUT_POS.x, panel::ENV2_OUT_POS.y), module, Installment::ENV2_OUT_OUTPUT));
 		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::INV2_OUT_POS.x, panel::INV2_OUT_POS.y), module, Installment::INV2_OUT_OUTPUT));
 		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::EOC2_OUT_POS.x, panel::EOC2_OUT_POS.y), module, Installment::EOC2_OUT_OUTPUT));
 		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::PWM_OUT_POS.x, panel::PWM_OUT_POS.y), module, Installment::PWM_OUT_OUTPUT));

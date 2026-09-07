@@ -127,6 +127,12 @@ def build(panel, root=None, vcv=False, force=False, quiet=False):
     write("res/PortOut.svg", render.port_svg(accent=palette.MINT))
     write("res/PortTrigIn.svg", render.port_svg(event=True))
     write("res/PortTrigOut.svg", render.port_svg(accent=palette.MINT, event=True))
+    # the same four again, struck in gold: the main input and the main output
+    write("res/PortInMain.svg", render.port_svg(main=True))
+    write("res/PortOutMain.svg", render.port_svg(accent=palette.MINT, main=True))
+    write("res/PortTrigInMain.svg", render.port_svg(event=True, main=True))
+    write("res/PortTrigOutMain.svg",
+          render.port_svg(accent=palette.MINT, event=True, main=True))
     # Two headers, split by linkage: the shared vocabulary once for the whole
     # plugin, this panel's numbers next to the module that uses them. See the
     # note above emit.common(). PanelTheme.hpp is byte-identical whichever panel

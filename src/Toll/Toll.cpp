@@ -123,7 +123,7 @@ struct TollWidget : ModuleWidget {
 		panel::addScrews(this);
 		panel::addLabels(this);
 
-		addInput(createInputCentered<panel::PortTrigIn>(panel::mm(panel::TRIG_POS.x, panel::TRIG_POS.y), module, TollModule::TRIG_INPUT));
+		addInput(createInputCentered<panel::PortTrigInMain>(panel::mm(panel::TRIG_POS.x, panel::TRIG_POS.y), module, TollModule::TRIG_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::VOCT_POS.x, panel::VOCT_POS.y), module, TollModule::VOCT_INPUT));
 		addChild(createLightCentered<SmallLight<panel::PaperLight> >(
 			panel::mm(panel::HIT_LED_POS.x, panel::HIT_LED_POS.y), module, TollModule::HIT_LIGHT));
@@ -146,7 +146,7 @@ struct TollWidget : ModuleWidget {
 		addInput(createInputCentered<panel::PortTrigIn>(panel::mm(panel::CHOKE_POS.x, panel::CHOKE_POS.y), module, TollModule::CHOKE_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::STRIKE_CV_POS.x, panel::STRIKE_CV_POS.y), module, TollModule::STRIKE_CV_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::DECAY_CV_POS.x, panel::DECAY_CV_POS.y), module, TollModule::DECAY_CV_INPUT));
-		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::OUT_POS.x, panel::OUT_POS.y), module, TollModule::OUT_OUTPUT));
+		addOutput(createOutputCentered<panel::PortOutMain>(panel::mm(panel::OUT_POS.x, panel::OUT_POS.y), module, TollModule::OUT_OUTPUT));
 	}
 };
 

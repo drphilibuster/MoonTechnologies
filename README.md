@@ -41,7 +41,7 @@ deserve its own panel.
 
 | <img src="tools/previews/TaxBracket.png" width="101"> | <img src="tools/previews/Racketeer.png" width="143"> | <img src="tools/previews/Gross.png" width="168"> | <img src="tools/previews/Amortization.png" width="126"> |
 |---|---|---|---|
-| **[Tax Bracket](docs/TaxBracket.md)** · 12 HP | **[Racketeer](docs/Racketeer.md)** · 17 HP | **[Gross](docs/Gross.md)** · 20 HP | **[Amortization](docs/Amortization.md)** · 15 HP |
+| **[Tax Bracket](docs/TaxBracket.md)** · 12 HP | **[Racketeer](docs/Racketeer.md)** · 18 HP | **[Gross](docs/Gross.md)** · 20 HP | **[Amortization](docs/Amortization.md)** · 15 HP |
 
 | <img src="tools/previews/Repossession.png" width="286"> | <img src="tools/previews/Collusion.png" width="151"> | <img src="tools/previews/Reconciliation.png" width="160"> | <img src="tools/previews/SixFigures.png" width="210"> |
 |---|---|---|---|
@@ -85,7 +85,7 @@ Trains of pulsarets whose formant is set independently of the fundamental, six p
 
 The R2R as a genuine resistor network. Every jack is an in/out pair on a passive 8-bit ladder, so it is a DAC, a weighted mixer, a programmable attenuator and a labile multiple at once; checked against the manual's attenuator table.
 
-### [Racketeer](docs/Racketeer.md) — 17 HP · *Noise, Delay, Synth voice*
+### [Racketeer](docs/Racketeer.md) — 18 HP · *Noise, Delay, Synth voice*
 
 *After Wolfgang Spahn's PB701 Electric Intonarumori.*
 

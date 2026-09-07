@@ -643,10 +643,10 @@ struct GrossWidget : ModuleWidget {
 		addInput(createInputCentered<panel::PortIn>(at(panel::WET_IN_POS), module, Gross::WET_INPUT));
 		addInput(createInputCentered<panel::PortIn>(at(panel::TONE_IN_POS), module, Gross::TONE_INPUT));
 		addOutput(createOutputCentered<panel::PortOut>(at(panel::ENV_OUT_POS), module, Gross::ENV_OUTPUT));
-		addInput(createInputCentered<panel::PortIn>(at(panel::IN_L_POS), module, Gross::IN_L_INPUT));
-		addInput(createInputCentered<panel::PortIn>(at(panel::IN_R_POS), module, Gross::IN_R_INPUT));
-		addOutput(createOutputCentered<panel::PortOut>(at(panel::OUT_L_POS), module, Gross::OUT_L_OUTPUT));
-		addOutput(createOutputCentered<panel::PortOut>(at(panel::OUT_R_POS), module, Gross::OUT_R_OUTPUT));
+		addInput(createInputCentered<panel::PortInMain>(at(panel::IN_L_POS), module, Gross::IN_L_INPUT));
+		addInput(createInputCentered<panel::PortInMain>(at(panel::IN_R_POS), module, Gross::IN_R_INPUT));
+		addOutput(createOutputCentered<panel::PortOutMain>(at(panel::OUT_L_POS), module, Gross::OUT_L_OUTPUT));
+		addOutput(createOutputCentered<panel::PortOutMain>(at(panel::OUT_R_POS), module, Gross::OUT_R_OUTPUT));
 
 		addChild(createLightCentered<SmallLight<panel::LimeLight> >(
 		             at(panel::ENV_LED_POS), module, Gross::ENV_LIGHT));

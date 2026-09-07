@@ -270,10 +270,10 @@ struct GarnishmentWidget : ModuleWidget {
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::CVAMT2_POS.x, panel::CVAMT2_POS.y), module, Garnishment::CVAMT2_PARAM));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::CVIN2_POS.x, panel::CVIN2_POS.y), module, Garnishment::CVIN2_INPUT));
 
-		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::IN1_POS.x, panel::IN1_POS.y), module, Garnishment::IN1_INPUT));
-		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::IN2_POS.x, panel::IN2_POS.y), module, Garnishment::IN2_INPUT));
-		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::OUT1_POS.x, panel::OUT1_POS.y), module, Garnishment::OUT1_OUTPUT));
-		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::OUT2_POS.x, panel::OUT2_POS.y), module, Garnishment::OUT2_OUTPUT));
+		addInput(createInputCentered<panel::PortInMain>(panel::mm(panel::IN1_POS.x, panel::IN1_POS.y), module, Garnishment::IN1_INPUT));
+		addInput(createInputCentered<panel::PortInMain>(panel::mm(panel::IN2_POS.x, panel::IN2_POS.y), module, Garnishment::IN2_INPUT));
+		addOutput(createOutputCentered<panel::PortOutMain>(panel::mm(panel::OUT1_POS.x, panel::OUT1_POS.y), module, Garnishment::OUT1_OUTPUT));
+		addOutput(createOutputCentered<panel::PortOutMain>(panel::mm(panel::OUT2_POS.x, panel::OUT2_POS.y), module, Garnishment::OUT2_OUTPUT));
 	}
 
 	void appendContextMenu(Menu* menu) override {

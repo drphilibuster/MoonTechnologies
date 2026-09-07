@@ -343,9 +343,9 @@ struct DeductionWidget : ModuleWidget {
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::DRIVE_IN_POS.x, panel::DRIVE_IN_POS.y), module, Deduction::DRIVE_CV_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::MODEL_IN_POS.x, panel::MODEL_IN_POS.y), module, Deduction::MODEL_CV_INPUT));
 
-		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::LP_IN_POS.x, panel::LP_IN_POS.y), module, Deduction::LP_INPUT));
-		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::HP_IN_POS.x, panel::HP_IN_POS.y), module, Deduction::HP_INPUT));
-		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::OUT_POS.x, panel::OUT_POS.y), module, Deduction::OUT_OUTPUT));
+		addInput(createInputCentered<panel::PortInMain>(panel::mm(panel::LP_IN_POS.x, panel::LP_IN_POS.y), module, Deduction::LP_INPUT));
+		addInput(createInputCentered<panel::PortInMain>(panel::mm(panel::HP_IN_POS.x, panel::HP_IN_POS.y), module, Deduction::HP_INPUT));
+		addOutput(createOutputCentered<panel::PortOutMain>(panel::mm(panel::OUT_POS.x, panel::OUT_POS.y), module, Deduction::OUT_OUTPUT));
 
 		addChild(createLightCentered<SmallLight<panel::ClayLight> >(
 		             panel::mm(panel::SAT_POS.x, panel::SAT_POS.y), module, Deduction::SAT_LIGHT));

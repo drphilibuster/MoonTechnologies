@@ -316,6 +316,35 @@ struct PortOut : app::SvgPort {
 	}
 };
 
+/** The main input and the main output: the same jacks with the collar
+ *  struck in gold instead of brass. Use them for the one port a patch
+ *  reaches for first -- a mix output beside four voice outputs, the two
+ *  of a stereo pair -- and nowhere else. A panel where everything is
+ *  gold says the same as a panel where nothing is. */
+struct PortInMain : app::SvgPort {
+	PortInMain() {
+		setSvg(Svg::load(asset::plugin(pluginInstance, "res/PortInMain.svg")));
+	}
+};
+
+struct PortOutMain : app::SvgPort {
+	PortOutMain() {
+		setSvg(Svg::load(asset::plugin(pluginInstance, "res/PortOutMain.svg")));
+	}
+};
+
+struct PortTrigInMain : app::SvgPort {
+	PortTrigInMain() {
+		setSvg(Svg::load(asset::plugin(pluginInstance, "res/PortTrigInMain.svg")));
+	}
+};
+
+struct PortTrigOutMain : app::SvgPort {
+	PortTrigOutMain() {
+		setSvg(Svg::load(asset::plugin(pluginInstance, "res/PortTrigOutMain.svg")));
+	}
+};
+
 /** Every stock light derives from GrayModuleLightWidget, which hard-codes a
     #333333 socket that reads as a grey hole punched in a green panel. These
     restyle the socket as well as the emitter. */

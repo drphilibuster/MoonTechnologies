@@ -377,7 +377,7 @@ def screw_svg():
         '</svg>', ""])
 
 
-def port_svg(accent=None, event=False):
+def port_svg(accent=None, event=False, main=False):
     """A brass-collared jack on the stock PJ301M canvas (23.7 px square).
 
     The stock port's chrome collar is the loudest off-palette object on the
@@ -402,6 +402,12 @@ def port_svg(accent=None, event=False):
     d = 23.7
     c = d / 2
     ring = accent or P.BRASS_MID
+    # `main` restrikes the collar in gold: the one input or output on the panel
+    # you reach for first. It is the collar rather than the throat that changes,
+    # so the in/out band and the timing line both still read as they do on every
+    # other jack -- being the important one is a third fact about a port, not a
+    # replacement for the other two.
+    collar, rim = ((P.GOLD, P.GOLD_RIM) if main else (P.BRASS, P.BRASS_DARK))
     # The outermost circle stops at 11.10, not at 11.85. Rack's own PJ301M
     # leaves the corners of its 23.7 px canvas empty and draws its collar to
     # 11.10; filling the canvas edge to edge made every jack on these panels
@@ -411,8 +417,8 @@ def port_svg(accent=None, event=False):
         '<?xml version="1.0" encoding="UTF-8"?>',
         '<svg xmlns="http://www.w3.org/2000/svg" width="%gpx" height="%gpx" '
         'viewBox="0 0 %g %g" version="1.1">' % (d, d, d, d),
-        '  <circle cx="%.4f" cy="%.4f" r="11.10" fill="%s"/>' % (c, c, P.BRASS_DARK),
-        '  <circle cx="%.4f" cy="%.4f" r="10.45" fill="%s"/>' % (c, c, P.BRASS),
+        '  <circle cx="%.4f" cy="%.4f" r="11.10" fill="%s"/>' % (c, c, rim),
+        '  <circle cx="%.4f" cy="%.4f" r="10.45" fill="%s"/>' % (c, c, collar),
         '  <circle cx="%.4f" cy="%.4f" r="9.60" fill="%s"/>' % (c, c, ring),
         ('  <circle cx="%.4f" cy="%.4f" r="8.60" fill="%s"/>' % (c, c, P.LIME))
         if event else '',

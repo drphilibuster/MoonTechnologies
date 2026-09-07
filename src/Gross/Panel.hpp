@@ -54,13 +54,13 @@ static const Label LABELS[] = {
 	{ 42.6625f,  96.2175f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "POST"},
 	{ 58.9375f,  96.2175f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TONE"},
 	{ 75.2125f,  96.2175f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LO CUT"},
-	{  7.2900f, 112.0100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DRIVE"},
-	{ 18.1675f, 112.0100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BIAS"},
-	{ 29.0450f, 112.0100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "WET"},
-	{ 39.9225f, 112.0100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TONE"},
-	{ 50.8000f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ENV"},
-	{ 61.6775f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN L"},
-	{ 72.5550f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN R"},
+	{ 29.0450f, 112.0100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DRIVE"},
+	{ 39.9225f, 112.0100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BIAS"},
+	{ 50.8000f, 112.0100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "WET"},
+	{ 61.6775f, 112.0100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TONE"},
+	{  7.2900f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN L"},
+	{ 18.1675f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN R"},
+	{ 72.5550f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ENV"},
 	{ 83.4325f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT L"},
 	{ 94.3100f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT R"},
 };
@@ -92,17 +92,17 @@ static const Vec WET_POS = Vec(26.3875, 88.1107);
 static const Vec POST_POS = Vec(42.6625, 88.1107);
 static const Vec TONE_POS = Vec(58.9375, 88.1107);
 static const Vec LOCUT_POS = Vec(75.2125, 88.1107);
-static const Vec DRIVE_CV_POS = Vec(7.2900, 104.4782);
-static const Vec BIAS_CV_POS = Vec(18.1675, 104.4782);
-static const Vec WET_CV_POS = Vec(29.0450, 104.4782);
-static const Vec TONE_CV_POS = Vec(39.9225, 104.4782);
-static const Vec DRIVE_IN_POS = Vec(7.2900, 118.6000);
-static const Vec BIAS_IN_POS = Vec(18.1675, 118.6000);
-static const Vec WET_IN_POS = Vec(29.0450, 118.6000);
-static const Vec TONE_IN_POS = Vec(39.9225, 118.6000);
-static const Vec ENV_OUT_POS = Vec(50.8000, 118.6000);
-static const Vec IN_L_POS = Vec(61.6775, 118.6000);
-static const Vec IN_R_POS = Vec(72.5550, 118.6000);
+static const Vec DRIVE_CV_POS = Vec(29.0450, 104.4782);
+static const Vec BIAS_CV_POS = Vec(39.9225, 104.4782);
+static const Vec WET_CV_POS = Vec(50.8000, 104.4782);
+static const Vec TONE_CV_POS = Vec(61.6775, 104.4782);
+static const Vec IN_L_POS = Vec(7.2900, 118.6000);
+static const Vec IN_R_POS = Vec(18.1675, 118.6000);
+static const Vec DRIVE_IN_POS = Vec(29.0450, 118.6000);
+static const Vec BIAS_IN_POS = Vec(39.9225, 118.6000);
+static const Vec WET_IN_POS = Vec(50.8000, 118.6000);
+static const Vec TONE_IN_POS = Vec(61.6775, 118.6000);
+static const Vec ENV_OUT_POS = Vec(72.5550, 118.6000);
 static const Vec OUT_L_POS = Vec(83.4325, 118.6000);
 static const Vec OUT_R_POS = Vec(94.3100, 118.6000);
 

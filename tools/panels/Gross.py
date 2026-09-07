@@ -82,14 +82,18 @@ P.sections = [
 # 123.61 mm, so a jack collar centred below 118.6 would run under one. The trim
 # row is pinned just clear of the jack wells beneath it.
 P.footer = [
-    Row([Trim("drive_cv", "DRIVE"),
-         Trim("bias_cv", "BIAS"),
-         Trim("wet_cv", "WET"),
-         Trim("tone_cv", "TONE")], pair=True),
-    Row([Jack("drive_in"), Jack("bias_in"),
+    # Signal in at the left edge, signal out at the right, with the CV that
+    # shapes it in between: the family reads left to right, and audio that
+    # entered two thirds of the way along -- next to the outputs it was about
+    # to become -- read as just another modulation jack.
+    Row([Trim("drive_cv", "DRIVE", col=2),
+         Trim("bias_cv", "BIAS", col=3),
+         Trim("wet_cv", "WET", col=4),
+         Trim("tone_cv", "TONE", col=5)], pair=True),
+    Row([Jack("in_l", "IN L"), Jack("in_r", "IN R"),
+         Jack("drive_in"), Jack("bias_in"),
          Jack("wet_in"), Jack("tone_in"),
          Jack("env_out", "ENV", ink="MINT"),
-         Jack("in_l", "IN L"), Jack("in_r", "IN R"),
          Jack("out_l", "OUT L", ink="MINT"),
          Jack("out_r", "OUT R", ink="MINT")], y=118.6),
 ]

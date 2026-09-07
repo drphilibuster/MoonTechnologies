@@ -466,7 +466,7 @@ struct KickbackWidget : ModuleWidget {
 		addParam(createParamCentered<SmallKnob>(panel::mm(panel::GATELEN_POS.x, panel::GATELEN_POS.y), module, Kickback::GATELEN_PARAM));
 		addInput(createInputCentered<panel::PortTrigIn>(panel::mm(panel::RST_IN_POS.x, panel::RST_IN_POS.y), module, Kickback::RST_INPUT));
 		addOutput(createOutputCentered<panel::PortTrigOut>(panel::mm(panel::CLK_OUT_POS.x, panel::CLK_OUT_POS.y), module, Kickback::CLK_OUTPUT));
-		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::MIX_OUT_POS.x, panel::MIX_OUT_POS.y), module, Kickback::MIX_OUTPUT));
+		addOutput(createOutputCentered<panel::PortOutMain>(panel::mm(panel::MIX_OUT_POS.x, panel::MIX_OUT_POS.y), module, Kickback::MIX_OUTPUT));
 
 	}
 };

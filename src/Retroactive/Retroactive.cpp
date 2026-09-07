@@ -407,10 +407,10 @@ struct RetroactiveWidget : ModuleWidget {
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::RESET_IN_POS.x, panel::RESET_IN_POS.y), module, Retroactive::RESET_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::FREEZE_IN_POS.x, panel::FREEZE_IN_POS.y), module, Retroactive::FREEZE_INPUT));
 
-		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::IN_L_POS.x, panel::IN_L_POS.y), module, Retroactive::IN_L_INPUT));
-		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::IN_R_POS.x, panel::IN_R_POS.y), module, Retroactive::IN_R_INPUT));
-		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::OUT_L_POS.x, panel::OUT_L_POS.y), module, Retroactive::OUT_L_OUTPUT));
-		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::OUT_R_POS.x, panel::OUT_R_POS.y), module, Retroactive::OUT_R_OUTPUT));
+		addInput(createInputCentered<panel::PortInMain>(panel::mm(panel::IN_L_POS.x, panel::IN_L_POS.y), module, Retroactive::IN_L_INPUT));
+		addInput(createInputCentered<panel::PortInMain>(panel::mm(panel::IN_R_POS.x, panel::IN_R_POS.y), module, Retroactive::IN_R_INPUT));
+		addOutput(createOutputCentered<panel::PortOutMain>(panel::mm(panel::OUT_L_POS.x, panel::OUT_L_POS.y), module, Retroactive::OUT_L_OUTPUT));
+		addOutput(createOutputCentered<panel::PortOutMain>(panel::mm(panel::OUT_R_POS.x, panel::OUT_R_POS.y), module, Retroactive::OUT_R_OUTPUT));
 
 		addChild(createLightCentered<SmallLight<panel::PaperLight> >(
 		             panel::mm(panel::WINDOW_POS.x, panel::WINDOW_POS.y), module, Retroactive::WINDOW_LIGHT));

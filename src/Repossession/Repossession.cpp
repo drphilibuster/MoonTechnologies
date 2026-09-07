@@ -2041,10 +2041,10 @@ struct RepossessionWidget : ModuleWidget, ui_rp::SeizeHost {
 			panel::mm(panel::LEN_IN_POS.x, panel::LEN_IN_POS.y), module,
 			Repossession::LEN_INPUT));
 
-		addOutput(createOutputCentered<panel::PortOut>(
+		addOutput(createOutputCentered<panel::PortOutMain>(
 			panel::mm(panel::OUT_L_POS.x, panel::OUT_L_POS.y), module,
 			Repossession::OUT_L_OUTPUT));
-		addOutput(createOutputCentered<panel::PortOut>(
+		addOutput(createOutputCentered<panel::PortOutMain>(
 			panel::mm(panel::OUT_R_POS.x, panel::OUT_R_POS.y), module,
 			Repossession::OUT_R_OUTPUT));
 		addOutput(createOutputCentered<panel::PortOut>(

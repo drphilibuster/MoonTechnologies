@@ -294,6 +294,30 @@ what you look for most often. A thin lime line inside the throat marks a port
 that deals in *timing*: a clock, a trigger, a gate, a reset. Audio, CV and V/oct
 are levels and stay plain.
 
+There is a third fact, and a third pair of arts for it. `PortInMain`,
+`PortOutMain`, `PortTrigInMain` and `PortTrigOutMain` strike the *collar* in
+gold instead of brass: the one input or output on the panel a patch reaches for
+first. The throat is untouched, so the in/out band and the timing line still
+read exactly as they do everywhere else — being the important one is a third
+fact about a port, not a replacement for the other two.
+
+Use it for a mix output beside four voice outputs, for the two of a stereo pair,
+for the audio in on a processor. Do not use it on a panel of equals: Audit
+Logic's four gates, Tax Bracket's ladder where every jack is an in/out pair, and
+Volatility's six unrelated outputs all have none, because a panel where
+everything is gold says the same as a panel where nothing is.
+
+Gold by colour and not by a ring, deliberately. `primary=True` draws a ring and
+costs the row `RING_PAD` on each side; that is affordable once on a knob and not
+at all on every jack in the family.
+
+## Inputs left, outputs right
+
+A row of jacks reads left to right and should carry signal that way. Gross put
+its audio inputs two thirds of the way along, next to the outputs they were
+about to become, and they read as two more modulation jacks. CV belongs between
+the two, not in front of the signal it shapes.
+
 The choice is made in the module's C++, at the `createInput`/`createOutput`
 call, not in the spec — the spec's `ink="MINT"` is about the *label*, and the
 two are deliberately separate so a panel can name a thing one way and wire it

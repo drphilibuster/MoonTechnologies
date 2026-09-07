@@ -214,7 +214,7 @@ struct ConsolidationWidget : ModuleWidget {
 		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::MULT_B_OUT2_POS.x, panel::MULT_B_OUT2_POS.y), module, Consolidation::MULT_B_OUT2_OUTPUT));
 		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::MULT_B_OUT3_POS.x, panel::MULT_B_OUT3_POS.y), module, Consolidation::MULT_B_OUT3_OUTPUT));
 
-		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::OUT_POS.x, panel::OUT_POS.y), module, Consolidation::OUT_OUTPUT));
+		addOutput(createOutputCentered<panel::PortOutMain>(panel::mm(panel::OUT_POS.x, panel::OUT_POS.y), module, Consolidation::OUT_OUTPUT));
 		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::INV_OUT_POS.x, panel::INV_OUT_POS.y), module, Consolidation::INV_OUT_OUTPUT));
 	}
 

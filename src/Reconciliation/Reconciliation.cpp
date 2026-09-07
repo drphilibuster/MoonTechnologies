@@ -559,13 +559,13 @@ struct ReconciliationWidget : ModuleWidget {
 #undef RECONCILIATION_CV
 
 		// The footer band.
-		addInput(createInputCentered<panel::PortIn>(
+		addInput(createInputCentered<panel::PortInMain>(
 		             panel::mm(panel::PITCH_IN_POS.x, panel::PITCH_IN_POS.y), module, Reconciliation::PITCH_INPUT));
 		addInput(createInputCentered<panel::PortIn>(
 		             panel::mm(panel::ROOT_IN_POS.x, panel::ROOT_IN_POS.y), module, Reconciliation::ROOT_INPUT));
 		addInput(createInputCentered<panel::PortIn>(
 		             panel::mm(panel::RESET_IN_POS.x, panel::RESET_IN_POS.y), module, Reconciliation::RESET_INPUT));
-		addOutput(createOutputCentered<panel::PortOut>(
+		addOutput(createOutputCentered<panel::PortOutMain>(
 		             panel::mm(panel::PITCH_OUT_POS.x, panel::PITCH_OUT_POS.y), module, Reconciliation::PITCH_OUTPUT));
 		addOutput(createOutputCentered<panel::PortOut>(
 		             panel::mm(panel::TRIG_OUT_POS.x, panel::TRIG_OUT_POS.y), module, Reconciliation::TRIG_OUTPUT));

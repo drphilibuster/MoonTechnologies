@@ -70,10 +70,10 @@
   <circle cx="42.6625" cy="88.1107" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="58.9375" cy="88.1107" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="75.2125" cy="88.1107" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="7.2900" cy="104.4782" r="3.7200" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="18.1675" cy="104.4782" r="3.7200" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="29.0450" cy="104.4782" r="3.7200" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="39.9225" cy="104.4782" r="3.7200" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="50.8000" cy="104.4782" r="3.7200" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="61.6775" cy="104.4782" r="3.7200" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="7.2900" cy="118.6000" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="18.1675" cy="118.6000" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="29.0450" cy="118.6000" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
@@ -112,17 +112,17 @@
   <circle inkscape:label="post" cx="42.6625" cy="88.1107" r="1" fill="#ff0000"/>
   <circle inkscape:label="tone" cx="58.9375" cy="88.1107" r="1" fill="#ff0000"/>
   <circle inkscape:label="locut" cx="75.2125" cy="88.1107" r="1" fill="#ff0000"/>
-  <circle inkscape:label="drive_cv" cx="7.2900" cy="104.4782" r="1" fill="#ff0000"/>
-  <circle inkscape:label="bias_cv" cx="18.1675" cy="104.4782" r="1" fill="#ff0000"/>
-  <circle inkscape:label="wet_cv" cx="29.0450" cy="104.4782" r="1" fill="#ff0000"/>
-  <circle inkscape:label="tone_cv" cx="39.9225" cy="104.4782" r="1" fill="#ff0000"/>
-  <circle inkscape:label="drive_in" cx="7.2900" cy="118.6000" r="1" fill="#00ff00"/>
-  <circle inkscape:label="bias_in" cx="18.1675" cy="118.6000" r="1" fill="#00ff00"/>
-  <circle inkscape:label="wet_in" cx="29.0450" cy="118.6000" r="1" fill="#00ff00"/>
-  <circle inkscape:label="tone_in" cx="39.9225" cy="118.6000" r="1" fill="#00ff00"/>
-  <circle inkscape:label="env_out" cx="50.8000" cy="118.6000" r="1" fill="#00ff00"/>
-  <circle inkscape:label="in_l" cx="61.6775" cy="118.6000" r="1" fill="#00ff00"/>
-  <circle inkscape:label="in_r" cx="72.5550" cy="118.6000" r="1" fill="#00ff00"/>
+  <circle inkscape:label="drive_cv" cx="29.0450" cy="104.4782" r="1" fill="#ff0000"/>
+  <circle inkscape:label="bias_cv" cx="39.9225" cy="104.4782" r="1" fill="#ff0000"/>
+  <circle inkscape:label="wet_cv" cx="50.8000" cy="104.4782" r="1" fill="#ff0000"/>
+  <circle inkscape:label="tone_cv" cx="61.6775" cy="104.4782" r="1" fill="#ff0000"/>
+  <circle inkscape:label="in_l" cx="7.2900" cy="118.6000" r="1" fill="#00ff00"/>
+  <circle inkscape:label="in_r" cx="18.1675" cy="118.6000" r="1" fill="#00ff00"/>
+  <circle inkscape:label="drive_in" cx="29.0450" cy="118.6000" r="1" fill="#00ff00"/>
+  <circle inkscape:label="bias_in" cx="39.9225" cy="118.6000" r="1" fill="#00ff00"/>
+  <circle inkscape:label="wet_in" cx="50.8000" cy="118.6000" r="1" fill="#00ff00"/>
+  <circle inkscape:label="tone_in" cx="61.6775" cy="118.6000" r="1" fill="#00ff00"/>
+  <circle inkscape:label="env_out" cx="72.5550" cy="118.6000" r="1" fill="#00ff00"/>
   <circle inkscape:label="out_l" cx="83.4325" cy="118.6000" r="1" fill="#00ff00"/>
   <circle inkscape:label="out_r" cx="94.3100" cy="118.6000" r="1" fill="#00ff00"/>
 </g>

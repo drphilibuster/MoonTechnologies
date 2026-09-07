@@ -327,7 +327,7 @@ struct SixFiguresWidget : ModuleWidget {
 		             panel::mm(panel::DRIFT_POS.x, panel::DRIFT_POS.y), module, SixFigures::DRIFT_PARAM));
 		addInput(createInputCentered<panel::PortIn>(
 		             panel::mm(panel::SIGNAL_POS.x, panel::SIGNAL_POS.y), module, SixFigures::SIGNAL_INPUT));
-		addOutput(createOutputCentered<panel::PortOut>(
+		addOutput(createOutputCentered<panel::PortOutMain>(
 		             panel::mm(panel::MIX_POS.x, panel::MIX_POS.y), module, SixFigures::MIX_OUTPUT));
 	}
 
