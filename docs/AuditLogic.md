@@ -30,6 +30,10 @@ Per gate:
   board built its gates from) reads anything above 2 V as true and anything
   below 1 V as false, with the last state held in between.
 * **FN** -- the gate's function: Invert A, AND, OR, XOR, NAND, NOR, XNOR.
+  The knob is unlabelled and wears a small lit plate instead, which the module
+  writes the current function into -- NOT A, AND, XOR and so on. Seven meanings
+  cannot be engraved on one knob, and "FN" told you the knob's job but never
+  its setting.
   Invert A ignores B entirely. Default per gate is Invert A / AND / OR / XOR,
   left to right -- the order the plugin's own registered description lists
   them in, which is the closest thing the surviving Quad Logic Module
@@ -48,6 +52,18 @@ reference for its unpatched "in a" pins.
 
 The **VERDICT** light beside the section caption is lit whenever any gate's
 channel 0 is currently true.
+
+### Why it is 25 HP and not narrower
+
+Laid out vertically -- one gate per row rather than four side by side, and the
+two switch channels stacked -- this panel measures **18 HP**. It is not built
+that way because it does not fit: vertical needs eight section rows and a 3U
+face holds about six, so it overruns by 44 mm. The width only drops if both
+FINDINGS and REFERRAL go from eight columns to four, and that is precisely what
+costs the rows.
+
+The module is height-bound, not width-bound. 25 HP is close to its floor for
+this much content.
 
 ## REFERRAL
 

@@ -78,6 +78,12 @@ struct PolyLevelGate {
 static const int kFnNotA = 0, kFnAnd = 1, kFnOr = 2, kFnXor = 3,
                   kFnNand = 4, kFnNor = 5, kFnXnor = 6, kNumFn = 7;
 
+//: The same seven, short enough for the plate under each FN knob. The menu
+//: keeps the long forms; a 7 mm plate does not.
+static const char* kFnShort[kNumFn] = {
+	"NOT A", "AND", "OR", "XOR", "NAND", "NOR", "XNOR"
+};
+
 static bool evalGate(int fn, bool a, bool b) {
 	switch (fn) {
 		case kFnNotA: return !a;
@@ -98,6 +104,11 @@ static const int kMusicalTaps[6] = { 3, 6, 12, 24, 48, 96 };
 
 
 struct AuditLogic : Module {
+	//: What each gate is currently set to, for the plate under its knob. FN
+	//: chooses one of seven functions and the panel cannot engrave which, so
+	//: the module says so at runtime.
+	const char* dispFn[4] = { kFnShort[0], kFnShort[0], kFnShort[0], kFnShort[0] };
+
 	enum ParamId {
 		FN1_PARAM, FN2_PARAM, FN3_PARAM, FN4_PARAM,
 		POLARITY_PARAM, ROUTE_PARAM,
@@ -222,6 +233,7 @@ struct AuditLogic : Module {
 				channels = 1;
 			int fn = (int)std::round(params[FN1_PARAM + i].getValue());
 			fn = clamp(fn, 0, kNumFn - 1);
+			dispFn[i] = kFnShort[fn];
 
 			for (int c = 0; c < channels; c++) {
 				float av = ai.isConnected() ? ai.getPolyVoltage(c) : refV;
@@ -330,6 +342,18 @@ struct AuditLogicWidget : ModuleWidget {
 		addParam(createParamCentered<AuditKnob>(panel::mm(panel::FN2_POS.x, panel::FN2_POS.y), module, AuditLogic::FN2_PARAM));
 		addParam(createParamCentered<AuditKnob>(panel::mm(panel::FN3_POS.x, panel::FN3_POS.y), module, AuditLogic::FN3_PARAM));
 		addParam(createParamCentered<AuditKnob>(panel::mm(panel::FN4_POS.x, panel::FN4_POS.y), module, AuditLogic::FN4_PARAM));
+
+		// Each FN knob's plate, naming the function it is actually on.
+		static const Vec* fnName[4] = {
+			&panel::FN1_NAME_POS, &panel::FN2_NAME_POS,
+			&panel::FN3_NAME_POS, &panel::FN4_NAME_POS };
+		for (int i = 0; i < 4; i++) {
+			panel::MiniDisplay* d = new panel::MiniDisplay;
+			d->box.size = panel::mm(panel::READOUT_W, panel::READOUT_H);
+			d->box.pos = panel::mm(fnName[i]->x, fnName[i]->y).minus(d->box.size.div(2.f));
+			d->name = module ? &module->dispFn[i] : NULL;
+			addChild(d);
+		}
 
 		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::OUT1_POS.x, panel::OUT1_POS.y), module, AuditLogic::OUT1_OUTPUT));
 		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::OUT2_POS.x, panel::OUT2_POS.y), module, AuditLogic::OUT2_OUTPUT));

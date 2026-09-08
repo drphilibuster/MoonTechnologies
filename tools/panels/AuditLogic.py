@@ -59,13 +59,18 @@ P.sections = [
              Jack("b3", "B", col=5),
              Jack("a4", "A", col=6), Light("out4_led", between=(6, 7)),
              Jack("b4", "B", col=7)]),
-        Row([Knob("fn1", "FN", steps=7, col=0),
+        # FN picks one of seven functions and the panel cannot engrave which:
+        # "FN" told you the knob's job, never its setting. Each wears a plate
+        # instead and the module writes AND, XOR, NAND into it -- the same trick
+        # Diversified's macros use, and the reason a knob with seven meanings
+        # can sit on a panel at all.
+        Row([Knob("fn1", "", steps=7, col=0, readout="fn1_name"),
              Jack("out1", "OUT", ink="MINT", col=1),
-             Knob("fn2", "FN", steps=7, col=2),
+             Knob("fn2", "", steps=7, col=2, readout="fn2_name"),
              Jack("out2", "OUT", ink="MINT", col=3),
-             Knob("fn3", "FN", steps=7, col=4),
+             Knob("fn3", "", steps=7, col=4, readout="fn3_name"),
              Jack("out3", "OUT", ink="MINT", col=5),
-             Knob("fn4", "FN", steps=7, col=6),
+             Knob("fn4", "", steps=7, col=6, readout="fn4_name"),
              Jack("out4", "OUT", ink="MINT", col=7)]),
     ]),
 

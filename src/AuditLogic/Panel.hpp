@@ -33,34 +33,30 @@ static const Label LABELS[] = {
 	{ 87.4600f,  16.7203f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "B"},
 	{101.2500f,  16.7203f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "A"},
 	{117.7100f,  16.7203f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "B"},
-	{ 10.5000f,  44.4590f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FN"},
-	{ 26.9600f,  31.1621f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
-	{ 40.7500f,  44.4590f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FN"},
-	{ 57.2100f,  31.1621f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
-	{ 71.0000f,  44.4590f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FN"},
-	{ 87.4600f,  31.1621f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
-	{101.2500f,  44.4590f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FN"},
-	{117.7100f,  31.1621f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
-	{ 63.5000f,  51.6590f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "REFERRAL"},
-	{ 53.4500f,  64.5793f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "POLARITY"},
-	{ 65.2694f,  64.5793f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "REF V"},
-	{ 75.3194f,  64.5793f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ROUTE"},
-	{ 12.5796f,  70.5252f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "1A"},
-	{ 26.1296f,  70.5252f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "1G"},
-	{ 40.6694f,  70.5252f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "1B"},
-	{ 54.2194f,  70.5252f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "1C"},
-	{ 72.7806f,  70.5252f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "2A"},
-	{ 86.3306f,  70.5252f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "2G"},
-	{100.8704f,  70.5252f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "2B"},
-	{114.4204f,  70.5252f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "2C"},
-	{ 63.5000f,  87.8893f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "INSTALLMENTS"},
-	{ 14.8172f,  92.4936f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "/2"},
-	{ 29.6045f,  92.4936f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "/4"},
-	{ 44.3918f,  92.4936f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "/8"},
-	{ 59.1791f,  92.4936f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "/16"},
-	{ 74.5963f,  92.4936f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "/32"},
-	{ 90.0136f,  92.4936f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "/64"},
-	{113.4028f, 104.8204f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODE"},
+	{ 26.9600f,  30.8390f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
+	{ 57.2100f,  30.8390f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
+	{ 87.4600f,  30.8390f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
+	{117.7100f,  30.8390f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
+	{ 63.5000f,  53.0060f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "REFERRAL"},
+	{ 53.4500f,  65.9263f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "POLARITY"},
+	{ 65.2694f,  65.9263f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "REF V"},
+	{ 75.3194f,  65.9263f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ROUTE"},
+	{ 12.5796f,  71.5491f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "1A"},
+	{ 26.1296f,  71.5491f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "1G"},
+	{ 40.6694f,  71.5491f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "1B"},
+	{ 54.2194f,  71.5491f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "1C"},
+	{ 72.7806f,  71.5491f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "2A"},
+	{ 86.3306f,  71.5491f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "2G"},
+	{100.8704f,  71.5491f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "2B"},
+	{114.4204f,  71.5491f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "2C"},
+	{ 63.5000f,  88.5901f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "INSTALLMENTS"},
+	{ 14.8172f,  93.1945f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "/2"},
+	{ 29.6045f,  93.1945f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "/4"},
+	{ 44.3918f,  93.1945f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "/8"},
+	{ 59.1791f,  93.1945f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "/16"},
+	{ 74.5963f,  93.1945f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "/32"},
+	{ 90.0136f,  93.1945f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "/64"},
+	{113.4028f, 105.5213f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODE"},
 	{ 56.7250f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CLOCK"},
 	{ 70.2750f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RESET"},
 };
@@ -86,42 +82,46 @@ static const Vec B3_POS = Vec(87.4600, 21.9103);
 static const Vec A4_POS = Vec(101.2500, 21.9103);
 static const Vec OUT4_LED_POS = Vec(109.4800, 21.9103);
 static const Vec B4_POS = Vec(117.7100, 21.9103);
-static const Vec FN1_POS = Vec(10.5000, 36.3521);
-static const Vec OUT1_POS = Vec(26.9600, 36.3521);
-static const Vec FN2_POS = Vec(40.7500, 36.3521);
-static const Vec OUT2_POS = Vec(57.2100, 36.3521);
-static const Vec FN3_POS = Vec(71.0000, 36.3521);
-static const Vec OUT3_POS = Vec(87.4600, 36.3521);
-static const Vec FN4_POS = Vec(101.2500, 36.3521);
-static const Vec OUT4_POS = Vec(117.7100, 36.3521);
-static const Vec ACTIVE_POS = Vec(71.8296, 50.9275);
-static const Vec POLARITY_POS = Vec(53.4500, 57.9675);
-static const Vec REFV_POS = Vec(65.2694, 57.9675);
-static const Vec ROUTE_POS = Vec(75.3194, 57.9675);
-static const Vec SW1_A_POS = Vec(12.5796, 76.1993);
-static const Vec SW1_GATE_POS = Vec(26.1296, 76.1993);
-static const Vec SW1_B_POS = Vec(40.6694, 76.1993);
-static const Vec SW1_C_POS = Vec(54.2194, 76.1993);
-static const Vec SW2_A_POS = Vec(72.7806, 76.1993);
-static const Vec SW2_GATE_POS = Vec(86.3306, 76.1993);
-static const Vec SW2_B_POS = Vec(100.8704, 76.1993);
-static const Vec SW2_C_POS = Vec(114.4204, 76.1993);
-static const Vec SW1_GATE_LED_POS = Vec(30.0294, 69.7693);
-static const Vec SW2_GATE_LED_POS = Vec(90.2304, 69.7693);
-static const Vec CLOCKED_POS = Vec(74.6744, 87.1577);
-static const Vec DIV2_POS = Vec(14.8172, 98.2086);
-static const Vec DIV4_POS = Vec(29.6045, 98.2086);
-static const Vec DIV8_POS = Vec(44.3918, 98.2086);
-static const Vec DIV16_POS = Vec(59.1791, 98.2086);
-static const Vec DIV32_POS = Vec(74.5963, 98.2086);
-static const Vec DIV64_POS = Vec(90.0136, 98.2086);
-static const Vec DIVMODE_POS = Vec(113.4028, 98.2086);
-static const Vec DIV2_LED_POS = Vec(18.7171, 91.7377);
-static const Vec DIV4_LED_POS = Vec(33.5044, 91.7377);
-static const Vec DIV8_LED_POS = Vec(48.2917, 91.7377);
-static const Vec DIV16_LED_POS = Vec(63.7089, 91.7377);
-static const Vec DIV32_LED_POS = Vec(79.1261, 91.7377);
-static const Vec DIV64_LED_POS = Vec(94.5433, 91.7377);
+static const Vec FN1_POS = Vec(10.5000, 36.0290);
+static const Vec OUT1_POS = Vec(26.9600, 36.0290);
+static const Vec FN2_POS = Vec(40.7500, 36.0290);
+static const Vec OUT2_POS = Vec(57.2100, 36.0290);
+static const Vec FN3_POS = Vec(71.0000, 36.0290);
+static const Vec OUT3_POS = Vec(87.4600, 36.0290);
+static const Vec FN4_POS = Vec(101.2500, 36.0290);
+static const Vec OUT4_POS = Vec(117.7100, 36.0290);
+static const Vec FN1_NAME_POS = Vec(10.5000, 44.2790);
+static const Vec FN2_NAME_POS = Vec(40.7500, 44.2790);
+static const Vec FN3_NAME_POS = Vec(71.0000, 44.2790);
+static const Vec FN4_NAME_POS = Vec(101.2500, 44.2790);
+static const Vec ACTIVE_POS = Vec(71.8296, 52.2744);
+static const Vec POLARITY_POS = Vec(53.4500, 59.3144);
+static const Vec REFV_POS = Vec(65.2694, 59.3144);
+static const Vec ROUTE_POS = Vec(75.3194, 59.3144);
+static const Vec SW1_A_POS = Vec(12.5796, 77.2232);
+static const Vec SW1_GATE_POS = Vec(26.1296, 77.2232);
+static const Vec SW1_B_POS = Vec(40.6694, 77.2232);
+static const Vec SW1_C_POS = Vec(54.2194, 77.2232);
+static const Vec SW2_A_POS = Vec(72.7806, 77.2232);
+static const Vec SW2_GATE_POS = Vec(86.3306, 77.2232);
+static const Vec SW2_B_POS = Vec(100.8704, 77.2232);
+static const Vec SW2_C_POS = Vec(114.4204, 77.2232);
+static const Vec SW1_GATE_LED_POS = Vec(30.0294, 70.7932);
+static const Vec SW2_GATE_LED_POS = Vec(90.2304, 70.7932);
+static const Vec CLOCKED_POS = Vec(74.6744, 87.8586);
+static const Vec DIV2_POS = Vec(14.8172, 98.9094);
+static const Vec DIV4_POS = Vec(29.6045, 98.9094);
+static const Vec DIV8_POS = Vec(44.3918, 98.9094);
+static const Vec DIV16_POS = Vec(59.1791, 98.9094);
+static const Vec DIV32_POS = Vec(74.5963, 98.9094);
+static const Vec DIV64_POS = Vec(90.0136, 98.9094);
+static const Vec DIVMODE_POS = Vec(113.4028, 98.9094);
+static const Vec DIV2_LED_POS = Vec(18.7171, 92.4386);
+static const Vec DIV4_LED_POS = Vec(33.5044, 92.4386);
+static const Vec DIV8_LED_POS = Vec(48.2917, 92.4386);
+static const Vec DIV16_LED_POS = Vec(63.7089, 92.4386);
+static const Vec DIV32_LED_POS = Vec(79.1261, 92.4386);
+static const Vec DIV64_LED_POS = Vec(94.5433, 92.4386);
 static const Vec CLOCK_IN_POS = Vec(56.7250, 118.6000);
 static const Vec RESET_IN_POS = Vec(70.2750, 118.6000);
 
