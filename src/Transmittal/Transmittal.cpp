@@ -3,6 +3,7 @@
 #include "Encoder.hpp"
 #include "../VideoBus.hpp"
 #include "../Process.hpp"
+#include "Publisher.hpp"
 
 #include <atomic>
 #include <chrono>
@@ -35,6 +36,8 @@
 
 namespace tx = transmittal;
 
+static const char* panel_publisher_name() { return transmittal::publisherName(); }
+
 
 struct Transmittal : Module {
 	enum ParamId { SOURCE_PARAM, SIZE_PARAM, RATE_PARAM, SEND_PARAM, PARAMS_LEN };
@@ -43,6 +46,11 @@ struct Transmittal : Module {
 	enum LightId { SEND_LED_LIGHT, STATE_LIGHT, STATE_LIGHT_G, LIGHTS_LEN };
 
 	enum State { IDLE, RUNNING, FAILED };
+	/** SYPHON hands a GPU texture straight to a compositor: one Rack frame plus
+	    one TouchDesigner frame of latency, which is what you can perform with.
+	    HLS encodes and segments, two to three seconds behind, which is what you
+	    can capture with. Syphon is the default wherever it exists. */
+	enum Backend { SYPHON, HLS };
 
 	// --- shared with the worker ---------------------------------------------
 	std::thread worker;
@@ -53,6 +61,8 @@ struct Transmittal : Module {
 	std::atomic<long long> wantSource;
 	std::atomic<int> state;
 	std::atomic<bool> live;         // frames are actually being written
+	std::atomic<int> backend;
+	std::atomic<int> clients;       // how many are watching the fast path
 
 	// Written by the worker, read by the UI. A mutex rather than an atomic
 	// because they are strings, and they change about once a second.
@@ -80,7 +90,8 @@ struct Transmittal : Module {
 		configInput(SEND_IN_INPUT, "Send gate");
 		configOutput(SENDING_OUT_OUTPUT, "High while frames are being written");
 
-		quit = false; want = false; live = false;
+		quit = false; want = false; live = false; clients = 0;
+		backend = tx::publisherAvailable() ? SYPHON : HLS;
 		wantSize = 0; wantRate = 1; wantSource = 0;
 		state = IDLE;
 
@@ -267,7 +278,10 @@ struct Transmittal : Module {
 		if (inputs[SEND_IN_INPUT].isConnected() && !sendGate.isHigh())
 			sending = false;
 
-		want = sending;
+		// The worker only exists for the encoder. On the fast path the widget
+		// publishes on the UI thread, where the GL context is, and ffmpeg is
+		// never started at all.
+		want = sending && backend == HLS;
 		wantSize = (int)std::round(params[SIZE_PARAM].getValue());
 		wantRate = (int)std::round(params[RATE_PARAM].getValue());
 
@@ -276,12 +290,29 @@ struct Transmittal : Module {
 		                 0, (int)srcs.size() - 1);
 		wantSource = (long long)srcs[pick].first;
 
+		bool fast = (backend == SYPHON);
 		int st = state;
-		bool isLive = live;
+		bool isLive = fast ? (sending && (bool)live) : (bool)live;
 		outputs[SENDING_OUT_OUTPUT].setVoltage(isLive ? 10.f : 0.f);
 		lights[SEND_LED_LIGHT].setBrightness(sending ? 1.f : 0.f);
-		lights[STATE_LIGHT].setBrightness(st == FAILED ? 1.f : 0.f);
-		lights[STATE_LIGHT_G].setBrightness(st == RUNNING && isLive ? 1.f : 0.f);
+		lights[STATE_LIGHT].setBrightness(!fast && st == FAILED ? 1.f : 0.f);
+		lights[STATE_LIGHT_G].setBrightness(isLive ? 1.f : 0.f);
+	}
+
+	json_t* dataToJson() override {
+		json_t* root = json_object();
+		json_object_set_new(root, "backend", json_integer(backend));
+		return root;
+	}
+
+	void dataFromJson(json_t* root) override {
+		json_t* b = json_object_get(root, "backend");
+		if (b) {
+			int v = (int)json_integer_value(b);
+			// A patch saved on a Mac and opened on Linux must not come up
+			// asking for a backend that is not compiled in.
+			backend = (v == SYPHON && tx::publisherAvailable()) ? SYPHON : HLS;
+		}
 	}
 };
 
@@ -305,7 +336,15 @@ struct TransmittalDisplay : Widget {
 		float lh = panel::mm(0.f, 4.5f).y;
 
 		std::string src = "--", size = "--", rate = "--", note = "no module", pl;
+		std::string via = "";
 		if (module) {
+			bool fast = module->backend == Transmittal::SYPHON;
+			via = fast ? std::string(panel_publisher_name())
+			           : std::string("HLS  ~2-3 s behind");
+			if (fast) {
+				int n = module->clients;
+				via += n ? rack::string::f("  %d watching", n) : "  nobody watching";
+			}
 			std::vector<std::pair<int64_t, std::string> > s = Transmittal::sources();
 			int pick = clamp((int)std::round(module->params[Transmittal::SOURCE_PARAM].getValue()),
 			                 0, (int)s.size() - 1);
@@ -318,8 +357,8 @@ struct TransmittalDisplay : Widget {
 				clamp((int)std::round(module->params[Transmittal::RATE_PARAM].getValue()),
 				      0, transmittal::kNumRates - 1)]) + " fps";
 			std::lock_guard<std::mutex> lock(module->textMu);
-			note = module->note;
-			pl = module->playlist;
+			note = fast ? (module->sending ? "sending" : "idle") : module->note;
+			pl = fast ? std::string("") : module->playlist;
 		}
 
 		panel::TextStyle mono(panel::Face::Mono, 9.f, panel::PAPER,
@@ -328,6 +367,9 @@ struct TransmittalDisplay : Widget {
 		panel::text(args.vg, mono.inked(panel::SAGE), x, y + lh,
 		            (size + "   " + rate).c_str());
 		panel::text(args.vg, mono.inked(panel::LIME), x, y + lh * 2.f, note.c_str());
+		if (!via.empty())
+			panel::text(args.vg, mono.sized(7.5f).inked(panel::SAGE),
+			            x, y + lh * 3.2f, via.c_str());
 		if (!pl.empty()) {
 			// Ellipsized rather than clipped: the path is the one string here
 			// that has to be read character by character, and a run of it
@@ -335,7 +377,7 @@ struct TransmittalDisplay : Widget {
 			panel::TextStyle small = mono.sized(7.5f).inked(panel::SAGE);
 			const std::string& shown = fitted.get(args.vg, small, pl,
 			                                      box.size.x - panel::mm(5.2f, 0.f).x);
-			panel::text(args.vg, small, x, y + lh * 3.4f, shown.c_str());
+			panel::text(args.vg, small, x, y + lh * 4.3f, shown.c_str());
 		}
 	}
 };
@@ -382,12 +424,81 @@ struct TransmittalWidget : ModuleWidget {
 			panel::mm(panel::SENDING_OUT_POS.x, panel::SENDING_OUT_POS.y), module, Transmittal::SENDING_OUT_OUTPUT));
 	}
 
+	// --- the fast path ------------------------------------------------------
+	// Rack calls step() on the UI thread once a frame, before it begins its
+	// NanoVG frame (Rack/src/window/Window.cpp:496), so the GL context is
+	// current and nothing NanoVG is midway through can be disturbed. That is
+	// the only place a texture can be published from, which is why this lives
+	// on the widget and not on the module.
+	transmittal::Publisher pub;
+	uint64_t seenSeq = 0;
+	std::vector<uint8_t> buf;
+	int bufW = 0, bufH = 0;
+
+	void step() override {
+		ModuleWidget::step();
+		Transmittal* m = dynamic_cast<Transmittal*>(module);
+		if (!m || m->backend != Transmittal::SYPHON || !m->sending) {
+			if (pub.running()) {
+				pub.stop();
+				seenSeq = 0;
+			}
+			if (m) { m->clients = 0; m->live = false; }
+			return;
+		}
+
+		const transmittal::Size& sz = transmittal::kSizes[
+			clamp((int)std::round(m->params[Transmittal::SIZE_PARAM].getValue()),
+			      0, transmittal::kNumSizes - 1)];
+		long long src = m->wantSource;
+		if (src == 0) { m->live = false; return; }
+
+		if (!pub.start(rack::string::f("Transmittal %lld", (long long)m->id),
+		               sz.w, sz.h)) {
+			m->live = false;
+			return;
+		}
+		if (bufW != sz.w || bufH != sz.h) {
+			buf.assign((size_t)sz.w * (size_t)sz.h * 4u, 0);
+			bufW = sz.w; bufH = sz.h;
+			seenSeq = 0;
+		}
+
+		// Only on a frame the source has not published before. Re-publishing
+		// the same picture would cost an upload per screen refresh and change
+		// nothing downstream: Syphon holds the surface, so a stalled source
+		// stays visible without being re-sent.
+		videobus::Frame f;
+		if (videobus::bus().latest((int64_t)src, seenSeq, f)) {
+			seenSeq = f.seq;
+			if (f.w == sz.w && f.h == sz.h)
+				std::memcpy(&buf[0], &f.rgba[0], buf.size());
+			else
+				transmittal::scaleRgba(&f.rgba[0], f.w, f.h, &buf[0], sz.w, sz.h);
+			pub.publish(&buf[0], sz.w, sz.h);
+		}
+		m->clients = pub.hasClients() ? 1 : 0;
+		m->live = true;
+	}
+
 	void appendContextMenu(Menu* menu) override {
 		Transmittal* m = dynamic_cast<Transmittal*>(module);
 		if (!m)
 			return;
 		menu->addChild(new MenuSeparator);
 		menu->addChild(createMenuLabel("Transmittal"));
+
+		if (transmittal::publisherAvailable()) {
+			menu->addChild(createIndexSubmenuItem("Transport",
+				{ std::string(transmittal::publisherName()) + " (fast, for performing)",
+				  "HLS playlist (2-3 s behind, for capture)" },
+				[=]() { return (int)m->backend; },
+				[=](int i) { m->backend = i ? Transmittal::HLS : Transmittal::SYPHON; }));
+		}
+		else {
+			menu->addChild(createMenuLabel("Transport: HLS (no texture sharing on this platform)"));
+		}
+
 		menu->addChild(createMenuItem("Copy playlist path", "", [=]() {
 			std::lock_guard<std::mutex> lock(m->textMu);
 			glfwSetClipboardString(APP->window->win, m->playlist.c_str());

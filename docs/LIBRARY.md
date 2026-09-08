@@ -39,8 +39,15 @@ newer than the one in the Library.
       the toolchain build needs no `make dep`. Transmittal streams video through
       an `ffmpeg` it *spawns* rather than links, exactly as Repossession already
       shells out to `ffmpeg` and `yt-dlp` — a missing one is a message on the
-      panel, not a plugin that fails to load. A future Syphon/Spout backend
-      would be the first thing to break this, and would need its own entry here.
+      panel, not a plugin that fails to load.
+- [ ] **One vendored dependency, macOS only.** `vendor/Syphon` is the Syphon
+      Framework (3-clause BSD, compatible with GPL-3.0), compiled into
+      `plugin.dylib` for Transmittal's fast video path. It is source rather than
+      a binary or a framework bundle, so the build stays reproducible and there
+      is nothing to code-sign; its licence is retained and attributed in
+      `vendor/README.md`. Only macOS builds it, and only Transmittal uses it.
+      **This does need declaring to VCV** -- see `vendor/README.md` for what was
+      taken and why.
 - [x] **Builds on all four targets** — `win-x64`, `mac-arm64`, `mac-x64` and
       `lin-x64`, verified in CI on every push against the official Rack SDK.
 - [x] **No unresolved symbols.** PatchAudit's libcurl fast path is looked up at

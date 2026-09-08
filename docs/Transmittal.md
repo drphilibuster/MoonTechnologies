@@ -37,9 +37,10 @@ told about does not fail, it shears the picture.
 
 ## What it needs
 
-**ffmpeg on your PATH** — the same one Repossession already needs, found the
-same way, so if Repossession works this does too. Nothing is linked or bundled;
-the plugin still has no third-party dependencies of its own.
+**For Syphon: nothing.** It is compiled into the plugin.
+
+**For HLS: ffmpeg on your PATH** — the same one Repossession already needs,
+found the same way, so if Repossession works this does too.
 
 Transmittal asks for the platform hardware encoder first (VideoToolbox on macOS,
 Media Foundation on Windows, VAAPI on Linux). An ffmpeg built without it does
@@ -47,19 +48,25 @@ not refuse to start — it exits a moment later — so the first failed write in
 the first second drops to `libx264` and tries again, and the read-out says
 `streaming (software)` when it has.
 
-## Latency, and why
+## Two transports
 
-**Expect two to three seconds.** HLS cuts the stream into one-second segments
-and a player sits a segment or two behind the live edge by design. That is fine
-for recording and capture, and wrong for performing to.
+**Syphon (the default on macOS) — for performing.** Frames are published as a
+GPU texture over an IOSurface, so what TouchDesigner samples is the same memory
+Rack wrote. No encoder, no segments, no player buffer: latency is one Rack frame
+plus one TouchDesigner frame. Receive it with a **Syphon Spout In TOP**, which
+will list the server as `Transmittal <id>`.
 
-It is what ships first because it costs nothing: every ffmpeg build has the HLS
-muxer, whereas SRT and RTSP need `--enable-libsrt` and a protocol many builds
-(including Homebrew's current one) do not have. The fast path is **Syphon** on
-macOS and **Spout** on Windows — publishing a GPU texture instead of piping
-bytes, sub-frame latency, read by TouchDesigner's Syphon Spout In TOP. When that
-lands it goes *alongside* this rather than replacing it: the video bus, the
-source selection and this whole panel stay as they are.
+**HLS — for capture.** A rolling `.m3u8` written by a spawned ffmpeg, read by a
+**Video Stream In TOP**. It is two to three seconds behind, because HLS cuts
+one-second segments and a player sits a segment or two back by design. Use it to
+record, or on a platform with no texture sharing.
+
+Pick one under **Transport** in the right-click menu. Syphon is chosen
+automatically wherever it is compiled in, and a patch saved on macOS opens
+elsewhere on HLS rather than asking for a backend that does not exist.
+
+Windows would take **Spout** the same way — it is the same shape of API behind
+the same `Publisher` interface, and nothing above that boundary would change.
 
 ## How frames get here
 

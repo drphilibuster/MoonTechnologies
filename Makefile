@@ -52,6 +52,39 @@ LDFLAGS +=
 # src/plugin.cpp, src/Retroactive/Retroactive.cpp and src/PatchAudit/ps/Api.cpp.
 SOURCES += $(wildcard src/*.cpp src/*/*.cpp src/*/*/*.cpp)
 
+# --- Syphon, the fast video path (macOS only) --------------------------------
+# Transmittal publishes a GL texture to a compositor rather than encoding a
+# stream, which is what makes it usable to perform with rather than only to
+# capture with. Syphon is vendored in vendor/Syphon (3-clause BSD) and compiled
+# straight into plugin.dylib -- there is no framework bundle to ship and nothing
+# to code-sign, and Rack's own NANOVG_GL2 context is the legacy GL one Syphon's
+# OpenGL server wants.
+#
+# Its sources are built by Xcode normally, which supplies two things the SDK's
+# plain clang invocation does not: a prefix header (Cocoa, and the SYPHONLOG
+# macro) and framework-style <Syphon/...> include resolution. -include and a
+# -Ivendor that makes the directory's own name the framework name cover both. ARC
+# is on for Syphon's own sources only; the rest of this plugin is not ARC.
+# ARCH_OS comes from the SDK's arch.mk, which plugin.mk pulls in at the bottom
+# of this file -- long after this line. So the platform test is uname's, the
+# same one the preview target already uses.
+ifeq ($(shell uname -s), Darwin)
+SYPHON_DIR := vendor/Syphon
+SYPHON_SRC := $(filter-out %Metal.m %MetalClient.m %MetalServer.m, $(wildcard $(SYPHON_DIR)/*.m)) $(wildcard $(SYPHON_DIR)/*.c)
+SOURCES += $(SYPHON_SRC)
+SOURCES += src/Transmittal/Syphon.mm
+FLAGS += -Ivendor -I$(SYPHON_DIR) -include $(SYPHON_DIR)/Syphon_Prefix.pch
+LDFLAGS += -framework Cocoa -framework OpenGL -framework IOSurface -framework CoreVideo
+# Only Syphon's own translation units are ARC; the rest of this plugin is not,
+# and the .mm wrapper owns nothing ARC would need to see. Target-specific, and
+# deliberately not indented: a tab here would make it a recipe line.
+# Syphon uses NSKeyedUnarchiver APIs introduced in 10.13, while the SDK's own
+# flags say 10.9. Left alone that is not a warning, it is a crash on an old Mac
+# -- so its translation units are told the truth about what they need. Rack 2
+# itself does not run on anything older.
+$(patsubst %, build/%.o, $(SYPHON_SRC)): FLAGS += -fobjc-arc -mmacosx-version-min=10.13
+endif
+
 # Added to the .vcvplugin package by `make dist`. The compiled library and
 # plugin.json are added automatically.
 DISTRIBUTABLES += res
