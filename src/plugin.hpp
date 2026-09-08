@@ -14,6 +14,7 @@ extern Model* modelCollusion;
 extern Model* modelConsolidation;
 extern Model* modelBailout;
 extern Model* modelTransmittal;
+extern Model* modelProjection;
 extern Model* modelDeduction;
 extern Model* modelDependents;
 extern Model* modelDiversified;

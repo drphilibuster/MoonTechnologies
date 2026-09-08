@@ -1,6 +1,6 @@
 # Moon Technologies
 
-Twenty-seven modules for [VCV Rack 2](https://vcvrack.com), by **Taxxess**.
+Twenty-eight modules for [VCV Rack 2](https://vcvrack.com), by **Taxxess**.
 
 They share a panel language borrowed from money — a pale engraved note, sage
 guilloche round every field, a scroll in every corner, a form number in the
@@ -9,7 +9,7 @@ and finding out what it cost you.
 
 ## Where they come from
 
-**Thirteen are built for this plugin.** Some are original; some are a piece of
+**Fourteen are built for this plugin.** Some are original; some are a piece of
 hardware or a paper worked out properly — the Olegtron R2R as a real resistor
 ladder, Curtis Roads' pulsar synthesis, Partch's tonality diamond. Where one is
 modelled on something, it says so and says what.
@@ -31,12 +31,14 @@ so is anything wrong with them.
 **Three grew out of the family** — an expander, a voice that turned out to
 deserve its own panel, and a bank doubled into a module of its own.
 
-**One of those thirteen carries the picture out.** [Transmittal](docs/Transmittal.md)
+**Two of those fourteen are about the picture.** [Transmittal](docs/Transmittal.md)
 publishes video from anything in the plugin to a compositor — Syphon on macOS,
 read straight into TouchDesigner — so Repossession's footage can go to a
-projector while the same patch is making the sound.
+projector while the same patch is making the sound. And
+[Projection](docs/Projection.md) makes the video in the first place: a scope, a
+spectrum and a warped field, driven by audio and CV.
 
-## All twenty-seven
+## All twenty-eight
 
 *(Every panel below is rendered by Rack itself, not mocked up.)*
 
@@ -64,9 +66,9 @@ projector while the same patch is making the sound.
 |---|---|---|---|
 | **[Sign Here](docs/SignHere.md)** · 20 HP | **[Diversified](docs/Diversified.md)** · 21 HP | **[Toll](docs/Toll.md)** · 11 HP | **[Schedule A](docs/ScheduleA.md)** · 14 HP |
 
-| <img src="tools/previews/Dependents.png" width="134"> | <img src="tools/previews/Bailout.png" width="210"> | <img src="tools/previews/Transmittal.png" width="84"> |
-|---|---|---|
-| **[Dependents](docs/Dependents.md)** · 16 HP | **[Bailout](docs/Bailout.md)** · 25 HP | **[Transmittal](docs/Transmittal.md)** · 10 HP |
+| <img src="tools/previews/Dependents.png" width="134"> | <img src="tools/previews/Bailout.png" width="210"> | <img src="tools/previews/Transmittal.png" width="84"> | <img src="tools/previews/Projection.png" width="101"> |
+|---|---|---|---|
+| **[Dependents](docs/Dependents.md)** · 16 HP | **[Bailout](docs/Bailout.md)** · 25 HP | **[Transmittal](docs/Transmittal.md)** · 10 HP | **[Projection](docs/Projection.md)** · 12 HP |
 
 
 ## Built for this plugin
@@ -166,6 +168,14 @@ Consolidation's mixer at eight channels, grouped as two banks of four with their
 own mixes and a main that sums whichever banks are free — one 8-into-1 mixer, two
 independent 4s, or eight VCAs, depending only on what is patched. Two 1:7
 multiples instead of two 1:3.
+
+### [Projection](docs/Projection.md) — 12 HP · *Utility, Visual, Envelope follower*
+
+Video made out of what the rack is already doing. An XY scope, a sixteen-band
+spectrum, or a field warped by those bands — driven by audio and by CV on every
+control, with a gate for flash and one for freeze. Three band envelopes and an
+onset trigger leave on the footer, so it earns its space as an analyser even
+when nothing is watching the picture.
 
 ### [Transmittal](docs/Transmittal.md) — 10 HP · *Utility, Visual*
 

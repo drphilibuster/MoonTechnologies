@@ -16,6 +16,7 @@ void init(Plugin* p) {
 	p->addModel(modelConsolidation);
 	p->addModel(modelBailout);
 	p->addModel(modelTransmittal);
+	p->addModel(modelProjection);
 	p->addModel(modelDeduction);
 	p->addModel(modelDependents);
 	p->addModel(modelDiversified);

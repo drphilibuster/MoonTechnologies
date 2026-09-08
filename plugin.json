@@ -226,6 +226,17 @@
       ]
     },
     {
+      "slug": "Projection",
+      "name": "Projection",
+      "description": "Video generator: an XY scope, a spectrum and a warped field, driven by audio and CV, published to the plugin's video bus for Transmittal to send out. Also outputs three band envelopes and an onset trigger",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Projection.md",
+      "tags": [
+        "Utility",
+        "Visual",
+        "Envelope follower"
+      ]
+    },
+    {
       "slug": "Retroactive",
       "name": "Retroactive",
       "description": "Windowed sample-permutation effect",
