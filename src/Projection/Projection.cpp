@@ -40,6 +40,14 @@ namespace pj = projection;
 static const int kFftSize = 2048;
 static const int kHop = 512;          // 43 windows a second at 44.1 kHz
 
+/** Frames a second. The analysis runs per hop -- 86 times a second at 44.1 kHz
+    and 187 at 96 -- because the envelopes and the onset want to be that
+    responsive and the transform is cheap. Rendering does not: a frame is
+    640x360 and the field mode is real arithmetic per lattice point, so drawing
+    one per hop would spend a core producing frames at a rate no compositor
+    asked for and no projector could show. */
+static const float kFps = 30.f;
+
 
 struct Projection : Module {
 	enum ParamId {
@@ -201,6 +209,7 @@ struct Projection : Module {
 		uint64_t read = 0;
 		float phase = 0.f;
 		float flash = 0.f;
+		float sinceFrame = 0.f;
 		auto last = std::chrono::steady_clock::now();
 
 		while (!quit) {
@@ -264,7 +273,17 @@ struct Projection : Module {
 			bool frozen = inputs[FREEZE_INPUT].isConnected()
 				&& inputs[FREEZE_INPUT].getVoltage() >= 1.f;
 
-			if (!frozen) {
+			// The analysis above happened this hop; the drawing below happens at
+			// the frame rate. `frameDt` is the time since the last frame, not
+			// since the last hop, so trails and the field's own motion stay
+			// anchored to seconds rather than to however many windows went by.
+			sinceFrame += dt;
+			bool due = sinceFrame >= 1.f / kFps;
+			float frameDt = sinceFrame;
+			if (due)
+				sinceFrame = 0.f;
+
+			if (due && !frozen) {
 				pj::Look look;
 				look.hue = knobCv(HUE_PARAM, HUE_CV_INPUT);
 				look.sat = params[SAT_PARAM].getValue();
@@ -277,14 +296,14 @@ struct Projection : Module {
 				if (flashHigh)
 					flash = 1.f;
 				else
-					flash *= std::exp(-dt / 0.08f);
+					flash *= std::exp(-frameDt / 0.08f);
 				look.flash = flash;
 
 				int mode = (int) std::round(knobCv(MODE_PARAM, MODE_CV_INPUT) * 2.f);
 				mode = clamp(mode, 0, 2);
-				phase += dt * (0.2f + look.warp * 1.2f);
+				phase += frameDt * (0.2f + look.warp * 1.2f);
 
-				pj::fade(cv, look.trail, dt);
+				pj::fade(cv, look.trail, frameDt);
 				if (mode == 0) {
 					for (int i = 0; i < kHop; i++) {
 						uint64_t k = read + (uint64_t)(kFftSize - kHop + i);

@@ -287,6 +287,40 @@ int main() {
 		      a.mean() == 0.0 && b.mean() > 40.0, detail);
 	}
 
+	// --- a still picture does not fill in to white ----------------------------
+	// The bug this exists for: a renderer that adds into the buffer covers the
+	// same pixels every frame, so with any trail at all the picture saturates to
+	// solid white within about a second. It looks like the module has crashed,
+	// and it was found by watching exactly that happen through TouchDesigner
+	// rather than by any check here.
+	{
+		bool ok = true;
+		char detail[160] = "";
+		float bands[kBands];
+		for (int i = 0; i < kBands; i++) bands[i] = 0.6f;
+		for (int mode = 1; mode <= 2 && ok; mode++) {
+			Guarded g(64, 64);
+			clear(g.c);
+			Look look; look.trail = 0.5f;
+			double first = 0;
+			for (int f = 0; f < 300; f++) {           // ten seconds at 30 fps
+				fade(g.c, look.trail, 1.f / 30.f);
+				if (mode == 1) renderBars(g.c, bands, kBands, look);
+				else renderField(g.c, bands, kBands, 0.3f, look);
+				if (f == 2) first = g.mean();
+			}
+			double last = g.mean();
+			// Settles rather than climbing: after ten seconds of an unchanging
+			// input it must look like it did after three frames.
+			if (last > first * 1.35 + 4.0 || last > 240.0) {
+				ok = false;
+				snprintf(detail, sizeof detail,
+				         "mode %d: %.1f after 3 frames, %.1f after 300", mode, first, last);
+			}
+		}
+		check("a steady input settles instead of filling in to white", ok, detail);
+	}
+
 	// --- a trail decays at the same rate whatever the frame rate --------------
 	// TRAIL is per second, not per frame. A per-frame factor would make the look
 	// change with the output rate, which is not what that control says it does.

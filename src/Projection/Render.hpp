@@ -196,8 +196,15 @@ inline void renderBars(Canvas c, const float* bands, int n, const Look& look) {
 			for (int x = x0; x <= x1 && x < c.w; x++) {
 				uint8_t* p = row + (size_t) x * 4u;
 				for (int k = 0; k < 3; k++) {
-					int val = p[k] + rgb[k];
-					p[k] = (uint8_t) (val > 255 ? 255 : val);
+					// Brightest wins, rather than adding. A bar covers the same
+					// pixels every frame, so adding into them with any trail at
+					// all saturates the whole picture to white within a second
+					// -- the scope gets away with adding because it is sparse
+					// and this does not. Taking the maximum still leaves the
+					// faded remainder visible as a bar falls, which is what the
+					// trail is for.
+					if (rgb[k] > p[k])
+						p[k] = rgb[k];
 				}
 			}
 		}
@@ -238,10 +245,13 @@ inline void renderField(Canvas c, const float* bands, int n, float phase,
 				uint8_t* row = c.px + (size_t) yy * (size_t) c.w * 4u;
 				for (int xx = x; xx < x + STEP && xx < c.w; xx++) {
 					uint8_t* p = row + (size_t) xx * 4u;
-					for (int k = 0; k < 3; k++) {
-						int q = p[k] + rgb[k];
-						p[k] = (uint8_t) (q > 255 ? 255 : q);
-					}
+					// Written, not added. The field covers every pixel every
+					// frame, so adding would saturate it to white immediately
+					// and there is nothing underneath worth keeping -- which is
+					// also why TRAIL does nothing in this mode.
+					p[0] = rgb[0];
+					p[1] = rgb[1];
+					p[2] = rgb[2];
 				}
 			}
 		}
