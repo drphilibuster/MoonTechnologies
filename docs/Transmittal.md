@@ -16,8 +16,9 @@ Part of the [Moon Technologies](../README.md) plugin.
    the Repossession you want.
 3. Pick a **SIZE** and a **RATE**, press **SEND**. The caption light goes mint
    once frames are actually going out.
-4. Right-click → **Copy playlist path**, and paste it into a Video Stream In
-   TOP.
+4. Right-click → **Copy Syphon server name**, and paste it into a Syphon Spout
+   In TOP's *Sender Name*. (On the HLS transport the menu offers the playlist
+   path instead, for a Video Stream In TOP.)
 
 ## Controls
 
@@ -53,8 +54,14 @@ the first second drops to `libx264` and tries again, and the read-out says
 **Syphon (the default on macOS) — for performing.** Frames are published as a
 GPU texture over an IOSurface, so what TouchDesigner samples is the same memory
 Rack wrote. No encoder, no segments, no player buffer: latency is one Rack frame
-plus one TouchDesigner frame. Receive it with a **Syphon Spout In TOP**, which
-will list the server as `Transmittal <id>`.
+plus one TouchDesigner frame. Receive it with a **Syphon Spout In TOP**. The server name is on the panel and
+in the right-click menu as **Copy Syphon server name** — take it from there
+rather than guessing, because the first half is the *host application's* name
+and not the module's: it reads `VCV Rack 2 Pro:Transmittal <id>`, not
+`Rack:...`.
+
+The server exists only while SEND is on, so turn it on before looking for the
+name in TouchDesigner's menu.
 
 **HLS — for capture.** A rolling `.m3u8` written by a spawned ffmpeg, read by a
 **Video Stream In TOP**. It is two to three seconds behind, because HLS cuts

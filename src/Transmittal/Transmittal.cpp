@@ -69,6 +69,10 @@ struct Transmittal : Module {
 	std::mutex textMu;
 	std::string playlist;
 	std::string note;
+	/** What a receiver has to be pointed at. Written by the widget, which is
+	    the only place that knows -- the application half of it comes from the
+	    host, not from us. */
+	std::string server;
 
 	dsp::BooleanTrigger sendTrig;
 	dsp::SchmittTrigger sendGate;
@@ -358,7 +362,9 @@ struct TransmittalDisplay : Widget {
 				      0, transmittal::kNumRates - 1)]) + " fps";
 			std::lock_guard<std::mutex> lock(module->textMu);
 			note = fast ? (module->sending ? "sending" : "idle") : module->note;
-			pl = fast ? std::string("") : module->playlist;
+			// On the fast path the string worth showing is the server name a
+			// receiver must be set to, not a playlist nothing will read.
+			pl = fast ? module->server : module->playlist;
 		}
 
 		panel::TextStyle mono(panel::Face::Mono, 9.f, panel::PAPER,
@@ -450,7 +456,12 @@ struct TransmittalWidget : ModuleWidget {
 				pub.stop();
 				seenSeq = 0;
 			}
-			if (m) { m->clients = 0; m->live = false; }
+			if (m) {
+				m->clients = 0;
+				m->live = false;
+				std::lock_guard<std::mutex> lock(m->textMu);
+				m->server.clear();
+			}
 			return;
 		}
 
@@ -486,6 +497,12 @@ struct TransmittalWidget : ModuleWidget {
 		}
 		m->clients = pub.hasClients() ? 1 : 0;
 		m->live = true;
+		{
+			std::string nm = pub.serverName();
+			std::lock_guard<std::mutex> lock(m->textMu);
+			if (m->server != nm)
+				m->server = nm;
+		}
 	}
 
 	void appendContextMenu(Menu* menu) override {
@@ -506,10 +523,22 @@ struct TransmittalWidget : ModuleWidget {
 			menu->addChild(createMenuLabel("Transport: HLS (no texture sharing on this platform)"));
 		}
 
-		menu->addChild(createMenuItem("Copy playlist path", "", [=]() {
-			std::lock_guard<std::mutex> lock(m->textMu);
-			glfwSetClipboardString(APP->window->win, m->playlist.c_str());
-		}));
+		// Two transports, two strings, and only one of them is ever the one you
+		// need -- offering the playlist path while running Syphon is how a
+		// server name ends up being reconstructed by hand from a file path.
+		if (m->backend == Transmittal::SYPHON) {
+			menu->addChild(createMenuItem("Copy Syphon server name", "", [=]() {
+				std::lock_guard<std::mutex> lock(m->textMu);
+				if (!m->server.empty())
+					glfwSetClipboardString(APP->window->win, m->server.c_str());
+			}));
+		}
+		else {
+			menu->addChild(createMenuItem("Copy playlist path", "", [=]() {
+				std::lock_guard<std::mutex> lock(m->textMu);
+				glfwSetClipboardString(APP->window->win, m->playlist.c_str());
+			}));
+		}
 	}
 };
 

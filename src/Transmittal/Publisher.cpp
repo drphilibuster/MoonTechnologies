@@ -21,6 +21,7 @@ const char* publisherName() { return "none"; }
 bool Publisher::start(const std::string&, int, int) { return false; }
 void Publisher::publish(const uint8_t*, int, int) {}
 void Publisher::stop() {}
+std::string Publisher::serverName() const { return std::string(); }
 bool Publisher::hasClients() const { return false; }
 
 } // namespace transmittal

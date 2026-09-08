@@ -95,6 +95,18 @@ void Publisher::publish(const uint8_t* data, int w, int h) {
 	                       flipped:YES];
 }
 
+std::string Publisher::serverName() const {
+	Impl* p = (Impl*)impl;
+	if (!p || !p->server)
+		return std::string();
+	NSDictionary* d = [p->server serverDescription];
+	NSString* app = [d objectForKey:@"SyphonServerDescriptionAppNameKey"];
+	NSString* nm = [d objectForKey:@"SyphonServerDescriptionNameKey"];
+	if (!app || !nm)
+		return std::string();
+	return std::string([[NSString stringWithFormat:@"%@:%@", app, nm] UTF8String]);
+}
+
 bool Publisher::hasClients() const {
 	Impl* p = (Impl*)impl;
 	return p && p->server && [p->server hasClients];

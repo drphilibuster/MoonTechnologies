@@ -1395,7 +1395,25 @@ struct VideoScreen : widget::Widget {
 			nvgDeleteImage(imageVg, image);
 	}
 
-	/** Returns true if `frame` holds the wanted picture. */
+	/** The frame the module is currently on, fetched and published whether or
+	    not this widget is drawn.
+
+	    Rack culls draw() by clip box but never culls step()
+	    (Rack/src/widget/Widget.cpp:270 against :249), so doing this in
+	    drawLayer -- where it used to be -- meant the video feed stopped the
+	    moment the rack was scrolled far enough to take Repossession off screen.
+	    That is survivable for a panel thumbnail and not survivable for a
+	    projector. */
+	void step() override {
+		Widget::step();
+		const rp::Media* m = module ? module->owner.get() : NULL;
+		if (!m || m->videoFrames <= 0)
+			return;
+		fetchFrame(m, (int)(module->uiPos.load() * m->duration * rp::FRAME_FPS));
+	}
+
+	/** Returns true if `frame` holds the wanted picture. Publishes to the video
+	    bus whenever it reads one that was not there before. */
 	bool fetchFrame(const rp::Media* m, int want) {
 		if (!m || m->videoFrames <= 0)
 			return false;

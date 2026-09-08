@@ -50,6 +50,13 @@ struct Publisher {
 
 	bool running() const { return impl != NULL; }
 
+	/** The name a receiver must be pointed at, exactly as the backend
+	    advertises it -- "<application>:<server>". The application half is the
+	    host's own name and not ours to choose, so it cannot be guessed from
+	    the module: on this machine it is "VCV Rack 2 Pro", not "Rack". Empty
+	    when nothing is running. */
+	std::string serverName() const;
+
 	/** Whether anything is actually looking. Publishing with no client is
 	    cheap but not free, and the panel is more useful when it can say. */
 	bool hasClients() const;
