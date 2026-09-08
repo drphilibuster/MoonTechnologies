@@ -42,10 +42,12 @@
   <rect x="6.0000" y="29.1499" width="69.2800" height="0.2" fill="#7B9A6D"/>
   <circle cx="6.0000" cy="29.2499" r="0.42" fill="#7B9A6D"/>
   <circle cx="75.2800" cy="29.2499" r="0.42" fill="#7B9A6D"/>
-  <rect x="18.0050" y="71.0242" width="0.26" height="5.3200" fill="#7B9A6D" fill-opacity="0.8"/>
-  <rect x="18.0050" y="79.2560" width="0.26" height="5.8900" fill="#7B9A6D" fill-opacity="0.8"/>
-  <rect x="63.0150" y="71.0242" width="0.26" height="5.3200" fill="#7B9A6D" fill-opacity="0.8"/>
-  <rect x="63.0150" y="79.2560" width="0.26" height="5.8900" fill="#7B9A6D" fill-opacity="0.8"/>
+  <rect x="14.5250" y="71.0242" width="0.26" height="5.3200" fill="#7B9A6D" fill-opacity="0.8"/>
+  <rect x="14.5250" y="79.2560" width="0.26" height="5.8900" fill="#7B9A6D" fill-opacity="0.8"/>
+  <rect x="40.5100" y="71.0242" width="0.26" height="5.3200" fill="#7B9A6D" fill-opacity="0.8"/>
+  <rect x="40.5100" y="79.2560" width="0.26" height="5.8900" fill="#7B9A6D" fill-opacity="0.8"/>
+  <rect x="66.4950" y="71.0242" width="0.26" height="5.3200" fill="#7B9A6D" fill-opacity="0.8"/>
+  <rect x="66.4950" y="79.2560" width="0.26" height="5.8900" fill="#7B9A6D" fill-opacity="0.8"/>
   <rect x="13.2475" y="14.4000" width="5.9600" height="11.0000" rx="1.04" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="32.5025" cy="19.9000" r="4.3000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <rect x="45.7975" y="14.4000" width="5.9600" height="11.0000" rx="1.04" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
@@ -58,14 +60,17 @@
   <circle cx="32.5025" cy="52.4711" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <rect x="45.7075" y="48.2711" width="6.1400" height="8.4000" rx="1.07" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="65.0525" cy="52.4711" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="18.1350" cy="71.0242" r="3.7200" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="63.1450" cy="71.0242" r="3.7200" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="18.1350" cy="85.1460" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="63.1450" cy="85.1460" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="18.1350" cy="98.0140" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="33.8650" cy="98.0140" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="49.5950" cy="98.0140" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="63.1450" cy="98.0140" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="14.6550" cy="71.0242" r="3.7200" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="27.0425" cy="71.0242" r="3.7200" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="40.6400" cy="71.0242" r="3.7200" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="54.2375" cy="71.0242" r="3.7200" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="66.6250" cy="71.0242" r="3.7200" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="14.6550" cy="85.1460" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="40.6400" cy="85.1460" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="66.6250" cy="85.1460" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="14.6550" cy="98.0140" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="40.6400" cy="98.0140" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="66.6250" cy="98.0140" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="7.2900" cy="118.6000" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="18.4067" cy="118.6000" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="29.5233" cy="118.6000" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
@@ -87,14 +92,17 @@
   <circle inkscape:label="bias1" cx="32.5025" cy="52.4711" r="1" fill="#ff0000"/>
   <circle inkscape:label="range2" cx="48.7775" cy="52.4711" r="1" fill="#ff0000"/>
   <circle inkscape:label="bias2" cx="65.0525" cy="52.4711" r="1" fill="#ff0000"/>
-  <circle inkscape:label="cv1_amt" cx="18.1350" cy="71.0242" r="1" fill="#ff0000"/>
-  <circle inkscape:label="cv2_amt" cx="63.1450" cy="71.0242" r="1" fill="#ff0000"/>
-  <circle inkscape:label="cv1_in" cx="18.1350" cy="85.1460" r="1" fill="#00ff00"/>
-  <circle inkscape:label="cv2_in" cx="63.1450" cy="85.1460" r="1" fill="#00ff00"/>
-  <circle inkscape:label="gate1_in" cx="18.1350" cy="98.0140" r="1" fill="#00ff00"/>
-  <circle inkscape:label="pwm_duty" cx="33.8650" cy="98.0140" r="1" fill="#ff0000"/>
-  <circle inkscape:label="pwm_cv_in" cx="49.5950" cy="98.0140" r="1" fill="#00ff00"/>
-  <circle inkscape:label="gate2_in" cx="63.1450" cy="98.0140" r="1" fill="#00ff00"/>
+  <circle inkscape:label="cv1_amt" cx="14.6550" cy="71.0242" r="1" fill="#ff0000"/>
+  <circle inkscape:label="curve1" cx="27.0425" cy="71.0242" r="1" fill="#ff0000"/>
+  <circle inkscape:label="pwm_cv_amt" cx="40.6400" cy="71.0242" r="1" fill="#ff0000"/>
+  <circle inkscape:label="curve2" cx="54.2375" cy="71.0242" r="1" fill="#ff0000"/>
+  <circle inkscape:label="cv2_amt" cx="66.6250" cy="71.0242" r="1" fill="#ff0000"/>
+  <circle inkscape:label="cv1_in" cx="14.6550" cy="85.1460" r="1" fill="#00ff00"/>
+  <circle inkscape:label="pwm_cv_in" cx="40.6400" cy="85.1460" r="1" fill="#00ff00"/>
+  <circle inkscape:label="cv2_in" cx="66.6250" cy="85.1460" r="1" fill="#00ff00"/>
+  <circle inkscape:label="gate1_in" cx="14.6550" cy="98.0140" r="1" fill="#00ff00"/>
+  <circle inkscape:label="pwm_duty" cx="40.6400" cy="98.0140" r="1" fill="#ff0000"/>
+  <circle inkscape:label="gate2_in" cx="66.6250" cy="98.0140" r="1" fill="#00ff00"/>
   <circle inkscape:label="env1_out" cx="7.2900" cy="118.6000" r="1" fill="#00ff00"/>
   <circle inkscape:label="inv1_out" cx="18.4067" cy="118.6000" r="1" fill="#00ff00"/>
   <circle inkscape:label="eoc1_out" cx="29.5233" cy="118.6000" r="1" fill="#00ff00"/>

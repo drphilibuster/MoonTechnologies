@@ -38,12 +38,14 @@ static const Label LABELS[] = {
 	{ 48.7775f,  60.5780f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RANGE"},
 	{ 65.0525f,  60.5780f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BIAS"},
 	{ 40.6400f,  66.2042f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "AUTOPAY"},
-	{ 18.1350f,  78.5560f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV AMT"},
-	{ 63.1450f,  78.5560f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV AMT"},
-	{ 18.1350f,  92.8240f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
-	{ 33.8650f, 106.1209f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DUTY"},
-	{ 49.5950f,  92.8240f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV"},
-	{ 63.1450f,  92.8240f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
+	{ 14.6550f,  78.5560f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV AMT"},
+	{ 27.0425f,  78.5560f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CURVE"},
+	{ 40.6400f,  78.5560f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PWM CV"},
+	{ 54.2375f,  78.5560f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CURVE"},
+	{ 66.6250f,  78.5560f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV AMT"},
+	{ 14.6550f,  92.8240f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
+	{ 40.6400f, 106.1209f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DUTY"},
+	{ 66.6250f,  92.8240f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
 	{  7.2900f, 112.8851f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ENV1"},
 	{ 18.4067f, 112.8851f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SQU1"},
 	{ 29.5233f, 112.8851f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EOC1"},
@@ -73,14 +75,17 @@ static const Vec RANGE1_POS = Vec(16.2275, 52.4711);
 static const Vec BIAS1_POS = Vec(32.5025, 52.4711);
 static const Vec RANGE2_POS = Vec(48.7775, 52.4711);
 static const Vec BIAS2_POS = Vec(65.0525, 52.4711);
-static const Vec CV1_AMT_POS = Vec(18.1350, 71.0242);
-static const Vec CV2_AMT_POS = Vec(63.1450, 71.0242);
-static const Vec CV1_IN_POS = Vec(18.1350, 85.1460);
-static const Vec CV2_IN_POS = Vec(63.1450, 85.1460);
-static const Vec GATE1_IN_POS = Vec(18.1350, 98.0140);
-static const Vec PWM_DUTY_POS = Vec(33.8650, 98.0140);
-static const Vec PWM_CV_IN_POS = Vec(49.5950, 98.0140);
-static const Vec GATE2_IN_POS = Vec(63.1450, 98.0140);
+static const Vec CV1_AMT_POS = Vec(14.6550, 71.0242);
+static const Vec CURVE1_POS = Vec(27.0425, 71.0242);
+static const Vec PWM_CV_AMT_POS = Vec(40.6400, 71.0242);
+static const Vec CURVE2_POS = Vec(54.2375, 71.0242);
+static const Vec CV2_AMT_POS = Vec(66.6250, 71.0242);
+static const Vec CV1_IN_POS = Vec(14.6550, 85.1460);
+static const Vec PWM_CV_IN_POS = Vec(40.6400, 85.1460);
+static const Vec CV2_IN_POS = Vec(66.6250, 85.1460);
+static const Vec GATE1_IN_POS = Vec(14.6550, 98.0140);
+static const Vec PWM_DUTY_POS = Vec(40.6400, 98.0140);
+static const Vec GATE2_IN_POS = Vec(66.6250, 98.0140);
 static const Vec ENV1_OUT_POS = Vec(7.2900, 118.6000);
 static const Vec INV1_OUT_POS = Vec(18.4067, 118.6000);
 static const Vec EOC1_OUT_POS = Vec(29.5233, 118.6000);

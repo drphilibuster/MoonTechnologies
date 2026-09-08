@@ -1,5 +1,6 @@
 #include "../plugin.hpp"
 #include "Panel.hpp"
+#include "Curve.hpp"
 #include <cmath>
 
 // ---------------------------------------------------------------------------
@@ -216,6 +217,7 @@ struct Installment : Module {
 		MODE2_PARAM, LOOP2_PARAM, ATTACK2_PARAM, RELEASE2_PARAM, RANGE2_PARAM,
 		BIAS2_PARAM, CV2_AMT_PARAM,
 		PWM_DUTY_PARAM,
+		CURVE1_PARAM, CURVE2_PARAM, PWM_CV_AMT_PARAM,
 		PARAMS_LEN
 	};
 	enum InputId {
@@ -259,6 +261,7 @@ struct Installment : Module {
 		configSwitch(RANGE1_PARAM, 0.f, 1.f, 0.f, "Range, channel 1", rangeLabels);
 		configParam(BIAS1_PARAM, -1.f, 1.f, 0.f, "Bias, channel 1", "%", 0.f, 100.f);
 		configParam(CV1_AMT_PARAM, -1.f, 1.f, 0.f, "CV amount, channel 1", "%", 0.f, 100.f);
+		configParam(CURVE1_PARAM, -1.f, 1.f, 0.f, "Curve, channel 1", "%", 0.f, 100.f);
 		getParamQuantity(CV1_AMT_PARAM)->randomizeEnabled = false;
 
 		configSwitch(MODE2_PARAM, 0.f, 2.f, 0.f, "Mode, channel 2", modeLabels);
@@ -268,9 +271,11 @@ struct Installment : Module {
 		configSwitch(RANGE2_PARAM, 0.f, 1.f, 0.f, "Range, channel 2", rangeLabels);
 		configParam(BIAS2_PARAM, -1.f, 1.f, 0.f, "Bias, channel 2", "%", 0.f, 100.f);
 		configParam(CV2_AMT_PARAM, -1.f, 1.f, 0.f, "CV amount, channel 2", "%", 0.f, 100.f);
+		configParam(CURVE2_PARAM, -1.f, 1.f, 0.f, "Curve, channel 2", "%", 0.f, 100.f);
 		getParamQuantity(CV2_AMT_PARAM)->randomizeEnabled = false;
 
 		configParam(PWM_DUTY_PARAM, 0.f, 1.f, 0.5f, "PWM duty", "%", 0.f, 100.f);
+		configParam(PWM_CV_AMT_PARAM, -1.f, 1.f, 0.f, "PWM duty CV amount", "%", 0.f, 100.f);
 
 		configInput(CV1_IN_INPUT, "Channel 1 CV");
 		configInput(GATE1_IN_INPUT, "Channel 1 gate/reset");
@@ -303,6 +308,7 @@ struct Installment : Module {
 	    tap downstream; it is only written when `captureForPwm` is set. */
 	void processChannel(FuncGenVoice* voices, int mode, bool loop, float attackKnob,
 	                    float releaseKnob, int range, float bias, float cvAmt,
+	                    float curve,
 	                    bool sine, Input& cvIn, Input& gateIn,
 	                    Output& mainOut, Output& invOut, Output& eocOut,
 	                    float sampleTime, bool captureForPwm, float& ch1Main) {
@@ -339,6 +345,17 @@ struct Installment : Module {
 				                      releaseSec, edge, high, sampleTime, main, inv);
 			}
 
+			// CURVE bends the finished shape. In LFO mode the companion
+			// output is a band-limited pulse, whose only two levels are the
+			// shaper's fixed points -- bending it would do nothing but
+			// distort the BLEP's overshoot, so it is left alone. In AR and
+			// AD the companion is the true inverse of the main output, so it
+			// is re-derived from the bent value rather than bent itself.
+			float shaped = installment::curveShape(main, curve);
+			if (mode != installment::MODE_LFO)
+				inv = 10.f - shaped;
+			main = shaped;
+
 			mainOut.setVoltage(clamp(main, -12.f, 12.f), c);
 			invOut.setVoltage(clamp(inv, -12.f, 12.f), c);
 			bool eocHigh = voices[c].eocPulse.process(sampleTime);
@@ -360,6 +377,7 @@ struct Installment : Module {
 		               params[ATTACK1_PARAM].getValue(), params[RELEASE1_PARAM].getValue(),
 		               (int)std::round(params[RANGE1_PARAM].getValue()),
 		               params[BIAS1_PARAM].getValue(), params[CV1_AMT_PARAM].getValue(),
+		               params[CURVE1_PARAM].getValue(),
 		               sineShape[0], inputs[CV1_IN_INPUT], inputs[GATE1_IN_INPUT],
 		               outputs[ENV1_OUT_OUTPUT], outputs[INV1_OUT_OUTPUT],
 		               outputs[EOC1_OUT_OUTPUT], args.sampleTime, true, ch1Main);
@@ -370,6 +388,7 @@ struct Installment : Module {
 		               params[ATTACK2_PARAM].getValue(), params[RELEASE2_PARAM].getValue(),
 		               (int)std::round(params[RANGE2_PARAM].getValue()),
 		               params[BIAS2_PARAM].getValue(), params[CV2_AMT_PARAM].getValue(),
+		               params[CURVE2_PARAM].getValue(),
 		               sineShape[1], inputs[CV2_IN_INPUT], inputs[GATE2_IN_INPUT],
 		               outputs[ENV2_OUT_OUTPUT], outputs[INV2_OUT_OUTPUT],
 		               outputs[EOC2_OUT_OUTPUT], args.sampleTime, false, unused);
@@ -385,7 +404,8 @@ struct Installment : Module {
 		// exact for a comparator against any carrier, not just a triangle.
 		float dutyPct = params[PWM_DUTY_PARAM].getValue();
 		if (inputs[PWM_CV_IN_INPUT].isConnected())
-			dutyPct += inputs[PWM_CV_IN_INPUT].getVoltage() / 10.f;
+			dutyPct += params[PWM_CV_AMT_PARAM].getValue()
+			         * (inputs[PWM_CV_IN_INPUT].getVoltage() / 10.f);
 		dutyPct = tapeMotorLimit ? clamp(dutyPct, 0.1f, 0.9f) : clamp(dutyPct, 0.f, 1.f);
 
 		float diff = ch1Main - dutyPct * 10.f;
@@ -443,6 +463,7 @@ struct InstallmentWidget : ModuleWidget {
 		addParam(createParamCentered<CKSS>(panel::mm(panel::RANGE1_POS.x, panel::RANGE1_POS.y), module, Installment::RANGE1_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::BIAS1_POS.x, panel::BIAS1_POS.y), module, Installment::BIAS1_PARAM));
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::CV1_AMT_POS.x, panel::CV1_AMT_POS.y), module, Installment::CV1_AMT_PARAM));
+		addParam(createParamCentered<Trimpot>(panel::mm(panel::CURVE1_POS.x, panel::CURVE1_POS.y), module, Installment::CURVE1_PARAM));
 
 		addParam(createParamCentered<CKSSThree>(panel::mm(panel::MODE2_POS.x, panel::MODE2_POS.y), module, Installment::MODE2_PARAM));
 		addParam(createLightParamCentered<VCVLightBezelLatch<panel::LimeLight> >(
@@ -452,7 +473,9 @@ struct InstallmentWidget : ModuleWidget {
 		addParam(createParamCentered<CKSS>(panel::mm(panel::RANGE2_POS.x, panel::RANGE2_POS.y), module, Installment::RANGE2_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::BIAS2_POS.x, panel::BIAS2_POS.y), module, Installment::BIAS2_PARAM));
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::CV2_AMT_POS.x, panel::CV2_AMT_POS.y), module, Installment::CV2_AMT_PARAM));
+		addParam(createParamCentered<Trimpot>(panel::mm(panel::CURVE2_POS.x, panel::CURVE2_POS.y), module, Installment::CURVE2_PARAM));
 
+		addParam(createParamCentered<Trimpot>(panel::mm(panel::PWM_CV_AMT_POS.x, panel::PWM_CV_AMT_POS.y), module, Installment::PWM_CV_AMT_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::PWM_DUTY_POS.x, panel::PWM_DUTY_POS.y), module, Installment::PWM_DUTY_PARAM));
 
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::CV1_IN_POS.x, panel::CV1_IN_POS.y), module, Installment::CV1_IN_INPUT));

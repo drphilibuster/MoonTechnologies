@@ -39,6 +39,7 @@ inputs.
 | **RANGE** | Lo (10 ms – 10 s) or Hi (1 ms – 1 s) — the span ATTACK and RELEASE cover. Hi reaches into audio rates, which is what MINIMUM DUE's band-limiting is for. |
 | **BIAS** | A manual octave offset on top of ATTACK and RELEASE, applied to both equally so their skew is preserved. Up to ±3 octaves. |
 | **CV AMT** | Attenuverter for the CV jack below it, on the same axis as BIAS: ±5 octaves at full deflection and 10 V. |
+| **CURVE** | Bends the finished output away from the shape the circuit draws — counter-clockwise logarithmic (off the floor fast, easing into the ceiling), centred linear, clockwise exponential (hanging low, then rushing). Full deflection is a cube root or a cube. It shapes the path only: 0 V stays 0 V, 10 V stays 10 V, and ATTACK, RELEASE and EOC keep exactly the timing they had. In LFO it curves the triangle and leaves SQU alone (a pulse has no path to bend); in AR/AD, SQU stays the true inverse of the curved envelope. |
 
 ## Jacks, per channel
 
@@ -52,8 +53,9 @@ inputs.
 
 ## MINIMUM DUE — the PWM driver
 
-**DUTY** and its **CV** (0–10 V adds directly to DUTY, no attenuverter — the Day 12
-circuit had none) set a threshold; **PWM OUT** is 0/10 V, high whenever channel one's
+**DUTY** and its **CV**, through the **PWM CV** attenuverter above the jack (±100% of
+DUTY's full travel at 10 V; the Day 12 circuit had no attenuator, but the two channel
+CVs have one and this jack looked odd without), set a threshold; **PWM OUT** is 0/10 V, high whenever channel one's
 core is below that threshold. It reads channel one's output directly, whatever MODE
 that channel is in — a triangle in LFO, an attack/release shape in AR or AD, either
 way giving the comparator a carrier to work against. The crossing is band-limited by
@@ -68,6 +70,7 @@ all-the-way-open or all-the-way-shut duty cycle. Off by default.
 ## Voltage conventions
 
 - CV IN, PWM CV IN: unipolar/bipolar CV, ±5 V nominal, 1 V ≈ 1 octave through CV AMT.
+- PWM CV, like CV AMT, rests at zero: turn it up before the jack does anything.
 - GATE/RESET IN: 0/10 V gate convention, ~1 V threshold with hysteresis.
 - ENV, SQU, PWM OUT: unipolar 0–10 V.
 - EOC: 0/10 V, 1 ms trigger.
@@ -88,5 +91,13 @@ all-the-way-open or all-the-way-shut duty cycle. Off by default.
 - BIAS and CV both shift ATTACK and RELEASE together rather than independently, which
   keeps their skew ratio intact under modulation; the original 13700 VCLFO's Bias
   control was read the same way, as an offset on the same axis a CV would reach.
-- No panel read-out: with two full channels and a PWM section already filling 17 HP,
-  a digital display did not fit without losing a row of controls.
+- No panel read-out: with two full channels and a PWM section already filling the
+  panel, a digital display did not fit without losing a row of controls.
+- CURVE is a waveshaper on the output, not a change to the integrator: it cannot make
+  ATTACK or RELEASE take a different number of seconds, only change what happens
+  between their endpoints. A real 13700 bends the ramp by starving the integrator,
+  which does move the timing; that is a different circuit, and it would break the
+  promise that EOC lands where the knobs say it does.
+- MINIMUM DUE compares against channel one's output *after* CURVE, so CURVE also
+  bends how DUTY maps onto pulse width. That is a consequence of the carrier being
+  the same signal ENV1 sends out, not a separate control.

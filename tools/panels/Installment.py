@@ -53,13 +53,19 @@ P.sections = [
     # rides in the two middle columns: a duty knob and its own CV, compared
     # against channel one's core downstream in the footer.
     Section("AUTOPAY", rows=[
-        Row([Trim("cv1_amt", "CV AMT", col=0),
-             Trim("cv2_amt", "CV AMT", col=3)], pair=True),
-        Row([Jack("cv1_in", col=0), Jack("cv2_in", col=3)], silent=True),
+        # CURVE sits in the gap beside each channel's CV amount. The paired
+        # idiom only pairs a column that has a jack under it, so these two keep
+        # their own labels while their neighbours name themselves over the jack
+        # below -- which is what lets four trims share a row with three jacks.
+        Row([Trim("cv1_amt", "CV AMT", col=0), Trim("curve1", "CURVE", col=1),
+             Trim("pwm_cv_amt", "PWM CV", col=2),
+             Trim("curve2", "CURVE", col=3), Trim("cv2_amt", "CV AMT", col=4)],
+            pair=True),
+        Row([Jack("cv1_in", col=0), Jack("pwm_cv_in", col=2),
+             Jack("cv2_in", col=4)], silent=True),
         Row([Jack("gate1_in", "GATE", col=0),
-             Knob("pwm_duty", "DUTY", col=1),
-             Jack("pwm_cv_in", "CV", col=2),
-             Jack("gate2_in", "GATE", col=3)]),
+             Knob("pwm_duty", "DUTY", col=2),
+             Jack("gate2_in", "GATE", col=4)]),
     ]),
 ]
 
