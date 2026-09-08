@@ -326,7 +326,7 @@ struct Transmittal : Module {
     Stream In TOP, and it is too long to guess. */
 struct TransmittalDisplay : Widget {
 	Transmittal* module = NULL;
-	panel::FittedText fitted;
+	panel::FittedText fitted, fittedSrc, fittedVia;
 
 	void drawLayer(const DrawArgs& args, int layer) override {
 		if (layer != 1)
@@ -363,20 +363,27 @@ struct TransmittalDisplay : Widget {
 
 		panel::TextStyle mono(panel::Face::Mono, 9.f, panel::PAPER,
 		                      NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
-		panel::text(args.vg, mono, x, y, ("SRC  " + src).c_str());
+		// Every line here is fitted, not just the path. A source's name carries
+		// its module's id, which is eighteen digits and will not fit any well
+		// this panel could have -- and text that runs off the glass reads as a
+		// broken panel rather than as a long name.
+		float inner = box.size.x - panel::mm(5.2f, 0.f).x;
+		const std::string& srcLine = fittedSrc.get(args.vg, mono, "SRC  " + src, inner);
+		panel::text(args.vg, mono, x, y, srcLine.c_str());
 		panel::text(args.vg, mono.inked(panel::SAGE), x, y + lh,
 		            (size + "   " + rate).c_str());
 		panel::text(args.vg, mono.inked(panel::LIME), x, y + lh * 2.f, note.c_str());
-		if (!via.empty())
-			panel::text(args.vg, mono.sized(7.5f).inked(panel::SAGE),
-			            x, y + lh * 3.2f, via.c_str());
+		if (!via.empty()) {
+			panel::TextStyle vs = mono.sized(7.5f).inked(panel::SAGE);
+			panel::text(args.vg, vs, x, y + lh * 3.2f,
+			            fittedVia.get(args.vg, vs, via, inner).c_str());
+		}
 		if (!pl.empty()) {
 			// Ellipsized rather than clipped: the path is the one string here
 			// that has to be read character by character, and a run of it
 			// disappearing off the well's edge would look like the whole path.
 			panel::TextStyle small = mono.sized(7.5f).inked(panel::SAGE);
-			const std::string& shown = fitted.get(args.vg, small, pl,
-			                                      box.size.x - panel::mm(5.2f, 0.f).x);
+			const std::string& shown = fitted.get(args.vg, small, pl, inner);
 			panel::text(args.vg, small, x, y + lh * 4.3f, shown.c_str());
 		}
 	}

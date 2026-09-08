@@ -1,6 +1,8 @@
 #include "Publisher.hpp"
 
-#if defined ARCH_MAC
+// __APPLE__, not Rack's ARCH_MAC: that one comes from <arch.hpp>, which this
+// file does not include, so testing it silently compiled this whole file away.
+#if defined __APPLE__
 
 #import <Cocoa/Cocoa.h>
 #import <OpenGL/OpenGL.h>
