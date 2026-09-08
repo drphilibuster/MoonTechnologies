@@ -14,30 +14,28 @@
 namespace panel {
 
 // --- identity --------------------------------------------------------------
-static const int   HP = 10;
-static const float W  = 50.8000f;  // mm
+static const int   HP = 18;
+static const float W  = 91.4400f;  // mm
 static const float H  = 128.5000f;  // mm
 
 // --- silkscreen ------------------------------------------------------------
 static const Label LABELS[] = {
-	{ 25.4000f,   5.5000f, 10.24f, 1.50f, PAPER    , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GARNISHMENT"},
+	{ 45.7200f,   5.5000f, 10.50f, 1.50f, PAPER    , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GARNISHMENT"},
 	{ 11.5600f,   8.2500f,  7.40f, 0.00f, LIME     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, true,  "$"},
 	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
-	{ 46.6000f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 668-W"},
-	{ 25.4000f,  14.0000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CHANNEL 1"},
-	{ 10.9000f,  29.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BIAS"},
-	{ 25.4000f,  29.3069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODE"},
-	{ 39.9000f,  29.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LAG"},
-	{ 25.4000f,  43.0788f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV AMT"},
-	{ 25.4000f,  62.6790f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CHANNEL 2"},
-	{ 10.9000f,  77.9858f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BIAS"},
-	{ 25.4000f,  77.9858f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODE"},
-	{ 39.9000f,  77.9858f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LAG"},
-	{ 25.4000f,  91.7578f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV AMT"},
-	{  7.6900f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 1"},
-	{ 19.4967f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 2"},
-	{ 31.3033f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT 1"},
-	{ 43.1100f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT 2"},
+	{ 87.2400f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 668-W"},
+	{ 45.7200f,  14.0000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GARNISHEE"},
+	{ 45.7200f,  29.1118f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BIAS"},
+	{ 45.7200f,  46.0635f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODE"},
+	{ 45.7200f,  63.0151f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LAG"},
+	{ 45.7200f,  76.4068f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV AMT"},
+	{ 45.7200f,  92.2385f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN"},
+	{ 10.0350f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "1"},
+	{ 24.3090f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "2"},
+	{ 38.5830f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "3"},
+	{ 52.8570f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "4"},
+	{ 67.1310f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "5"},
+	{ 81.4050f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "6"},
 };
 
 /** Draws this panel's silkscreen. `static` so each module keeps its own,
@@ -49,18 +47,46 @@ static inline void addLabels(app::ModuleWidget* mw) {
 // --- widget positions, by the names used in tools/panels/Garnishment.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
 static const Vec BIAS1_POS = Vec(10.9000, 21.1000);
-static const Vec MODE1_POS = Vec(25.4000, 21.1000);
-static const Vec LAG1_POS = Vec(39.9000, 21.1000);
-static const Vec CVAMT1_POS = Vec(25.4000, 35.5470);
-static const Vec CVIN1_POS = Vec(25.4000, 49.6688);
-static const Vec BIAS2_POS = Vec(10.9000, 69.7790);
-static const Vec MODE2_POS = Vec(25.4000, 69.7790);
-static const Vec LAG2_POS = Vec(39.9000, 69.7790);
-static const Vec CVAMT2_POS = Vec(25.4000, 84.2260);
-static const Vec CVIN2_POS = Vec(25.4000, 98.3478);
-static const Vec IN1_POS = Vec(7.6900, 118.6000);
-static const Vec IN2_POS = Vec(19.4967, 118.6000);
-static const Vec OUT1_POS = Vec(31.3033, 118.6000);
-static const Vec OUT2_POS = Vec(43.1100, 118.6000);
+static const Vec BIAS2_POS = Vec(24.8280, 21.1000);
+static const Vec BIAS3_POS = Vec(38.7560, 21.1000);
+static const Vec BIAS4_POS = Vec(52.6840, 21.1000);
+static const Vec BIAS5_POS = Vec(66.6120, 21.1000);
+static const Vec BIAS6_POS = Vec(80.5400, 21.1000);
+static const Vec MODE1_POS = Vec(10.9000, 38.0517);
+static const Vec MODE2_POS = Vec(24.8280, 38.0517);
+static const Vec MODE3_POS = Vec(38.7560, 38.0517);
+static const Vec MODE4_POS = Vec(52.6840, 38.0517);
+static const Vec MODE5_POS = Vec(66.6120, 38.0517);
+static const Vec MODE6_POS = Vec(80.5400, 38.0517);
+static const Vec LAG1_POS = Vec(10.9000, 55.0033);
+static const Vec LAG2_POS = Vec(24.8280, 55.0033);
+static const Vec LAG3_POS = Vec(38.7560, 55.0033);
+static const Vec LAG4_POS = Vec(52.6840, 55.0033);
+static const Vec LAG5_POS = Vec(66.6120, 55.0033);
+static const Vec LAG6_POS = Vec(80.5400, 55.0033);
+static const Vec CVAMT1_POS = Vec(10.9000, 70.1750);
+static const Vec CVAMT2_POS = Vec(24.8280, 70.1750);
+static const Vec CVAMT3_POS = Vec(38.7560, 70.1750);
+static const Vec CVAMT4_POS = Vec(52.6840, 70.1750);
+static const Vec CVAMT5_POS = Vec(66.6120, 70.1750);
+static const Vec CVAMT6_POS = Vec(80.5400, 70.1750);
+static const Vec CVIN1_POS = Vec(10.9000, 82.9968);
+static const Vec CVIN2_POS = Vec(24.8280, 82.9968);
+static const Vec CVIN3_POS = Vec(38.7560, 82.9968);
+static const Vec CVIN4_POS = Vec(52.6840, 82.9968);
+static const Vec CVIN5_POS = Vec(66.6120, 82.9968);
+static const Vec CVIN6_POS = Vec(80.5400, 82.9968);
+static const Vec IN1_POS = Vec(10.9000, 97.5285);
+static const Vec IN2_POS = Vec(24.8280, 97.5285);
+static const Vec IN3_POS = Vec(38.7560, 97.5285);
+static const Vec IN4_POS = Vec(52.6840, 97.5285);
+static const Vec IN5_POS = Vec(66.6120, 97.5285);
+static const Vec IN6_POS = Vec(80.5400, 97.5285);
+static const Vec OUT1_POS = Vec(10.0350, 118.6000);
+static const Vec OUT2_POS = Vec(24.3090, 118.6000);
+static const Vec OUT3_POS = Vec(38.5830, 118.6000);
+static const Vec OUT4_POS = Vec(52.8570, 118.6000);
+static const Vec OUT5_POS = Vec(67.1310, 118.6000);
+static const Vec OUT6_POS = Vec(81.4050, 118.6000);
 
 } // namespace panel

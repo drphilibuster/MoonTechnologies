@@ -25,30 +25,26 @@ P = Panel(
 )
 
 
-def channel(n, suffix):
-    """One channel: BIAS and LAG flank the MODE switch, which shares its column
-    with the CV amount / CV in pair below it -- same geometry as Retroactive's
-    TIME/OVERDRAFT/DIV row, reused here for a switch instead of a light."""
-    return Section("CHANNEL %d" % n, rows=[
-        Row([Knob("bias%s" % suffix, "BIAS"),
-             Switch3("mode%s" % suffix, "MODE"),
-             Knob("lag%s" % suffix, "LAG")]),
-        Row([Trim("cvamt%s" % suffix, "CV AMT", col=1)], pair=True),
-        Row([Jack("cvin%s" % suffix, col=1)], silent=True),
-    ])
-
+N = 6
 
 P.sections = [
-    channel(1, "1"),
-    channel(2, "2"),
+    Section("GARNISHEE", rows=[
+        Row(span=[(0, N - 1, "BIAS")],
+            items=[Knob("bias%d" % k, "") for k in range(1, N + 1)]),
+        Row(span=[(0, N - 1, "MODE")],
+            items=[Switch3("mode%d" % k, "") for k in range(1, N + 1)]),
+        Row(span=[(0, N - 1, "LAG")],
+            items=[Knob("lag%d" % k, "") for k in range(1, N + 1)]),
+        Row(span=[(0, N - 1, "CV AMT")],
+            items=[Trim("cvamt%d" % k, "") for k in range(1, N + 1)], pair=True),
+        Row([Jack("cvin%d" % k) for k in range(1, N + 1)], silent=True),
+        Row(span=[(0, N - 1, "IN")],
+            items=[Jack("in%d" % k, "") for k in range(1, N + 1)]),
+    ]),
 ]
 
-# The audio the two VCAs actually pass is the module's main I/O, so it sits on
-# the footer band like Retroactive's IN L/IN R/OUT L/OUT R, grouped by type.
 P.footer = [
-    Row([Jack("in1", "IN 1"), Jack("in2", "IN 2"),
-         Jack("out1", "OUT 1", ink="MINT"),
-         Jack("out2", "OUT 2", ink="MINT")], y=118.6),
+    Row([Jack("out%d" % k, str(k), ink="MINT") for k in range(1, N + 1)], y=118.6),
 ]
 
 if __name__ == "__main__":

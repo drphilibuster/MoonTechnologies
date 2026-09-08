@@ -49,7 +49,7 @@ deserve its own panel.
 
 | <img src="tools/previews/Garnishment.png" width="84"> | <img src="tools/previews/Consolidation.png" width="109"> | <img src="tools/previews/Installment.png" width="134"> | <img src="tools/previews/Volatility.png" width="118"> |
 |---|---|---|---|
-| **[Garnishment](docs/Garnishment.md)** · 10 HP | **[Consolidation](docs/Consolidation.md)** · 14 HP | **[Installment](docs/Installment.md)** · 16 HP | **[Volatility](docs/Volatility.md)** · 14 HP |
+| **[Garnishment](docs/Garnishment.md)** · 18 HP | **[Consolidation](docs/Consolidation.md)** · 14 HP | **[Installment](docs/Installment.md)** · 16 HP | **[Volatility](docs/Volatility.md)** · 14 HP |
 
 | <img src="tools/previews/Deduction.png" width="101"> | <img src="tools/previews/AuditLogic.png" width="210"> | <img src="tools/previews/Kickback.png" width="252"> | <img src="tools/previews/PaymentSchedule.png" width="244"> |
 |---|---|---|---|
@@ -141,7 +141,7 @@ Marked with the day each came from, and how far it has moved since.
 
 Six voices, each a 40106 Schmitt square, a 4069 triangle core, a 4046 PLL that locks to the SIGNAL input, or a reverse-avalanche saw, with sync, capture, drift and a mix. The four cores are the four oscillator builds of that day, selectable per voice.
 
-### [Garnishment](docs/Garnishment.md) — 10 HP · *VCA, Low-pass gate, Dual*
+### [Garnishment](docs/Garnishment.md) — 18 HP · *VCA, Low-pass gate, Dual*
 
 *Day 2, consolidated.*
 

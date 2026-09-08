@@ -84,20 +84,41 @@ struct VcaBus {
 
 
 struct Garnishment : Module {
+	//: Channels. Six rather than the two the original pair of boards had: the
+	//: three circuits are the same either way, and one channel per column
+	//: instead of one per section is what made room. Six because the rest of
+	//: the family runs on six -- SixFigures' oscillators, Kickback's drum
+	//: voices, Collusion's LFOs -- so this bank serves any of them one to one.
+	static const int N = 6;
+
 	enum ParamId {
-		BIAS1_PARAM, MODE1_PARAM, LAG1_PARAM, CVAMT1_PARAM,
-		BIAS2_PARAM, MODE2_PARAM, LAG2_PARAM, CVAMT2_PARAM,
-		PARAMS_LEN
+		// Channel c occupies four consecutive slots, which is the layout the
+		// dual version already had: channels 1 and 2 keep their indices exactly,
+		// so a patch saved against that version restores its settings.
+		BIAS_PARAM, MODE_PARAM, LAG_PARAM, CVAMT_PARAM,
+		PARAMS_LEN = 4 * N
 	};
 	enum InputId {
-		CVIN1_INPUT, CVIN2_INPUT, IN1_INPUT, IN2_INPUT, INPUTS_LEN
+		// Same reasoning, and it is why the new channels' jacks are appended
+		// rather than interleaved: interleaving would have moved IN 1.
+		CVIN1_INPUT, CVIN2_INPUT, IN1_INPUT, IN2_INPUT,
+		CVIN_MORE_INPUT,
+		IN_MORE_INPUT = CVIN_MORE_INPUT + (N - 2),
+		INPUTS_LEN = IN_MORE_INPUT + (N - 2)
 	};
 	enum OutputId {
-		OUT1_OUTPUT, OUT2_OUTPUT, OUTPUTS_LEN
+		OUT_OUTPUT,                     // channel 1; the rest follow in order
+		OUTPUTS_LEN = N
 	};
 	enum LightId { LIGHTS_LEN };
 
-	VcaBus bus1, bus2;
+	/** Ids for channel `c`, zero-based. */
+	static int pid(int c, int which) { return 4 * c + which; }
+	static int cvInId(int c) { return c < 2 ? CVIN1_INPUT + c : CVIN_MORE_INPUT + c - 2; }
+	static int audioInId(int c) { return c < 2 ? IN1_INPUT + c : IN_MORE_INPUT + c - 2; }
+	static int outId(int c) { return OUT_OUTPUT + c; }
+
+	VcaBus bus[N];
 
 	// Non-parameter options: neither circuit had a front-panel switch for
 	// these in the original, so they live in the menu rather than crowding a
@@ -107,18 +128,19 @@ struct Garnishment : Module {
 
 	Garnishment() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-		configChannel(1);
-		configChannel(2);
+		for (int c = 0; c < N; c++)
+			configChannel(c);
 	}
 
-	void configChannel(int ch) {
-		int biasP  = (ch == 1) ? BIAS1_PARAM  : BIAS2_PARAM;
-		int modeP  = (ch == 1) ? MODE1_PARAM  : MODE2_PARAM;
-		int lagP   = (ch == 1) ? LAG1_PARAM   : LAG2_PARAM;
-		int cvAmtP = (ch == 1) ? CVAMT1_PARAM : CVAMT2_PARAM;
-		int cvI    = (ch == 1) ? CVIN1_INPUT  : CVIN2_INPUT;
-		int inI    = (ch == 1) ? IN1_INPUT    : IN2_INPUT;
-		int outO   = (ch == 1) ? OUT1_OUTPUT  : OUT2_OUTPUT;
+	void configChannel(int c) {
+		int ch     = c + 1;
+		int biasP  = pid(c, BIAS_PARAM);
+		int modeP  = pid(c, MODE_PARAM);
+		int lagP   = pid(c, LAG_PARAM);
+		int cvAmtP = pid(c, CVAMT_PARAM);
+		int cvI    = cvInId(c);
+		int inI    = audioInId(c);
+		int outO   = outId(c);
 
 		configParam(biasP, 0.f, 10.f, 0.f, string::f("Channel %d bias", ch), " V");
 		configSwitch(modeP, 0.f, 2.f, 0.f, string::f("Channel %d mode", ch),
@@ -209,21 +231,23 @@ struct Garnishment : Module {
 	}
 
 	void process(const ProcessArgs& args) override {
-		processBus(args, bus1, IN1_INPUT, CVIN1_INPUT, OUT1_OUTPUT,
-		           BIAS1_PARAM, MODE1_PARAM, LAG1_PARAM, CVAMT1_PARAM, nullptr);
-		processBus(args, bus2, IN2_INPUT, CVIN2_INPUT, OUT2_OUTPUT,
-		           BIAS2_PARAM, MODE2_PARAM, LAG2_PARAM, CVAMT2_PARAM, &inputs[CVIN1_INPUT]);
+		// CV normals down the bank: channel 2 falls back to channel 1's port,
+		// 3 to 2's, and so on. The dual did this between its two channels; a
+		// chain is the same idea and means one CV can open all six.
+		for (int c = 0; c < N; c++)
+			processBus(args, bus[c], audioInId(c), cvInId(c), outId(c),
+			           pid(c, BIAS_PARAM), pid(c, MODE_PARAM),
+			           pid(c, LAG_PARAM), pid(c, CVAMT_PARAM),
+			           c == 0 ? nullptr : &inputs[cvInId(c - 1)]);
 	}
 
 	void onReset(const ResetEvent& e) override {
 		Module::onReset(e);
-		bus1.reset();
-		bus2.reset();
+		for (int c = 0; c < N; c++) bus[c].reset();
 	}
 
 	void onSampleRateChange(const SampleRateChangeEvent& e) override {
-		bus1.reset();
-		bus2.reset();
+		for (int c = 0; c < N; c++) bus[c].reset();
 	}
 
 	json_t* dataToJson() override {
@@ -258,22 +282,48 @@ struct GarnishmentWidget : ModuleWidget {
 		panel::addScrews(this);
 		panel::addLabels(this);
 
-		addParam(createParamCentered<GarnishmentKnob>(panel::mm(panel::BIAS1_POS.x, panel::BIAS1_POS.y), module, Garnishment::BIAS1_PARAM));
-		addParam(createParamCentered<CKSSThree>(panel::mm(panel::MODE1_POS.x, panel::MODE1_POS.y), module, Garnishment::MODE1_PARAM));
-		addParam(createParamCentered<GarnishmentKnob>(panel::mm(panel::LAG1_POS.x, panel::LAG1_POS.y), module, Garnishment::LAG1_PARAM));
-		addParam(createParamCentered<Trimpot>(panel::mm(panel::CVAMT1_POS.x, panel::CVAMT1_POS.y), module, Garnishment::CVAMT1_PARAM));
-		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::CVIN1_POS.x, panel::CVIN1_POS.y), module, Garnishment::CVIN1_INPUT));
+		static const Vec* biasPos[Garnishment::N] = {
+			&panel::BIAS1_POS, &panel::BIAS2_POS, &panel::BIAS3_POS,
+			&panel::BIAS4_POS, &panel::BIAS5_POS, &panel::BIAS6_POS };
+		static const Vec* modePos[Garnishment::N] = {
+			&panel::MODE1_POS, &panel::MODE2_POS, &panel::MODE3_POS,
+			&panel::MODE4_POS, &panel::MODE5_POS, &panel::MODE6_POS };
+		static const Vec* lagPos[Garnishment::N] = {
+			&panel::LAG1_POS, &panel::LAG2_POS, &panel::LAG3_POS,
+			&panel::LAG4_POS, &panel::LAG5_POS, &panel::LAG6_POS };
+		static const Vec* cvAmtPos[Garnishment::N] = {
+			&panel::CVAMT1_POS, &panel::CVAMT2_POS, &panel::CVAMT3_POS,
+			&panel::CVAMT4_POS, &panel::CVAMT5_POS, &panel::CVAMT6_POS };
+		static const Vec* cvInPos[Garnishment::N] = {
+			&panel::CVIN1_POS, &panel::CVIN2_POS, &panel::CVIN3_POS,
+			&panel::CVIN4_POS, &panel::CVIN5_POS, &panel::CVIN6_POS };
+		static const Vec* inPos[Garnishment::N] = {
+			&panel::IN1_POS, &panel::IN2_POS, &panel::IN3_POS,
+			&panel::IN4_POS, &panel::IN5_POS, &panel::IN6_POS };
+		static const Vec* outPos[Garnishment::N] = {
+			&panel::OUT1_POS, &panel::OUT2_POS, &panel::OUT3_POS,
+			&panel::OUT4_POS, &panel::OUT5_POS, &panel::OUT6_POS };
 
-		addParam(createParamCentered<GarnishmentKnob>(panel::mm(panel::BIAS2_POS.x, panel::BIAS2_POS.y), module, Garnishment::BIAS2_PARAM));
-		addParam(createParamCentered<CKSSThree>(panel::mm(panel::MODE2_POS.x, panel::MODE2_POS.y), module, Garnishment::MODE2_PARAM));
-		addParam(createParamCentered<GarnishmentKnob>(panel::mm(panel::LAG2_POS.x, panel::LAG2_POS.y), module, Garnishment::LAG2_PARAM));
-		addParam(createParamCentered<Trimpot>(panel::mm(panel::CVAMT2_POS.x, panel::CVAMT2_POS.y), module, Garnishment::CVAMT2_PARAM));
-		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::CVIN2_POS.x, panel::CVIN2_POS.y), module, Garnishment::CVIN2_INPUT));
-
-		addInput(createInputCentered<panel::PortInMain>(panel::mm(panel::IN1_POS.x, panel::IN1_POS.y), module, Garnishment::IN1_INPUT));
-		addInput(createInputCentered<panel::PortInMain>(panel::mm(panel::IN2_POS.x, panel::IN2_POS.y), module, Garnishment::IN2_INPUT));
-		addOutput(createOutputCentered<panel::PortOutMain>(panel::mm(panel::OUT1_POS.x, panel::OUT1_POS.y), module, Garnishment::OUT1_OUTPUT));
-		addOutput(createOutputCentered<panel::PortOutMain>(panel::mm(panel::OUT2_POS.x, panel::OUT2_POS.y), module, Garnishment::OUT2_OUTPUT));
+		for (int c = 0; c < Garnishment::N; c++) {
+			addParam(createParamCentered<GarnishmentKnob>(
+				panel::mm(biasPos[c]->x, biasPos[c]->y), module,
+				Garnishment::pid(c, Garnishment::BIAS_PARAM)));
+			addParam(createParamCentered<CKSSThree>(
+				panel::mm(modePos[c]->x, modePos[c]->y), module,
+				Garnishment::pid(c, Garnishment::MODE_PARAM)));
+			addParam(createParamCentered<GarnishmentKnob>(
+				panel::mm(lagPos[c]->x, lagPos[c]->y), module,
+				Garnishment::pid(c, Garnishment::LAG_PARAM)));
+			addParam(createParamCentered<Trimpot>(
+				panel::mm(cvAmtPos[c]->x, cvAmtPos[c]->y), module,
+				Garnishment::pid(c, Garnishment::CVAMT_PARAM)));
+			addInput(createInputCentered<panel::PortIn>(
+				panel::mm(cvInPos[c]->x, cvInPos[c]->y), module, Garnishment::cvInId(c)));
+			addInput(createInputCentered<panel::PortInMain>(
+				panel::mm(inPos[c]->x, inPos[c]->y), module, Garnishment::audioInId(c)));
+			addOutput(createOutputCentered<panel::PortOutMain>(
+				panel::mm(outPos[c]->x, outPos[c]->y), module, Garnishment::outId(c)));
+		}
 	}
 
 	void appendContextMenu(Menu* menu) override {

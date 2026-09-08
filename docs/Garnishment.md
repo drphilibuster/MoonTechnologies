@@ -1,9 +1,9 @@
 # Garnishment
 
-A dual VCA / low-pass gate for VCV Rack 2, built from three Modular in a Week
-circuits sharing one panel.
+A six-channel VCA / low-pass gate for VCV Rack 2, built from three Modular in a
+Week circuits sharing one panel.
 
-Each of the two identical channels has a MODE switch that picks which circuit
+Each of the six identical channels has a MODE switch that picks which circuit
 it is:
 
 - **OTA** — Simple 13700 Dual VCA (Kristian Blåsol): an LM13700 operational
@@ -94,6 +94,29 @@ channels' gain; patch channel 2's own CV IN to override it.
 Both options apply to whichever channel is currently in that mode; there is no
 separate per-channel copy of either, since an 11 HP panel repeated twice has no
 room for controls the originals didn't have front-panel switches for either.
+
+## Six channels
+
+The Modular in a Week day this comes from is two boards, and this module was two
+channels to match. The circuits are the same either way, so the count was only
+ever a question of panel: each channel took a whole section, three rows of three
+columns to hold three controls and a CV pair, with two thirds of two of those
+rows empty. One channel per *column* instead holds six in 18 HP — 3.0 HP a
+channel against the old 5.0.
+
+Six rather than four or eight because the rest of the family runs on six:
+[Six Figures](SixFigures.md)' oscillators, [Kickback](Kickback.md)'s drum voices,
+[Collusion](Collusion.md)'s LFOs. One channel each, with nothing left over and
+nothing short.
+
+**CV normals down the bank.** Channel 2's CV input falls back to channel 1's,
+3's to 2's, and so on, so a single envelope patched into CV 1 opens all six. The
+dual version did this between its two channels; a chain is the same idea with
+somewhere to go. Patch any channel's own CV and it and everything below it take
+that instead.
+
+Channels 1 and 2 keep the parameter and jack indices they had as a dual, so a
+patch saved against the two-channel version still restores their settings.
 
 ## Polyphony
 
