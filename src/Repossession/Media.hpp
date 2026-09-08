@@ -62,12 +62,18 @@ static const int FRAME_FPS = 12;        // the thumbnail preset's rate
     because the frames now leave the module through Transmittal and end up on a
     projector, where 160x90 is not a picture. */
 struct VideoPreset { int w, h, fps; const char* name; };
+//
+// Appended to, never reordered: the chosen preset is saved as an index into
+// this table, so inserting one in the middle would silently change what every
+// existing patch decodes at. That is why 30 fps sits after 24 rather than
+// beside its own size.
 static const VideoPreset kVideoPresets[] = {
 	{  160,  90, 12, "160x90, 12 fps (panel only)" },
 	{  640, 360, 24, "640x360, 24 fps"             },
 	{ 1280, 720, 24, "1280x720, 24 fps"            },
+	{ 1280, 720, 30, "1280x720, 30 fps"            },
 };
-static const int kNumVideoPresets = 3;
+static const int kNumVideoPresets = 4;
 static const int kDefaultVideoPreset = 0;
 
 // The legacy raw thumbnail, still read when a cache predates the JPEG format so

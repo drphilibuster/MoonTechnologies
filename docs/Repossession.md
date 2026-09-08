@@ -114,9 +114,15 @@ Sources that are not 16:9 are letterboxed rather than stretched.
 
 | Setting | Cache for a 3-minute clip | Download cap |
 |---|---|---|
-| 160×90, 12 fps (panel only) | ~120 MB | 360p |
+| 160×90, 12 fps (panel only) | ~10 MB | 360p |
 | 640×360, 24 fps | ~160 MB | 360p |
-| 1280×720, 24 fps | ~340 MB | 720p |
+| 1280×720, 24 fps | ~470 MB | 720p |
+| 1280×720, 30 fps | ~590 MB | 720p |
+
+30 fps is there because most sources are 30 and decoding them at 24 resamples,
+which shows as judder on anything moving steadily. Match the source if you can:
+`ffprobe -select_streams v:0 -show_entries stream=r_frame_rate <file>` in the
+cache folder says what it is.
 
 The default is the smallest, because the panel screen is 56 mm wide and nothing
 larger shows on it. The other two exist because the frames now leave the module
@@ -126,9 +132,11 @@ picture.
 Frames are cached as **concatenated JPEGs** with an index of frame offsets
 beside them, not as raw pixels. That is what makes the larger sizes possible at
 all: raw 720p at 24 fps is 88 MB *per second*, about 15 GB for a three-minute
-clip, where the JPEG stream is 340 MB — 45 times smaller, and still seekable to
+clip, where the JPEG stream is 470 MB — 32 times smaller, and still seekable to
 any single frame, which is the property that matters when regions jump around on
-clock edges. Decoding one 720p frame takes about 4 ms.
+clock edges. Decoding one 720p frame takes about 4 ms, which happens on the UI
+thread: comfortable at 24 fps, and close enough to a 60 Hz frame budget at 30
+that a very busy patch may occasionally drop one.
 
 Changing the setting re-decodes immediately, and each size is its own cache
 file, so switching back to one you have already decoded is instant.
