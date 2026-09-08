@@ -46,7 +46,7 @@ spectrum and a warped field, driven by audio and CV.
 |---|---|---|---|
 | **[Patch Audit](docs/PatchAudit.md)** · 26 HP | **[Retroactive](docs/Retroactive.md)** · 15 HP | **[Uncertainty Policy](docs/UncertaintyPolicy.md)** · 11 HP | **[Dividend](docs/Dividend.md)** · 15 HP |
 
-| <img src="tools/previews/TaxBracket.png" width="101"> | <img src="tools/previews/Racketeer.png" width="143"> | <img src="tools/previews/Gross.png" width="168"> | <img src="tools/previews/Amortization.png" width="126"> |
+| <img src="tools/previews/TaxBracket.png" width="101"> | <img src="tools/previews/Racketeer.png" width="151"> | <img src="tools/previews/Gross.png" width="168"> | <img src="tools/previews/Amortization.png" width="126"> |
 |---|---|---|---|
 | **[Tax Bracket](docs/TaxBracket.md)** · 12 HP | **[Racketeer](docs/Racketeer.md)** · 18 HP | **[Gross](docs/Gross.md)** · 20 HP | **[Amortization](docs/Amortization.md)** · 15 HP |
 
@@ -54,7 +54,7 @@ spectrum and a warped field, driven by audio and CV.
 |---|---|---|---|
 | **[Repossession](docs/Repossession.md)** · 34 HP | **[Collusion](docs/Collusion.md)** · 18 HP | **[Reconciliation](docs/Reconciliation.md)** · 19 HP | **[Six Figures](docs/SixFigures.md)** · 25 HP |
 
-| <img src="tools/previews/Garnishment.png" width="84"> | <img src="tools/previews/Consolidation.png" width="109"> | <img src="tools/previews/Installment.png" width="134"> | <img src="tools/previews/Volatility.png" width="118"> |
+| <img src="tools/previews/Garnishment.png" width="151"> | <img src="tools/previews/Consolidation.png" width="118"> | <img src="tools/previews/Installment.png" width="134"> | <img src="tools/previews/Volatility.png" width="118"> |
 |---|---|---|---|
 | **[Garnishment](docs/Garnishment.md)** · 18 HP | **[Consolidation](docs/Consolidation.md)** · 14 HP | **[Installment](docs/Installment.md)** · 16 HP | **[Volatility](docs/Volatility.md)** · 14 HP |
 
@@ -62,7 +62,7 @@ spectrum and a warped field, driven by audio and CV.
 |---|---|---|---|
 | **[Deduction](docs/Deduction.md)** · 12 HP | **[Audit Logic](docs/AuditLogic.md)** · 25 HP | **[Kickback](docs/Kickback.md)** · 30 HP | **[Payment Schedule](docs/PaymentSchedule.md)** · 29 HP |
 
-| <img src="tools/previews/SignHere.png" width="168"> | <img src="tools/previews/Diversified.png" width="118"> | <img src="tools/previews/Toll.png" width="92"> | <img src="tools/previews/ScheduleA.png" width="118"> |
+| <img src="tools/previews/SignHere.png" width="168"> | <img src="tools/previews/Diversified.png" width="176"> | <img src="tools/previews/Toll.png" width="92"> | <img src="tools/previews/ScheduleA.png" width="118"> |
 |---|---|---|---|
 | **[Sign Here](docs/SignHere.md)** · 20 HP | **[Diversified](docs/Diversified.md)** · 21 HP | **[Toll](docs/Toll.md)** · 11 HP | **[Schedule A](docs/ScheduleA.md)** · 14 HP |
 

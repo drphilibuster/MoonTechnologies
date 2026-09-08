@@ -82,8 +82,10 @@ which is not what you want between two edits to one spec.
 A panel's width is solved, not typed, so a `panelkit/` change can move half the
 family at once -- and those numbers are also written out in prose, where nothing
 checks them. `tools/sync_hp.py` reports every HP figure in README.md and docs/
-that disagrees with the generated headers, and `--write` fixes them. Run it
-after any change that moves a panel's width.
+that disagrees with the generated headers -- and the README gallery's image
+widths, which are the same fact written a third way and the one nobody
+remembers. `--write` fixes them. Run it after any change that moves a panel's
+width.
 
 Look at `tools/previews/<Module>.png` before calling a panel done — it goes
 through the real widget tree, so it is the only preview that cannot lie. Do this
