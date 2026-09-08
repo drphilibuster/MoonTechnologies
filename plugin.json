@@ -57,6 +57,19 @@
       ]
     },
     {
+      "slug": "Bailout",
+      "name": "Bailout",
+      "description": "Consolidation doubled: eight-channel mixer as two banks of four with their own mixes and a main, per-channel VCAs and direct outs, plus two 1-in-7 multiples",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Bailout.md",
+      "tags": [
+        "Mixer",
+        "Multiple",
+        "Polyphonic",
+        "Utility",
+        "Voltage-controlled amplifier"
+      ]
+    },
+    {
       "slug": "Deduction",
       "name": "Deduction",
       "description": "Modular in a Week filter bank: PAiA 2720-3L, Escobedo Q&D, Korg35, MS-20 OTA, EFM Moog high-pass and Synthrotek DIRT, one model at a time",

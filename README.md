@@ -59,9 +59,9 @@ deserve its own panel.
 |---|---|---|---|
 | **[Sign Here](docs/SignHere.md)** · 20 HP | **[Diversified](docs/Diversified.md)** · 21 HP | **[Toll](docs/Toll.md)** · 11 HP | **[Schedule A](docs/ScheduleA.md)** · 14 HP |
 
-| <img src="tools/previews/Dependents.png" width="134"> |
-|---|
-| **[Dependents](docs/Dependents.md)** · 16 HP |
+| <img src="tools/previews/Dependents.png" width="134"> | <img src="tools/previews/Bailout.png" width="210"> |
+|---|---|
+| **[Dependents](docs/Dependents.md)** · 16 HP | **[Bailout](docs/Bailout.md)** · 25 HP |
 
 
 ## Built for this plugin
@@ -152,6 +152,15 @@ Two VCA channels, each an LM13700 OTA, a vactrol low-pass gate or the I-AM-O JFE
 *Day 3, consolidated.*
 
 The ASMR four-channel mixer with normal and inverted sums, and two 1:3 buffered multiples with B normalled to A.
+
+### [Bailout](docs/Bailout.md) — 25 HP · *Mixer, Multiple, Polyphonic, Utility, VCA*
+
+*Day 3, doubled.*
+
+Consolidation's mixer at eight channels, grouped as two banks of four with their
+own mixes and a main that sums whichever banks are free — one 8-into-1 mixer, two
+independent 4s, or eight VCAs, depending only on what is patched. Two 1:7
+multiples instead of two 1:3.
 
 ### [Installment](docs/Installment.md) — 16 HP · *Envelope generator, LFO, Function generator, Dual*
 

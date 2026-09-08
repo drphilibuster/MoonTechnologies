@@ -14,6 +14,7 @@ void init(Plugin* p) {
 	p->addModel(modelAuditLogic);
 	p->addModel(modelCollusion);
 	p->addModel(modelConsolidation);
+	p->addModel(modelBailout);
 	p->addModel(modelDeduction);
 	p->addModel(modelDependents);
 	p->addModel(modelDiversified);
