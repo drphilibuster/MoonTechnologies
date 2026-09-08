@@ -11,10 +11,9 @@ clock, so they share one. RATE and CLOCK IN live in NOISE because NOISE is the
 one whose character actually depends on it (a bitstream reads as noise at
 audio rates and as a random gate at a crawl); SAMPLE & HOLD's TRIG and RND
 GATE's own draw both fall back to the same edge when their own jacks are bare.
-The SHIFT light beside NOISE's caption ticks the register over.
 
-12 HP, compact density: four rows is not many, but six outputs in the footer
-want the room.
+14 HP, compact density: the six outputs in the footer set the width, and the
+three sections sit comfortably inside it.
 """
 
 import os
@@ -36,8 +35,11 @@ P.sections = [
     # DAC output reads as a stepped random CV. The clock jack takes the middle
     # column of the three, between and below the two knobs.
     Section("NOISE", rows=[
-        Row([Knob("rate", "RATE", col=0), Knob("bits", "BITS", col=2)]),
-        Row([Jack("clock_in", "CLOCK IN", col=1)]),
+        Row([Knob("rate", "RATE", col=0), Knob("color", "COLOR", col=1),
+             Knob("bits", "BITS", col=2)]),
+        Row([Jack("rate_cv_in", "RATE CV", col=0),
+             Jack("clock_in", "CLOCK IN", col=1),
+             Jack("bits_cv_in", "BITS CV", col=2)]),
     ]),
 
     # SRC normals to the module's own white noise, TRIG to the shared clock --
@@ -53,7 +55,8 @@ P.sections = [
     Section("RND GATE", rows=[
         Row([Knob("probability", "PROB", col=0), Switch("rnd_src", "SRC", col=1),
              Trim("prob_cv_amt", "PROB CV", col=2, pair=True)]),
-        Row([Jack("rnd_src_in", "SRC IN", col=1), Jack("prob_cv_in", col=2)]),
+        Row([Trim("length", "LENGTH", col=0),
+             Jack("rnd_src_in", "SRC IN", col=1), Jack("prob_cv_in", col=2)]),
     ]),
 ]
 

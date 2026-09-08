@@ -26,8 +26,11 @@ static const Label LABELS[] = {
 	{ 66.9200f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "SCHEDULE D"},
 	{ 35.5600f,  13.3000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "NOISE"},
 	{ 19.2850f,  28.0069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RATE"},
+	{ 35.5600f,  28.0069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "COLOR"},
 	{ 51.8350f,  28.0069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BITS"},
+	{ 19.2850f,  32.7687f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RATE CV"},
 	{ 35.5600f,  32.7687f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CLOCK IN"},
+	{ 51.8350f,  32.7687f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BITS CV"},
 	{ 35.5600f,  49.6487f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SAMPLE & HOLD"},
 	{ 22.9925f,  53.2185f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SRC"},
 	{ 36.3100f,  53.2185f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRIG"},
@@ -36,6 +39,7 @@ static const Label LABELS[] = {
 	{ 21.5250f,  86.4472f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PROB"},
 	{ 37.2550f,  86.4472f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SRC"},
 	{ 50.8050f,  86.4472f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PROB CV"},
+	{ 21.5250f, 102.5308f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LENGTH"},
 	{ 37.2550f,  91.2090f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SRC IN"},
 	{  7.2900f, 112.8851f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RND"},
 	{ 18.5980f, 112.8851f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DAC"},
@@ -54,14 +58,18 @@ static inline void addLabels(app::ModuleWidget* mw) {
 // --- widget positions, by the names used in tools/panels/Volatility.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
 static const Vec RATE_POS = Vec(19.2850, 19.9000);
+static const Vec COLOR_POS = Vec(35.5600, 19.9000);
 static const Vec BITS_POS = Vec(51.8350, 19.9000);
+static const Vec RATE_CV_IN_POS = Vec(19.2850, 37.9587);
 static const Vec CLOCK_IN_POS = Vec(35.5600, 37.9587);
+static const Vec BITS_CV_IN_POS = Vec(51.8350, 37.9587);
 static const Vec SH_SRC_IN_POS = Vec(22.9925, 58.4085);
 static const Vec SH_TRIG_IN_POS = Vec(36.3100, 58.4085);
 static const Vec SH_SLEW_POS = Vec(48.6975, 58.4085);
 static const Vec PROBABILITY_POS = Vec(21.5250, 78.3403);
 static const Vec RND_SRC_POS = Vec(37.2550, 78.3403);
 static const Vec PROB_CV_AMT_POS = Vec(50.8050, 78.3403);
+static const Vec LENGTH_POS = Vec(21.5250, 96.3990);
 static const Vec RND_SRC_IN_POS = Vec(37.2550, 96.3990);
 static const Vec PROB_CV_IN_POS = Vec(50.8050, 96.3990);
 static const Vec RND_OUT_POS = Vec(7.2900, 118.6000);

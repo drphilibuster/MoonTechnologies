@@ -1,5 +1,6 @@
 #include "../plugin.hpp"
 #include "Panel.hpp"
+#include "Noise.hpp"
 #include <cmath>
 
 // ---------------------------------------------------------------------------
@@ -42,11 +43,15 @@ static const float kDroopTauSec = 4.f;
 struct Volatility : Module {
 	enum ParamId {
 		RATE_PARAM, BITS_PARAM, SH_SLEW_PARAM, PROBABILITY_PARAM, RND_SRC_PARAM,
-		PROB_CV_AMT_PARAM, PARAMS_LEN
+		PROB_CV_AMT_PARAM,
+		COLOR_PARAM, LENGTH_PARAM,
+		PARAMS_LEN
 	};
 	enum InputId {
 		CLOCK_IN_INPUT, SH_SRC_IN_INPUT, SH_TRIG_IN_INPUT, RND_SRC_IN_INPUT,
-		PROB_CV_IN_INPUT, INPUTS_LEN
+		PROB_CV_IN_INPUT,
+		RATE_CV_IN_INPUT, BITS_CV_IN_INPUT,
+		INPUTS_LEN
 	};
 	enum OutputId {
 		RND_OUT_OUTPUT, DAC_OUT_OUTPUT, SH_OUT_OUTPUT, GATE_OUT_OUTPUT,
@@ -73,6 +78,10 @@ struct Volatility : Module {
 	// --- RND GATE ---
 	bool rndGateState = false;
 	bool toggleMode = false;
+	volatility::GateStretcher gate;
+
+	// --- the noise colours, shared by NOISE OUT and both normalled sources ---
+	volatility::NoiseColours colours;
 
 	Volatility() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -86,6 +95,8 @@ struct Volatility : Module {
 		srcLabels.push_back("Ext");
 		configSwitch(RND_SRC_PARAM, 0.f, 1.f, 0.f, "Random gate source", srcLabels);
 		configParam(PROB_CV_AMT_PARAM, -1.f, 1.f, 0.f, "Probability CV amount", "%", 0.f, 100.f);
+		configParam(COLOR_PARAM, 0.f, 1.f, 0.f, "Noise colour", "%", 0.f, 100.f);
+		configParam(LENGTH_PARAM, 0.f, 1.f, 1.f, "Random gate length", "%", 0.f, 100.f);
 		getParamQuantity(PROB_CV_AMT_PARAM)->randomizeEnabled = false;
 
 		configInput(CLOCK_IN_INPUT, "Clock (overrides RATE)");
@@ -93,13 +104,21 @@ struct Volatility : Module {
 		configInput(SH_TRIG_IN_INPUT, "Sample & hold trigger (normalled to clock)");
 		configInput(RND_SRC_IN_INPUT, "Random gate external source");
 		configInput(PROB_CV_IN_INPUT, "Probability CV");
+		configInput(RATE_CV_IN_INPUT, "Clock rate CV, 1 V/octave");
+		configInput(BITS_CV_IN_INPUT, "DAC window CV");
 
 		configOutput(RND_OUT_OUTPUT, "LFSR bitstream, +/-5 V");
 		configOutput(DAC_OUT_OUTPUT, "LFSR stepped random CV");
 		configOutput(SH_OUT_OUTPUT, "Sample & hold");
 		configOutput(GATE_OUT_OUTPUT, "Random gate");
-		configOutput(NOISE_OUT_OUTPUT, "White noise");
+		configOutput(NOISE_OUT_OUTPUT, "Noise, white through pink to red");
 		configOutput(CLOCK_OUT_OUTPUT, "Clock (mirrors active source)");
+
+		colours.build(APP->engine->getSampleRate());
+	}
+
+	void onSampleRateChange(const SampleRateChangeEvent& e) override {
+		colours.build(e.sampleRate);
 	}
 
 	void onReset(const ResetEvent& e) override {
@@ -116,6 +135,8 @@ struct Volatility : Module {
 			shSlewState[c] = 0.f;
 		}
 		rndGateState = false;
+		gate.reset();
+		colours.reset();
 	}
 
 	void process(const ProcessArgs& args) override {
@@ -134,6 +155,13 @@ struct Volatility : Module {
 			float freqHz = volatility::kRateMinHz
 			               * std::pow(volatility::kRateMaxHz / volatility::kRateMinHz,
 			                          params[RATE_PARAM].getValue());
+			// RATE CV is 1 V/octave, the convention the knob's own log taper
+			// already follows, so a pitch source drives the clock as a pitch.
+			if (inputs[RATE_CV_IN_INPUT].isConnected())
+				freqHz *= dsp::exp2_taylor5(clamp(inputs[RATE_CV_IN_INPUT].getVoltage(),
+				                                  -10.f, 10.f));
+			freqHz = clamp(freqHz, volatility::kRateMinHz * 0.1f,
+			               volatility::kRateMaxHz * 2.f);
 			internalPhase += freqHz * sampleTime;
 			clockEdge = false;
 			if (internalPhase >= 1.f) {
@@ -144,10 +172,21 @@ struct Volatility : Module {
 		}
 		outputs[CLOCK_OUT_OUTPUT].setVoltage(clockOutV);
 
-		// A single continuous white noise source, shared by NOISE OUT and
-		// SAMPLE & HOLD's normalled SRC.
-		float whiteNoise = (random::uniform() * 2.f - 1.f) * 5.f;
-		outputs[NOISE_OUT_OUTPUT].setVoltage(whiteNoise);
+		// A single continuous noise source, shared by NOISE OUT and by both
+		// normalled inputs -- SAMPLE & HOLD's SRC and RND GATE's SRC IN. COLOUR
+		// moves all three together, which is the point: sampling red noise is a
+		// smooth random walk where sampling white is a jump, and neither is
+		// reachable if the colour only applied to the jack on the footer.
+		float white = (random::uniform() * 2.f - 1.f) * 5.f;
+		float pink, red;
+		colours.step(white, pink, red);
+		float noise = volatility::colourMix(white, pink, red,
+		                                    params[COLOR_PARAM].getValue());
+		// Matched by RMS rather than by peak: pink and red have the higher
+		// crest factor, so they reach past +/-10 V now and then and are held
+		// to Rack's rail.
+		noise = clamp(noise, -12.f, 12.f);
+		outputs[NOISE_OUT_OUTPUT].setVoltage(noise);
 
 		// --- NOISE: the 4006 LFSR, clocked on every shared edge -----------------
 		if (clockEdge) {
@@ -158,7 +197,10 @@ struct Volatility : Module {
 			lfsrReg = ((lfsrReg << 1) | fb) & volatility::kLfsrMask;
 			rndOutV = fb ? 5.f : -5.f;
 
-			int offset = clamp((int) std::round(params[BITS_PARAM].getValue() * 10.f), 0, 10);
+			float bitsN = params[BITS_PARAM].getValue();
+			if (inputs[BITS_CV_IN_INPUT].isConnected())
+				bitsN += inputs[BITS_CV_IN_INPUT].getVoltage() / 10.f;
+			int offset = clamp((int) std::round(clamp(bitsN, 0.f, 1.f) * 10.f), 0, 10);
 			uint32_t window = (lfsrReg >> offset) & 0xFFu;
 			dacOutV = (window / 255.f) * 10.f;
 		}
@@ -179,7 +221,7 @@ struct Volatility : Module {
 		float droopCoef = sampleTime / volatility::kDroopTauSec;
 
 		for (int c = 0; c < shChannels; c++) {
-			float src = srcConnected ? inputs[SH_SRC_IN_INPUT].getPolyVoltage(c) : whiteNoise;
+			float src = srcConnected ? inputs[SH_SRC_IN_INPUT].getPolyVoltage(c) : noise;
 			if (shTrigEdge)
 				shHeld[c] = src;
 			// The FET S&H leaks: held voltage creeps back toward 0 V.
@@ -197,11 +239,12 @@ struct Volatility : Module {
 		prob = clamp(prob, 0.f, 1.f);
 
 		bool extSrc = params[RND_SRC_PARAM].getValue() > 0.5f;
+		gate.tick(sampleTime, clockEdge);
 		if (clockEdge) {
 			float draw;
 			if (extSrc) {
 				float srcV = inputs[RND_SRC_IN_INPUT].isConnected()
-					? inputs[RND_SRC_IN_INPUT].getVoltage() : whiteNoise;
+					? inputs[RND_SRC_IN_INPUT].getVoltage() : noise;
 				draw = clamp(srcV / 10.f + 0.5f, 0.f, 1.f);
 			}
 			else {
@@ -212,11 +255,14 @@ struct Volatility : Module {
 				if (success)
 					rndGateState = !rndGateState;
 			}
-			else {
-				rndGateState = success;
+			else if (success) {
+				gate.fire(params[LENGTH_PARAM].getValue());
 			}
 		}
-		outputs[GATE_OUT_OUTPUT].setVoltage(rndGateState ? 10.f : 0.f);
+		// TOGGLE holds a state between successes, so LENGTH has nothing to
+		// shorten there and is bypassed rather than quietly ignored.
+		bool gateHigh = toggleMode ? rndGateState : gate.high();
+		outputs[GATE_OUT_OUTPUT].setVoltage(gateHigh ? 10.f : 0.f);
 	}
 
 	json_t* dataToJson() override {
@@ -251,12 +297,16 @@ struct VolatilityWidget : ModuleWidget {
 
 		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::RATE_POS.x, panel::RATE_POS.y), module, Volatility::RATE_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::BITS_POS.x, panel::BITS_POS.y), module, Volatility::BITS_PARAM));
+		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::COLOR_POS.x, panel::COLOR_POS.y), module, Volatility::COLOR_PARAM));
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::SH_SLEW_POS.x, panel::SH_SLEW_POS.y), module, Volatility::SH_SLEW_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::PROBABILITY_POS.x, panel::PROBABILITY_POS.y), module, Volatility::PROBABILITY_PARAM));
 		addParam(createParamCentered<CKSS>(panel::mm(panel::RND_SRC_POS.x, panel::RND_SRC_POS.y), module, Volatility::RND_SRC_PARAM));
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::PROB_CV_AMT_POS.x, panel::PROB_CV_AMT_POS.y), module, Volatility::PROB_CV_AMT_PARAM));
+		addParam(createParamCentered<Trimpot>(panel::mm(panel::LENGTH_POS.x, panel::LENGTH_POS.y), module, Volatility::LENGTH_PARAM));
 
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::CLOCK_IN_POS.x, panel::CLOCK_IN_POS.y), module, Volatility::CLOCK_IN_INPUT));
+		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::RATE_CV_IN_POS.x, panel::RATE_CV_IN_POS.y), module, Volatility::RATE_CV_IN_INPUT));
+		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::BITS_CV_IN_POS.x, panel::BITS_CV_IN_POS.y), module, Volatility::BITS_CV_IN_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::SH_SRC_IN_POS.x, panel::SH_SRC_IN_POS.y), module, Volatility::SH_SRC_IN_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::SH_TRIG_IN_POS.x, panel::SH_TRIG_IN_POS.y), module, Volatility::SH_TRIG_IN_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::RND_SRC_IN_POS.x, panel::RND_SRC_IN_POS.y), module, Volatility::RND_SRC_IN_INPUT));
