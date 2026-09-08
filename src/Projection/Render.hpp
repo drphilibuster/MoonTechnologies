@@ -63,6 +63,23 @@ inline void hsv(float h, float s, float v, uint8_t* rgb) {
 	rgb[2] = (uint8_t) ((b + m) * 255.f + 0.5f);
 }
 
+/** A knob plus its CV jack, over that control's own range.
+
+    The range is an argument because not every control is 0..1, and assuming it
+    was made MODE's middle position unreachable: clamping a 0..2 switch to 1
+    collapsed two of the three pictures onto the same one, so the spectrum bars
+    could not be selected at all. Ten volts covers the whole travel whatever the
+    range, which is the convention every other CV jack in this plugin follows. */
+inline float withCv(float knob, bool connected, float volts,
+                    float lo = 0.f, float hi = 1.f) {
+	float v = knob;
+	if (connected)
+		v += volts * 0.1f * (hi - lo);
+	if (v < lo) v = lo;
+	if (v > hi) v = hi;
+	return v;
+}
+
 inline void clear(Canvas c) {
 	if (!c.ok())
 		return;

@@ -210,6 +210,48 @@ int main() {
 		check("onset fires on a step and not on a hold", fired && steadyFires <= 1, detail);
 	}
 
+	// --- a knob's CV covers that knob's own range -----------------------------
+	// MODE is 0..2 and everything else is 0..1. Clamping everything to 0..1 made
+	// the middle mode unreachable -- two of the three pictures collapsed onto
+	// the same one and the spectrum bars could not be selected at all, which no
+	// test here noticed because nothing here had an opinion about ranges.
+	{
+		bool ok = true;
+		char detail[160] = "";
+		// Unpatched leaves the knob alone, whatever the range.
+		if (withCv(0.7f, false, 9.f) != 0.7f) ok = false;
+		if (withCv(1.5f, false, 9.f, 0.f, 2.f) != 1.5f) ok = false;
+		// Ten volts covers the whole travel, and the ends clamp.
+		if (withCv(0.f, true, 10.f) != 1.f) ok = false;
+		if (withCv(0.f, true, 25.f) != 1.f) ok = false;
+		if (withCv(1.f, true, -25.f) != 0.f) ok = false;
+		// The one that mattered: every mode has to be reachable on a 0..2 knob.
+		int seen[3] = { 0, 0, 0 };
+		for (int i = 0; i <= 20; i++) {
+			float knob = 2.f * (float) i / 20.f;
+			int m = (int) (withCv(knob, false, 0.f, 0.f, 2.f) + 0.5f);
+			if (m >= 0 && m < 3) seen[m]++;
+		}
+		if (!seen[0] || !seen[1] || !seen[2]) {
+			ok = false;
+			snprintf(detail, sizeof detail, "modes reachable: %d %d %d",
+			         seen[0], seen[1], seen[2]);
+		}
+		// And on the jack alone, sweeping the full voltage.
+		int viaCv[3] = { 0, 0, 0 };
+		for (int i = 0; i <= 20; i++) {
+			float v = 10.f * (float) i / 20.f;
+			int m = (int) (withCv(0.f, true, v, 0.f, 2.f) + 0.5f);
+			if (m >= 0 && m < 3) viaCv[m]++;
+		}
+		if (!viaCv[0] || !viaCv[1] || !viaCv[2]) {
+			ok = false;
+			snprintf(detail, sizeof detail, "modes reachable by CV: %d %d %d",
+			         viaCv[0], viaCv[1], viaCv[2]);
+		}
+		check("a knob's CV covers that knob's own range", ok, detail);
+	}
+
 	// --- every renderer stays inside its buffer -------------------------------
 	// The check that matters most, because overrunning is silent when it is not
 	// fatal. Deliberately awkward sizes, and inputs well outside their range.

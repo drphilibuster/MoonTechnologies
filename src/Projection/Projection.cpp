@@ -155,13 +155,14 @@ struct Projection : Module {
 		sampleRate = e.sampleRate;
 	}
 
-	/** 0..1 from a knob plus its jack, the family's usual CV shape: 10 V covers
-	    the whole control, and an unpatched jack leaves the knob alone. */
-	float knobCv(int param, int input) {
-		float v = params[param].getValue();
-		if (inputs[input].isConnected())
-			v += inputs[input].getVoltage() * 0.1f;
-		return clamp(v, 0.f, 1.f);
+	/** A knob plus its jack, the family's usual CV shape: 10 V covers the whole
+	    control, and an unpatched jack leaves the knob alone. The range is passed
+	    through rather than assumed -- MODE is 0..2, and assuming 0..1 is what
+	    made its middle position unreachable. */
+	float knobCv(int param, int input, float lo = 0.f, float hi = 1.f) {
+		return pj::withCv(params[param].getValue(),
+		                  inputs[input].isConnected(),
+		                  inputs[input].getVoltage(), lo, hi);
 	}
 
 	void process(const ProcessArgs& args) override {
@@ -299,8 +300,7 @@ struct Projection : Module {
 					flash *= std::exp(-frameDt / 0.08f);
 				look.flash = flash;
 
-				int mode = (int) std::round(knobCv(MODE_PARAM, MODE_CV_INPUT) * 2.f);
-				mode = clamp(mode, 0, 2);
+				int mode = (int) std::round(knobCv(MODE_PARAM, MODE_CV_INPUT, 0.f, 2.f));
 				phase += frameDt * (0.2f + look.warp * 1.2f);
 
 				pj::fade(cv, look.trail, frameDt);
