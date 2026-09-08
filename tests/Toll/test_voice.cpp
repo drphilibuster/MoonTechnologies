@@ -259,32 +259,45 @@ static void spreadIsMonotone() {
 			snprintf(m, sizeof m, "only %d partials survive at spread %.1f", live, spread);
 			fail("spread", m);
 		}
-		// Rising in i: partials must not cross each other.
-		for (int i = 1; i < kParts; i++) {
-			if (f[i] == 0.f || f[i - 1] == 0.f) continue;
-			checks++;
-			if (!(f[i] > f[i - 1])) {
-				char m[160];
-				snprintf(m, sizeof m, "at spread %.1f partial %d (%.1f Hz) is not above"
-				         " partial %d (%.1f Hz)", spread, i, f[i], i - 1, f[i - 1]);
-				fail("spread ordering", m);
+		// Two properties, counted once each rather than once per partial:
+		// "partials never cross" and "stretching only moves them up" are single
+		// claims about SPREAD, and restating them fifteen times a step said
+		// nothing the first said. Every partial is still compared, and the
+		// first offender at each spread is named.
+		{
+			int crossed = 0;
+			for (int i = 1; i < kParts; i++) {
+				if (f[i] == 0.f || f[i - 1] == 0.f) continue;
+				if (!(f[i] > f[i - 1])) {
+					if (!crossed) {
+						char m[160];
+						snprintf(m, sizeof m, "at spread %.1f partial %d (%.1f Hz) is not"
+						         " above partial %d (%.1f Hz)",
+						         spread, i, f[i], i - 1, f[i - 1]);
+						fail("spread ordering", m);
+					}
+					crossed++;
+				}
 			}
 		}
-		// And rising in s: stretching may only ever move a partial up.
 		if (s > 0) {
+			int fell = 0;
 			for (int i = 1; i < kParts; i++) {
 				if (f[i] == 0.f || prev[i] == 0.f) continue;
-				checks++;
 				if (f[i] < prev[i] - 0.5f) {
-					char m[160];
-					snprintf(m, sizeof m, "partial %d fell from %.1f to %.1f Hz when"
-					         " SPREAD went up", i, prev[i], f[i]);
-					fail("spread monotone", m);
+					if (!fell) {
+						char m[160];
+						snprintf(m, sizeof m, "partial %d fell from %.1f to %.1f Hz when"
+						         " SPREAD went up", i, prev[i], f[i]);
+						fail("spread monotone", m);
+					}
+					fell++;
 				}
 			}
 		}
 		for (int i = 0; i < kParts; i++) prev[i] = f[i];
 	}
+	checks += 2;      // "partials never cross" and "stretching only moves up"
 
 	// And spread zero has to be the printed table, not nearly it.
 	bank.clearCoef();

@@ -112,47 +112,70 @@ int main() {
 	       "           each with the filter in and out of the loop\n",
 	       NE, ND, NC, NQ, NO, NB);
 
-	for (int b = 0; b < NB; b++)
-	 for (int o = 0; o < NO; o++)
-	  for (int e = 0; e < NE; e++)
-	   for (int d = 0; d < ND; d++)
-	    for (int c = 0; c < NC; c++)
-	     for (int q = 0; q < NQ; q++)
-	      for (int f = 0; f < 2; f++) {
-	        const char* why = "";
-	        int bs = -1;
-	        float bv = 0.f;
-	        checks++;
-	        if (!run(echos[e], delays[d], cutoffs[c], resos[q], f != 0, 1.f,
-	                 oss[o], bases[b], false, why, bs, bv)) {
-	          failures++;
-	          printf("  FAIL  echo=%.2f delay=%.3f cut=%-6.0f res=%.0f %s "
-	                 "os=%d sr=%.0f  %s at sample %d (%g)\n",
-	                 echos[e], delays[d], cutoffs[c], resos[q],
-	                 f ? "in-loop " : "post    ", oss[o], bases[b], why, bs, bv);
+	// One check for the sweep, not one per setting: the property is "the loop
+	// stays bounded", and it is that whether it took one combination to say so
+	// or seven hundred. Every combination still runs; the first ten failures
+	// print in full so a fault is diagnosable.
+	{
+	  int bad = 0, total = 0;
+	  for (int b = 0; b < NB; b++)
+	   for (int o = 0; o < NO; o++)
+	    for (int e = 0; e < NE; e++)
+	     for (int d = 0; d < ND; d++)
+	      for (int c = 0; c < NC; c++)
+	       for (int q = 0; q < NQ; q++)
+	        for (int f = 0; f < 2; f++) {
+	          const char* why = "";
+	          int bs = -1;
+	          float bv = 0.f;
+	          total++;
+	          if (!run(echos[e], delays[d], cutoffs[c], resos[q], f != 0, 1.f,
+	                   oss[o], bases[b], false, why, bs, bv)) {
+	            if (bad < 10)
+	              printf("    echo=%.2f delay=%.3f cut=%-6.0f res=%.0f %s "
+	                     "os=%d sr=%.0f  %s at sample %d (%g)\n",
+	                     echos[e], delays[d], cutoffs[c], resos[q],
+	                     f ? "in-loop " : "post    ", oss[o], bases[b], why, bs, bv);
+	            bad++;
+	          }
 	        }
-	      }
+	  checks++;
+	  if (bad) {
+	    failures++;
+	    printf("  FAIL  the loop stays bounded: %d of %d settings broke\n", bad, total);
+	  }
+	}
 	printf("T1  the loop stays bounded at every echo, delay and filter setting\n");
 
 	// --- T2: TIME swept while the loop is self-oscillating -------------------
 	// The read pointer moves against the write pointer under interpolation, at
 	// feedback past unity, with the filter inside the loop. This is the setting
 	// a patch reaches for and the one most likely to walk an index or blow up.
-	for (int b = 0; b < NB; b++)
-		for (int o = 0; o < NO; o++)
-			for (int e = 2; e < NE; e++) {   // echo >= 1.0 only
-				const char* why = "";
-				int bs = -1;
-				float bv = 0.f;
-				checks++;
-				if (!run(echos[e], 0.3f, 3000.f, 1.f, true, 1.f, oss[o],
-				         bases[b], true, why, bs, bv)) {
-					failures++;
-					printf("  FAIL  swept TIME, echo=%.2f os=%d sr=%.0f  "
-					       "%s at sample %d (%g)\n",
-					       echos[e], oss[o], bases[b], why, bs, bv);
+	{
+		int bad = 0, total = 0;
+		for (int b = 0; b < NB; b++)
+			for (int o = 0; o < NO; o++)
+				for (int e = 2; e < NE; e++) {   // echo >= 1.0 only
+					const char* why = "";
+					int bs = -1;
+					float bv = 0.f;
+					total++;
+					if (!run(echos[e], 0.3f, 3000.f, 1.f, true, 1.f, oss[o],
+					         bases[b], true, why, bs, bv)) {
+						if (bad < 10)
+							printf("    swept TIME, echo=%.2f os=%d sr=%.0f  "
+							       "%s at sample %d (%g)\n",
+							       echos[e], oss[o], bases[b], why, bs, bv);
+						bad++;
+					}
 				}
-			}
+		checks++;
+		if (bad) {
+			failures++;
+			printf("  FAIL  sweeping TIME while self-oscillating stays bounded:"
+			       " %d of %d settings broke\n", bad, total);
+		}
+	}
 	printf("T2  sweeping TIME while self-oscillating stays bounded\n");
 
 	printf("\n%d checks, %d failures\n", checks, failures);

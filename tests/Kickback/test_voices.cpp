@@ -563,17 +563,29 @@ static void patternTests() {
 	p.reset();
 	int prev[V_COUNT];
 	for (int v = 0; v < V_COUNT; v++) prev[v] = -1;
-	for (int i = 0; i <= 100; i++) {
-		p.build(i / 100.f, 0, 0.f);
-		for (int v = 0; v < V_COUNT; v++) {
-			checks++;
-			if (p.onsets[v] < prev[v]) {
-				char d[128];
-				snprintf(d, sizeof d, "voice %d lost an onset (%d -> %d) at fill %.2f",
-				         v, prev[v], p.onsets[v], i / 100.f);
-				fail("fill monotone", d);
+	// One check for the property, not one per (fill, voice) pair: "FILL is
+	// monotone" is a single claim about the knob, and stating it six hundred
+	// times said nothing the first did not. Every step is still walked, and the
+	// first ten regressions print with their voice and fill.
+	{
+		int bad = 0;
+		for (int i = 0; i <= 100; i++) {
+			p.build(i / 100.f, 0, 0.f);
+			for (int v = 0; v < V_COUNT; v++) {
+				if (p.onsets[v] < prev[v]) {
+					if (bad < 10)
+						printf("    voice %d lost an onset (%d -> %d) at fill %.2f\n",
+						       v, prev[v], p.onsets[v], i / 100.f);
+					bad++;
+				}
+				prev[v] = p.onsets[v];
 			}
-			prev[v] = p.onsets[v];
+		}
+		checks++;
+		if (bad) {
+			char d[128];
+			snprintf(d, sizeof d, "%d places where turning FILL up removed an onset", bad);
+			fail("fill monotone", d);
 		}
 	}
 

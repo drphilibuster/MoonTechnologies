@@ -104,24 +104,38 @@ int main() {
 	printf("Deduction: %d models x %d cutoffs x %d resonances x %d drives x %d rates\n",
 	       deduction::NUM_MODELS, NC, NQ, ND, NR);
 
-	for (int m = 0; m < deduction::NUM_MODELS; m++)
-		for (int r = 0; r < NR; r++)
-			for (int ci = 0; ci < NC; ci++)
-				for (int qi = 0; qi < NQ; qi++)
-					for (int di = 0; di < ND; di++) {
-						const char* why = "";
-						int bs = -1;
-						float bv = 0.f;
-						checks++;
-						if (!run(m, cutoffs[ci], resos[qi], drives[di], rates[r],
-						         why, bs, bv)) {
-							failures++;
-							printf("  FAIL  %-16s fc=%-7.0f res=%.2f drive=%.1f "
-							       "sr=%.0f  %s at sample %d (%g)\n",
-							       MODELS[m], cutoffs[ci], resos[qi], drives[di],
-							       rates[r], why, bs, bv);
+	// One check for the corner sweep, not one per corner. Every combination
+	// still runs; the suite reports the property -- "every model survives its
+	// corners" -- rather than eight hundred restatements of it. The first ten
+	// failures print in full, which is what a diagnosis needs.
+	{
+		int bad = 0, total = 0;
+		for (int m = 0; m < deduction::NUM_MODELS; m++)
+			for (int r = 0; r < NR; r++)
+				for (int ci = 0; ci < NC; ci++)
+					for (int qi = 0; qi < NQ; qi++)
+						for (int di = 0; di < ND; di++) {
+							const char* why = "";
+							int bs = -1;
+							float bv = 0.f;
+							total++;
+							if (!run(m, cutoffs[ci], resos[qi], drives[di], rates[r],
+							         why, bs, bv)) {
+								if (bad < 10)
+									printf("    %-16s fc=%-7.0f res=%.2f drive=%.1f "
+									       "sr=%.0f  %s at sample %d (%g)\n",
+									       MODELS[m], cutoffs[ci], resos[qi],
+									       drives[di], rates[r], why, bs, bv);
+								bad++;
+							}
 						}
-					}
+		checks++;
+		if (bad) {
+			failures++;
+			printf("  FAIL  every model survives its corners: %d of %d combinations"
+			       " broke\n", bad, total);
+		}
+	}
 	printf("T1  every model survives its corners\n");
 
 	// --- T2: walking the MODEL knob under load -------------------------------

@@ -128,7 +128,29 @@ plugins never having been ported.
 spec in `tools/panels/<New>.py`; a manual in `docs/<New>.md`. The Makefile globs
 `src/*/*.cpp` and `tools/panels/*.py`, so nothing there needs touching.
 
+## A negative control needs a forced rebuild
+
+Every test here is meant to be watched failing when its bug is put back. When
+you do that in a loop -- edit the header, build, run, restore -- `make` can
+serve a stale binary and the control appears to pass for the wrong reason. It
+has happened twice: once from a header missing out of `CORE`, and once with
+`CORE` perfectly correct. `rm -f tests/<Module>/<binary>` before each build; a
+control that reports the *previous* control's message is the tell.
+
 ## Shared DSP lives at src/, not inside a module
+
+DSP that only one module uses still belongs in a header rather than inside its
+`.cpp`, because a `.cpp` cannot be tested: a module's `.cpp` includes
+`plugin.hpp`. That is why Garnishment's circuits are in `Vca.hpp` -- they were
+untestable until they were lifted out, and grew a suite the moment they were.
+Splitting one is also how you find what it was quietly borrowing: `Vca.hpp` had
+been getting `std::max` through `rack.hpp`.
+
+**A module that reaches the SDK is still testable** -- see
+`tests/Diversified/rack.hpp`, a shim that supplies the two things those headers
+want (`clamp` and the resampler pair) from the real SDK headers, which are
+header-only and link without libRack. Check for one before concluding a module
+cannot be covered.
 
 `src/DspCache.hpp` and `src/Drum.hpp` are used by more than one module --
 Drum.hpp by `Kickback` and `Toll`, which are the same struck-object physics at

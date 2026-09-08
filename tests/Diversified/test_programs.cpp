@@ -153,24 +153,40 @@ int main() {
 	       NUM_PROGRAMS, (int) (sizeof(macros) / sizeof(macros[0])),
 	       (int) (sizeof(rates) / sizeof(rates[0])));
 
+	// One check for the sweep, not one per combination. The sweep is the same
+	// size it always was -- every program, every macro setting, every rate --
+	// but "636 checks" was six hundred and thirty-six reports of a single
+	// property, which tells you nothing that "the sweep is clean" does not.
+	// Each failure still names its own program, and the first ten print in full
+	// so a real fault is diagnosable rather than a wall of six hundred lines.
+	int bad = 0;
+	int total = 0;
 	for (unsigned r = 0; r < sizeof(rates) / sizeof(rates[0]); r++) {
 		for (unsigned m = 0; m < sizeof(macros) / sizeof(macros[0]); m++) {
 			for (int prog = 0; prog < NUM_PROGRAMS; prog++) {
 				const char* why = "";
 				int badSample = -1;
 				float badValue = 0.f;
-				checks++;
+				total++;
 				if (!runProgram(prog, macros[m], rates[r], why, badSample, badValue)) {
-					failures++;
-					Patch p;
-					divfx::programAt(prog, p);
-					printf("  FAIL  program %3d %-13s  macros=%.1f  sr=%.0f  "
-					       "%s at sample %d (%g)\n",
-					       prog, p.name, macros[m], rates[r], why, badSample,
-					       badValue);
+					if (bad < 10) {
+						Patch p;
+						divfx::programAt(prog, p);
+						printf("    program %3d %-13s  macros=%.1f  sr=%.0f  "
+						       "%s at sample %d (%g)\n",
+						       prog, p.name, macros[m], rates[r], why, badSample,
+						       badValue);
+					}
+					bad++;
 				}
 			}
 		}
+	}
+	checks++;
+	if (bad) {
+		failures++;
+		printf("  FAIL  every program stays finite: %d of %d combinations produced"
+		       " NaN or ran away\n", bad, total);
 	}
 
 	printf("\n%d checks, %d failures\n", checks, failures);
