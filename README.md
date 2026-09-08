@@ -1,6 +1,6 @@
 # Moon Technologies
 
-Twenty-five modules for [VCV Rack 2](https://vcvrack.com), by **Taxxess**.
+Twenty-seven modules for [VCV Rack 2](https://vcvrack.com), by **Taxxess**.
 
 They share a panel language borrowed from money — a pale engraved note, sage
 guilloche round every field, a scroll in every corner, a form number in the
@@ -9,7 +9,7 @@ and finding out what it cost you.
 
 ## Where they come from
 
-**Twelve are built for this plugin.** Some are original; some are a piece of
+**Thirteen are built for this plugin.** Some are original; some are a piece of
 hardware or a paper worked out properly — the Olegtron R2R as a real resistor
 ladder, Curtis Roads' pulsar synthesis, Partch's tonality diamond. Where one is
 modelled on something, it says so and says what.
@@ -28,10 +28,15 @@ the drum folder it came from has nothing to say about. Each entry says which it
 is. The credit belongs to the course either way; the deviations are ours, and
 so is anything wrong with them.
 
-**Two grew out of the family** — an expander, and a voice that turned out to
-deserve its own panel.
+**Three grew out of the family** — an expander, a voice that turned out to
+deserve its own panel, and a bank doubled into a module of its own.
 
-## All twenty-five
+**One of those thirteen carries the picture out.** [Transmittal](docs/Transmittal.md)
+publishes video from anything in the plugin to a compositor — Syphon on macOS,
+read straight into TouchDesigner — so Repossession's footage can go to a
+projector while the same patch is making the sound.
+
+## All twenty-seven
 
 *(Every panel below is rendered by Rack itself, not mocked up.)*
 
@@ -110,7 +115,7 @@ A Dattorro plate for VERB and an eight-line FDN with a limiter for TRONIC, tonal
 
 ### [Repossession](docs/Repossession.md) — 34 HP · *Sampler, Sequencer, Visual*
 
-Paste a YouTube link. The module fetches it with yt-dlp and ffmpeg, shows the video on the panel, lets you drag regions on the timeline, and sequences those regions — audio and picture together — by clock, CV, scan and fire, with position, gate, end-of-region and region outputs.
+Paste a YouTube link. The module fetches it with yt-dlp and ffmpeg, shows the video on the panel, lets you drag regions on the timeline, and sequences those regions — audio and picture together — by clock, CV, scan and fire, with position, gate, end-of-region and region outputs. The picture is not just a thumbnail: it decodes up to 1280 × 720 at 30 fps and hands every frame to [Transmittal](docs/Transmittal.md), so the video you are sequencing is the video going to the projector.
 
 ### [Collusion](docs/Collusion.md) — 18 HP · *LFO, Oscillator, Random*
 
@@ -165,9 +170,13 @@ multiples instead of two 1:3.
 ### [Transmittal](docs/Transmittal.md) — 10 HP · *Utility, Visual*
 
 The plugin's video output. Takes frames from another module here — Repossession,
-so far — and streams them out through ffmpeg as a live HLS playlist, which
-TouchDesigner reads with a Video Stream In TOP. Standalone Rack only, and about
-two seconds behind; the Syphon/Spout fast path goes alongside it later.
+so far — and publishes them as a GPU texture over **Syphon**, which TouchDesigner
+reads with a Syphon Spout In TOP. No encoder and no player in the path, so the
+latency is one Rack frame plus one TouchDesigner frame: fast enough to perform
+to, which is the whole point of it. An **HLS** transport is there as well, for
+capture and for platforms without texture sharing, at the two or three seconds
+that format costs. Standalone Rack only — video does not work in VST for anyone,
+LZX included.
 
 ### [Installment](docs/Installment.md) — 16 HP · *Envelope generator, LFO, Function generator, Dual*
 
