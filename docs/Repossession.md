@@ -100,11 +100,44 @@ ffmpeg -v error -nostdin -y -i <file> -t <max> -vn -ac 2 -ar <engine rate> \
        -f f32le <cache>/<id>-<rate>.pcm
 
 ffmpeg -v error -nostdin -y -i <file> -t <max> -an \
-       -vf "fps=12,scale=160:90" -pix_fmt rgba -f rawvideo <cache>/<id>.rgba
+       -vf "fps=<r>,scale=<w>:<h>:force_original_aspect_ratio=decrease:force_divisible_by=2,\
+            pad=<w>:<h>:(ow-iw)/2:(oh-ih)/2" \
+       -c:v mjpeg -q:v 3 -pix_fmt yuvj420p -f mjpeg <cache>/<id>-<w>x<h>@<r>.mjpg
 ```
 
-360p is deliberate: the screen is 160 × 90, and the download is the slow part.
 A source with no video stream still works — the screen just says `NO PICTURE`.
+Sources that are not 16:9 are letterboxed rather than stretched.
+
+### Video quality
+
+**Video quality** in the menu decides what the frames are decoded at:
+
+| Setting | Cache for a 3-minute clip | Download cap |
+|---|---|---|
+| 160×90, 12 fps (panel only) | ~120 MB | 360p |
+| 640×360, 24 fps | ~160 MB | 360p |
+| 1280×720, 24 fps | ~340 MB | 720p |
+
+The default is the smallest, because the panel screen is 56 mm wide and nothing
+larger shows on it. The other two exist because the frames now leave the module
+through **Transmittal** and end up on a projector, where 160 × 90 is not a
+picture.
+
+Frames are cached as **concatenated JPEGs** with an index of frame offsets
+beside them, not as raw pixels. That is what makes the larger sizes possible at
+all: raw 720p at 24 fps is 88 MB *per second*, about 15 GB for a three-minute
+clip, where the JPEG stream is 340 MB — 45 times smaller, and still seekable to
+any single frame, which is the property that matters when regions jump around on
+clock edges. Decoding one 720p frame takes about 4 ms.
+
+Changing the setting re-decodes immediately, and each size is its own cache
+file, so switching back to one you have already decoded is instant.
+
+One caveat worth knowing: the **download** is capped when the link is first
+imported, and the container is then reused rather than re-fetched. Raising the
+quality on something already imported rescales the container you have. To
+genuinely get more pixels out of a 360p download, delete that file from the
+cache folder and import the link again.
 
 ### The cache
 
@@ -114,7 +147,10 @@ keyed by the video id, so importing the same link twice is instant, and a saved
 patch reopens without a download.
 
 The `.pcm` carries the engine sample rate in its name, so changing Rack's sample
-rate re-decodes rather than playing back at the wrong speed. Nothing is ever
+rate re-decodes rather than playing back at the wrong speed; the `.mjpg` carries
+its size and rate for the same reason. A `.rgba` from before the JPEG format is
+still read, so an older patch does not go blank — nothing writes that format any
+more. Nothing is ever
 deleted automatically: the folder is yours to prune.
 
 **Maximum import length** in the menu caps the decode at 1, 3, 6 or 10 minutes

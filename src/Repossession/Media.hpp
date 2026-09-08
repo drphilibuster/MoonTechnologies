@@ -40,9 +40,40 @@ another rate stays correct until the re-decode lands. */
 namespace rp {
 
 
+// --- the video cache -------------------------------------------------------
+// Frames are cached as concatenated JPEGs rather than raw RGBA, and the reason
+// is arithmetic. Raw is 0.69 MB/s at the thumbnail size this module started
+// with, which is nothing -- but the same format at 720p30 is 111 MB/s, or about
+// 20 GB for a three-minute clip, so raw simply cannot be made bigger. MJPEG at
+// 720p is roughly 70 KB a frame: a couple of hundred megabytes for that same
+// clip, a hundred-odd times smaller, and still every frame independently
+// seekable, which is the property that actually matters here. Regions jump
+// around on clock edges, and a format that had to decode forward from a
+// keyframe would hitch on every step.
+//
+// Decoding costs nothing extra to ship: stb_image is already inside libRack
+// (nanovg uses it) and its header is in the SDK, so the JPEG decoder is linked
+// whether or not this module exists.
+
+static const int FRAME_FPS = 12;        // the thumbnail preset's rate
+
+/** What the cache is decoded at. THUMB is what this module shipped with and is
+    still the right answer for a panel that is 56 mm wide; the other two exist
+    because the frames now leave the module through Transmittal and end up on a
+    projector, where 160x90 is not a picture. */
+struct VideoPreset { int w, h, fps; const char* name; };
+static const VideoPreset kVideoPresets[] = {
+	{  160,  90, 12, "160x90, 12 fps (panel only)" },
+	{  640, 360, 24, "640x360, 24 fps"             },
+	{ 1280, 720, 24, "1280x720, 24 fps"            },
+};
+static const int kNumVideoPresets = 3;
+static const int kDefaultVideoPreset = 0;
+
+// The legacy raw thumbnail, still read when a cache predates the JPEG format so
+// that a saved patch does not go blank on upgrade. Nothing writes it any more.
 static const int FRAME_W = 160;
 static const int FRAME_H = 90;
-static const int FRAME_FPS = 12;
 static const size_t FRAME_BYTES = (size_t) FRAME_W * (size_t) FRAME_H * 4;
 
 /** Buckets in the decimated waveform drawn on the timeline. One per ~0.15 mm of
@@ -59,11 +90,16 @@ struct Media {
 	std::string source;         // the URL or file path the user gave
 	std::string title;
 	std::string pcmPath;
-	std::string rgbaPath;
+	std::string rgbaPath;       // legacy raw thumbnail, if this cache predates JPEG
+	std::string mjpgPath;       // concatenated JPEGs at `videoW` x `videoH`
+	std::vector<uint64_t> frameOffsets;   // into mjpgPath, one per frame
 
 	int sampleRate = 44100;
 	int64_t frames = 0;         // stereo frames in the .pcm on disk
 	int videoFrames = 0;
+	int videoW = FRAME_W;
+	int videoH = FRAME_H;
+	int videoFps = FRAME_FPS;
 	double duration = 0.0;      // seconds
 
 	std::vector<float> peaks;   // PEAK_BUCKETS entries, 0..1
@@ -99,6 +135,7 @@ struct Request {
 	int sampleRate = 44100;
 	double maxSeconds = 180.0;
 	std::string toolDir;        // the user's extra tools directory, may be empty
+	int videoPreset = kDefaultVideoPreset;   // index into kVideoPresets
 };
 
 
@@ -127,6 +164,81 @@ inline std::string pcmPathFor(const std::string& id, int rate) {
 
 inline std::string rgbaPathFor(const std::string& id) {
 	return cacheDir() + id + ".rgba";
+}
+
+/** The JPEG stream for one preset, and the frame index beside it. The preset is
+    in the name so switching quality is a different file rather than a rewrite,
+    and switching back is free. */
+inline std::string mjpgPathFor(const std::string& id, const VideoPreset& p) {
+	return cacheDir() + id + rack::string::f("-%dx%d@%d.mjpg", p.w, p.h, p.fps);
+}
+
+inline std::string idxPathFor(const std::string& id, const VideoPreset& p) {
+	return cacheDir() + id + rack::string::f("-%dx%d@%d.idx", p.w, p.h, p.fps);
+}
+
+/** Byte offset and length of every frame in a concatenated JPEG stream.
+
+    Built by scanning for the start-of-image marker, which is safe to look for
+    because JPEG escapes any 0xFF inside entropy-coded data as 0xFF00 -- a bare
+    FF D8 can only be a frame boundary. Written out beside the stream so it is
+    built once per decode rather than once per patch load. */
+inline std::vector<uint64_t> buildJpegIndex(const std::string& mjpg) {
+	std::vector<uint64_t> offs;
+	FILE* f = std::fopen(mjpg.c_str(), "rb");
+	if (!f)
+		return offs;
+	const size_t CHUNK = 1 << 16;
+	std::vector<uint8_t> buf(CHUNK + 2);
+	uint64_t base = 0;            // file offset of buf[0]
+	size_t keep = 0;              // bytes carried over from the last chunk
+	while (true) {
+		size_t got = std::fread(&buf[keep], 1, CHUNK, f);
+		if (got == 0)
+			break;
+		size_t total = keep + got;
+		for (size_t i = 0; i + 2 < total; i++)
+			if (buf[i] == 0xFF && buf[i + 1] == 0xD8 && buf[i + 2] == 0xFF)
+				offs.push_back(base + (uint64_t) i);
+		// Carry the last two bytes, so a marker straddling the boundary is
+		// still seen on the next pass rather than falling down the crack.
+		size_t newKeep = (total >= 2) ? 2 : total;
+		base += (uint64_t)(total - newKeep);
+		std::memmove(&buf[0], &buf[total - newKeep], newKeep);
+		keep = newKeep;
+		if (got < CHUNK)
+			break;
+	}
+	std::fclose(f);
+	return offs;
+}
+
+inline bool writeIndex(const std::string& path, const std::vector<uint64_t>& offs) {
+	FILE* f = std::fopen(path.c_str(), "wb");
+	if (!f)
+		return false;
+	bool ok = offs.empty()
+		|| std::fwrite(&offs[0], sizeof(uint64_t), offs.size(), f) == offs.size();
+	std::fclose(f);
+	return ok;
+}
+
+inline std::vector<uint64_t> readIndex(const std::string& path) {
+	std::vector<uint64_t> offs;
+	FILE* f = std::fopen(path.c_str(), "rb");
+	if (!f)
+		return offs;
+	std::fseek(f, 0, SEEK_END);
+	long n = std::ftell(f);
+	std::fseek(f, 0, SEEK_SET);
+	if (n > 0) {
+		offs.resize((size_t)n / sizeof(uint64_t));
+		if (!offs.empty()
+		    && std::fread(&offs[0], sizeof(uint64_t), offs.size(), f) != offs.size())
+			offs.clear();
+	}
+	std::fclose(f);
+	return offs;
 }
 
 inline std::string trimmed(const std::string& s) {
@@ -303,13 +415,27 @@ private:
 			title = rack::system::getFilename(req.source);
 		}
 
+		const VideoPreset& preset = kVideoPresets[
+			(req.videoPreset >= 0 && req.videoPreset < kNumVideoPresets)
+				? req.videoPreset : kDefaultVideoPreset];
+
 		std::string pcmPath = id.empty() ? "" : pcmPathFor(id, req.sampleRate);
 		std::string rgbaPath = id.empty() ? "" : rgbaPathFor(id);
+		std::string mjpgPath = id.empty() ? "" : mjpgPathFor(id, preset);
+		std::string idxPath = id.empty() ? "" : idxPathFor(id, preset);
 
 		bool haveAudio = !pcmPath.empty() && rack::system::isFile(pcmPath)
 			&& rack::system::getFileSize(pcmPath) > 0;
-		bool haveVideo = !rgbaPath.empty() && rack::system::isFile(rgbaPath)
+		bool haveJpeg = !mjpgPath.empty() && rack::system::isFile(mjpgPath)
+			&& rack::system::getFileSize(mjpgPath) > 0
+			&& rack::system::isFile(idxPath);
+		// A cache written before the JPEG format is still a usable thumbnail,
+		// so a patch saved then does not go blank on upgrade -- but only for
+		// the preset it was actually decoded at.
+		bool haveLegacyRaw = req.videoPreset == kDefaultVideoPreset
+			&& !rgbaPath.empty() && rack::system::isFile(rgbaPath)
 			&& rack::system::getFileSize(rgbaPath) >= FRAME_BYTES;
+		bool haveVideo = haveJpeg || haveLegacyRaw;
 
 		// The container only has to exist if something still needs decoding.
 		if (!(haveAudio && haveVideo) && container.empty() && !id.empty())
@@ -338,7 +464,22 @@ private:
 			argv.push_back("--ffmpeg-location");
 			argv.push_back(rack::system::getDirectory(ffmpeg));
 			argv.push_back("-f");
-			argv.push_back("bv*[height<=360]+ba/b[height<=360]");
+			// The download cap follows the quality setting. It used to be a
+			// flat 360p, which was right when the only consumer was a 56 mm
+			// screen and wrong the moment these frames started going to a
+			// projector -- asking for 720p output from a 360p download is not a
+			// bigger picture, it is the same picture upscaled.
+			//
+			// One container per id, at whatever cap was in force when it was
+			// fetched, and it is reused rather than re-fetched afterwards. So
+			// raising the quality on something already imported rescales what
+			// is there; delete the container from the cache folder (or import
+			// the link fresh) to actually go and get more pixels. That is the
+			// honest trade against re-downloading a hundred megabytes every
+			// time somebody opens a submenu.
+			int cap = (preset.h > 360) ? 720 : 360;
+			argv.push_back(rack::string::f(
+				"bv*[height<=%d]+ba/b[height<=%d]", cap, cap));
 			argv.push_back("--no-playlist");
 			argv.push_back("--no-warnings");
 			argv.push_back("-o");
@@ -380,10 +521,17 @@ private:
 			id = rack::system::getStem(container);
 			pcmPath = pcmPathFor(id, req.sampleRate);
 			rgbaPath = rgbaPathFor(id);
+			mjpgPath = mjpgPathFor(id, preset);
+			idxPath = idxPathFor(id, preset);
 			haveAudio = rack::system::isFile(pcmPath)
 				&& rack::system::getFileSize(pcmPath) > 0;
-			haveVideo = rack::system::isFile(rgbaPath)
+			haveJpeg = rack::system::isFile(mjpgPath)
+				&& rack::system::getFileSize(mjpgPath) > 0
+				&& rack::system::isFile(idxPath);
+			haveLegacyRaw = req.videoPreset == kDefaultVideoPreset
+				&& rack::system::isFile(rgbaPath)
 				&& rack::system::getFileSize(rgbaPath) >= FRAME_BYTES;
+			haveVideo = haveJpeg || haveLegacyRaw;
 		}
 
 		if (id.empty()) {
@@ -452,12 +600,26 @@ private:
 			v.push_back(secs);
 			v.push_back("-an");
 			v.push_back("-vf");
-			v.push_back(rack::string::f("fps=%d,scale=%d:%d", FRAME_FPS, FRAME_W, FRAME_H));
+			// Scale to fit inside the preset without distorting, and pad the
+			// rest -- a 4:3 source in a 16:9 frame should get bars, not be
+			// stretched. The even-number rounding is for the JPEG encoder's
+			// chroma subsampling, which cannot take an odd dimension.
+			v.push_back(rack::string::f(
+				"fps=%d,scale=%d:%d:force_original_aspect_ratio=decrease:force_divisible_by=2,"
+				"pad=%d:%d:(ow-iw)/2:(oh-ih)/2",
+				preset.fps, preset.w, preset.h, preset.w, preset.h));
+			v.push_back("-c:v");
+			v.push_back("mjpeg");
+			// 3 is visually clean at these sizes; the whole point of the format
+			// is that it is a hundred-odd times smaller than raw, so there is no
+			// reason to be stingy about the last few percent.
+			v.push_back("-q:v");
+			v.push_back("3");
 			v.push_back("-pix_fmt");
-			v.push_back("rgba");
+			v.push_back("yuvj420p");
 			v.push_back("-f");
-			v.push_back("rawvideo");
-			v.push_back(rgbaPath);
+			v.push_back("mjpeg");
+			v.push_back(mjpgPath);
 			ProcessResult r = run(v, &cancel);
 			if (stopping()) {
 				phase.store(PHASE_CANCELLED);
@@ -471,7 +633,18 @@ private:
 			if (!r.ok()) {
 				if (!r.execError.empty())
 					WARN("Repossession: %s", r.execError.c_str());
-				rack::system::remove(rgbaPath);
+				rack::system::remove(mjpgPath);
+			}
+			else {
+				// Index once here rather than on every patch load: scanning a
+				// couple of hundred megabytes for frame boundaries is cheap but
+				// it is not free, and the answer never changes.
+				std::vector<uint64_t> offs = buildJpegIndex(mjpgPath);
+				if (offs.empty() || !writeIndex(idxPath, offs)) {
+					WARN("Repossession: could not index %s", mjpgPath.c_str());
+					rack::system::remove(mjpgPath);
+					rack::system::remove(idxPath);
+				}
 			}
 		}
 
@@ -490,7 +663,11 @@ private:
 		m->title = title;
 		m->pcmPath = pcmPath;
 		m->rgbaPath = rgbaPath;
+		m->mjpgPath = mjpgPath;
 		m->sampleRate = req.sampleRate;
+		m->videoW = preset.w;
+		m->videoH = preset.h;
+		m->videoFps = preset.fps;
 
 		if (!scanPcm(*m)) {
 			if (stopping()) {
@@ -500,9 +677,27 @@ private:
 			fail("Could not read the decoded audio.");
 			return;
 		}
-		if (rack::system::isFile(rgbaPath)) {
+		if (rack::system::isFile(mjpgPath) && rack::system::isFile(idxPath)) {
+			m->frameOffsets = readIndex(idxPath);
+			// An index that went missing or was truncated is recoverable: the
+			// stream itself is the source of truth, so rebuild rather than
+			// leave the module with a video it cannot address.
+			if (m->frameOffsets.empty()) {
+				m->frameOffsets = buildJpegIndex(mjpgPath);
+				if (!m->frameOffsets.empty())
+					writeIndex(idxPath, m->frameOffsets);
+			}
+			m->videoFrames = (int) m->frameOffsets.size();
+		}
+		else if (rack::system::isFile(rgbaPath)) {
+			// The legacy raw thumbnail. No index: every frame is the same size,
+			// so the offset is arithmetic.
 			uint64_t sz = rack::system::getFileSize(rgbaPath);
 			m->videoFrames = (int) (sz / FRAME_BYTES);
+			m->mjpgPath.clear();
+			m->videoW = FRAME_W;
+			m->videoH = FRAME_H;
+			m->videoFps = FRAME_FPS;
 		}
 
 		if (stopping()) {

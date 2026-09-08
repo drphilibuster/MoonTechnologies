@@ -30,6 +30,11 @@ pointer the audio thread was mid-way through using cannot be freed under it.
 #include "Windows.hpp"
 #include "../VideoBus.hpp"
 
+// Declarations only. The implementation is already compiled into libRack --
+// nanovg uses stb_image to load textures -- so this costs the plugin nothing
+// and adds no dependency to build or ship.
+#include <stb_image.h>
+
 #include <osdialog.h>
 
 #include <algorithm>
@@ -201,6 +206,11 @@ struct Repossession : Module {
 	std::string mediaId, mediaSource, mediaTitle;
 	bool mediaIsPath = false;
 	int maxIndex = 1;           // into MAX_MINUTES: 3 minutes
+	//: Which size the video is decoded at, into rp::kVideoPresets. The default
+	//: is the panel thumbnail this module has always used; the larger ones are
+	//: for when the frames are going somewhere other than the panel, through
+	//: Transmittal to a compositor or a projector.
+	int videoPreset = rp::kDefaultVideoPreset;
 	int xfadeIndex = 2;         // into XFADE_MS: 4 ms
 	std::string toolDir;
 	/** Set by dataFromJson, consumed by the widget: the loader may only be
@@ -337,6 +347,7 @@ struct Repossession : Module {
 		req.sampleRate = (int) (sampleRate + 0.5f);
 		req.maxSeconds = maxSeconds();
 		req.toolDir = toolDir;
+		req.videoPreset = videoPreset;
 		mediaSource = source;
 		mediaIsPath = isPath;
 		loader.start(req);
@@ -1134,6 +1145,7 @@ struct Repossession : Module {
 		json_object_set_new(rootJ, "mediaTitle", json_string(mediaTitle.c_str()));
 		json_object_set_new(rootJ, "mediaIsPath", json_boolean(mediaIsPath));
 		json_object_set_new(rootJ, "maxIndex", json_integer(maxIndex));
+		json_object_set_new(rootJ, "videoPreset", json_integer(videoPreset));
 		json_object_set_new(rootJ, "xfadeIndex", json_integer(xfadeIndex));
 		json_object_set_new(rootJ, "budgetIndex", json_integer(budgetIndex));
 		json_object_set_new(rootJ, "toolDir", json_string(toolDir.c_str()));
@@ -1165,6 +1177,8 @@ struct Repossession : Module {
 		mediaTitle = jstr(rootJ, "mediaTitle");
 		mediaIsPath = jbool(rootJ, "mediaIsPath", false);
 		maxIndex = clamp((int) jint(rootJ, "maxIndex", 1), 0, 3);
+		videoPreset = clamp((int) jint(rootJ, "videoPreset", rp::kDefaultVideoPreset),
+		                    0, rp::kNumVideoPresets - 1);
 		xfadeIndex = clamp((int) jint(rootJ, "xfadeIndex", 2), 0, 3);
 		budgetIndex = clamp((int) jint(rootJ, "budgetIndex", 2), 0,
 			rp::NUM_BUDGETS - 1);
@@ -1373,12 +1387,15 @@ struct VideoScreen : widget::Widget {
 	Repossession* module = NULL;
 	FILE* file = NULL;
 	std::string openPath;
-	std::vector<uint8_t> frame;
+	std::vector<uint8_t> frame;     // the decoded picture, frameW x frameH RGBA
+	std::vector<uint8_t> jpeg;      // one compressed frame, read from the stream
 	int frameIndex = -1;
+	int frameW = 0, frameH = 0;
 	int image = -1;
+	int imageW = 0, imageH = 0;
 	NVGcontext* imageVg = NULL;
 
-	VideoScreen() { frame.resize(rp::FRAME_BYTES, 0); }
+	VideoScreen() {}
 
 	~VideoScreen() override {
 		if (file)
@@ -1409,7 +1426,7 @@ struct VideoScreen : widget::Widget {
 		const rp::Media* m = module ? module->owner.get() : NULL;
 		if (!m || m->videoFrames <= 0)
 			return;
-		fetchFrame(m, (int)(module->uiPos.load() * m->duration * rp::FRAME_FPS));
+		fetchFrame(m, (int)(module->uiPos.load() * m->duration * m->videoFps));
 	}
 
 	/** Returns true if `frame` holds the wanted picture. Publishes to the video
@@ -1417,32 +1434,79 @@ struct VideoScreen : widget::Widget {
 	bool fetchFrame(const rp::Media* m, int want) {
 		if (!m || m->videoFrames <= 0)
 			return false;
-		if (openPath != m->rgbaPath) {
+
+		// Two cache formats. The JPEG stream is what everything written since
+		// the frames started leaving this module uses; the raw one is a
+		// thumbnail cache from before that, still read so an old patch does not
+		// go blank, and never written any more.
+		const std::string& path = m->mjpgPath.empty() ? m->rgbaPath : m->mjpgPath;
+		if (openPath != path) {
 			if (file) {
 				std::fclose(file);
 				file = NULL;
 			}
-			openPath = m->rgbaPath;
+			openPath = path;
 			file = std::fopen(openPath.c_str(), "rb");
 			frameIndex = -1;
+			frameW = frameH = 0;
 		}
 		if (!file)
 			return false;
 		want = clamp(want, 0, m->videoFrames - 1);
 		if (want == frameIndex)
 			return true;
-		if (std::fseek(file, (long) ((int64_t) want * (int64_t) rp::FRAME_BYTES),
-				SEEK_SET) != 0)
-			return false;
-		if (std::fread(&frame[0], 1, rp::FRAME_BYTES, file) != rp::FRAME_BYTES)
-			return false;
+
+		if (m->mjpgPath.empty()) {
+			// Legacy raw: every frame the same size, so the offset is
+			// arithmetic and the bytes are already RGBA.
+			if (frame.size() != rp::FRAME_BYTES)
+				frame.assign(rp::FRAME_BYTES, 0);
+			if (std::fseek(file, (long) ((int64_t) want * (int64_t) rp::FRAME_BYTES),
+					SEEK_SET) != 0)
+				return false;
+			if (std::fread(&frame[0], 1, rp::FRAME_BYTES, file) != rp::FRAME_BYTES)
+				return false;
+			frameW = rp::FRAME_W;
+			frameH = rp::FRAME_H;
+		}
+		else {
+			if ((size_t) want >= m->frameOffsets.size())
+				return false;
+			uint64_t off = m->frameOffsets[want];
+			uint64_t end = ((size_t) want + 1 < m->frameOffsets.size())
+				? m->frameOffsets[want + 1]
+				: rack::system::getFileSize(openPath);
+			if (end <= off)
+				return false;
+			size_t n = (size_t)(end - off);
+			if (jpeg.size() < n)
+				jpeg.resize(n);
+			if (std::fseek(file, (long) off, SEEK_SET) != 0)
+				return false;
+			if (std::fread(&jpeg[0], 1, n, file) != n)
+				return false;
+			int w = 0, h = 0, comp = 0;
+			// Four channels asked for, so alpha is filled in for us and the
+			// buffer is already the shape both the panel and the video bus want.
+			unsigned char* px = stbi_load_from_memory(&jpeg[0], (int) n, &w, &h, &comp, 4);
+			if (!px)
+				return false;
+			size_t bytes = (size_t) w * (size_t) h * 4u;
+			if (frame.size() != bytes)
+				frame.resize(bytes);
+			std::memcpy(&frame[0], px, bytes);
+			stbi_image_free(px);
+			frameW = w;
+			frameH = h;
+		}
+
 		frameIndex = want;
 		// Publish exactly here: this is the one path that produces a frame that
 		// was not on the bus a moment ago. Publishing on every draw instead
 		// would hand a sink the same picture sixty times a second and make its
 		// sequence number useless for telling frames apart.
-		if (module)
-			videobus::bus().publish(module->id, rp::FRAME_W, rp::FRAME_H, &frame[0]);
+		if (module && frameW > 0 && frameH > 0)
+			videobus::bus().publish(module->id, frameW, frameH, &frame[0]);
 		return true;
 	}
 
@@ -1453,12 +1517,22 @@ struct VideoScreen : widget::Widget {
 		}
 		const rp::Media* m = module ? module->owner.get() : NULL;
 		if (m && m->videoFrames > 0) {
-			int want = (int) (module->uiPos.load() * m->duration * rp::FRAME_FPS);
-			if (fetchFrame(m, want)) {
+			int want = (int) (module->uiPos.load() * m->duration * m->videoFps);
+			if (fetchFrame(m, want) && frameW > 0 && frameH > 0) {
+				// The texture is allocated at whatever the cache was decoded
+				// at, so switching quality has to rebuild it rather than
+				// update it: nvgUpdateImage takes no size and would read the
+				// new frame's bytes against the old frame's dimensions.
+				if (image >= 0 && imageVg == args.vg
+				    && (imageW != frameW || imageH != frameH)) {
+					nvgDeleteImage(args.vg, image);
+					image = -1;
+				}
 				if (image < 0) {
-					image = nvgCreateImageRGBA(args.vg, rp::FRAME_W, rp::FRAME_H,
-						0, &frame[0]);
+					image = nvgCreateImageRGBA(args.vg, frameW, frameH, 0, &frame[0]);
 					imageVg = args.vg;
+					imageW = frameW;
+					imageH = frameH;
 				}
 				else if (imageVg == args.vg) {
 					nvgUpdateImage(args.vg, image, &frame[0]);
@@ -2226,6 +2300,30 @@ struct RepossessionWidget : ModuleWidget, ui_rp::SeizeHost {
 					APP->engine->getSampleRate());
 			}
 		}));
+
+		// Changing this needs a new decode: the size is baked into the cache, and
+		// the cache is per size, so switching back to one already decoded is
+		// free. Kicked off immediately rather than left until the next import,
+		// because a setting that silently does nothing until some unrelated
+		// action is a setting people conclude is broken.
+		menu->addChild(createIndexSubmenuItem("Video quality",
+			[]() {
+				std::vector<std::string> v;
+				for (int i = 0; i < rp::kNumVideoPresets; i++)
+					v.push_back(rp::kVideoPresets[i].name);
+				return v;
+			}(),
+			[self]() { return self->mod->videoPreset; },
+			[self](int i) {
+				int want = clamp(i, 0, rp::kNumVideoPresets - 1);
+				if (want == self->mod->videoPreset)
+					return;
+				self->mod->videoPreset = want;
+				if (!self->mod->mediaSource.empty())
+					self->mod->requestLoad(self->mod->mediaSource,
+						self->mod->mediaIsPath, self->mod->mediaId,
+						APP->engine->getSampleRate());
+			}));
 
 		menu->addChild(createIndexSubmenuItem("Maximum import length",
 			{"1 minute", "3 minutes", "6 minutes", "10 minutes"},
