@@ -27,6 +27,7 @@ static const Label LABELS[] = {
 	{ 27.9400f,  14.0000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "HIGHWAY USE"},
 	{ 13.5000f,  18.2459f,  6.20f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRIG"},
 	{ 30.5400f,  18.2459f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "V/OCT"},
+	{ 44.9800f,  18.2459f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "VEL"},
 	{ 13.5000f,  51.6947f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TUNE"},
 	{ 30.5400f,  51.6947f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SET"},
 	{ 44.9800f,  51.6947f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BUZZ"},
@@ -54,6 +55,7 @@ static inline void addLabels(app::ModuleWidget* mw) {
 // Positions are mm; feed them to mm() or createParamCentered.
 static const Vec TRIG_POS = Vec(13.5000, 24.0608);
 static const Vec VOCT_POS = Vec(30.5400, 24.0608);
+static const Vec VEL_POS = Vec(44.9800, 24.0608);
 static const Vec HIT_LED_POS = Vec(18.6597, 17.4900);
 static const Vec TUNE_POS = Vec(13.5000, 40.8878);
 static const Vec SET_POS = Vec(30.5400, 40.8878);

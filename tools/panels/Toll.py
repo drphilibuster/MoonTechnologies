@@ -33,9 +33,13 @@ P = Panel(
 P.sections = [
     # 2290 is the Heavy Highway Vehicle Use Tax -- the toll, filed.
     Section("HIGHWAY USE", rows=[
-        # What plays it.
+        # What plays it. VEL is the third thing a struck object needs and the
+        # only one the voice could not be told: how hard. Unpatched it is a
+        # full-force strike, which is what the module did before it had the
+        # jack.
         Row([Jack("trig", "TRIG", ink="PAPER", light="hit_led"),
-             Jack("voct", "V/OCT")]),
+             Jack("voct", "V/OCT"),
+             Jack("vel", "VEL")]),
 
         # What it is. TUNE is the one control you reach for, so it gets the big
         # seat and the lime ring. SET is what the thing is made of -- a

@@ -180,6 +180,9 @@ struct Bank {
 
 
 /** The voice. One strike in, one signal out. */
+/** The softest a strike can be and still be a strike. */
+static const float kVelFloor = 0.05f;
+
 struct Toll {
 	Bank bank;
 	Tension tension;
@@ -199,6 +202,28 @@ struct Toll {
 	void reset() {
 		bank.reset(); tension.reset(); bed.reset(); strike.reset();
 		attack.reset(); dc.reset(); freqC.clear(); t60C.clear();
+	}
+
+	/** How hard it is hit, from a control voltage.
+
+	    Velocity was always in the voice -- a harder strike is a *shorter*
+	    contact, which reaches further up the partial bank and drives the loose
+	    layer past its collision, so it changes the timbre and not just the
+	    level -- but nothing on the panel could set it, and it ran pinned at
+	    full force.
+
+	    0 V does not mean silence. A velocity of exactly zero is a strike that
+	    never lands, so a trigger arriving while some modulation happens to be
+	    resting at zero would do nothing at all and read as a broken patch;
+	    the floor makes that a ghost note instead, which is also what it
+	    sounds like to barely catch a bell. */
+	static float velocityFrom(float volts) {
+		float v = volts * 0.1f;
+		if (!(v > kVelFloor))            // and this catches a NaN on the jack
+			v = kVelFloor;
+		if (v > 1.f)
+			v = 1.f;
+		return v;
 	}
 
 	/** All controls 0..1 except `set` (which ratio table) and `volts` (V/oct).

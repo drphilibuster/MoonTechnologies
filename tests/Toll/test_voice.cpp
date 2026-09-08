@@ -386,6 +386,127 @@ static void tracking() {
 }
 
 
+/** Peak absolute value of a render. */
+static double peakOf(const float* y, int n) {
+	double p = 0.0;
+	for (int i = 0; i < n; i++) if (std::fabs(y[i]) > p) p = std::fabs(y[i]);
+	return p;
+}
+
+/** VELOCITY.
+
+    The voice always took a velocity and the panel could never set it -- it ran
+    pinned at full force -- so this is the first time any of it is exercised.
+    Two properties matter and they are different properties: that a softer
+    strike is quieter, and that it is also *duller*. The second is the reason
+    velocity is worth a jack at all. Contact time is 1/(0.6 + 0.4v), so a soft
+    strike rests on the object longer and cannot push energy as far up the
+    partial bank; if velocity were only a gain, the two renders would be the
+    same sound at two levels and the level check alone would not notice. */
+static void velocity() {
+	static const int kN = 40000;
+	static float soft[kN], hard[kN];
+	const float fs = 44100.f;
+
+	// --- the mapping ---------------------------------------------------------
+	{
+		bool ok = Toll::velocityFrom(10.f) == 1.f          // patched full = unpatched
+		       && Toll::velocityFrom(12.f) == 1.f          // and above it, clamped
+		       && Toll::velocityFrom(5.f) > 0.49f && Toll::velocityFrom(5.f) < 0.51f
+		       && Toll::velocityFrom(0.f) == kVelFloor     // a ghost note, not silence
+		       && Toll::velocityFrom(-8.f) == kVelFloor;
+		checks++;
+		if (!ok) fail("velocity mapping", "0-10 V does not map to the floor..1");
+	}
+
+	// --- a softer strike is quieter, all the way down ------------------------
+	{
+		Toll v; v.setRate(fs);
+		double prev = 1e9; int bad = 0;
+		for (int i = 10; i >= 1; i--) {
+			float vel = (float)i / 10.f;
+			render(v, vel, 2, 0.4f, 0.f, 0.5f, 0.5f, 0.3f, 0.6f, 0.f, 0.f, 0.f,
+			       soft, kN);
+			double pk = peakOf(soft, kN);
+			if (!(pk < prev)) bad++;
+			prev = pk;
+		}
+		checks++;
+		if (bad) fail("velocity", "a softer strike is not quieter");
+	}
+
+	// --- and it clatters, which is not a level difference --------------------
+	// The docstring's claim for BUZZ: "a soft strike is a clean ring and a hard
+	// one clatters". That is Bilbao's one-sided collision -- the loose layer
+	// only speaks once the body swings far enough to reach it -- so it is the
+	// one place velocity changes the *timbre* rather than the level. Both
+	// renders are normalised to the same peak first, so nothing here can be
+	// explained by the hard strike simply being louder.
+	{
+		Toll v; v.setRate(fs);
+		render(v, 1.00f, 2, 0.4f, 0.f, 0.5f, 0.5f, 0.3f, 0.6f, 0.f, 0.f, 0.8f,
+		       hard, kN);
+		render(v, 0.15f, 2, 0.4f, 0.f, 0.5f, 0.5f, 0.3f, 0.6f, 0.f, 0.f, 0.8f,
+		       soft, kN);
+		double ph = peakOf(hard, kN), ps = peakOf(soft, kN);
+		for (int i = 0; i < kN; i++) { hard[i] /= (float)ph; soft[i] /= (float)ps; }
+		double hh = highBand(hard, kN, fs, 2000.f, 0);
+		double hs = highBand(soft, kN, fs, 2000.f, 0);
+		checks++;
+		if (!(hh > hs * 2.0)) {
+			char d[144];
+			snprintf(d, sizeof d,
+			         "buzz up, level-matched: hard %.5f, soft %.5f (%.2fx)",
+			         hh, hs, hs > 0.0 ? hh / hs : 0.0);
+			fail("velocity", d);
+		}
+	}
+
+	// --- and with the layer off, it is a level control and nothing else -------
+	// The other half of the same claim, and the one that says where the
+	// brightness above comes from. With BUZZ at zero there is no collision to
+	// reach, so two velocities have to be the same sound at two levels -- if
+	// this drifted, the clatter check above could be passing on some general
+	// coupling between loudness and brightness rather than on the collision.
+	{
+		Toll v; v.setRate(fs);
+		render(v, 1.00f, 2, 0.4f, 0.f, 0.5f, 0.5f, 0.3f, 0.6f, 0.f, 0.f, 0.f,
+		       hard, kN);
+		render(v, 0.15f, 2, 0.4f, 0.f, 0.5f, 0.5f, 0.3f, 0.6f, 0.f, 0.f, 0.f,
+		       soft, kN);
+		double ph = peakOf(hard, kN), ps = peakOf(soft, kN);
+		for (int i = 0; i < kN; i++) { hard[i] /= (float)ph; soft[i] /= (float)ps; }
+		double hh = highBand(hard, kN, fs, 2000.f, 0);
+		double hs = highBand(soft, kN, fs, 2000.f, 0);
+		double ratio = hs > 0.0 ? hh / hs : 0.0;
+		checks++;
+		if (!(ratio > 0.8 && ratio < 1.25)) {
+			char d[144];
+			snprintf(d, sizeof d,
+			         "buzz off, level-matched: hard %.5f, soft %.5f (%.2fx)",
+			         hh, hs, ratio);
+			fail("velocity", d);
+		}
+	}
+
+	// --- the floor still lands ------------------------------------------------
+	// A trigger that arrives while a velocity CV happens to rest at 0 V has to
+	// make a sound. Silence there reads as a broken patch, not as a soft hit.
+	{
+		Toll v; v.setRate(fs);
+		render(v, Toll::velocityFrom(0.f), 2, 0.4f, 0.f, 0.5f, 0.5f, 0.3f, 0.6f,
+		       0.f, 0.f, 0.f, soft, kN);
+		double pk = peakOf(soft, kN);
+		checks++;
+		if (!(pk > 0.01)) {
+			char d[96];
+			snprintf(d, sizeof d, "0 V strike peaks at %.5f", pk);
+			fail("velocity", d);
+		}
+	}
+}
+
+
 int main() {
 	printf("Toll voice\n");
 	printf("  sweeping 44100 Hz...\n"); sweep(44100.f);
@@ -395,6 +516,7 @@ int main() {
 	printf("  spread...\n");            spreadIsMonotone();
 	printf("  sample rates...\n");      sampleRates();
 	printf("  v/oct...\n");             tracking();
+	printf("  velocity...\n");          velocity();
 	printf("%d checks, %d failures\n", checks, failures);
 	return failures ? 1 : 0;
 }

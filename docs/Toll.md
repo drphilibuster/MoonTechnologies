@@ -64,15 +64,31 @@ cast. At zero it is exactly the printed ratios.
 | **SPRD**, **BEND** (inputs) | CV for the partial stretch and the tension bend. |
 | **CHOKE** (input) | The hand on the bell. A gate — a level, not an edge — that shortens the ring to 35 ms for as long as it is held. It damps rather than mutes, because a damped object still rings briefly and a gated one conspicuously does not. |
 | **TRIG** (input) | ≥1 V rising edge strikes it (Schmitt hysteresis, low 0.1 V / high 1 V). Lights on strike. Retriggerable. |
+| **VEL** (input) | How hard, 0–10 V, read at the strike and nowhere else — a strike is an instant, so what the jack does between two of them cannot matter. Unpatched is full force, exactly what the voice did before the jack existed, so 10 V and no cable are the same sound. 0 V is not silence but a ghost note: a velocity of literally zero is a strike that never lands, and a trigger arriving while some modulation happens to be resting at zero would read as a broken patch. |
 | **OUT** | ±5 V nominal, hard-clamped to ±12 V. |
 
 The four CV jacks add to their knobs at a tenth of a volt per percent, so ±5 V
 covers a whole control and a unipolar 0–10 V reaches from its bottom to its top.
+
+### What velocity actually changes
+
+Mostly the level — but with BUZZ up it changes the sound. The loose layer is a
+one-sided collision, so it only speaks once the body swings far enough to reach
+it: level-matched against a full-force strike, a strike at 15% has about a
+quarter of the energy above 2 kHz, because it never reaches the layer at all.
+With BUZZ at 0 there is nothing to reach and velocity is a level control and
+little else. Contact time does shorten with velocity as well (1/(0.6 + 0.4·v),
+so a hard strike rests on the object for about two thirds as long), but that is
+a factor of 1.5 against HARD's factor of nine, and HARD is what you reach for
+if you want the mallet to change.
 
 ## What it does not have
 
 **No clock and no patterns.** Kickback has those, and a voice you want to play
 from a keyboard should not come with a sequencer attached to it.
 
-It is monophonic, and there is no context menu — every control the voice has is
-on the panel.
+It is monophonic. The context menu has one option, **Trigger height sets
+velocity**: with nothing patched to VEL, TRIG's own voltage is read as the
+velocity instead of a fixed full force. An accented trigger out of a sequencer
+is then one cable rather than two — the Schmitt that detects the edge throws
+that height away otherwise. Off by default, and a cable in VEL always wins.

@@ -14,7 +14,9 @@ struct TollModule : Module {
 	};
 	enum InputId {
 		TRIG_INPUT, VOCT_INPUT, STRIKE_CV_INPUT, DECAY_CV_INPUT,
-		SPREAD_CV_INPUT, BEND_CV_INPUT, CHOKE_INPUT, INPUTS_LEN
+		SPREAD_CV_INPUT, BEND_CV_INPUT, CHOKE_INPUT,
+		VEL_INPUT,
+		INPUTS_LEN
 	};
 	enum OutputId { OUT_OUTPUT, OUTPUTS_LEN };
 	enum LightId { HIT_LIGHT, LIGHTS_LEN };
@@ -24,6 +26,7 @@ struct TollModule : Module {
 	dsp::ClockDivider lightDivider;
 	bool litSince = false;
 	float ledLevel = 0.f;
+	bool velFromTrig = false;
 
 	TollModule() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -42,6 +45,7 @@ struct TollModule : Module {
 
 		configInput(TRIG_INPUT, "Trigger");
 		configInput(VOCT_INPUT, "V/oct");
+		configInput(VEL_INPUT, "Velocity (0-10 V, full force unpatched)");
 		configInput(STRIKE_CV_INPUT, "Strike position CV");
 		configInput(DECAY_CV_INPUT, "Decay CV");
 		configInput(SPREAD_CV_INPUT, "Spread CV");
@@ -66,9 +70,33 @@ struct TollModule : Module {
 		ledLevel = 0.f;
 	}
 
+	json_t* dataToJson() override {
+		json_t* root = json_object();
+		json_object_set_new(root, "velFromTrig", json_boolean(velFromTrig));
+		return root;
+	}
+
+	void dataFromJson(json_t* root) override {
+		json_t* j = json_object_get(root, "velFromTrig");
+		if (j) velFromTrig = json_boolean_value(j);
+	}
+
 	void process(const ProcessArgs& args) override {
-		bool hit = trig.process(inputs[TRIG_INPUT].getVoltage(), 0.1f, 1.f);
+		float trigV = inputs[TRIG_INPUT].getVoltage();
+		bool hit = trig.process(trigV, 0.1f, 1.f);
 		if (hit) litSince = true;
+
+		// How hard. Read at the strike and nowhere else -- a strike is an
+		// instant, so what the jack does between two of them cannot matter.
+		// Unpatched is full force, which is what the voice did before it had
+		// the jack, so no existing patch changes. TRIG's own height is offered
+		// as the alternative because an accented trigger out of a sequencer is
+		// one cable rather than two, and the Schmitt discards that height.
+		float vel = 1.f;
+		if (inputs[VEL_INPUT].isConnected())
+			vel = toll::Toll::velocityFrom(inputs[VEL_INPUT].getVoltage());
+		else if (velFromTrig)
+			vel = toll::Toll::velocityFrom(trigV);
 
 		float volts = inputs[VOCT_INPUT].isConnected() ? inputs[VOCT_INPUT].getVoltage() : 0.f;
 
@@ -93,7 +121,7 @@ struct TollModule : Module {
 		bool choke = inputs[CHOKE_INPUT].getVoltage() >= 1.f;
 		int set = (int)clamp(std::round(params[SET_PARAM].getValue()), 0.f, 3.f);
 
-		float y = voice.process(hit, 1.f, set,
+		float y = voice.process(hit, vel, set,
 			params[TUNE_PARAM].getValue(), volts,
 			dec, params[DAMP_PARAM].getValue(), pos,
 			params[HARD_PARAM].getValue(), spr, bnd,
@@ -125,6 +153,7 @@ struct TollWidget : ModuleWidget {
 
 		addInput(createInputCentered<panel::PortTrigInMain>(panel::mm(panel::TRIG_POS.x, panel::TRIG_POS.y), module, TollModule::TRIG_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::VOCT_POS.x, panel::VOCT_POS.y), module, TollModule::VOCT_INPUT));
+		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::VEL_POS.x, panel::VEL_POS.y), module, TollModule::VEL_INPUT));
 		addChild(createLightCentered<SmallLight<panel::PaperLight> >(
 			panel::mm(panel::HIT_LED_POS.x, panel::HIT_LED_POS.y), module, TollModule::HIT_LIGHT));
 
@@ -147,6 +176,15 @@ struct TollWidget : ModuleWidget {
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::STRIKE_CV_POS.x, panel::STRIKE_CV_POS.y), module, TollModule::STRIKE_CV_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::DECAY_CV_POS.x, panel::DECAY_CV_POS.y), module, TollModule::DECAY_CV_INPUT));
 		addOutput(createOutputCentered<panel::PortOutMain>(panel::mm(panel::OUT_POS.x, panel::OUT_POS.y), module, TollModule::OUT_OUTPUT));
+	}
+
+	void appendContextMenu(Menu* menu) override {
+		TollModule* m = dynamic_cast<TollModule*>(module);
+		if (!m)
+			return;
+		menu->addChild(new MenuSeparator);
+		menu->addChild(createBoolPtrMenuItem<bool>(
+			"Trigger height sets velocity", "", &m->velFromTrig));
 	}
 };
 

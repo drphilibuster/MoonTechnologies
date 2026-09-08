@@ -33,6 +33,7 @@
   <circle cx="51.5358" cy="103.8156" r="0.22" fill="#7B9A6D"/>
   <circle cx="13.5000" cy="24.0608" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="30.5400" cy="24.0608" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="44.9800" cy="24.0608" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="18.6597" cy="17.4900" r="1.7400" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="13.5000" cy="40.8878" r="6.8000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="30.5400" cy="40.8878" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
@@ -60,6 +61,7 @@
 <g inkscape:label="components" inkscape:groupmode="layer" id="components" style="display:none">
   <circle inkscape:label="trig" cx="13.5000" cy="24.0608" r="1" fill="#00ff00"/>
   <circle inkscape:label="voct" cx="30.5400" cy="24.0608" r="1" fill="#00ff00"/>
+  <circle inkscape:label="vel" cx="44.9800" cy="24.0608" r="1" fill="#00ff00"/>
   <circle inkscape:label="hit_led" cx="18.6597" cy="17.4900" r="1" fill="#ff0000"/>
   <circle inkscape:label="tune" cx="13.5000" cy="40.8878" r="1" fill="#ff0000"/>
   <circle inkscape:label="set" cx="30.5400" cy="40.8878" r="1" fill="#ff0000"/>
