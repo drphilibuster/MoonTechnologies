@@ -28,6 +28,7 @@ pointer the audio thread was mid-way through using cannot be freed under it.
 #include "Expander.hpp"
 #include "Panel.hpp"
 #include "Windows.hpp"
+#include "../VideoBus.hpp"
 
 #include <osdialog.h>
 
@@ -1089,6 +1090,19 @@ struct Repossession : Module {
 		}
 	}
 
+	/** Announce this module on the video bus, so Transmittal can offer it by
+	    name. The id is only assigned when Rack adds the module to the engine,
+	    which is why this cannot happen in the constructor. */
+	void onAdd(const AddEvent& e) override {
+		Module::onAdd(e);
+		videobus::bus().add(id, rack::string::f("Repossession %lld", (long long)id));
+	}
+
+	void onRemove(const RemoveEvent& e) override {
+		videobus::bus().remove(id);
+		Module::onRemove(e);
+	}
+
 	void onReset(const ResetEvent& e) override {
 		Module::onReset(e);
 		loader.stop();
@@ -1405,6 +1419,12 @@ struct VideoScreen : widget::Widget {
 		if (std::fread(&frame[0], 1, rp::FRAME_BYTES, file) != rp::FRAME_BYTES)
 			return false;
 		frameIndex = want;
+		// Publish exactly here: this is the one path that produces a frame that
+		// was not on the bus a moment ago. Publishing on every draw instead
+		// would hand a sink the same picture sixty times a second and make its
+		// sequence number useless for telling frames apart.
+		if (module)
+			videobus::bus().publish(module->id, rp::FRAME_W, rp::FRAME_H, &frame[0]);
 		return true;
 	}
 

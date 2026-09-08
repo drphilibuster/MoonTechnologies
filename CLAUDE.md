@@ -1,7 +1,7 @@
 # Moon Technologies
 
 One VCV Rack 2 plugin, slug `MoonTechnologies`, brand **Moon Technologies**,
-author **Taxxess**. Twenty-six modules sharing one panel pipeline: the three
+author **Taxxess**. Twenty-seven modules sharing one panel pipeline: the three
 originals (`PatchAudit`, `Retroactive`, `UncertaintyPolicy`), nine built to
 order (`Dividend`, `TaxBracket`, `Racketeer`, `Gross`, `Amortization`,
 `Repossession`, `Collusion`, `Reconciliation`, `Dependents`), one expander
@@ -9,8 +9,8 @@ order (`Dividend`, `TaxBracket`, `Racketeer`, `Gross`, `Amortization`,
 (`SixFigures`, `Garnishment`, `Consolidation`, `Installment`, `Volatility`,
 `Deduction`, `AuditLogic`, `Kickback`, `PaymentSchedule`, `SignHere`,
 `Diversified`), one voice that split off from a bank (`Toll`, out of
-`Kickback`) and one bank doubled into a module of its own (`Bailout`, out of
-`Consolidation`).
+`Kickback`), one bank doubled into a module of its own (`Bailout`, out of
+`Consolidation`) and one video output (`Transmittal`).
 
 ## VCV Rack UI: use the tool, always
 
@@ -87,7 +87,7 @@ after any change that moves a panel's width.
 Look at `tools/previews/<Module>.png` before calling a panel done — it goes
 through the real widget tree, so it is the only preview that cannot lie. Do this
 for **every** module whose header the change touched, not just the one you were
-working in; a `panelkit/` change reaches all twenty-six.
+working in; a `panelkit/` change reaches all twenty-seven.
 
 See `panelkit/README.md` for the design language, the spec API and what the
 linter checks.
@@ -111,7 +111,7 @@ one. A screenshot showing old behaviour after a fix usually means exactly this.
 
 ## Slugs are permanent
 
-`MoonTechnologies` and the twenty-six module slugs listed at the top of this file.
+`MoonTechnologies` and the twenty-seven module slugs listed at the top of this file.
 Changing any of them orphans every saved patch that used it: Rack's fallback table
 (`Rack/src/plugin.cpp:374`) is maintained by VCV, not by plugin authors.
 

@@ -23,7 +23,7 @@ The .pcm carries the engine sample rate in its name. A rate change therefore
 misses the cache and re-decodes rather than silently playing back at the wrong
 speed -- and the player still divides by the file's rate, so a file decoded at
 another rate stays correct until the re-decode lands. */
-#include "Process.hpp"
+#include "../Process.hpp"
 
 #include <rack.hpp>
 

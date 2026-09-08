@@ -36,7 +36,11 @@ newer than the one in the Library.
 - [x] **Tags are from Rack's official list** (`Rack/src/tag.cpp`). Invented tags
       are silently dropped.
 - [x] **No third-party dependencies.** Everything links against the SDK only, so
-      the toolchain build needs no `make dep`.
+      the toolchain build needs no `make dep`. Transmittal streams video through
+      an `ffmpeg` it *spawns* rather than links, exactly as Repossession already
+      shells out to `ffmpeg` and `yt-dlp` — a missing one is a message on the
+      panel, not a plugin that fails to load. A future Syphon/Spout backend
+      would be the first thing to break this, and would need its own entry here.
 - [x] **Builds on all four targets** — `win-x64`, `mac-arm64`, `mac-x64` and
       `lin-x64`, verified in CI on every push against the official Rack SDK.
 - [x] **No unresolved symbols.** PatchAudit's libcurl fast path is looked up at

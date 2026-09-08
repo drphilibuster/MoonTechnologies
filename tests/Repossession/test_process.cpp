@@ -8,7 +8,7 @@
 // execvp() was indistinguishable from it -- so a stale `#!` wrapper (a pip shim
 // outliving its Homebrew Python is the classic) surfaced on the panel as
 // "yt-dlp failed (exit 127)", blaming a program that was never reached.
-#include "../../src/Repossession/Process.hpp"
+#include "../../src/Process.hpp"
 
 #include <atomic>
 #include <cstdio>

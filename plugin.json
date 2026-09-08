@@ -216,6 +216,16 @@
       ]
     },
     {
+      "slug": "Transmittal",
+      "name": "Transmittal",
+      "description": "Video output: takes frames from another module in the plugin and streams them out through ffmpeg as a live HLS playlist, for TouchDesigner and anything else that reads one",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Transmittal.md",
+      "tags": [
+        "Utility",
+        "Visual"
+      ]
+    },
+    {
       "slug": "Retroactive",
       "name": "Retroactive",
       "description": "Windowed sample-permutation effect",

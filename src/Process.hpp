@@ -556,3 +556,230 @@ inline ProcessResult run(const std::vector<std::string>& argv,
 
 
 } // namespace rp
+
+// ---------------------------------------------------------------------------
+// A long-lived child we write to, which is a different animal from run().
+//
+// run() starts a process, waits for it, and hands back what it said. A video
+// encoder is the opposite shape: it outlives the call, it is fed for as long as
+// the stream runs, and the interesting failure is not its exit code but the
+// pipe closing under us halfway through. So this is its own thing rather than a
+// flag on run().
+//
+// The one rule that matters: writing to a pipe whose reader has gone raises
+// SIGPIPE, and the default disposition kills the host -- which here is Rack,
+// with the user's patch in it. ffmpeg dying must not take Rack with it, so the
+// signal is ignored process-wide and the failed write is handled as a value.
+
+namespace rp {
+
+struct Streamer {
+#if defined ARCH_WIN
+	HANDLE proc = NULL;
+	HANDLE in = NULL;
+#else
+	pid_t pid = -1;
+	int in = -1;
+#endif
+	bool running = false;
+	std::string error;
+
+	~Streamer() { stop(); }
+
+	/** Start `argv`, with its stdin on a pipe we keep. Its stdout and stderr
+	    go to the null device: a stream that has been running for an hour has
+	    written more diagnostics than anything would read, and a full pipe that
+	    nobody drains would block the encoder rather than the reader. */
+	bool start(const std::vector<std::string>& argv);
+
+	/** Write every byte, or fail. A short write on a pipe is normal -- it means
+	    the encoder is behind -- so this loops; a write that cannot proceed at
+	    all means the child is gone. */
+	bool write(const uint8_t* data, size_t n);
+
+	void stop();
+};
+
+#if defined ARCH_WIN
+
+inline bool Streamer::start(const std::vector<std::string>& argv) {
+	stop();
+	if (argv.empty())
+		return false;
+
+	SECURITY_ATTRIBUTES sa;
+	ZeroMemory(&sa, sizeof(sa));
+	sa.nLength = sizeof(sa);
+	sa.bInheritHandle = TRUE;
+
+	HANDLE r = NULL, w = NULL;
+	if (!CreatePipe(&r, &w, &sa, 0)) {
+		error = "could not create a pipe";
+		return false;
+	}
+	// Only the read end is the child's; our end must not be inherited or the
+	// child holds it open and never sees end-of-file when we close it.
+	SetHandleInformation(w, HANDLE_FLAG_INHERIT, 0);
+
+	HANDLE nul = CreateFileA("NUL", GENERIC_WRITE, FILE_SHARE_WRITE, &sa,
+	                         OPEN_EXISTING, 0, NULL);
+
+	std::string cmd;
+	for (size_t i = 0; i < argv.size(); i++) {
+		if (i) cmd += " ";
+		cmd += quoteArg(argv[i]);
+	}
+
+	STARTUPINFOA si;
+	ZeroMemory(&si, sizeof(si));
+	si.cb = sizeof(si);
+	si.dwFlags = STARTF_USESTDHANDLES;
+	si.hStdInput = r;
+	si.hStdOutput = nul;
+	si.hStdError = nul;
+
+	PROCESS_INFORMATION pi;
+	ZeroMemory(&pi, sizeof(pi));
+	std::vector<char> mut(cmd.begin(), cmd.end());
+	mut.push_back('\0');
+	BOOL ok = CreateProcessA(NULL, &mut[0], NULL, NULL, TRUE,
+	                         CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+	CloseHandle(r);
+	if (nul != INVALID_HANDLE_VALUE)
+		CloseHandle(nul);
+	if (!ok) {
+		CloseHandle(w);
+		error = "could not start " + argv[0];
+		return false;
+	}
+	CloseHandle(pi.hThread);
+	proc = pi.hProcess;
+	in = w;
+	running = true;
+	error.clear();
+	return true;
+}
+
+inline bool Streamer::write(const uint8_t* data, size_t n) {
+	if (!running || in == NULL)
+		return false;
+	size_t off = 0;
+	while (off < n) {
+		DWORD put = 0;
+		if (!WriteFile(in, data + off, (DWORD)(n - off), &put, NULL) || put == 0) {
+			error = "the encoder closed its input";
+			running = false;
+			return false;
+		}
+		off += put;
+	}
+	return true;
+}
+
+inline void Streamer::stop() {
+	if (in) {
+		CloseHandle(in);          // end-of-file: let it flush the last segment
+		in = NULL;
+	}
+	if (proc) {
+		WaitForSingleObject(proc, 2000);
+		TerminateProcess(proc, 0);
+		CloseHandle(proc);
+		proc = NULL;
+	}
+	running = false;
+}
+
+#else
+
+inline bool Streamer::start(const std::vector<std::string>& argv) {
+	stop();
+	if (argv.empty())
+		return false;
+
+	int p[2];
+	if (::pipe(p) != 0) {
+		error = "could not create a pipe";
+		return false;
+	}
+
+	pid_t child = ::fork();
+	if (child < 0) {
+		::close(p[0]);
+		::close(p[1]);
+		error = "could not fork";
+		return false;
+	}
+	if (child == 0) {
+		::dup2(p[0], STDIN_FILENO);
+		::close(p[0]);
+		::close(p[1]);
+		int devnull = ::open("/dev/null", O_WRONLY);
+		if (devnull >= 0) {
+			::dup2(devnull, STDOUT_FILENO);
+			::dup2(devnull, STDERR_FILENO);
+			::close(devnull);
+		}
+		std::vector<char*> cargv;
+		for (size_t i = 0; i < argv.size(); i++)
+			cargv.push_back(const_cast<char*>(argv[i].c_str()));
+		cargv.push_back(NULL);
+		::execv(cargv[0], &cargv[0]);
+		::_exit(127);
+	}
+
+	::close(p[0]);
+	// Rack is the host here. A dead encoder must not raise a signal whose
+	// default action is to kill the process the user's patch is living in.
+	::signal(SIGPIPE, SIG_IGN);
+	pid = child;
+	in = p[1];
+	running = true;
+	error.clear();
+	return true;
+}
+
+inline bool Streamer::write(const uint8_t* data, size_t n) {
+	if (!running || in < 0)
+		return false;
+	size_t off = 0;
+	while (off < n) {
+		ssize_t put = ::write(in, data + off, n - off);
+		if (put < 0 && errno == EINTR)
+			continue;
+		if (put <= 0) {
+			error = "the encoder closed its input";
+			running = false;
+			return false;
+		}
+		off += (size_t)put;
+	}
+	return true;
+}
+
+inline void Streamer::stop() {
+	if (in >= 0) {
+		::close(in);              // end-of-file: let it flush the last segment
+		in = -1;
+	}
+	if (pid > 0) {
+		// Give it a moment to write its final segment, then insist.
+		for (int i = 0; i < 200; i++) {
+			int st = 0;
+			pid_t r = ::waitpid(pid, &st, WNOHANG);
+			if (r == pid) { pid = -1; break; }
+			::usleep(10000);
+		}
+		if (pid > 0) {
+			::kill(pid, SIGKILL);
+			int st = 0;
+			::waitpid(pid, &st, 0);
+			pid = -1;
+		}
+	}
+	running = false;
+}
+
+#endif
+
+} // namespace rp

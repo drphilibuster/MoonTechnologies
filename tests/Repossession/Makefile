@@ -10,7 +10,7 @@ SAN := -fsanitize=address,undefined -fno-omit-frame-pointer
 # no-platform branch, which is not the code that ships.
 DEFS := -DARCH_MAC
 
-CORE := ../../src/Repossession/Process.hpp
+CORE := ../../src/Process.hpp
 
 all: test_process test_windows
 
