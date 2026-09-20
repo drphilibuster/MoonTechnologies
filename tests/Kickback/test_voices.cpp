@@ -51,6 +51,15 @@
 // 7. euclid() has to produce the Euclidean rhythms, not merely k onsets in n
 //    steps: E(3,8) is the tresillo and E(5,8) the cinquillo, and if those two
 //    are right the recursion is right.
+//
+// 8. The three k values that divide sixteen evenly (2, 4, 8) come back from
+//    euclid() with every gap the same size -- E(4,16) really is a plain
+//    four-on-the-floor kick, which is correct and stays correct at SEED 0.
+//    But rebuild() is supposed to break that degeneracy at any other seed by
+//    nudging one onset a step over, so the kit does not fall back on the same
+//    handful of perfectly regular beats every time FILL lands on one of those
+//    three counts. That has to hold without changing how many onsets the
+//    voice has.
 
 #include "../../src/Kickback/Payroll.hpp"
 
@@ -877,6 +886,143 @@ static void patternTests() {
 }
 
 
+// ---------------------------------------------------------------------------
+// 8: SEED breaks up the degenerate Euclidean rhythms
+// ---------------------------------------------------------------------------
+
+//: gcd(k, kSteps): how many equal-length blocks Corollary 2 says a Euclidean
+//: rhythm's minimal period repeats into.
+static int gcdSteps(int k) {
+	int g = kSteps, kk = k;
+	while (kk) { int t = g % kk; g = kk; kk = t; }
+	return g;
+}
+
+//: True if on[kSteps] splits into g equal blocks that are all identical --
+//: the direct, Corollary-2 signature of "one short idea repeated," which is
+//: what an even k is guilty of even when its own gaps within one period are
+//: already uneven (k=6's period is a tresillo, not a flat run of equal
+//: gaps -- only k in {2,4,8}, where the period is a single step, look
+//: uniform gap-by-gap). g=1 (odd k) is trivially "repeating" a single block
+//: that is the whole pattern, which is not degeneracy at all, so the caller
+//: is expected to only ask this for g > 1.
+static bool blocksRepeat(const bool* on, int g) {
+	int blockLen = kSteps / g;
+	for (int b = 1; b < g; b++) {
+		for (int i = 0; i < blockLen; i++)
+			if (on[i] != on[b * blockLen + i]) return false;
+	}
+	return true;
+}
+
+//: Scans FILL for the value at which `voice`'s onset count first equals `k`.
+static float fillForK(Payroll& scan, int voice, int k) {
+	for (int i = 0; i <= 1000; i++) {
+		float fill = i / 1000.f;
+		scan.build(fill, 0, 0.f);
+		if (scan.onsets[voice] == k) return fill;
+	}
+	return -1.f;
+}
+
+static void degeneracyTests() {
+	Payroll scan;
+	scan.reset();
+
+	// SEED 0 has to leave every pattern exactly as Euclid gives it: KICK's
+	// own rotation is zero, so at k=4 this is the literal, documented
+	// "E(4,16) unrotated is four on the floor" -- the one case a listener
+	// should still be able to get on purpose.
+	float fillAtFour = fillForK(scan, V_KICK, 4);
+	checks++;
+	if (fillAtFour < 0.f) {
+		fail("degeneracy", "no FILL setting gives KICK exactly four onsets");
+	}
+	else {
+		bool wantRaw[kSteps];
+		euclid(4, kSteps, wantRaw);
+		Payroll seed0;
+		seed0.reset();
+		seed0.build(fillAtFour, 0, 0.f);
+		bool matches = true;
+		for (int s = 0; s < kSteps; s++) matches &= (seed0.on[V_KICK][s] == wantRaw[s]);
+		checks++;
+		if (!matches)
+			fail("degeneracy", "SEED 0 no longer gives the documented, literal four-on-the-floor kick");
+	}
+
+	// Every even k from 2 to 14 shares gcd(k,16) > 1 with the sixteen-step
+	// grid -- Morrill's Corollary 2 says that count is exactly how many times
+	// the rhythm repeats its minimal period, so all of them are some short
+	// idea on a loop, not just the three (2, 4, 8) that divide sixteen
+	// outright. k=6, for instance, is a tresillo-shaped eight-step idea
+	// (already unevenly spaced within itself) played twice -- blocksRepeat()
+	// is what actually catches that, not a check on individual gap sizes.
+	// HAT's role spans every k from 0 to 16, so it alone can stand in for
+	// "some voice landed on this k" for the whole even range.
+	for (int k = 2; k <= 14; k += 2) {
+		float fill = fillForK(scan, V_HAT, k);
+		checks++;
+		if (fill < 0.f) {
+			fail("degeneracy", "no FILL setting gives HAT that onset count");
+			continue;
+		}
+		int g = gcdSteps(k);
+
+		// At SEED 0, Euclid's own answer for an even k has to actually repeat
+		// its period g times -- otherwise the rest of this test is checking
+		// nothing.
+		bool raw[kSteps];
+		euclid(k, kSteps, raw);
+		checks++;
+		if (!blocksRepeat(raw, g))
+			fail("degeneracy", "euclid() did not repeat its minimal period -- test assumption wrong");
+
+		// FILL alone controls density: every seed must keep exactly k
+		// onsets. And at least one seed from 1 to 15 has to break the
+		// repeat -- the g blocks are no longer all identical.
+		bool sawVariety = false;
+		for (int seed = 1; seed <= 15; seed++) {
+			Payroll q;
+			q.reset();
+			q.build(fill, seed, 0.f);
+			checks++;
+			if (q.onsets[V_HAT] != k) {
+				fail("degeneracy", "a seed changed how many onsets a degenerate pattern has");
+				continue;
+			}
+			if (!blocksRepeat(q.on[V_HAT], g)) sawVariety = true;
+		}
+		checks++;
+		if (!sawVariety) {
+			char d[96];
+			snprintf(d, sizeof d, "no seed from 1 to 15 broke k=%d's %d-times repeat", k, g);
+			fail("degeneracy", d);
+		}
+	}
+
+	// Odd k needs no help -- it is already coprime to sixteen -- but the fix
+	// must not go looking for something to nudge there and break it anyway.
+	for (int k = 3; k <= 15; k += 2) {
+		float fill = fillForK(scan, V_HAT, k);
+		checks++;
+		if (fill < 0.f) { fail("degeneracy", "no FILL setting gives HAT that (odd) onset count"); continue; }
+		for (int seed = 1; seed <= 15; seed++) {
+			Payroll q;
+			q.reset();
+			q.build(fill, seed, 0.f);
+			int lit = 0;
+			for (int s = 0; s < kSteps; s++) if (q.on[V_HAT][s]) lit++;
+			checks++;
+			if (lit != k) {
+				fail("degeneracy", "a seed changed how many onsets an already-odd k has");
+				break;
+			}
+		}
+	}
+}
+
+
 int main() {
 	printf("Kickback voices\n");
 
@@ -888,6 +1034,7 @@ int main() {
 	printf("  sample rates...\n");       sampleRates();
 	printf("  strikes end...\n");        decays();
 	printf("  patterns...\n");           patternTests();
+	printf("  degeneracy...\n");         degeneracyTests();
 
 	printf("%d checks, %d failures\n", checks, failures);
 	return failures ? 1 : 0;

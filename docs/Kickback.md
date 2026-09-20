@@ -245,7 +245,7 @@ those.
 | **SWING** | Pushes the odd sixteenths later, up to about 62% of a step. The even ones never move, so CLK OUT stays where a downbeat should be. |
 | **FILL** | Every voice's Euclidean onset count at once, and at its bottom stop, grid mode. Monotone: turning it up may only ever add onsets. |
 | **BURST** (switch) | Hands each voice's steps to its own RATIO: an onset becomes a ratchet at that multiple, or thins out at that division. Ignored at FILL 0, which is grid mode already. |
-| **SEED** (16 detents) | Rotates each voice's necklace by a different amount. Same density, different beat. **Takes effect at the top of the next bar**, not under your hand — see below. |
+| **SEED** (16 detents) | Rotates each voice's necklace by a different amount, and nudges one onset of any voice whose pattern would otherwise be perfectly regular (see below). Same density, different beat. **Takes effect at the top of the next bar**, not under your hand — see below. |
 | **HUMAN** | Velocity spread and microtiming, together. Downbeats move least, as a player's do. Works in both modes. |
 | **GATE** | How long the gate outputs stay high: 5 to 100 ms. |
 | **RST** (input) | Resets the grid, and every voice's grid-mode phase, to the top. |
@@ -268,6 +268,22 @@ remaining knob it takes to reach its fullest, and the rotation that puts its
 default pattern where a player would — E(4,16) unrotated is four on the floor,
 E(2,16) rotated by four is the backbeat. Turning FILL up fills a kit out in the
 order a kit fills out, and all six voices speak by the middle of the knob.
+
+Sixteen is a power of two, so gcd(k,16) — not merely whether k divides 16 — is
+greater than one for *every even* k, and Morrill's Corollary 2 to Bjorklund's
+own work says that number is exactly how many times a Euclidean rhythm repeats
+its minimal period. k=4 is a single gap played four times (four on the floor,
+the extreme case, and the one with a name); k=6 is no different in kind, only
+milder — an eight-step idea (E(3,8), the tresillo) played twice. Odd k needs
+nothing done to it: it is already coprime to sixteen and already uses the
+whole bar as one shape rather than a short one on a loop. SEED 0 leaves every
+k exactly as Euclid gives it, which is why the paragraph above can say
+"E(4,16) unrotated is four on the floor" and mean it literally. Any other seed
+also breaks a repeating pattern by moving one onset to the nearest free step
+in a seed-chosen direction — 4,4,4,4 into, say, 4,3,5,4 — so turning SEED past
+its first detent stops the kit from falling back on a short idea repeated
+gcd(k,16) times every time FILL's k comes out even, without changing how many
+onsets any voice has.
 
 The engine emits a velocity with every trigger, not just a gate. A grid of
 identical hits is not a performance — the point the symbolic drum-generation

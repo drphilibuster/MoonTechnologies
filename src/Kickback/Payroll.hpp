@@ -298,6 +298,50 @@ struct Payroll {
 			bool raw[kSteps];
 			euclid(k, kSteps, raw);
 
+			// gcd(k, 16), not just whether k divides 16, is what decides how
+			// interesting E(k,16) is: Morrill's Corollary 2 (following
+			// Bjorklund) says a Euclidean rhythm repeats its minimal period
+			// exactly gcd(k,n) times. Sixteen is 2^4, so gcd(k,16) is 1 only
+			// for odd k -- every even k is some short idea played on a loop
+			// rather than one shape using the whole bar: k=4 is a single gap
+			// four times over (four on the floor), but k=6 is no different in
+			// kind, just milder -- an 8-step idea (E(3,8), the tresillo)
+			// played twice. Odd k needs nothing done to it; it is already
+			// coprime to sixteen and already uses the whole necklace.
+			//
+			// At SEED 0 a degenerate pattern is left exactly as Euclid gives
+			// it, so E(4,16) unrotated really is four on the floor as
+			// advertised above -- but any other seed nudges one onset of it
+			// to the nearest free step in a seed-chosen direction, the same
+			// way it adds rotation below. That turns "the same short block
+			// repeated gcd(k,16) times" into "that block, plus one departure
+			// from it somewhere in the bar" -- one onset moved, not the
+			// pattern redrawn, and the same k onsets either way. The move
+			// searches outward for a free step rather than assuming a fixed
+			// stride, because only the k in {2,4,8} that divide 16 outright
+			// have onsets evenly spaced to begin with; k=6, 10, 12 and 14 do
+			// not, and still need exactly the same treatment.
+			if (seed > 0 && k > 1 && k < kSteps) {
+				int g = kSteps, kk = k;
+				while (kk) { int t = g % kk; g = kk; kk = t; }   // gcd(k, kSteps)
+				if (g > 1) {
+					int lit[kSteps], n = 0;
+					for (int s = 0; s < kSteps; s++)
+						if (raw[s]) lit[n++] = s;
+					uint32_t h = hash3((uint32_t)seed + 307u, (uint32_t)v, (uint32_t)k);
+					int pick = (int)(h % (uint32_t)n);
+					int dir = (h & 0x10000u) ? 1 : -1;
+					int from = lit[pick];
+					int to = from;
+					for (int step = 1; step < kSteps; step++) {
+						int cand = ((from + dir * step) % kSteps + kSteps) % kSteps;
+						if (!raw[cand]) { to = cand; break; }
+					}
+					raw[from] = false;
+					raw[to] = true;
+				}
+			}
+
 			// The rotation: the role's own, plus the seed's, per voice.
 			int rot = role.rot;
 			if (seed > 0) rot += (int)(hash3(seed, v, 7u) % (uint32_t)kSteps);
