@@ -498,7 +498,16 @@ struct Scale {
 		for (int i = 0; i < n; i++) {
 			switch (rule) {
 				case RULE_TENNEY:   raw[i] = -tenneyHD(r[i]); break;
-				case RULE_BARLOW:   raw[i] = barlowHarmonicity(r[i]); break;
+				// Not barlowHarmonicity() itself: that is 1/indigestibility, and
+				// the unison's indigestibility of zero sends it to the 1e6
+				// sentinel, which then dominates the min-max normalisation below
+				// and crushes every other ratio's quality toward zero -- BIAS
+				// having no audible effect under BARLOW was exactly this. Ranking
+				// by the negated indigestibility sum gives the identical order
+				// (both are monotonically decreasing in indigestibility) without
+				// the reciprocal's blow-up, the same way TENNEY and EULER already
+				// rank by a negated cost rather than a reciprocal "goodness".
+				case RULE_BARLOW:   raw[i] = -(indigestibility(r[i].n) + indigestibility(r[i].d)); break;
 				case RULE_EULER:    raw[i] = -(float) eulerGradus(r[i]); break;
 				case RULE_SETHARES: raw[i] = -curve.at(c[i]); break;
 				// ADAPTIVE looks for the purest interval from a moving reference,

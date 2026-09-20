@@ -299,6 +299,33 @@ static void t6_rankings() {
 		check(ranged, "every rule scores into [0, 1]");
 		check(s.r[bestAt] == (Ratio{1, 1}), "and every rule calls the unison the simplest");
 	}
+
+	// Every rule but NEAREST has to actually pull the answer around as BIAS
+	// rises -- not just agree that the unison is best. A rule whose scoring
+	// function is dominated by one outlier (the unison's indigestibility of
+	// zero once sent barlowHarmonicity() to its 1e6 sentinel) crushes every
+	// other member's quality toward zero under min-max normalisation, so the
+	// rule still "scores into [0, 1]" and still "calls the unison simplest"
+	// above while BIAS does nothing at all away from the unison. That is
+	// exactly the bug this checks for.
+	for (int rule = 0; rule < NUM_RULES; rule++) {
+		if (rule == RULE_NEAREST)
+			continue;
+		Scale s;
+		s.build(SET_DIAMOND, false, 11u);
+		s.rankBy(rule, curve);
+		int moved = 0, total = 0;
+		for (float x = 0.f; x < 1200.f; x += 10.f) {
+			const Choice plain = quantise(s, x, 60.f, 0.f);
+			const Choice biased = quantise(s, x, 60.f, 1.f);
+			if (plain.index != biased.index || plain.octave != biased.octave)
+				moved++;
+			total++;
+		}
+		if (moved == 0)
+			printf("  FAIL  rule %d: full bias never changes the answer anywhere in the octave\n", rule);
+		check(moved > 0, "full bias moves the answer somewhere in the octave, for every rule but NEAREST");
+	}
 }
 
 // --- T7: Sethares' curve -----------------------------------------------------
