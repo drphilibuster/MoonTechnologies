@@ -311,7 +311,15 @@ struct Diversified : Module {
 			tapCount = 0;
 		}
 
-		bool auxGate = auxTrigger.process(inputs[AUX_INPUT].getVoltage(), 0.1f, 1.f);
+		// isHigh(), not the one-shot process() return: AUX is documented as a
+		// sustained gate for the gated-reverb programs (30-35, 90's DELAY+GATE),
+		// which need to see the door held open for as long as the gate is high,
+		// not just a single-sample pulse on the rising edge. process() still
+		// runs every sample so the Schmitt state (and its hysteresis) stays
+		// current; a consumer that wants the edge instead (TWANG) derives it
+		// itself from two consecutive auxGate levels.
+		auxTrigger.process(inputs[AUX_INPUT].getVoltage(), 0.1f, 1.f);
+		bool auxGate = auxTrigger.isHigh();
 
 		// --- control rate ----------------------------------------------------
 		if (ctrlDivider.process()) {

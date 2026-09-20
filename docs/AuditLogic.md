@@ -25,10 +25,11 @@ following whichever of its A/B inputs carries more).
 Per gate:
 
 * **A**, **B** -- inputs. Gates 0/10 V; any voltage works, but the Schmitt
-  comparator (rising 2 V, falling 1 V -- the CD40106 hex Schmitt inverter's
-  own thresholds, since that chip is literally what the original Hex Inverter
-  board built its gates from) reads anything above 2 V as true and anything
-  below 1 V as false, with the last state held in between.
+  comparator (rising 2 V, falling 0.1 V -- Rack's usual gate hysteresis, not
+  the CD40106 hex Schmitt inverter's own 1 V falling threshold, even though
+  that chip is literally what the original Hex Inverter board built its gates
+  from) reads anything above 2 V as true and anything below 0.1 V as false,
+  with the last state held in between.
 * **FN** -- the gate's function: Invert A, AND, OR, XOR, NAND, NOR, XNOR.
   The knob is unlabelled and wears a small lit plate instead, which the module
   writes the current function into -- NOT A, AND, XOR and so on. Seven meanings
@@ -108,7 +109,7 @@ more than a trace of signal.
 ## INSTALLMENTS
 
 One free-running binary counter, incremented on every **CLOCK** rising edge
-(comparator: rising 2 V, falling 1 V) and zeroed by **RESET**. Six gate
+(comparator: rising 2 V, falling 0.1 V) and zeroed by **RESET**. Six gate
 outputs tap it: **/2 /4 /8 /16 /32 /64**, each lit MINT while high.
 
 **MODE**, at the end of the tap row past **/64**, chooses the division set. In

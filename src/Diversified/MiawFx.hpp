@@ -130,8 +130,14 @@ struct Echomatic {
 		postLp.setCutoff(bw, c.sr);
 		fbLp.setCutoff(std::min(bw, 4500.f), c.sr);
 
-		// Ten bits at the short end, seven at the long one, over +-5 V.
-		float bits = lerp(10.f, 7.f, clamp(c.p[0], 0.f, 1.f));
+		// Ten bits at the short end, seven at the long one, over +-5 V. Keyed to
+		// the actual effective delay time `t`, not the raw knob position: a
+		// locked TAP clock overrides `t` above without moving the knob, and the
+		// converter clock `fi` already tracks `t` the same way -- this has to
+		// as well, or a clocked delay keeps whatever bit depth the knob was
+		// last left at regardless of how long the clocked delay actually is.
+		float posFromT = std::log(t / 0.03f) / std::log(1.f / 0.03f);
+		float bits = lerp(10.f, 7.f, clamp(posFromT, 0.f, 1.f));
 		quantStep = 10.f / std::pow(2.f, bits);
 		noiseAmp = quantStep * 0.35f;
 

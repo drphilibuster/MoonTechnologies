@@ -25,7 +25,7 @@ depends on it) sets an internal clock from roughly 0.05 Hz up to 4 kHz, log-scal
 **RATE CV** is 1 V/octave on top of it — the same convention the knob's own log
 taper follows, so a pitch source drives the clock as a pitch. Patching
 **CLOCK IN** overrides it — the module then follows CLOCK IN's edges
-instead, Schmitt-triggered with the usual ~1 V/2 V hysteresis. **CLK** mirrors
+instead, Schmitt-triggered with the usual 0.1 V/2 V hysteresis. **CLK** mirrors
 whichever is active: the internal square wave, or a 1 ms retriggered pulse on each
 external edge. Every section below reacts to the same edge unless its own jack is
 patched.
@@ -66,8 +66,8 @@ patched.
 
 ## Voltage conventions
 
-- CLOCK IN/CLK: 0/10 V gate convention, ~1 V (CLOCK IN) or 2 V (CLOCK IN, high
-  threshold) Schmitt hysteresis; CLK retriggers a 1 ms pulse per external edge,
+- CLOCK IN/CLK: 0/10 V gate convention, 0.1 V (CLOCK IN low threshold) / 2 V
+  (CLOCK IN high threshold) Schmitt hysteresis; CLK retriggers a 1 ms pulse per external edge,
   or mirrors the internal square wave's own 50% duty.
 - RND, SRC, SRC IN, NOISE: bipolar, roughly ±5 V. The three colours are matched
   by RMS rather than by peak, so COLOR changes the spectrum and not the level;

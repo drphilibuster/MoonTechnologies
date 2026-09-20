@@ -100,7 +100,7 @@ centimetre below the controls they name. Attached, they sit where a label would,
 
 ### ALLOCATION
 
-A trimmer over a jack for each of PROG, P1, P2, P3 and MIX. Each trimmer is an
+A trimmer over a jack for each of PROG, P1 through P8, and MIX. Each trimmer is an
 attenuverter, ±100 %; each jack takes 0–10 V (or ±5 V through a negative
 trimmer setting). PROG's CV spans the whole bank, so a ramp sweeps all 106
 programs. The trimmers are excluded from randomisation.

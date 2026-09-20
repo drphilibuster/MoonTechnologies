@@ -112,7 +112,13 @@ struct FuncGenVoice {
 			case PH_RISE:
 				// AR only: releasing the gate mid-attack falls from wherever
 				// the rise had gotten to, rather than snapping to the peak.
-				if (sustain && !gateHigh) {
+				// Not once LOOP has retriggered this rise itself: the gate that
+				// started this cycle has normally already dropped, so without
+				// the `!loop` guard this fires again on the very next sample,
+				// falling from ~0 back to IDLE and re-triggering RISE forever --
+				// the output pinned near zero and EOC firing every sample
+				// instead of the latched envelope LOOP documents.
+				if (sustain && !gateHigh && !loop) {
 					phase = PH_FALL;
 					fallStart = value;
 					t = 0.f;

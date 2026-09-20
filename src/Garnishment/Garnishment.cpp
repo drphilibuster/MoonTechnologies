@@ -98,8 +98,8 @@ struct Garnishment : Module {
 		configBypass(inI, outO);
 	}
 
-	/** One channel, one sample block. `cvFallback` is channel 1's own CV port,
-	    passed only for channel 2 -- the normalling. */
+	/** One channel, one sample block. `cvFallback`, when not null, is the
+	    nearest connected CV port among the earlier channels -- the normalling. */
 	void processBus(const ProcessArgs& args, VcaBus& bus,
 	                 int inId, int cvId, int outId,
 	                 int biasId, int modeId, int lagId, int cvAmtId,
@@ -175,14 +175,21 @@ struct Garnishment : Module {
 	}
 
 	void process(const ProcessArgs& args) override {
-		// CV normals down the bank: channel 2 falls back to channel 1's port,
-		// 3 to 2's, and so on. The dual did this between its two channels; a
-		// chain is the same idea and means one CV can open all six.
-		for (int c = 0; c < N; c++)
+		// CV normals down the bank: a channel with nothing in its own CV jack
+		// falls back to the nearest connected CV port at or before it, not just
+		// its immediate neighbour's raw jack -- otherwise the fallback chain
+		// breaks the moment one channel in the middle is itself relying on the
+		// normal, and everything past it goes dark. This is what lets one CV
+		// patched into channel 1 open all six.
+		Input* lastConnected = nullptr;
+		for (int c = 0; c < N; c++) {
 			processBus(args, bus[c], audioInId(c), cvInId(c), outId(c),
 			           pid(c, BIAS_PARAM), pid(c, MODE_PARAM),
 			           pid(c, LAG_PARAM), pid(c, CVAMT_PARAM),
-			           c == 0 ? nullptr : &inputs[cvInId(c - 1)]);
+			           lastConnected);
+			if (inputs[cvInId(c)].isConnected())
+				lastConnected = &inputs[cvInId(c)];
+		}
 	}
 
 	void onReset(const ResetEvent& e) override {

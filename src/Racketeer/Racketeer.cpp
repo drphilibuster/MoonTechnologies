@@ -132,6 +132,8 @@ struct Racketeer : Module {
 		getParamQuantity(ECHO_CV_PARAM)->randomizeEnabled = false;
 		getParamQuantity(CUTOFF_CV_PARAM)->randomizeEnabled = false;
 		getParamQuantity(RATE_CV_PARAM)->randomizeEnabled = false;
+		getParamQuantity(RES_CV_PARAM)->randomizeEnabled = false;
+		getParamQuantity(LAG_CV_PARAM)->randomizeEnabled = false;
 
 		configButton(NOISE_PARAM, "Noise");
 		configButton(BOOST_PARAM, "Boost");
