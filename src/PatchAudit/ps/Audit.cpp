@@ -105,16 +105,20 @@ static bool auditByStreaming(std::shared_ptr<PatchstorageClient>& self, uint64_t
 	std::vector<uint8_t> buf;
 	std::vector<uint8_t> patch;
 	std::string entryName;
-	bool found = false;
 
 	http::get(url, [&](const uint8_t* data, size_t len) -> bool {
 		buf.insert(buf.end(), data, data + len);
+		// zipFindPatchInPrefix keeps looking past the first .vcv it finds, so
+		// that a small "read me" ahead of the real patch does not win just for
+		// coming first -- see its own comment. That means Found (the true end
+		// of the archive's entries) may not arrive before this reader gives up
+		// on its byte budget below; `patch`/`entryName` hold the best candidate
+		// seen so far on every call, Found or not, so hanging up on the budget
+		// still uses whatever that was rather than discarding it.
 		PrefixScan r = zipFindPatchInPrefix(buf.empty() ? NULL : &buf[0], buf.size(),
 		                                    patch, &entryName, NULL);
-		if (r == PrefixScan::Found) {
-			found = true;
-			return false;                  // got it -- hang up on the rest
-		}
+		if (r == PrefixScan::Found)
+			return false;                  // reached the end -- hang up on the rest
 		if (r != PrefixScan::NeedMore)
 			return false;                  // not a zip this reader can walk
 		// Nothing else in this plugin blocks past a cancellation, and this is the
@@ -130,7 +134,7 @@ static bool auditByStreaming(std::shared_ptr<PatchstorageClient>& self, uint64_t
 		return buf.size() < STREAM_BUDGET;
 	}, NULL);
 
-	if (!found || patch.empty())
+	if (patch.empty())
 		return false;
 
 	// The entry we pulled out is a .vcv, which is itself either a Rack 2 zstd

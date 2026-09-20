@@ -176,13 +176,23 @@ struct PatchAuditWidget : ModuleWidget, ui_pa::BrowserHost {
 	}
 
 	/** The favourites view is rendered straight from the module's own list, so it
-	    works with no network at all. */
+	    works with no network at all. Paged the same as a real search -- there can
+	    be up to MAX_FAVORITES (200) of them and only kMaxRows (50) rows exist, so
+	    without paging anything past the first page would be favourited but
+	    permanently unreachable from this view. */
 	void showFavorites() {
 		ps::SearchResult r;
 		r.query = mod->state.query;
+		const int total = (int) mod->state.favorites.size();
+		const int perPage = clamp(mod->state.query.perPage, 1, ui_pa::kMaxRows);
+		const int lastPage = std::max(1, (total + perPage - 1) / perPage);
+		const int page = clamp(mod->state.query.page, 1, lastPage);
+		mod->state.query.page = page;
 		r.lastPageKnown = true;
-		r.knownLastPage = 1;
-		for (size_t i = 0; i < mod->state.favorites.size(); i++) {
+		r.knownLastPage = lastPage;
+		const int start = (page - 1) * perPage;
+		const int end = std::min(total, start + perPage);
+		for (int i = start; i < end; i++) {
 			ps::PatchSummary s;
 			s.id = mod->state.favorites[i].id;
 			s.title = mod->state.favorites[i].title;
@@ -287,11 +297,15 @@ struct PatchAuditWidget : ModuleWidget, ui_pa::BrowserHost {
 				return;
 
 			case ps::InstallPhase::NeedsFileChoice: {
-				PatchAuditWidget* self = this;
+				// Captures the client (which outlives everything, by the
+				// invariant) and by-value data -- never this widget, which the
+				// user could delete while this menu sits open, the same trap
+				// finishInstall's `proceed` lambda below already avoids.
+				std::shared_ptr<ps::PatchstorageClient> client = mod->client;
 				ps::PatchSummary patch = pendingPatch;
 				ps::Intent intent = r.intent;
-				ui_pa::showFileChoiceMenu(r, [self, patch, intent](int64_t fileId) {
-					self->mod->client->issueInstall(patch, intent, fileId);
+				ui_pa::showFileChoiceMenu(r, [client, patch, intent](int64_t fileId) {
+					client->issueInstall(patch, intent, fileId);
 				});
 				return;
 			}

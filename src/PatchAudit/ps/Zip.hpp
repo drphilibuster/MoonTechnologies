@@ -30,8 +30,9 @@ bool zipExtract(const std::string& path, const ZipEntry& entry, std::vector<uint
 
 /** What walking a zip from its front turned up so far. */
 enum class PrefixScan {
-	Found,        ///< `out` holds the decompressed patch
-	NeedMore,     ///< nothing yet, but the prefix is still a well-formed zip
+	Found,        ///< reached the end of the entries; `out` holds the best patch seen
+	NeedMore,     ///< nothing conclusive yet, but the prefix is still a well-formed zip --
+	              ///< `out` may already hold the best candidate seen so far
 	NotFound,     ///< walked the whole archive; there is no patch entry in it
 	Unreadable,   ///< not a zip, or an entry this reader can't follow
 };
@@ -44,8 +45,16 @@ enum class PrefixScan {
  * from a server that will not honour a byte range -- read until the entry has
  * gone past, then hang up. See ps/HttpStream.hpp for why that is the only option.
  *
+ * Keeps walking past the first .vcv/.vcvs it finds, the same as the normal-path
+ * picker in PatchFile.cpp (pickZipEntry): zipped uploads often carry a small
+ * "read me" patch beside the real one, and the largest .vcv (falling back to
+ * the largest .vcvs) wins. `out`/`name` hold the best candidate found so far on
+ * every call, including a NeedMore one, so a caller that gives up on a byte
+ * budget before reaching the true end of the archive still has whatever the
+ * best candidate was up to that point rather than whichever came first.
+ *
  * Returns NeedMore while `buf` is a valid but incomplete prefix, so the caller
- * can keep feeding it. `name` receives the entry's name on Found. */
+ * can keep feeding it. */
 PrefixScan zipFindPatchInPrefix(const uint8_t* buf, size_t len,
                                 std::vector<uint8_t>& out, std::string* name,
                                 std::string* error = NULL);

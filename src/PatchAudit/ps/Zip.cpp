@@ -170,19 +170,51 @@ static bool endsWithNoCase(const std::string& s, const char* suffix) {
 PrefixScan zipFindPatchInPrefix(const uint8_t* buf, size_t len,
                                 std::vector<uint8_t>& out, std::string* name,
                                 std::string* error) {
+	// Cleared up front so that a caller who ignores everything but Unreadable
+	// or NotFound never sees a stale best-so-far from a previous call.
 	out.clear();
+	if (name)
+		name->clear();
+
+	// The best candidate decoded so far -- kept across entries (not just
+	// returned on the first hit) so that a small "read me" .vcv ahead of the
+	// real patch does not win just for coming first, matching the largest-wins
+	// rule the normal-path picker uses (pickZipEntry, PatchFile.cpp). `bestIsVcv`
+	// makes any .vcv beat any .vcvs regardless of size, same as there.
+	std::vector<uint8_t> bestBuf;
+	std::string bestName;
+	uint64_t bestUncompSize = 0;
+	bool haveBest = false, bestIsVcv = false;
+
+	auto commitBest = [&]() -> PrefixScan {
+		if (!haveBest)
+			return PrefixScan::NotFound;
+		out = bestBuf;
+		if (name)
+			*name = bestName;
+		return PrefixScan::Found;
+	};
+
 	size_t at = 0;
 	while (true) {
-		// Not enough bytes yet to even read a local header.
-		if (at + 30 > len)
+		// Not enough bytes yet to even read a local header -- stop here and
+		// report whatever the best candidate among the entries already fully
+		// read was, so a caller that gives up on a byte budget before reaching
+		// the true end of the archive still has it.
+		if (at + 30 > len) {
+			out = bestBuf;
+			if (name)
+				*name = bestName;
 			return PrefixScan::NeedMore;
+		}
 
 		uint32_t sig = rd32(&buf[at]);
 		if (sig != SIG_LOCAL) {
 			// The central directory follows the last entry's data, so reaching it
-			// means the whole archive went by without a patch in it.
+			// means every entry has been seen and the best candidate, if any, is
+			// final.
 			if (sig == SIG_CDIR || sig == SIG_EOCD)
-				return PrefixScan::NotFound;
+				return commitBest();
 			setError(error, at == 0 ? "not a zip" : "unexpected data between zip entries");
 			return PrefixScan::Unreadable;
 		}
@@ -194,8 +226,12 @@ PrefixScan zipFindPatchInPrefix(const uint8_t* buf, size_t len,
 		uint16_t nameLen = rd16(&buf[at + 26]);
 		uint16_t extraLen = rd16(&buf[at + 28]);
 
-		if (at + 30 + nameLen > len)
+		if (at + 30 + nameLen > len) {
+			out = bestBuf;
+			if (name)
+				*name = bestName;
 			return PrefixScan::NeedMore;
+		}
 		std::string entryName((const char*) &buf[at + 30], nameLen);
 
 		// Bit 3 says the sizes are not here but in a descriptor AFTER the data,
@@ -218,27 +254,42 @@ PrefixScan zipFindPatchInPrefix(const uint8_t* buf, size_t len,
 		}
 
 		size_t dataAt = at + 30 + (size_t) nameLen + (size_t) extraLen;
-		bool wanted = endsWithNoCase(entryName, ".vcv") || endsWithNoCase(entryName, ".vcvs");
+		bool isVcv = endsWithNoCase(entryName, ".vcv");
+		bool isVcvs = !isVcv && endsWithNoCase(entryName, ".vcvs");
 
-		if (wanted) {
-			if (dataAt + compSize > len)
-				return PrefixScan::NeedMore;      // keep reading; it is close
-			if (method == 0) {
-				out.assign(buf + dataAt, buf + dataAt + compSize);
+		if (isVcv || isVcvs) {
+			// Can't tell if this one wins without its data -- stop and report
+			// the best of the entries already fully read, the same as running
+			// out of header bytes above.
+			if (dataAt + compSize > len) {
+				out = bestBuf;
+				if (name)
+					*name = bestName;
+				return PrefixScan::NeedMore;
 			}
-			else if (method == 8) {
-				if (!inflateRaw(&buf[dataAt], compSize, out, uncompSize)) {
-					setError(error, "zip entry could not be decompressed");
+			bool betterTier = isVcv && !bestIsVcv;
+			bool sameTierLarger = (isVcv == bestIsVcv) && (uint64_t) uncompSize > bestUncompSize;
+			if (!haveBest || betterTier || sameTierLarger) {
+				std::vector<uint8_t> decoded;
+				if (method == 0) {
+					decoded.assign(buf + dataAt, buf + dataAt + compSize);
+				}
+				else if (method == 8) {
+					if (!inflateRaw(&buf[dataAt], compSize, decoded, uncompSize)) {
+						setError(error, "zip entry could not be decompressed");
+						return PrefixScan::Unreadable;
+					}
+				}
+				else {
+					setError(error, "zip entry uses an unsupported compression method");
 					return PrefixScan::Unreadable;
 				}
+				bestBuf = std::move(decoded);
+				bestName = entryName;
+				bestUncompSize = uncompSize;
+				bestIsVcv = isVcv;
+				haveBest = true;
 			}
-			else {
-				setError(error, "zip entry uses an unsupported compression method");
-				return PrefixScan::Unreadable;
-			}
-			if (name)
-				*name = entryName;
-			return PrefixScan::Found;
 		}
 
 		// Step over this entry's data. Overflow-safe: compSize is a uint32 and
