@@ -996,12 +996,15 @@ struct Repossession : Module {
 				else {
 					xfadeLeft = 0;
 				}
-				// 5 V doubles, -5 V silences: an exponential law, so a triangle
-				// into GAIN reads as a fade rather than as a lump in the middle.
+				// 5 V doubles, -5 V silences. That pair of endpoints can't be an
+				// exponential law -- pow(2, x) only approaches zero, it never
+				// reaches it -- so unlike LENGTH's true doubles/halves (where
+				// pow(2, gv*0.2) is exactly right), GAIN is linear across the
+				// whole span: 1 at 0 V, 2 at +5 V, 0 at -5 V.
 				float g = clamp(R.gain, 0.f, 2.f);
 				float gv = stepCv(rp::CV_GAIN, playSlot);
 				if (gv != 0.f)
-					g = clamp(g * std::pow(2.f, clamp(gv, -5.f, 5.f) * 0.2f),
+					g = clamp(g * (1.f + clamp(gv, -5.f, 5.f) * 0.2f),
 						0.f, 4.f);
 				outL *= g;
 				outR *= g;
