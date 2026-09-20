@@ -20,30 +20,41 @@ P = Panel(
 
 P.sections = [
     # ROOT is the note nobody hears: two octaves under the chord by default, and
-    # the module's whole joke is that it is the one being claimed for.
+    # the module's whole joke is that it is the one being claimed for. QUANT
+    # and SCALE ride right beside it -- on, ROOT snaps to that scale (rooted at
+    # C) and reads out as a note name instead of Hz.
     Section("QUALIFYING CHILD", rows=[
         Row([BigKnob("root", "ROOT", primary=True),
+             Switch("root_quant", "QUANT"),
+             Knob("root_scale", "SCALE", steps=5),
              Knob("chord_a", "CHORD A", steps=14),
              Knob("chord_b", "CHORD B", steps=14)]),
         Row([Knob("morph", "MORPH"), Knob("tilt", "TILT"),
-             Knob("drive", "DRIVE"), Knob("mix", "MIX"),
+             Knob("drive", "CHORDS"), Knob("mix", "MIX"),
              Knob("level", "LEVEL")]),
     ]),
 
     # The identity only holds at unit amplitude, so whether the input is held
-    # there is a switch and not a hidden decision.
+    # there is a switch and not a hidden decision. CHORD A/B, CHORDS and LEVEL
+    # each get the same trim-over-jack CV pair as MORPH and TILT always had --
+    # a CV on LEVEL is an amplitude control with its own attenuverter, which is
+    # what an internal VCA is, so there is no VCA needed after this in a chain.
     Section("SCHEDULE", rows=[
         Row(items=[Trim("morph_cv", "MORPH"), Trim("tilt_cv", "TILT"),
+                   Trim("chord_a_cv", "CHORD A"), Trim("chord_b_cv", "CHORD B"),
+                   Trim("drive_cv", "CHORDS"), Trim("level_cv", "LEVEL"),
                    Switch("norm", "HOLD")], pair=True),
-        Row([Jack("morph_in"), Jack("tilt_in")]),
+        Row([Jack("morph_in"), Jack("tilt_in"),
+             Jack("chord_a_in"), Jack("chord_b_in"),
+             Jack("drive_in"), Jack("level_in")]),
     ]),
 
     # One trim per harmonic, which is the CUSTOM chord. The presets above are
     # shorthand for particular settings of these; morph a named triad against
     # your own spectrum and the difference is audible as a chord becoming
     # something that has no name.
-    Section("ITEMIZED", rows=[
-        Row(span=[(0, 5, "HARMONIC 1 - 6")],
+    Section("ITEMIZED HARMONICS", rows=[
+        Row(span=[(0, 5, "1 - 6")],
             items=[Trim("h%d" % n, "") for n in range(1, 7)]),
         Row(span=[(0, 5, "7 - 12")],
             items=[Trim("h%d" % n, "") for n in range(7, 13)]),
