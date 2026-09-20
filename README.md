@@ -58,9 +58,9 @@ spectrum and a warped field, driven by audio and CV.
 |---|---|---|---|
 | **[Garnishment](docs/Garnishment.md)** · 18 HP | **[Consolidation](docs/Consolidation.md)** · 14 HP | **[Installment](docs/Installment.md)** · 16 HP | **[Volatility](docs/Volatility.md)** · 14 HP |
 
-| <img src="tools/previews/Deduction.png" width="101"> | <img src="tools/previews/AuditLogic.png" width="210"> | <img src="tools/previews/Kickback.png" width="252"> | <img src="tools/previews/PaymentSchedule.png" width="244"> |
+| <img src="tools/previews/Deduction.png" width="101"> | <img src="tools/previews/AuditLogic.png" width="210"> | <img src="tools/previews/Kickback.png" width="252"> | <img src="tools/previews/PaymentSchedule.png" width="260"> |
 |---|---|---|---|
-| **[Deduction](docs/Deduction.md)** · 12 HP | **[Audit Logic](docs/AuditLogic.md)** · 25 HP | **[Kickback](docs/Kickback.md)** · 30 HP | **[Payment Schedule](docs/PaymentSchedule.md)** · 29 HP |
+| **[Deduction](docs/Deduction.md)** · 12 HP | **[Audit Logic](docs/AuditLogic.md)** · 25 HP | **[Kickback](docs/Kickback.md)** · 30 HP | **[Payment Schedule](docs/PaymentSchedule.md)** · 31 HP |
 
 | <img src="tools/previews/SignHere.png" width="168"> | <img src="tools/previews/Diversified.png" width="176"> | <img src="tools/previews/Toll.png" width="92"> | <img src="tools/previews/ScheduleA.png" width="118"> |
 |---|---|---|---|
@@ -218,7 +218,7 @@ Four logic gates with selectable functions and the 0 V / 12 V reference, two gat
 
 Started as the six drum voices of that folder and is now a drum machine. The voices are modal banks struck by a real contact pulse: the BaSnaHi kick with the SmurfDrum as its second model, a snare switching between XORbell, the percussive noise voice and Karplus–Strong, a hi-hat whose one knob sweeps metal to noise to the Tiny Dazzler, and all three TomTomTom rings at once as three differently-sized drums. **None of the rest is in the original:** its own clock, a Euclidean pattern engine, per-voice clock ratios from /256 to ×256, a BURST mode that hands each voice's steps to its own ratio, six velocity-scaled gate outputs, and a SEED that swaps patterns on the bar line. The physics is out of the literature rather than the schematic — Bilbao's contact force, Bessel-zero mode ratios, Karplus–Strong's drum recurrence.
 
-### [Payment Schedule](docs/PaymentSchedule.md) — 29 HP · *Sequencer, Switch, Quantizer*
+### [Payment Schedule](docs/PaymentSchedule.md) — 31 HP · *Sequencer, Switch, Quantizer*
 
 *Day 10, consolidated.*
 
