@@ -1,7 +1,7 @@
 # Moon Technologies
 
 One VCV Rack 2 plugin, slug `MoonTechnologies`, brand **Moon Technologies**,
-author **Taxxess**. Twenty-eight modules sharing one panel pipeline: the three
+author **Taxxess**. Twenty-nine modules sharing one panel pipeline: the three
 originals (`PatchAudit`, `Retroactive`, `UncertaintyPolicy`), nine built to
 order (`Dividend`, `TaxBracket`, `Racketeer`, `Gross`, `Amortization`,
 `Repossession`, `Collusion`, `Reconciliation`, `Dependents`), one expander
@@ -10,8 +10,9 @@ order (`Dividend`, `TaxBracket`, `Racketeer`, `Gross`, `Amortization`,
 `Deduction`, `AuditLogic`, `Kickback`, `PaymentSchedule`, `SignHere`,
 `Diversified`), one voice that split off from a bank (`Toll`, out of
 `Kickback`), one bank doubled into a module of its own (`Bailout`, out of
-`Consolidation`) and two about video (`Transmittal`, which publishes it, and
-`Projection`, which makes it).
+`Consolidation`), two about video (`Transmittal`, which publishes it, and
+`Projection`, which makes it) and one hardware emulation (`Apportionment`, an
+Ensoniq DP/4 running its own firmware; see "ROMs" below).
 
 ## VCV Rack UI: use the tool, always
 
@@ -90,7 +91,7 @@ width.
 Look at `tools/previews/<Module>.png` before calling a panel done — it goes
 through the real widget tree, so it is the only preview that cannot lie. Do this
 for **every** module whose header the change touched, not just the one you were
-working in; a `panelkit/` change reaches all twenty-eight.
+working in; a `panelkit/` change reaches all twenty-nine.
 
 See `panelkit/README.md` for the design language, the spec API and what the
 linter checks.
@@ -114,7 +115,7 @@ one. A screenshot showing old behaviour after a fix usually means exactly this.
 
 ## Slugs are permanent
 
-`MoonTechnologies` and the twenty-eight module slugs listed at the top of this file.
+`MoonTechnologies` and the twenty-nine module slugs listed at the top of this file.
 Changing any of them orphans every saved patch that used it: Rack's fallback table
 (`Rack/src/plugin.cpp:374`) is maintained by VCV, not by plugin authors.
 
@@ -163,6 +164,15 @@ different scales. A header two modules need does not belong inside either of
 them. If a test's Makefile lists the headers it depends on, list *all* of them:
 one left out is one whose edits do not rebuild the test, and a suite that does
 not rebuild passes for the wrong reason.
+
+## ROMs never enter this repository
+
+`Apportionment` runs Ensoniq's DP/4 EPROMs, which are copyrighted and not ours
+to distribute. The module loads them at runtime from wherever the user keeps
+them; a patch stores their *paths*, never their bytes. `.gitignore` refuses
+`*DP4*.bin` / `*dp4*.bin`, and `tests/Apportionment` reads them from `$DP4_ROMS`
+outside the repo, printing SKIP without them. The MAME code the emulation runs
+on (BSD-3) is vendored in `vendor/mame/` with its own notes in `vendor/README.md`.
 
 ## Local checkouts (outside this repo)
 

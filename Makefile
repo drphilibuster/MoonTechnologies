@@ -85,6 +85,13 @@ LDFLAGS += -framework Cocoa -framework OpenGL -framework IOSurface -framework Co
 $(patsubst %, build/%.o, $(SYPHON_SRC)): FLAGS += -fobjc-arc -mmacosx-version-min=10.13
 endif
 
+# --- MAME's ES5510 core (Apportionment) ---------------------------------------
+# vendor/mame/es5510 is C++14 (std::make_unique and friends); the SDK compiles
+# as C++11. Only the one translation unit that includes it gets the newer
+# standard -- a later -std wins -- so nothing else in the plugin can start
+# depending on C++14 by accident.
+build/src/Apportionment/Esp.cpp.o: CXXFLAGS += -std=c++14 -Wno-deprecated-declarations -Wno-sign-compare
+
 # Added to the .vcvplugin package by `make dist`. The compiled library and
 # plugin.json are added automatically.
 DISTRIBUTABLES += res

@@ -1,0 +1,27 @@
+--- upstream/es5510.cpp	2026-09-30 01:28:39
++++ es5510.cpp	2026-09-30 08:34:25
+@@ -510,6 +510,7 @@
+ 		if (halt_asserted) {
+ 			LOG("ES5510: Host Write to Halt Enable while HALT line is asserted: Halting!\n");
+ 			state = STATE_HALTED;
++			dol_count = 0; // DP4Research patch: halting resets the DOL FIFO pointers (spec Rev 2.4 §3.4)
+ 		}
+ 		break;
+ 
+@@ -1226,6 +1227,7 @@
+ 		// halt
+ 		state = STATE_HALTED;
+ 		host_control &= ~0x04; // Signal Host Access OK
++		dol_count = 0; // DP4Research patch: spec Rev 2.4 §3.4 "Halting ... will reset the FIFO pointers"
+ 	}
+ 	// update the delay line base pointer
+ 	dbase -= memincrement;
+@@ -1234,7 +1236,7 @@
+ 	}
+ 	// Possibly reset the PC
+ 	if (state == STATE_RUNNING) {
+-		pc = 0;
++		pc = 0xff; // DP4Research patch: execute_run's ++pc follows, so this lands on step 0 (upstream skipped step 0)
+ 	}
+ 
+ #if VERBOSE_EXEC

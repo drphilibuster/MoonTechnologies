@@ -24,6 +24,18 @@
       ]
     },
     {
+      "slug": "Apportionment",
+      "name": "Apportionment",
+      "description": "Ensoniq DP/4 parallel effects processor running its own firmware (EPROMs not included): four ESP units, with the Config routing on the panel",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Apportionment.md",
+      "tags": [
+        "Effect",
+        "Reverb",
+        "Delay",
+        "Hardware clone"
+      ]
+    },
+    {
       "slug": "AuditLogic",
       "name": "Audit Logic",
       "description": "Modular in a Week logic: four gates (inverter, AND, OR, XOR, NAND), a 4066 gated switch pair and the Emiz CV2 clock divider",

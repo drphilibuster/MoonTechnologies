@@ -1,6 +1,6 @@
 # Moon Technologies
 
-Twenty-eight modules for [VCV Rack 2](https://vcvrack.com), by **Taxxess**.
+Twenty-nine modules for [VCV Rack 2](https://vcvrack.com), by **Taxxess**.
 
 They share a panel language borrowed from money — a pale engraved note, sage
 guilloche round every field, a scroll in every corner, a form number in the
@@ -9,7 +9,7 @@ and finding out what it cost you.
 
 ## Where they come from
 
-**Fourteen are built for this plugin.** Some are original; some are a piece of
+**Fifteen are built for this plugin.** Some are original; some are a piece of
 hardware or a paper worked out properly — the Olegtron R2R as a real resistor
 ladder, Curtis Roads' pulsar synthesis, Partch's tonality diamond. Where one is
 modelled on something, it says so and says what.
@@ -38,7 +38,7 @@ projector while the same patch is making the sound. And
 [Projection](docs/Projection.md) makes the video in the first place: a scope, a
 spectrum and a warped field, driven by audio and CV.
 
-## All twenty-eight
+## All twenty-nine
 
 *(Every panel below is rendered by Rack itself, not mocked up.)*
 
@@ -69,6 +69,10 @@ spectrum and a warped field, driven by audio and CV.
 | <img src="tools/previews/Dependents.png" width="134"> | <img src="tools/previews/Bailout.png" width="210"> | <img src="tools/previews/Transmittal.png" width="84"> | <img src="tools/previews/Projection.png" width="101"> |
 |---|---|---|---|
 | **[Dependents](docs/Dependents.md)** · 16 HP | **[Bailout](docs/Bailout.md)** · 25 HP | **[Transmittal](docs/Transmittal.md)** · 10 HP | **[Projection](docs/Projection.md)** · 12 HP |
+
+| <img src="tools/previews/Apportionment.png" width="286"> |
+|---|
+| **[Apportionment](docs/Apportionment.md)** · 34 HP |
 
 
 ## Built for this plugin
@@ -114,6 +118,12 @@ A Wiener–Hammerstein distortion built from the piecewise-tanh mapping and a dy
 *After the Verbtronic.*
 
 A Dattorro plate for VERB and an eight-line FDN with a limiter for TRONIC, tonal tilt inside the loop, feedback past unity, predelay, freeze, the mode gate, and wet-only outputs beside the mix.
+
+### [Apportionment](docs/Apportionment.md) — 34 HP · *Effect, Reverb, Delay, Hardware clone*
+
+*An Ensoniq DP/4, running its own firmware. EPROMs not included.*
+
+Four ESP effect units under the DP/4's real operating system and DSP code -- every algorithm, preset and Config is Ensoniq's -- on an emulated 68B03 and four ES5510s. The DP/4's own front panel is here button for button, and the thing the hardware hid in its menus is on the panel: every Config parameter that routes the four units (source count, A-B and C-D serial/parallel/feedback, AB into CD, amounts, mono/stereo inputs, output selects) is a control, and moving one makes the module work the Config pages for you. Per-unit stereo taps for patching the units into the rest of the rack.
 
 ### [Repossession](docs/Repossession.md) — 34 HP · *Sampler, Sequencer, Visual*
 

@@ -34,3 +34,9 @@ __pycache__/
 # res/*.svg, src/PanelTheme.hpp, src/*/Panel.hpp and tools/previews/*.png are
 # committed, because the VCV Library build machines compile this repo without
 # running Python. They are still outputs -- edit tools/panels/<Module>.py.
+
+# Ensoniq DP/4 EPROM images (Apportionment loads them at runtime; they are
+# Ensoniq's and must never be committed). tests/Apportionment reads them from
+# $DP4_ROMS, outside the repository.
+*DP4*.bin
+*dp4*.bin

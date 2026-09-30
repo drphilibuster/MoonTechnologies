@@ -5,6 +5,29 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Added: Apportionment, an Ensoniq DP/4 running its own firmware
+
+A DP/4 parallel effects processor: the real operating system on an emulated
+MC68B03 host, driving four ES5510 ESPs (MAME's core, BSD-3, vendored in
+`vendor/mame/` with three fixes from Ensoniq's ESP specification). Every
+algorithm, preset and Config is Ensoniq's own. The EPROMs are not included;
+the context menu loads them, and a patch stores their paths, never their bytes.
+
+The routing the hardware hid behind its Config pages is on the panel: source
+count, A-B and C-D serial / parallel / feedback 1 / feedback 2, AB into CD,
+the dry-path and feedback amounts, mono/stereo inputs and the output selects.
+Moving a control makes the module work the Config pages as a player would --
+EDIT, CONFIG, the arrows, the data knob -- until the firmware's own copy agrees;
+a Config preset recalled on the front panel moves the controls back. The DP/4's
+front panel is there button for button, its LCD and LED digits are drawn from
+the firmware's own display stream, a live map shows the routing the machine is
+running, and four per-unit stereo taps take each unit out on its own.
+
+The DSP runs at 34.875 kHz (at which the service-mode 1 kHz test tone is exactly
+1 kHz) and is resampled to Rack's rate. Battery RAM -- user presets, Configs,
+System settings -- is saved in the patch. `tests/Apportionment` exercises the
+machine and the router against the real firmware when `DP4_ROMS` is set.
+
 ### Added: Dependents, a chord made by distorting one inaudible sine
 
 After Astrobear Music (Aspen Instruments), "This distortion plays chords using
