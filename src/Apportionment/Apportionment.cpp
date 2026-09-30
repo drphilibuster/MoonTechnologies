@@ -75,6 +75,8 @@ struct Apportionment : Module {
 
 	std::string osPath, ucodePath;               // UI thread
 	std::string status = "LOAD DP/4 EPROMS";     // guarded by snapMutex
+	std::string osVersion;                       // as the firmware announced it at boot; guarded by snapMutex
+	std::atomic<double> osNoticeUntil{0.0};      // the LCD shows the old-OS notice until then
 	std::vector<uint8_t> battery;                // guarded by snapMutex
 	std::mutex snapMutex;
 	Snapshot snap;                               // guarded by snapMutex
@@ -180,13 +182,31 @@ struct Apportionment : Module {
 			if (ram.empty()) m->clearBatteryRam();
 			m->powerOn();
 			m->idle(4.0);
-			INFO("Apportionment: DP/4 booted from %s + %s: [%s] [%s]", system::getFilename(os).c_str(),
+			INFO("Apportionment: DP/4 OS %s booted from %s + %s: [%s] [%s]", m->osVersion().c_str(), system::getFilename(os).c_str(),
 				system::getFilename(uc).c_str(), m->display().line(0).c_str(), m->display().line(1).c_str());
+			{
+				std::lock_guard<std::mutex> lock(snapMutex);
+				osVersion = m->osVersion();
+			}
+			if (olderOs(m->osVersion())) {
+				WARN("Apportionment: OS %s is older than 1.15, the version the DP/4+ manual documents; see the context menu", m->osVersion().c_str());
+				osNoticeUntil = system::getTime() + 4.0;
+			}
 			delete handover.exchange(m.release());
 			setStatus("");
 			rememberRoms();
 			booting = false;
 		});
+	}
+
+	/** Older than 1.15, the version the DP/4+ manual documents and this module was
+	    verified against. 1.06 is known to differ from it (research notes): a bug in
+	    its UCODE collapses Config 41's 3.3 s delay to nothing, and its pitch shifter
+	    lacks 1.15's regen damping, which changes five Config presets' tails. */
+	static bool olderOs(const std::string& v) {
+		unsigned major = 0, minor = 0;
+		if (std::sscanf(v.c_str(), "%u.%u", &major, &minor) != 2) return false;
+		return major < 1 || (major == 1 && minor < 15);
 	}
 
 	/** The last EPROMs that booted are remembered plugin-wide, in the family's
@@ -468,6 +488,17 @@ struct LcdDisplay : widget::Widget {
 			panel::text(vg, st.inked(panel::CLAY), box.size.x / 2, lh * 0.55f, status);
 			panel::text(vg, st.inked(panel::SAGE), box.size.x / 2, lh * 1.45f,
 				module->booting ? "PLEASE WAIT" : "RIGHT-CLICK: LOAD");
+			return;
+		}
+		// An OS older than 1.15 is flagged on the LCD for a few seconds after boot.
+		if (system::getTime() < module->osNoticeUntil) {
+			std::string v;
+			{
+				std::lock_guard<std::mutex> lock(module->snapMutex);
+				v = module->osVersion;
+			}
+			panel::text(vg, st.inked(panel::CLAY), box.size.x / 2, lh * 0.55f, "OLD OS " + v);
+			panel::text(vg, st.inked(panel::CLAY), box.size.x / 2, lh * 1.45f, "1.15 RECOMMENDED");
 			return;
 		}
 		const bool blinkOff = std::fmod(system::getTime(), 0.6) > 0.4;
@@ -782,6 +813,20 @@ struct ApportionmentWidget : ModuleWidget {
 		menu->addChild(createMenuLabel("DP/4 EPROMs (not included)"));
 		menu->addChild(createMenuLabel("OS: " + (m->osPath.empty() ? std::string("none") : system::getFilename(m->osPath))));
 		menu->addChild(createMenuLabel("UCODE: " + (m->ucodePath.empty() ? std::string("none") : system::getFilename(m->ucodePath))));
+		std::string ver;
+		{
+			std::lock_guard<std::mutex> lock(m->snapMutex);
+			ver = m->osVersion;
+		}
+		if (!ver.empty()) menu->addChild(createMenuLabel("OS version " + ver + (Apportionment::olderOs(ver) ? " -- 1.15 recommended" : "")));
+		if (ver == "1.06") {
+			menu->addChild(createMenuLabel("  1.06 differs from 1.15 in six Config presets:"));
+			menu->addChild(createMenuLabel("  a 1.06 bug drops Config 41's 3.3 s delay, and"));
+			menu->addChild(createMenuLabel("  its pitch shifter lacks 1.15's regen damping."));
+		}
+		else if (Apportionment::olderOs(ver)) {
+			menu->addChild(createMenuLabel("  Older than the 1.15 the DP/4+ manual documents."));
+		}
 		menu->addChild(createMenuItem("Load EPROM folder...", "", [=]() {
 			char* dir = osdialog_file(OSDIALOG_OPEN_DIR, NULL, NULL, NULL);
 			if (!dir) return;

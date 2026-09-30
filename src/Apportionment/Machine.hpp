@@ -30,6 +30,7 @@
 // is exactly 1 kHz, matching its oscillator coefficient.
 #pragma once
 #include <algorithm>
+#include <cctype>
 #include <cstdint>
 #include <cstring>
 #include <deque>
@@ -132,6 +133,7 @@ public:
 		latch0600_ = 0;
 		cpu_.reset();
 		panel_ = Display();
+		osVersion_.clear();
 		acia_.clear();
 		pendingKeys_.clear();
 		pendingKnob_ = 0;
@@ -199,6 +201,8 @@ public:
 		return r;
 	}
 	int inputMux() const { return (cpu_.port_out[0] >> 2) & 3; }
+	/** The OS version the firmware announced on its boot screen ("1.15"), or "" before it has. */
+	const std::string& osVersion() const { return osVersion_; }
 	uint16_t cpuPc() const { return cpu_.pc(); }
 	uint64_t frames() const { return frames_; }
 	const Esp& esp(int i) const { return esp_[i]; }
@@ -274,6 +278,7 @@ private:
 	int cursor_ = 0;
 	int field_[8] = {};
 	bool blinking_ = false;
+	std::string osVersion_;
 
 	void runCpu(int cycles) {
 		cpu_.port_in[1] = uint8_t((cpu_.port_in[1] & ~0x02) | (knobDir_ ? 0x02 : 0));
@@ -341,6 +346,19 @@ private:
 		ram_[a] = v;
 	}
 
+	/** The boot screen reads "ENSONIQ * DP/4" over "OS Version  1.15"; the version
+	    is not stored as text in the EPROM, so it is taken from there. */
+	void findOsVersion() {
+		const std::string lcd(panel_.lcd, sizeof panel_.lcd);
+		const size_t at = lcd.find("Version");
+		if (at == std::string::npos) return;
+		size_t v = at + 7;
+		while (v < lcd.size() && lcd[v] == ' ') v++;
+		size_t e = v;
+		while (e < lcd.size() && (std::isdigit((unsigned char) lcd[e]) || lcd[e] == '.')) e++;
+		if (e - v >= 4) osVersion_ = lcd.substr(v, e - v);   // "1.15", once all of it has arrived
+	}
+
 	/** The front-panel board's command set, as far as the OS uses it:
 	    $87 p   cursor to cell p (row 2 starts at $10)   $8C  clear
 	    $88 n   remember the cursor as field n           $89 n  cursor to field n
@@ -376,6 +394,7 @@ private:
 			panel_.blink[cursor_] = blinking_;
 			cursor_ = (cursor_ + 1) & 31;
 			panel_.generation++;
+			if (osVersion_.empty()) findOsVersion();
 		}
 	}
 };

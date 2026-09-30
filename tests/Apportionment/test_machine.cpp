@@ -80,6 +80,10 @@ int main() {
 	CHECK(m.display().line(0).compare(0, 6, "Select") == 0, "boot display is [%s][%s]",
 		m.display().line(0).c_str(), m.display().line(1).c_str());
 	CHECK(m.esp(0).transferCollisions() == 0, "host transfer collisions on ESP A");
+	// The OS version, as the boot screen announced it (the module warns below 1.15).
+	const std::string ver = m.osVersion();
+	CHECK(ver.size() == 4 && ver[0] == '1' && ver[1] == '.', "OS version not read from the boot screen: [%s]", ver.c_str());
+	printf("%s OS version %s read from the boot screen\n", ver.size() == 4 ? "ok  " : "FAIL", ver.c_str());
 
 	// 1b. The firmware's tables land where its programs read them. Unit A's
 	// compressor has a reciprocal table (32640/n) at Table A = $3F00, which the

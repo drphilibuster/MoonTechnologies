@@ -21,7 +21,13 @@ is a control on the panel.
 The DP/4's firmware is Ensoniq's and is **not included**. You need the two EPROM
 images from a DP/4 (or a DP/4+ running the DP/4 OS): the **OS** (32 KB, U56) and
 the **UCODE** (128 KB, U54). Dumps of versions 1.06 and 1.15 are both known to
-work.
+work, but **use 1.15**: it is the version the DP/4+ manual documents, and 1.06
+sounds different in six of the fifty Config presets. A bug in 1.06 collapses
+Config 41 "Box Room LongDDL"'s 3.3-second delay to almost nothing, and 1.06's
+pitch shifter lacks the regen damping 1.15 added (Configs 1, 7, 17, 35 and 46
+ring differently). The module reads the version off the firmware's own boot
+screen: anything older than 1.15 shows **OLD OS** on the display for a few
+seconds after power-on, and the context menu says what differs.
 
 Right-click the module and choose **Load EPROM folder…** and point it at a folder
 holding both files: it tells them apart by size. **Load OS EPROM…** and **Load

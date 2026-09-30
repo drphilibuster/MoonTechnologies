@@ -5,6 +5,14 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Apportionment: a warning for OS 1.06
+
+The module reads the OS version off the firmware's boot screen and, for anything
+older than 1.15, shows "OLD OS 1.06 / 1.15 RECOMMENDED" on the display for a few
+seconds and explains in the context menu. 1.06 differs from 1.15 in six Config
+presets, traced to the firmware itself: a 1.06 bug that drops Config 41's 3.3 s
+delay, and the pitch-shifter regen damping 1.15 added.
+
 ### Apportionment: sustained sound, and a fifth less CPU
 
 **The DP/4 was going silent.** A steady signal came out for a tenth of a
