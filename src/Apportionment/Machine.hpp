@@ -53,10 +53,12 @@ struct Routing {
 	int cdMono = 0;
 	int abOut = 0;       // 3-4 sources: 0 "A>1 B>2 DualMono", 1 "1-2 Mixed Stereo"
 	int cdOut = 0;       // 4 sources:   0 "C>3 D>4 DualMono", 1 "3-4 Mixed Stereo"
+	int kill[4] = {};    // per unit, what bypass does: 0 bypass (dry through), 1 kill (mute)
 	bool operator==(const Routing& o) const {
 		return sources == o.sources && abRoute == o.abRoute && cdRoute == o.cdRoute &&
 			abToCd == o.abToCd && abAmount == o.abAmount && cdAmount == o.cdAmount &&
-			abMono == o.abMono && cdMono == o.cdMono && abOut == o.abOut && cdOut == o.cdOut;
+			abMono == o.abMono && cdMono == o.cdMono && abOut == o.abOut && cdOut == o.cdOut &&
+			kill[0] == o.kill[0] && kill[1] == o.kill[1] && kill[2] == o.kill[2] && kill[3] == o.kill[3];
 	}
 };
 
@@ -72,6 +74,7 @@ enum : uint16_t {
 	CD_AMOUNT = 0x4977,
 	AB_MONO = 0x497a,
 	CD_MONO = 0x497b,
+	KILL_A = 0x497e,     // ..0x4981 for A..D: bypass/kill, one Config page each
 	EDIT_PAGE = 0x520e,  // the Config page the firmware is showing, while editing
 };
 }
@@ -94,6 +97,8 @@ struct Display {
 	void clear() { std::memset(lcd, ' ', sizeof lcd); std::memset(blink, 0, sizeof blink); }
 	std::string line(int n) const { return std::string(lcd + 16 * n, 16); }
 	bool led(int n) const { return (leds >> n) & 1; }
+	/** A unit's red bypass LED (unit 0 = A): indicators 12, 11, 10, 9. */
+	bool bypassed(int unit) const { return led(12 - unit); }
 	/** Segment k of digit d (0 = left), k in the order a b c d e f g dp. */
 	bool segment(int d, int k) const {
 		static const int bit[8] = { 7, 6, 5, 4, 3, 2, 1, 0 };
@@ -180,6 +185,7 @@ public:
 		r.cdAmount = std::min(99, int(peek(cfg::CD_AMOUNT)));
 		r.abMono = peek(cfg::AB_MONO) & 1;
 		r.cdMono = peek(cfg::CD_MONO) & 1;
+		for (int u = 0; u < 4; u++) r.kill[u] = peek(uint16_t(cfg::KILL_A + u)) & 1;
 		// The routing bytes double as output selects once the pair is split up.
 		if (r.sources >= 3) { r.abOut = r.abRoute & 1; r.abRoute = 0; }
 		if (r.sources >= 4) { r.cdOut = r.cdRoute & 1; r.cdRoute = 0; }

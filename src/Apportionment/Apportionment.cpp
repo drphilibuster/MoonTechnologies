@@ -47,11 +47,14 @@ struct Apportionment : Module {
 		SOURCES_PARAM, AB_ROUTE_PARAM, CD_ROUTE_PARAM, AB_CD_PARAM,
 		AB_AMOUNT_PARAM, CD_AMOUNT_PARAM, AB_MONO_PARAM, CD_MONO_PARAM,
 		AB_OUT_PARAM, CD_OUT_PARAM, IN_LEVEL_PARAM, OUT_LEVEL_PARAM,
+		// Appended later: ids are saved in patches, so new ones only ever go last.
+		KILL_A_PARAM, KILL_B_PARAM, KILL_C_PARAM, KILL_D_PARAM,
 		PARAMS_LEN
 	};
 	enum InputId { IN1_INPUT, IN2_INPUT, IN3_INPUT, IN4_INPUT, PEDAL_INPUT, FS_L_INPUT, FS_R_INPUT, INPUTS_LEN };
 	enum OutputId { OUT1_OUTPUT, OUT2_OUTPUT, OUT3_OUTPUT, OUT4_OUTPUT, TAP_A_OUTPUT, TAP_B_OUTPUT, TAP_C_OUTPUT, TAP_D_OUTPUT, OUTPUTS_LEN };
-	enum LightId { UNIT_A_LIGHT, UNIT_B_LIGHT, UNIT_C_LIGHT, UNIT_D_LIGHT, CONFIG_LIGHT, SYSTEM_LIGHT, EDIT_LIGHT, ROUTING_LIGHT, LIGHTS_LEN };
+	enum LightId { UNIT_A_LIGHT, UNIT_B_LIGHT, UNIT_C_LIGHT, UNIT_D_LIGHT, CONFIG_LIGHT, SYSTEM_LIGHT, EDIT_LIGHT, ROUTING_LIGHT,
+		BYPASS_A_LIGHT, BYPASS_B_LIGHT, BYPASS_C_LIGHT, BYPASS_D_LIGHT, LIGHTS_LEN };
 
 	/** The first twelve params are the DP/4's own buttons, in this order. */
 	static constexpr int BUTTONS = 12;
@@ -109,6 +112,11 @@ struct Apportionment : Module {
 		configSwitch(CD_OUT_PARAM, 0.f, 1.f, 0.f, "CD output (4 sources)", { "C > 3, D > 4, dual mono", "3-4 mixed stereo" });
 		configParam(IN_LEVEL_PARAM, 0.f, 2.f, 1.f, "Input level", "%", 0.f, 100.f);
 		configParam(OUT_LEVEL_PARAM, 0.f, 2.f, 1.f, "Output level", "%", 0.f, 100.f);
+		for (int u = 0; u < 4; u++) {
+			const std::string unit(1, char('A' + u));
+			configSwitch(KILL_A_PARAM + u, 0.f, 1.f, 0.f, "Unit " + unit + " bypass does", { "Bypass (dry signal passes)", "Kill (unit is muted)" });
+			configLight(BYPASS_A_LIGHT + u, "Unit " + unit + " bypassed");
+		}
 
 		configInput(IN1_INPUT, "Input 1 (left)");
 		configInput(IN2_INPUT, "Input 2 (right; normalled to 1)");
@@ -232,12 +240,14 @@ struct Apportionment : Module {
 		r.cdMono = int(params[CD_MONO_PARAM].getValue() + .5f);
 		r.abOut = int(params[AB_OUT_PARAM].getValue() + .5f);
 		r.cdOut = int(params[CD_OUT_PARAM].getValue() + .5f);
+		for (int u = 0; u < 4; u++) r.kill[u] = int(params[KILL_A_PARAM + u].getValue() + .5f);
 		return r;
 	}
 
 	static int paramFor(Router::Field f) {
 		static const int p[Router::F_COUNT] = { SOURCES_PARAM, AB_CD_PARAM, AB_ROUTE_PARAM, CD_ROUTE_PARAM,
-			AB_AMOUNT_PARAM, CD_AMOUNT_PARAM, AB_MONO_PARAM, CD_MONO_PARAM, AB_OUT_PARAM, CD_OUT_PARAM };
+			AB_AMOUNT_PARAM, CD_AMOUNT_PARAM, AB_MONO_PARAM, CD_MONO_PARAM, AB_OUT_PARAM, CD_OUT_PARAM,
+			KILL_A_PARAM, KILL_B_PARAM, KILL_C_PARAM, KILL_D_PARAM };
 		return p[f];
 	}
 
@@ -362,6 +372,7 @@ struct Apportionment : Module {
 			static const int led[7] = { dp4::BTN_A, dp4::BTN_B, dp4::BTN_C, dp4::BTN_D, dp4::BTN_CONFIG, dp4::BTN_SYSTEM, dp4::BTN_EDIT };
 			for (int i = 0; i < 7; i++) lights[UNIT_A_LIGHT + i].setBrightness(d.led(led[i]) ? 1.f : 0.f);
 			lights[ROUTING_LIGHT].setBrightness(router.busy() ? 1.f : 0.f);
+			for (int u = 0; u < 4; u++) lights[BYPASS_A_LIGHT + u].setBrightness(d.bypassed(u) ? 1.f : 0.f);
 			if (snapMutex.try_lock()) {
 				snap.display = d;
 				snap.routing = machine->routing();
@@ -710,6 +721,13 @@ struct ApportionmentWidget : ModuleWidget {
 		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::IN_LEVEL_POS.x, panel::IN_LEVEL_POS.y), module, Apportionment::IN_LEVEL_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::OUT_LEVEL_POS.x, panel::OUT_LEVEL_POS.y), module, Apportionment::OUT_LEVEL_PARAM));
 		addChild(createLightCentered<SmallLight<panel::LimeLight> >(panel::mm(panel::ROUTING_POS.x, panel::ROUTING_POS.y), module, Apportionment::ROUTING_LIGHT));
+		// The DP/4's red bypass LEDs, and the Config's bypass/kill switch per unit.
+		const Vec bypass[4] = { panel::BYPASS_A_POS, panel::BYPASS_B_POS, panel::BYPASS_C_POS, panel::BYPASS_D_POS };
+		const Vec kill[4] = { panel::KILL_A_POS, panel::KILL_B_POS, panel::KILL_C_POS, panel::KILL_D_POS };
+		for (int u = 0; u < 4; u++) {
+			addChild(createLightCentered<SmallLight<panel::ClayLight> >(panel::mm(bypass[u].x, bypass[u].y), module, Apportionment::BYPASS_A_LIGHT + u));
+			addParam(createParamCentered<CKSS>(panel::mm(kill[u].x, kill[u].y), module, Apportionment::KILL_A_PARAM + u));
+		}
 
 		addInput(createInputCentered<panel::PortInMain>(panel::mm(panel::IN1_POS.x, panel::IN1_POS.y), module, Apportionment::IN1_INPUT));
 		addInput(createInputCentered<panel::PortInMain>(panel::mm(panel::IN2_POS.x, panel::IN2_POS.y), module, Apportionment::IN2_INPUT));

@@ -15,6 +15,7 @@
 //   2 sources  0 config  1 AB route  2 CD route  3 AB in  4 CD in  5 AB amt  6 CD amt  7 bypass/kill
 //   3 sources  0 config  1 AB out  2 CD route  3 CD in  4 CD amt  5 bypass/kill
 //   4 sources  0 config  1 AB out  2 CD out  3 bypass/kill
+// Bypass/kill is really four pages, one per unit (the > key steps A, B, C, D).
 // ("AB out" is "A>1 B>2 DualMono" or "1-2 Mixed Stereo", kept in the AB routing byte.)
 #pragma once
 #include "Machine.hpp"
@@ -23,16 +24,20 @@ namespace dp4 {
 
 class Router {
 public:
-	enum Field { F_SOURCES, F_AB_TO_CD, F_AB_ROUTE, F_CD_ROUTE, F_AB_AMOUNT, F_CD_AMOUNT, F_AB_MONO, F_CD_MONO, F_AB_OUT, F_CD_OUT, F_COUNT };
+	enum Field { F_SOURCES, F_AB_TO_CD, F_AB_ROUTE, F_CD_ROUTE, F_AB_AMOUNT, F_CD_AMOUNT, F_AB_MONO, F_CD_MONO, F_AB_OUT, F_CD_OUT,
+		F_KILL_A, F_KILL_B, F_KILL_C, F_KILL_D, F_COUNT };
 
 	/** The Config page holding `f` for this many sources, or -1 where it does not exist. */
 	static int page(int sources, Field f) {
-		static const int PAGE[4][F_COUNT] = {
+		// Bypass/kill is the last run of pages, one per unit, A to D.
+		static const int KILL_PAGE[4] = { 7, 7, 5, 3 };
+		if (f >= F_KILL_A) return KILL_PAGE[std::max(0, std::min(3, sources - 1))] + (f - F_KILL_A);
+		static const int PAGE[4][F_KILL_A] = {
 			// sources ab>cd abR cdR abAmt cdAmt abIn cdIn abOut cdOut
-			{ 0,  1,  2,  3,  4,  5,  6, -1, -1, -1 },   // 1 source
-			{ 0, -1,  1,  2,  5,  6,  3,  4, -1, -1 },   // 2 sources
-			{ 0, -1, -1,  2, -1,  4, -1,  3,  1, -1 },   // 3 sources
-			{ 0, -1, -1, -1, -1, -1, -1, -1,  1,  2 },   // 4 sources
+			{ 0,  1,  2,  3,  4,  5,  6, -1, -1, -1 },   // 1 source   (+ kill A-D, pages 7-10)
+			{ 0, -1,  1,  2,  5,  6,  3,  4, -1, -1 },   // 2 sources  (+ kill A-D, pages 7-10)
+			{ 0, -1, -1,  2, -1,  4, -1,  3,  1, -1 },   // 3 sources  (+ kill A-D, pages 5-8)
+			{ 0, -1, -1, -1, -1, -1, -1, -1,  1,  2 },   // 4 sources  (+ kill A-D, pages 3-6)
 		};
 		return PAGE[std::max(0, std::min(3, sources - 1))][f];
 	}
@@ -49,6 +54,7 @@ public:
 		case F_CD_MONO: return r.cdMono;
 		case F_AB_OUT: return r.abOut;
 		case F_CD_OUT: return r.cdOut;
+		case F_KILL_A: case F_KILL_B: case F_KILL_C: case F_KILL_D: return r.kill[f - F_KILL_A];
 		default: return 0;
 		}
 	}

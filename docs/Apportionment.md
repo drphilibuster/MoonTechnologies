@@ -53,9 +53,10 @@ them. Everything in the DP/4 manual can be done here.
 
 | control | on the DP/4 |
 |---|---|
-| **A B C D** | unit buttons; lit as the firmware lights them |
+| **A B C D** | unit buttons; lit as the firmware lights them. Pressing an active unit's button again **bypasses** it, as on the DP/4; the small light beside its name is that unit's red bypass LED |
 | **CONFIG**, **SYSTEM**, **EDIT** | Config, System•MIDI, Edit•Compare |
 | **SELECT**, **<**, **>**, **CANCEL**, **WRITE** | Select, the parameter arrows, Cancel•Undo, Write•Copy |
+| **A B/K … D B/K** | what bypass does to each unit — the Config's bypass/kill page. **B** (down) passes the dry signal through a bypassed unit; **K** (up) mutes it. Like the CONFIG controls, moving one makes the module set it on the firmware's own page, and it follows the firmware back |
 | **DATA** | the big knob. It is endless, as on the hardware: drag it (up or right turns it up) or use the scroll wheel. It reports detents, not a position, so it has no value to reset |
 
 ## CONFIG — the routing

@@ -5,6 +5,14 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Apportionment: bypass/kill on the panel
+
+A B/K switch per unit sets the Config's bypass/kill page (bypass passes the dry
+signal, kill mutes the unit), driven through the firmware like the other Config
+controls, and each unit button now carries the DP/4's red bypass LED. The
+router treats bypass/kill as the four pages it really is, one per unit. The
+read-out well is 2.4 mm shorter to make room.
+
 ### Added: Apportionment, an Ensoniq DP/4 running its own firmware
 
 A DP/4 parallel effects processor: the real operating system on an emulated

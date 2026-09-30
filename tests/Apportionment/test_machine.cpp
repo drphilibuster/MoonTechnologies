@@ -89,7 +89,10 @@ int main() {
 	t.sources = 2; t.abRoute = 1; t.cdRoute = 3; t.cdMono = 1;             steps.push_back({ "2 sources, A+B, CD feedback2, CD mono", t });
 	t.sources = 3; t.abOut = 1; t.cdRoute = 0;                             steps.push_back({ "3 sources, AB mixed stereo, CD serial", t });
 	t.sources = 4; t.abOut = 0; t.cdOut = 1;                               steps.push_back({ "4 sources, CD mixed stereo", t });
+	t.kill[0] = 1; t.kill[2] = 1;                                          steps.push_back({ "4 sources, A and C kill on bypass", t });
+	t.sources = 2; t.kill[0] = 0; t.kill[1] = 1; t.kill[3] = 1;            steps.push_back({ "2 sources, B C D kill, A bypass", t });
 	t.sources = 1; t.abToCd = 0; t.abRoute = 0; t.cdRoute = 1; t.abAmount = 0; t.abMono = 0;
+	t.kill[0] = t.kill[1] = t.kill[2] = t.kill[3] = 0;
 	                                                                       steps.push_back({ "back to 1 source, all serial", t });
 	for (auto& st : steps) {
 		const double s = route(m, router, st.r);
@@ -100,7 +103,44 @@ int main() {
 		CHECK(!m.display().led(BTN_EDIT), "router left the editor open after: %s", st.what);
 	}
 
-	// 3. Audio: an impulse through the Config now running comes back and dies away.
+	// 3. Bypass: pressing a unit's button selects it, pressing it again bypasses
+	// it, and the unit's red LED (indicators 12..9 for A..D) follows.
+	for (int u = 0; u < 4; u++) {
+		const int btn = BTN_A - u;
+		auto tap = [&]() { m.button(btn, true); m.button(btn, false); run(m, nullptr, 0.4); };
+		tap();
+		const bool before = m.display().bypassed(u);
+		tap();
+		CHECK(m.display().bypassed(u) != before, "unit %c: bypass LED did not toggle", 'A' + u);
+		tap();
+		CHECK(m.display().bypassed(u) == before, "unit %c: bypass LED did not toggle back", 'A' + u);
+	}
+	printf("ok   bypass LEDs follow units A-D\n");
+
+	// Kill versus bypass, heard: bypass unit A at the head of the serial chain
+	// and send a steady tone through. B/K = bypass passes it, kill silences it.
+	auto energyThrough = [&](int kill) {
+		Routing k = m.routing();
+		k.kill[0] = kill;
+		route(m, router, k);
+		auto tap = [&]() { m.button(BTN_A, true); m.button(BTN_A, false); run(m, nullptr, 0.4); };
+		tap(); if (!m.display().bypassed(0)) tap();
+		int16_t tin[4] = {}, out[4], taps[8];
+		double e = 0;
+		for (int n = 0; n < int(0.5 * Machine::FRAME_RATE); n++) {
+			tin[0] = tin[1] = int16_t(8000 * std::sin(n * 2 * M_PI * 440 / Machine::FRAME_RATE));
+			m.frame(tin, out, taps);
+			for (int c = 0; c < 4; c++) e += double(out[c]) * out[c];
+		}
+		tap();   // un-bypass
+		return e;
+	};
+	const double passed = energyThrough(0), killed = energyThrough(1);
+	CHECK(passed > 0 && killed < passed * 1e-3, "kill did not mute a bypassed unit (bypass %.3g, kill %.3g)", passed, killed);
+	printf("%s bypass passes, kill mutes (energy %.3g vs %.3g)\n", killed < passed * 1e-3 ? "ok  " : "FAIL", passed, killed);
+	{ Routing k = m.routing(); k.kill[0] = 0; route(m, router, k); }
+
+	// 4. Audio: an impulse through the Config now running comes back and dies away.
 	int16_t in[4] = { 16384, 16384, 0, 0 }, out[4], taps[8];
 	double early = 0, late = 0, lateDc = 0;
 	const int N = int(3 * Machine::FRAME_RATE);
