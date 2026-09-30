@@ -15,7 +15,10 @@
 class es5510_device : public cpu_device {
 public:
 	// TODO : Not verified, Most of games are using 128KB DRAM.
-	static constexpr uint32_t DRAM_SIZE = (1<<20);
+	// DP4Research patch: 64K words, as on the DP/4 (its firmware sets MEMSIZ = $0000FF,
+	// the spec's own value for 64K). Upstream allocated the whole 20-bit space, 1M words.
+	static constexpr uint32_t DRAM_ADDRESS_BITS = 16;
+	static constexpr uint32_t DRAM_SIZE = (1<<DRAM_ADDRESS_BITS);
 	static constexpr uint32_t DRAM_MASK = (DRAM_SIZE-1);
 
 	es5510_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
@@ -155,6 +158,7 @@ private:
 	int16_t ser3l;
 	int64_t machl;        // 48 bits, right justified and sign extended
 	bool mac_overflow;  // whether reading the MAC register should return a saturated replacement value
+	bool prev_skippable; // DP4Research patch: instruction N-1's SKIP bit, tested as its results are written
 	int16_t dil;
 	int32_t memsiz;
 	int32_t memmask;

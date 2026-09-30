@@ -142,9 +142,16 @@ public:
 
 	// --- battery-backed RAM ---------------------------------------------------
 	std::vector<uint8_t> batteryRam() const {
-		std::vector<uint8_t> v(ram_ + 0x4000, ram_ + 0x6000);
-		for (auto& b : bank_) v.insert(v.end(), b, b + 0x2000);
+		std::vector<uint8_t> v;
+		copyBatteryRam(v);
 		return v;
+	}
+	/** The same, into `v` -- without allocating once `v` has held it before, so
+	    the audio thread can keep the patch's copy current. */
+	void copyBatteryRam(std::vector<uint8_t>& v) const {
+		v.resize(BATTERY_BYTES);
+		std::copy(ram_ + 0x4000, ram_ + 0x6000, v.begin());
+		for (int b = 0; b < 4; b++) std::copy(bank_[b], bank_[b] + 0x2000, v.begin() + 0x2000 * (b + 1));
 	}
 	void setBatteryRam(const std::vector<uint8_t>& v) {
 		if (v.size() != BATTERY_BYTES) return;
@@ -195,6 +202,8 @@ public:
 	uint16_t cpuPc() const { return cpu_.pc(); }
 	uint64_t frames() const { return frames_; }
 	const Esp& esp(int i) const { return esp_[i]; }
+	/** Run the ESPs on MAME's execute_run rather than Esp.cpp's fast restatement (tests). */
+	void useReferenceEsp(bool on) { for (auto& e : esp_) e.setReference(on); }
 
 	// --- audio ----------------------------------------------------------------------
 	/** One DSP frame at FRAME_RATE. `adc` are inputs 1-4; `dac` outputs 1-4;

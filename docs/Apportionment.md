@@ -118,10 +118,15 @@ schematic:
 
 * **The DSP rate is 34.875 kHz.** At that rate the service-mode "1 kHz" test
   tone measures exactly 1 kHz. The module resamples to and from Rack's rate.
-* The ESP core is MAME's, with three fixes taken from the ESP specification:
-  step 0 of every program runs on every pass, halting empties the DOL FIFO, and
-  host writes to a running ESP land once per sample period with the handshake
-  the firmware polls for.
+* The ESP core is MAME's, with fixes taken from the ESP specification: step 0
+  of every program runs on every pass; halting empties the DOL FIFO; a skipped
+  step's fate is decided as its results are written, so a condition mask set by
+  one step governs the next (without this the programs' noise gates never
+  opened and sustained sound went silent); the host's table loads are
+  left-justified, so the compressors find their gain tables; each ESP has the
+  64K words of delay memory the firmware configures it for; and host writes to
+  a running ESP land once per sample period with the handshake the firmware
+  polls for.
 * The wiring between the four ESPs, and the C/D input switch the firmware sets
   per Config, were read off the I/O code of all fifty ROM Config presets.
 * Analog stages (converters, the rear-panel pots, the jack switching) are

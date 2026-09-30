@@ -89,9 +89,15 @@ struct Apportionment : Module {
 	int batteryCountdown = 0;
 
 	dsp::SampleRateConverter<4> inSrc;
-	dsp::SampleRateConverter<12> outSrc;
+	dsp::SampleRateConverter<4> outSrc;
 	dsp::DoubleRingBuffer<dsp::Frame<4>, 256> inBuf;
-	dsp::DoubleRingBuffer<dsp::Frame<12>, 256> outBuf;
+	dsp::DoubleRingBuffer<dsp::Frame<4>, 256> outBuf;
+	// The four stereo unit taps have a converter of their own that runs only
+	// while one is patched: resampling them is otherwise half the module's
+	// converter work, spent on jacks nobody is listening to.
+	dsp::SampleRateConverter<8> tapSrc;
+	dsp::DoubleRingBuffer<dsp::Frame<8>, 256> tapBuf;
+	bool tapsLive = false;
 
 	Apportionment() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -295,6 +301,8 @@ struct Apportionment : Module {
 			routingSynced = false;
 			inBuf.clear();
 			outBuf.clear();
+			tapBuf.clear();
+			tapsLive = false;
 		}
 		if (!machine) {
 			for (int i = 0; i < OUTPUTS_LEN; i++) outputs[i].setVoltage(0.f);
@@ -324,15 +332,30 @@ struct Apportionment : Module {
 		}
 		if (!inBuf.full()) inBuf.push(fin);
 
+		// A tap patched in starts its converter from silence, with as many samples
+		// queued as the main outputs have, so the two stay within a sample.
+		const bool tapsWanted = outputs[TAP_A_OUTPUT].isConnected() || outputs[TAP_B_OUTPUT].isConnected()
+			|| outputs[TAP_C_OUTPUT].isConnected() || outputs[TAP_D_OUTPUT].isConnected();
+		if (tapsWanted != tapsLive) {
+			tapsLive = tapsWanted;
+			tapBuf.clear();
+			if (tapsLive) {
+				if (tapSrc.st) speex_resampler_reset_mem(tapSrc.st);
+				for (size_t i = outBuf.size(); i > 0; i--) tapBuf.push(dsp::Frame<8>{});
+			}
+		}
+
 		// Run the machine at its own rate, a block at a time.
 		if (outBuf.size() < 16) {
 			inSrc.setRates(int(args.sampleRate), int(Machine::FRAME_RATE));
 			outSrc.setRates(int(Machine::FRAME_RATE), int(args.sampleRate));
+			tapSrc.setRates(int(Machine::FRAME_RATE), int(args.sampleRate));
 			dsp::Frame<4> mIn[64];
 			int inLen = int(inBuf.size()), mLen = 64;
 			inSrc.process(inBuf.startData(), &inLen, mIn, &mLen);
 			inBuf.startIncr(inLen);
-			dsp::Frame<12> mOut[64];
+			dsp::Frame<4> mOut[64];
+			dsp::Frame<8> mTap[64];
 			for (int n = 0; n < mLen; n++) {
 				int16_t adc[4], dac[4], taps[8];
 				for (int c = 0; c < 4; c++)
@@ -340,14 +363,21 @@ struct Apportionment : Module {
 				machine->frame(adc, dac, taps);
 				router.tick(*machine);
 				for (int c = 0; c < 4; c++) mOut[n].samples[c] = dac[c] / 32768.f;
-				for (int c = 0; c < 8; c++) mOut[n].samples[4 + c] = taps[c] / 32768.f;
+				for (int c = 0; c < 8; c++) mTap[n].samples[c] = taps[c] / 32768.f;
 			}
-			int oLen = int(outBuf.capacity());
-			outSrc.process(mOut, &mLen, outBuf.endData(), &oLen);
+			int frames = mLen, oLen = int(outBuf.capacity());
+			outSrc.process(mOut, &frames, outBuf.endData(), &oLen);
 			outBuf.endIncr(oLen);
+			if (tapsLive) {
+				int tFrames = mLen, tLen = int(tapBuf.capacity());
+				tapSrc.process(mTap, &tFrames, tapBuf.endData(), &tLen);
+				tapBuf.endIncr(tLen);
+			}
 		}
-		dsp::Frame<12> fo = {};
-		if (!outBuf.empty()) { fo = outBuf.shift(); }
+		dsp::Frame<4> fo = {};
+		if (!outBuf.empty()) fo = outBuf.shift();
+		dsp::Frame<8> ft = {};
+		if (tapsLive && !tapBuf.empty()) ft = tapBuf.shift();
 
 		// Outputs, switched as the DP/4's jacks are: with 3 unplugged, 3/4 are mixed
 		// onto 1/2; with 2 (or 4) unplugged, its pair is summed to mono on 1 (or 3).
@@ -359,8 +389,8 @@ struct Apportionment : Module {
 		for (int c = 0; c < 4; c++) outputs[OUT1_OUTPUT + c].setVoltage(o[c] * outGain);
 		for (int u = 0; u < 4; u++) {
 			outputs[TAP_A_OUTPUT + u].setChannels(2);
-			outputs[TAP_A_OUTPUT + u].setVoltage(fo.samples[4 + 2 * u] * outGain, 0);
-			outputs[TAP_A_OUTPUT + u].setVoltage(fo.samples[5 + 2 * u] * outGain, 1);
+			outputs[TAP_A_OUTPUT + u].setVoltage(ft.samples[2 * u] * outGain, 0);
+			outputs[TAP_A_OUTPUT + u].setVoltage(ft.samples[2 * u + 1] * outGain, 1);
 		}
 
 		// Housekeeping, a few hundred times a second: the routing controls, the
@@ -379,7 +409,7 @@ struct Apportionment : Module {
 				snap.mux = machine->inputMux();
 				snap.routerBusy = router.busy();
 				// The battery RAM is 40 KB: copy it for the patch every couple of seconds.
-				if (--batteryCountdown <= 0) { battery = machine->batteryRam(); batteryCountdown = 600; }
+				if (--batteryCountdown <= 0) { machine->copyBatteryRam(battery); batteryCountdown = 600; }
 				snapMutex.unlock();
 			}
 		}

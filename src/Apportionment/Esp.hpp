@@ -13,6 +13,10 @@
 //    it and times its writes around it; MAME performs them instantly.
 //  * $16 reads the live program counter, and 0 while halted (sec. 5.3.1: HALT
 //    restarts the PC). The firmware waits for PC <= $40 before each transfer.
+//
+// The chip itself runs on Esp.cpp's restatement of MAME's execute_run -- the
+// same machine step for step, about a sixth cheaper -- unless setReference()
+// asks for MAME's own; tests/Apportionment holds the two to each other.
 #pragma once
 #include <cstdint>
 #include <memory>
@@ -47,15 +51,22 @@ public:
 	int32_t gpr(int reg) const;
 	int16_t dram(int addr) const;
 	uint64_t transfersDeferred() const { return deferred_; }
+	/** Everything architectural in the chip -- registers, pipeline, program, DRAM. */
+	uint64_t stateHash() const;
+	/** Run MAME's own execute_run instead of the fast restatement of it (Esp.cpp),
+	    so the tests can hold the one against the other. */
+	void setReference(bool on) { reference_ = on; }
 	uint64_t transferCollisions() const { return collisions_; }
 
 private:
 	struct Impl;
 	std::unique_ptr<Impl> impl_;
 	bool pending_ = false;
+	bool reference_ = false;
 	uint8_t pendOffset_ = 0, pendData_ = 0;
 	uint64_t deferred_ = 0, collisions_ = 0;
 	void completeTransfer();
+	void execute(int steps);
 	bool running() const;
 };
 

@@ -5,6 +5,32 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Apportionment: sustained sound, and a fifth less CPU
+
+**The DP/4 was going silent.** A steady signal came out for a tenth of a
+second and stopped, on every preset: the noise gate at the head of the unit's
+program never opened. MAME's ESP core decided whether to skip a conditional
+step when the step issued, before the previous step had written the condition
+mask it was meant to be tested against; the ESP specification has the skip
+decided as the step's results are written. With that fixed the compressors,
+gates and everything downstream of them run as Ensoniq wrote them.
+
+Found on the way, also from the specification: the host's table loads are
+left-justified, so the compressors' gain tables (a 1/n table, a level curve)
+now sit where their programs read them, instead of the programs reading zeros;
+each ESP has the DP/4's 64K words of delay memory rather than MAME's 1M, which
+takes each instance from about 8.5 MB to under 1 MB and makes the RAM clear on every
+program load sixteen times cheaper; and a power-on read past the end of MAME's
+program array, which let heap garbage decide which of two states a session
+settled into, now reads zero. The machine is deterministic.
+
+CPU: the ESPs run on a restatement of MAME's inner loop that keeps the chip's
+registers in locals -- the same machine step for step, held to MAME's own loop
+by a test that compares every output sample and all four chips' complete state
+-- and the unit taps are resampled only while one is patched. At 48 kHz with the
+taps unpatched the module takes 18.7% of one M2 Max core, against 23.4% before,
+while doing more work than before (the gates and compressors now run).
+
 ### Apportionment: bypass/kill on the panel
 
 A B/K switch per unit sets the Config's bypass/kill page (bypass passes the dry

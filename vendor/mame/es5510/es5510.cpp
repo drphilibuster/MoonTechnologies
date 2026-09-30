@@ -169,6 +169,8 @@ es5510_device::es5510_device(const machine_config &mconfig, const char *tag, dev
 	, ser3r(0)
 	, ser3l(0)
 	, machl(0)
+	, mac_overflow(false) // DP4Research patch: upstream never initialised it
+	, prev_skippable(false) // DP4Research patch (skip sampled at write-back)
 	, dil(0)
 	, memsiz(0x00ffffff)
 	, memmask(0x00000000)
@@ -459,13 +461,15 @@ void es5510_device::host_w(offs_t offset, uint8_t data)
 
 	case 0x0f:
 		dadr_latch = (dadr_latch&0x00ffff) | ((data&0xff)<<16);
+		// DP4Research patch: DADR is left-justified (spec Rev 2.4 sec. 5.1.3): the RAM
+		// address is its top DRAM_ADDRESS_BITS. Upstream used the low bits as the address.
 		if (ram_sel)
 		{
-			dil_latch = dram_r(dadr_latch) << 8;
+			dil_latch = dram_r(dadr_latch >> (24 - DRAM_ADDRESS_BITS)) << 8;
 		}
 		else
 		{
-			dram_w(dadr_latch, dol_latch >> 8);
+			dram_w(dadr_latch >> (24 - DRAM_ADDRESS_BITS), dol_latch >> 8);
 		}
 		break;
 
@@ -826,7 +830,7 @@ void es5510_device::execute_run() {
 
 			// *** T0, clock low
 			// --- Read instruction N
-			uint64_t instr = this->instr[pc];
+			uint64_t instr = pc < 160 ? this->instr[pc] : 0; // DP4Research patch: there are 160 steps; upstream read past the array (heap garbage) when a program has no END, as at power-on
 
 			// --- RAM cycle N-2 (if a Read cycle): data read from bus is stored in DIL
 			if (ram_pp.cycle != RAM_CYCLE_WRITE) {
@@ -844,7 +848,7 @@ void es5510_device::execute_run() {
 			ram.io = ramControl.access == RAM_CONTROL_IO;
 
 			// --- RAM cycle N: read offset N
-			int32_t offset = gpr[pc];
+			int32_t offset = pc < 0xc0 ? gpr[pc] : 0; // DP4Research patch: likewise, 192 GPRs
 			switch(ramControl.access) {
 			case RAM_CONTROL_DELAY:
 				ram.address = (((dbase + offset) % (dlength + memincrement)) & memmask) >> memshift;
@@ -874,7 +878,13 @@ void es5510_device::execute_run() {
 			const op_select_t &opSelect = OPERAND_SELECT[operandSelect];
 			bool skip;
 			bool skippable = (instr & (0x01 << 7)) != 0; // aka the 'SKIP' bit in the instruction word
-			if (skippable) {
+			// DP4Research patch: a skipped step executes every phase but the writing of its
+			// results (spec Rev 2.4 sec. 4.2.1), and the CCR set by one step conditions the next
+			// (sec. 3.3.3) -- so the condition is sampled here, as instruction N-1's results are
+			// written, not when N-1 issued. Upstream sampled it at issue, before the preceding
+			// step's CCR/CMR write-back: a MOV to CMR then failed to govern the skippable step
+			// after it, and the DP/4's dynamics programs (gates, compressors) went silent.
+			if (prev_skippable) {
 				bool skipConditionSatisfied = (ccr & cmr & FLAG_MASK) != 0;
 				if (isFlagSet(cmr, FLAG_NOT)) {
 					skipConditionSatisfied = !skipConditionSatisfied;
@@ -884,10 +894,11 @@ void es5510_device::execute_run() {
 			} else {
 				skip = false;
 			}
+			prev_skippable = skippable;
 
 			// --- Write Multiplier result N-1
 			LOG_EXEC(". write mulacc:\n");
-			if (mulacc.write_result) {
+			if (mulacc.write_result && !skip) {
 				mulacc.product = mul_32x32(util::sext(mulacc.cValue, 24), util::sext(mulacc.dValue, 24)) << mulshift;
 				if (mulacc.accumulate) {
 					mulacc.result = mulacc.product + machl;
@@ -931,7 +942,7 @@ void es5510_device::execute_run() {
 			mulacc.src = opSelect.mac_src;
 			mulacc.dst = opSelect.mac_dst;
 			mulacc.accumulate = ((instr >> 6) & 0x01) != 0;
-			mulacc.write_result = !skip;
+			mulacc.write_result = true; // DP4Research patch: whether it is skipped is decided at write-back
 
 			// --- Read Multiplier Operands N
 			if (mulacc.src == SRC_DST_REG) {
@@ -949,7 +960,7 @@ void es5510_device::execute_run() {
 
 			// --- Write ALU Result N-1
 			LOG_EXEC(". write ALU:\n");
-			if (alu.write_result) {
+			if (alu.write_result && (!skip || alu.op == OP_CMP)) { // DP4Research patch: skip decided at write-back
 				uint8_t flags = ccr;
 				alu.result = alu_operation(alu.op, alu.aValue, alu.bValue, flags);
 				if (alu.op != OP_CMP) {
@@ -976,7 +987,7 @@ void es5510_device::execute_run() {
 			alu.op = (instr >> 12) & 0x0f;
 			alu.src = opSelect.alu_src;
 			alu.dst = opSelect.alu_dst;
-			alu.write_result = !skip || (alu.op == OP_CMP);
+			alu.write_result = true; // DP4Research patch: whether it is skipped is decided at write-back
 			alu.update_ccr = !skippable || (alu.op == OP_CMP);
 
 			if (alu.op == 0xf) {

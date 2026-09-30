@@ -31,10 +31,25 @@ Apportionment's Ensoniq DP/4 emulation runs on. Both cores are under the
 the licence line and copyright holders at the top of every file are kept.
 
 * `es5510/` -- the Ensoniq ESP (ES5510) core by Christian Brunschen
-  (`src/devices/cpu/es5510/`), carrying a three-line patch, recorded in
-  `es5510/es5510-dp4.patch` against upstream: END now lands on step 0 (upstream
-  skipped it on every pass after the first), and halting resets the DOL FIFO
-  pointers, as the ESP specification (Rev. 2.4, section 3.4) says it must.
+  (`src/devices/cpu/es5510/`), carrying a patch recorded in
+  `es5510/es5510-dp4.patch` against upstream, each change citing the ESP
+  specification (Rev. 2.4):
+  * END lands on step 0 (upstream skipped it on every pass after the first).
+  * Halting resets the DOL FIFO pointers (section 3.4).
+  * A skippable step's condition is sampled as its results are written, not
+    when it issues (sections 3.3.3 and 4.2.1). Upstream sampled it before the
+    preceding step's CCR/CMR write-back, so a `MOV` to CMR failed to govern the
+    skippable step after it -- the DP/4's noise gates never opened.
+  * DADR is left-justified (section 5.1.3): a host DRAM access addresses the
+    top 16 bits. Upstream used the low bits, and the host-loaded gain tables
+    landed nowhere near where the programs read them.
+  * 64K words of DRAM, as the DP/4's firmware configures (MEMSIZ = `$0000FF`,
+    the specification's own value for 64K), not the 1M upstream allocated.
+  * The PC runs through 256 values but there are 160 instruction words and 192
+    GPRs: past them the core now reads zero, where upstream read past its
+    arrays into the heap (at power-on, before the firmware halts the chips),
+    which made a session's final state depend on whatever memory was there.
+    `mac_overflow` is initialised; upstream never set it.
   `emu.h`, `logmacro.h`, `corestr.h` and `cpu/m68000/m68000.h` are not MAME's:
   they are a small stand-in for MAME's framework, just wide enough to compile
   the core outside MAME. `src/Apportionment/Esp.cpp` is the only translation

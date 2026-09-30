@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <dirent.h>
 #include <fstream>
 #include <iterator>
@@ -80,6 +81,63 @@ int main() {
 		m.display().line(0).c_str(), m.display().line(1).c_str());
 	CHECK(m.esp(0).transferCollisions() == 0, "host transfer collisions on ESP A");
 
+	// 1b. The firmware's tables land where its programs read them. Unit A's
+	// compressor has a reciprocal table (32640/n) at Table A = $3F00, which the
+	// host loads through DADR -- left-justified, so the word address is its top
+	// 16 bits (spec 5.1.3). Read as right-justified, it landed at $F0000-up and
+	// the compressor read zeros.
+	CHECK(m.esp(0).dram(0x3f01) == 32640 && m.esp(0).dram(0x3f02) == 16320 && m.esp(0).dram(0x3f04) == 8160,
+		"unit A's reciprocal table is not at $3F00 (%d %d %d)", m.esp(0).dram(0x3f01), m.esp(0).dram(0x3f02), m.esp(0).dram(0x3f04));
+
+	// 1c. Esp.cpp's fast ESP loop against MAME's own execute_run: two machines,
+	// power-on to Select mode, a tone, a unit bypassed and back -- every output
+	// sample identical, and every register, pipeline latch and DRAM word of all
+	// four chips identical twice a second. Two separate machines also means two
+	// heaps: anything that reads uninitialised memory shows up here as well.
+	{
+		Machine fast, ref;
+		ref.useReferenceEsp(true);
+		fast.load(os, uc); ref.load(os, uc);
+		fast.powerOn(); ref.powerOn();
+		int16_t tin[4] = {}, of[4], orf[4], tf[8], tr[8];
+		long firstAudio = -1, firstState = -1;
+		const long N = long(6.5 * Machine::FRAME_RATE);
+		for (long n = 0; n < N; n++) {
+			if (n == long(5.0 * Machine::FRAME_RATE) || n == long(5.5 * Machine::FRAME_RATE))
+				for (Machine* x : { &fast, &ref }) { x->button(BTN_A, true); x->button(BTN_A, false); }
+			tin[0] = tin[1] = n > long(4.5 * Machine::FRAME_RATE) ? int16_t(6000 * std::sin(n * 2 * M_PI * 220 / Machine::FRAME_RATE)) : 0;
+			fast.frame(tin, of, tf);
+			ref.frame(tin, orf, tr);
+			if (firstAudio < 0 && (std::memcmp(of, orf, sizeof of) || std::memcmp(tf, tr, sizeof tf))) firstAudio = n;
+			if (firstState < 0 && n % 17437 == 0) {
+				bool same = fast.cpuPc() == ref.cpuPc();
+				for (int i = 0; i < 4; i++) same = same && fast.esp(i).stateHash() == ref.esp(i).stateHash();
+				if (!same) firstState = n;
+			}
+		}
+		CHECK(firstAudio < 0, "fast ESP core's audio departs from MAME's at frame %ld", firstAudio);
+		CHECK(firstState < 0, "fast ESP core's state departs from MAME's by frame %ld", firstState);
+		printf("%s fast ESP core matches MAME's execute_run for %.1f s\n", firstAudio < 0 && firstState < 0 ? "ok  " : "FAIL", N / Machine::FRAME_RATE);
+	}
+
+	// 1d. A sustained signal keeps coming out. Unit A opens with a noise gate
+	// whose hold is refreshed by a skippable step right after a MOV to CMR; with
+	// the skip condition sampled at issue rather than at write-back (as MAME had
+	// it), the gate never saw its mask, shut 0.1 s in, and the DP/4 went silent.
+	{
+		int16_t tin[4] = {}, out[4], taps[8];
+		double e = 0;
+		const int N = int(1.0 * Machine::FRAME_RATE);
+		for (int n = 0; n < N; n++) {
+			tin[0] = tin[1] = int16_t(6000 * std::sin(n * 2 * M_PI * 220 / Machine::FRAME_RATE));
+			m.frame(tin, out, taps);
+			if (n >= N / 2) e += double(taps[0]) * taps[0];
+		}
+		const double rms = std::sqrt(e / (N / 2));
+		CHECK(rms > 1000, "unit A's output died under a steady tone (rms %.0f in the last half second)", rms);
+		printf("%s a steady tone keeps coming out of unit A (rms %.0f)\n", rms > 1000 ? "ok  " : "FAIL", rms);
+	}
+
 	// 2. The router reaches a sequence of Configs, verified in the firmware's RAM.
 	Router router;
 	Routing t = m.routing();
@@ -140,13 +198,15 @@ int main() {
 	printf("%s bypass passes, kill mutes (energy %.3g vs %.3g)\n", killed < passed * 1e-3 ? "ok  " : "FAIL", passed, killed);
 	{ Routing k = m.routing(); k.kill[0] = 0; route(m, router, k); }
 
-	// 4. Audio: an impulse through the Config now running comes back and dies away.
-	int16_t in[4] = { 16384, 16384, 0, 0 }, out[4], taps[8];
+	// 4. Audio: a tone burst through the Config now running comes back and dies
+	// away. A burst, not an impulse: unit A's program opens with a noise gate,
+	// and a single sample does not open it -- on the DP/4 or here.
+	int16_t in[4] = {}, out[4], taps[8];
 	double early = 0, late = 0, lateDc = 0;
-	const int N = int(3 * Machine::FRAME_RATE);
+	const int N = int(3 * Machine::FRAME_RATE), burst = int(0.2 * Machine::FRAME_RATE);
 	for (int n = 0; n < N; n++) {
+		in[0] = in[1] = n < burst ? int16_t(8000 * std::sin(n * 2 * M_PI * 440 / Machine::FRAME_RATE)) : 0;
 		m.frame(in, out, taps);
-		in[0] = in[1] = 0;
 		double e = 0;
 		for (int c = 0; c < 4; c++) e += double(out[c]) * out[c];
 		if (n < N / 10) early += e;
