@@ -35,7 +35,7 @@ same oscillator, six different ones, or anything between.
 | **40106 Schmitt** | 40106 hex Schmitt-trigger astable (six voices sharing one IC in the original) | band-limited square | the RC timing cap's charge/discharge ramp, bent toward its true exponential shape |
 | **4069 AAC** | All About Circuits' 4069-integrator VCO (`SQU` and `TRI` in the original schematic) | band-limited square | band-limited triangle, from a leaky integration of the same square |
 | **4046 PLL** | 4046 phase-locked-loop VCO | band-limited square, free-running or pulled toward `SIGNAL` | the raw XOR phase-comparator bit, as a 0/10 V logic signal — exactly what the 4046's `PC1` pin actually outputs |
-| **Avalanche** | Kassutronics reverse-avalanche oscillator (a BC337 run in reverse breakdown, charging a cap through the vactrol's LDR) | band-limited saw, bent toward the RC charge curve | a 1 ms, 10 V pulse once per cycle — the avalanche breakdown pulse itself |
+| **Avalanche** | Kassutronics reverse-avalanche oscillator (a BC337 run in reverse breakdown, charging a cap through the vactrol's LDR) | band-limited saw: the capacitor's own exponential charge between the junction's release and strike voltages (see below) | a 1 ms, 10 V pulse once per cycle — the avalanche breakdown pulse itself |
 
 **On the 4046 core.** The course's 4046 board (Day 1, "4046 Simple VCO") uses the chip as a VCO
 alone: the inhibit pin is grounded, a 10 nF capacitor is across CX, R1 (pin 11) is 100k to ground,
@@ -45,10 +45,24 @@ LM358 stage into VCOIN (pin 9). The jack the schematic calls "Signal In / Sync /
 `SIGNAL` input, `CAPT`, `LOCK` and the PC1 bit on `AUX` are this module's addition**, built on the same
 chip's two sections rather than taken from the board.
 
-All four are band-limited with polyBLEP; the RC "bend" applied to the Schmitt
-core's `AUX` and the avalanche core's `OUT` is a cosmetic reshaping applied
-after band-limiting, for the rounded look a real RC ramp has, and is a
-deliberate approximation rather than a circuit simulation.
+All four are band-limited with polyBLEP. The RC "bend" applied to the Schmitt core's `AUX` is a
+cosmetic reshaping applied after band-limiting, a deliberate approximation. The avalanche core's
+`OUT` is not: see "The avalanche core" below.
+
+**The avalanche core.** The board's circuit is a relaxation oscillator: the capacitor charges through
+the rate resistance toward the supply less the LED until the reversed BC337 junction strikes, the
+junction dumps it until it lets go, and it charges again. `OUT` is that charge,
+`src/SixFigures/Avalanche.hpp`: an exponential between the release and strike voltages, which are
+0.9 V apart against a charging source about 10 V away, so the saw is nearly straight with a mild bow
+(0.5 + 0.06 at mid-cycle), not the strong bend the old reshaping drew. The frequency is still the
+module's RATE; this module asks for a frequency and the circuit's contribution is the shape. The
+numbers (strikes at 8.2 V, lets go at 7.3 V, needs about 5 mA to hold) are measured on a **2N2222** by
+lcamtuf ("Cursed circuits #6", blog.coredump.cx), whose 14 V, 1k, 1 mF circuit the model reproduces
+to within 20 % (4.9 Hz against 5.8 Hz; electrolytic tolerance covers the gap). **No BC337 has been
+measured**: they are assumed to carry over, and a different part will strike somewhat higher or
+lower. With the board's 12 V supply the circuit stops oscillating (the supply alone holds the junction
+on) below about 580 ohms; the module's 4 kHz audio top at 1 µF needs 673 ohms, just above it. The
+flyback, the junction's on-resistance times the capacitor, is taken as instantaneous.
 
 ## Per-voice controls (×6)
 
@@ -122,9 +136,10 @@ while genuinely tracking `SIGNAL`, dark while beating against it or free-running
 
 ## What was approximated or left out
 
-- The reverse-avalanche and 40106 "RC bend" is a post-hoc reshaping of a
-  band-limited BLEP waveform, not a simulation of the transistor avalanche
-  breakdown or the 40106's actual threshold voltages.
+- The 40106 "RC bend" is a post-hoc reshaping of a band-limited BLEP waveform, not the 40106's
+  actual threshold voltages. The avalanche core is the relaxation oscillator's own charge curve, but
+  its breakdown voltages are a 2N2222's, not a measured BC337's, the junction's cycle-to-cycle
+  jitter is not modelled (DRIFT is only the vactrol's slow wander) and the flyback is instantaneous.
 - The PLL only locks to the fundamental, not to harmonics or subharmonics of
   `SIGNAL` the way a real 4046 can be coaxed into doing (the "or its harmonics
   or subharmonics" the brief mentions) — implementing genuine N:M lock was out

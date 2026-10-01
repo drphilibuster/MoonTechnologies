@@ -224,8 +224,7 @@ struct SixFigures : Module {
 				}
 				case sixfigures::CORE_AVALANCHE:
 				default: {
-					float saw = sixfigures::blepSaw(v.phase, dt);
-					outSample = sixfigures::rcBend(saw, 0.5f);
+					outSample = sixfigures::avalancheSaw(v.phase, dt);
 					if (wrapped)
 						v.avalanchePulse.trigger(0.001f);
 					auxSample = v.avalanchePulse.process(args.sampleTime) ? 10.f : 0.f;

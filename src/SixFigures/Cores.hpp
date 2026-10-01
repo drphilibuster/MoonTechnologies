@@ -10,6 +10,8 @@
 #include <rack.hpp>
 #include <cmath>
 
+#include "Avalanche.hpp"
+
 namespace sixfigures {
 
 using namespace rack;
@@ -46,6 +48,14 @@ inline float blepSquare(float phase, float dt) {
 	if (t2 >= 1.f)
 		t2 -= 1.f;
 	v -= polyblep(t2, dt);
+	return v;
+}
+
+/** The avalanche core's saw: the capacitor's own exponential charge (Avalanche.hpp), bipolar,
+    with the band-limiting correction at the reset. */
+inline float avalancheSaw(float phase, float dt) {
+	float v = 2.f * (float)avalanche::charge(phase) - 1.f;
+	v -= polyblep(phase, dt);
 	return v;
 }
 

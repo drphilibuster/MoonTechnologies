@@ -5,6 +5,14 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Changed: SixFigures' avalanche core is the relaxation oscillator's own charge curve
+
+The saw is the capacitor charging toward the supply between the reversed junction's release (7.3 V)
+and strike (8.2 V) voltages, replacing a fixed power-law bend (`src/SixFigures/Avalanche.hpp`, with a
+suite). The numbers are measured on a 2N2222 by a published build (no BC337 has been measured) and
+reproduce that build's frequency to within 20 %; the saw is now nearly straight with a mild bow. The
+frequency, DRIFT and AUX are unchanged.
+
 ### Changed: Kickback's VACTROL snare noise is the avalanche circuit, solved
 
 The noise under the Percussive Noise Voice is now the T3/T2 circuit itself on the nodal solver:
