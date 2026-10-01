@@ -14,6 +14,8 @@
 #include <string>
 #include <vector>
 
+#include "../../src/Contagion/Controls.hpp"
+
 using vc::VirusC;
 
 static int failures = 0;
@@ -154,6 +156,63 @@ int main() {
 	std::printf("7. RATE LEDs over 2 s: LFO 1 %.2f-%.2f, LFO 2/3 %.2f-%.2f\n", lo[0], hi[0], lo[1], hi[1]);
 	CHECK(hi[0] - lo[0] > 0.2, "the LFO 1 RATE LED moves");
 	CHECK(hi[1] - lo[1] > 0.2, "the LFO 2/3 RATE LED moves");
+
+	// 8. The panel's knobs as the unit's buttons: Controls.hpp's selectors drive the real firmware
+	// through its key matrix and read the answer back off its LEDs.
+	{
+		struct Sel { const char* name; int stepKey; const int* direct; int led0, n; bool dark; vc::Selector s; int knob; };
+		static const int oscKeys[3] = { 6, 7, 8 };
+		Sel sels[] = {
+			{ "LFO select", 1, nullptr, 1, 4, false, {}, 0 }, { "LFO shape", 2, nullptr, 5, 5, true, {}, 0 },
+			{ "OSC", -1, oscKeys, 12, 3, false, {}, 0 }, { "FX select", 11, nullptr, 17, 3, false, {}, 0 },
+			{ "FILT 1", 29, nullptr, 51, 4, false, {}, 0 }, { "FILT 2", 30, nullptr, 55, 4, false, {}, 0 },
+		};
+		vc::KeyPresser keys;
+		for (Sel& x : sels) { x.s.steps = x.n; x.s.stepKey = x.stepKey; x.s.directKey = x.direct; x.s.lastWhenDark = x.dark; }
+		const int usedKeys[] = { 1, 2, 6, 7, 8, 11, 29, 30 };
+		bool held[35] = {};
+		float lg[7][14];
+		auto lit = [&](int i) { return lg[vc::LED[i][0]][vc::LED[i][1]]; };
+		const float blocksPerSec = float(VirusC::SAMPLE_RATE) / Run::B;
+		const int blocksPerTick = int(blocksPerSec * 0.025f);
+		auto drive = [&](double seconds) {
+			for (int t = 0; t < int(seconds / 0.025); t++) {
+				for (int b = 0; b < blocksPerTick; b++) {
+					for (int k : usedKeys) {
+						const bool d = keys.process(k, blocksPerSec);
+						if (d != held[k]) { v.setButton(vc::KEY[k][0], vc::KEY[k][1], d); held[k] = d; }
+					}
+					r.seconds(double(Run::B) / VirusC::SAMPLE_RATE);
+				}
+				v.leds(lg);
+				for (Sel& x : sels) {
+					int ids[5];
+					for (int i = 0; i < x.n; i++) ids[i] = x.led0 + i;
+					const int obs = vc::litPosition(lit, ids, x.n);
+					const int k = x.s.tick(x.knob, obs, keys, 0.025f);
+					if (k >= 0) x.knob = k;
+				}
+			}
+		};
+		drive(1.5);
+		int start[6];
+		for (int i = 0; i < 6; i++) start[i] = sels[i].knob;
+		std::printf("8. knobs as buttons: unit starts at");
+		for (int i = 0; i < 6; i++) std::printf(" %d", start[i]);
+		const int wish[6] = { 3, 2, 2, 2, 3, 2 };
+		for (int i = 0; i < 6; i++) sels[i].knob = wish[i];
+		drive(8.0);
+		for (int i = 0; i < 6; i++) {
+			int ids[5];
+			for (int k = 0; k < sels[i].n; k++) ids[k] = sels[i].led0 + k;
+			int obs = vc::litPosition(lit, ids, sels[i].n);
+			if (obs < 0 && sels[i].dark) obs = sels[i].n - 1;
+			std::printf(" | %s %d", sels[i].name, obs);
+			CHECK(obs == wish[i], "%s: knob asked for %d, the unit shows %d", sels[i].name, wish[i], obs);
+			CHECK(sels[i].knob == wish[i], "%s: the knob settled on %d", sels[i].name, sels[i].knob);
+		}
+		std::printf("\n");
+	}
 
 	const double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
 	std::printf("   %.1f s of machine time in %.1f s wall\n", 16.75 + 3 + 1.3 + 1.15 + 5 * 1.1 + 2, wall);

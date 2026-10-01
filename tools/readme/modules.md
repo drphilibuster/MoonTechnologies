@@ -60,7 +60,7 @@ ESP effect units under the DP/4's real operating system and DSP code -- every al
 group: hardware
 credit: *An Access Virus C, running all of its own firmware. OS image not included.*
 
-Both processors run the unit's own OS: the 80C515 that owns the front panel, the LCD, MIDI and preset memory -- which every other Virus emulation replaces with C++ -- and the DSP56362 it boots and drives, on the dsp56300 core gearmulator uses. Every knob and button reaches the firmware through the microcontroller's own A/D converter and key matrix; the dot-matrix LCD shows what the unit shows. Played over MIDI; the patch keeps the battery RAM.
+Both processors run the unit's own OS: the 80C515 that owns the front panel, the LCD, MIDI and preset memory -- which every other Virus emulation replaces with C++ -- and the DSP56362 it boots and drives, on the dsp56300 core gearmulator uses. Every knob reaches the firmware through the microcontroller's own A/D converter and every control that is not a pot through its key matrix -- the unit's button pairs and cycles are endless and detented knobs here, each a press of the real key with the real LEDs read back; the dot-matrix LCD shows what the unit shows. Played over MIDI, or from cables: polyphonic pitch, gate and velocity, wheels, clock and run turn into MIDI, eight CV inputs move any knob and gates press the navigation buttons. The patch keeps the battery RAM.
 
 ## NordicBanking
 group: hardware

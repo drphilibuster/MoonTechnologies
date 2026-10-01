@@ -336,6 +336,11 @@ class Panel:
     #: indices are the section's own, and every jack lands under what it
     #: belongs to.
     footer_grid: bool = False
+    #: Where the footer changes gear, as run lengths that sum to its column count --
+    #: the same device as Section.groups, for a band that holds several kinds of
+    #: jack. A gutter between runs is what tells a patch cable which jacks belong
+    #: together; without it thirty identical circles read as one row.
+    footer_groups: tuple = ()
     #: Named millimetre constants echoed into the generated C++ header, for
     #: panels whose C++ needs to lay out its own sub-widgets.
     metrics: dict = field(default_factory=dict)

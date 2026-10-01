@@ -556,7 +556,7 @@ def _rowsets(panel):
             if r.own_grid:
                 sets.append(([r], "block", ()))
     if panel.footer:
-        sets.append((panel.footer, "band", ()))
+        sets.append((panel.footer, "band", panel.footer_groups))
     return sets
 
 

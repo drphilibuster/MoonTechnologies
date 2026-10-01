@@ -210,6 +210,14 @@ way already and were only ever misaligned because nothing acted on it. It raises
 a `ValueError` naming the columns if no section grid covers them, rather than
 falling back to a grid that would silently drift again.
 
+`Panel(footer_groups=(2, 7, 3, ...))` names where the footer changes gear, the way
+`Section.groups` does for a block: run lengths that sum to the band's column count, with a
+gutter between runs. A band that holds several kinds of jack (audio in, a keyboard's worth of
+CV, a transport, outputs) is otherwise one row of identical circles; the gutters are what tell a
+patch cable which of them belong together. Contagion's footer uses it. A span caption would
+say the same thing in words, but it lands on the baseline the jacks' own labels already use, so
+on a footer the gutter is the grouping and the labels carry the names.
+
 ## Columns, and things that are not columns
 
 A row's items land in columns, and the solver spaces each gap to the two columns

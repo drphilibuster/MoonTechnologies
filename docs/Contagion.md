@@ -1,6 +1,6 @@
 # Contagion
 
-**FORM 8300 — the report filed when cash moves. Contagion is what spreads.** 61 HP.
+**FORM 8300 — the report filed when cash moves. Contagion is what spreads.** 77 HP.
 
 An Access Virus C, running its own operating system — all of it. The Virus has
 two processors. The sound comes from a Motorola DSP56362; everything else comes
@@ -41,6 +41,35 @@ Choose a **MIDI input** in the context menu: the Virus is played over MIDI, as
 the desktop unit is. Notes, controllers, program changes and SysEx go into the
 80C515's serial port at 31,250 baud, and the firmware handles them.
 
+### Playing it from cables
+
+The unit only understands MIDI, so the jacks along the bottom turn patch cables into the
+MIDI a keyboard would send. Nothing reaches the firmware but those bytes.
+
+* **PITCH**, **GATE**, **VEL**: polyphonic. Each cable channel is a voice. A rising gate is a
+  note-on at the pitch (0 V is middle C, 1 V/octave) and velocity (0-10 V; 100 if VEL is
+  unpatched) read a sample later, so a sequencer that moves pitch and gate together is
+  heard right. A pitch change under a held gate is a legato note. Unpatching the cable
+  releases what it held.
+* **BEND** (±5 V), **MOD** (0-10 V, CC 1), **AT** (0-10 V, channel pressure), **SUS**
+  (gate, CC 64): sent when they move, and put back to rest when unpatched.
+* **CLK**, **RUN**, **RST**: a clock is turned into MIDI clock (24 per quarter note),
+  spread evenly across the interval between pulses; RUN sends Start and Stop, RST starts
+  again from the top. With no RUN cable the first clock starts it. Set the unit's
+  Global clock to Auto or MIDI for the arpeggiator and delay to follow.
+* The context menu sets the **MIDI channel**, whether polyphonic channel *n* plays
+  channel *n* (to play the multi's parts), and how many clock pulses make a quarter note.
+
+### CV and gates
+
+* **CV 1-8** each move one of the 32 knobs, chosen in the context menu (starting as
+  cutoff, resonance, pulse width, FM amount, soft knobs 1 and 2, effect mix and
+  delay send) with an attenuverter: 10 V is the knob's full travel. CV adds to where the
+  knob stands; several onto one knob add together. They reach the firmware as the knob's
+  own A/D reading.
+* **PRT -/+**, **PRM </>**, **VAL -/+**, **ARP**, **RND**: a gate presses that button, and
+  presses it once per rising edge: a press is 45 ms down and 45 ms up, because the firmware's key scan needs that (measured: 10 or 20 ms gaps lose presses).
+
 Outputs **1–3** are the Virus's three stereo pairs; the patch decides which
 pair a part plays on (normally 1). **IN L/R** are its two audio inputs (for the
 vocoder, the input-follower filters and so on). A signal only into IN L is
@@ -48,43 +77,56 @@ copied to IN R.
 
 ## The panel
 
-These are the unit's own 32 knobs, 35 buttons and 69 LEDs, grouped as the Virus
-groups them. A knob is read through the 80C515's A/D converter as the hardware's
-pot would be, and the firmware only acts when it moves. Turn one and the LCD shows
-the parameter, as on the Virus. A program with an edit in it shows its number in
-lower case ("a0"). **STORE**, pressed twice, writes the edit into the user banks.
+The unit's 32 knobs are all here, grouped as the Virus groups them. A knob is read through
+the 80C515's A/D converter as the hardware's pot would be, and the firmware only acts when it
+moves. Turn one and the LCD shows the parameter, as on the Virus. A program with an edit in it
+shows its number in lower case ("a0"). **STORE**, pressed twice, writes the edit into the user
+banks.
 
-Every control is named from the owner's manual's drawing of its section, and
-matched to the firmware by pressing it and watching what it does, what it sends
-the DSP and which LED answers:
+The unit's 35 buttons and 69 LEDs are not all here. The hardware has no encoders or selectors,
+only buttons, and a modular face can do better, so the pairs and the cycles are knobs. Every
+one of them still reaches the firmware as a press of the unit's own key, and the answer comes
+back as the unit's own LEDs: nothing is emulated around the firmware.
 
-* **LFOS/MOD**: **EDIT**, **SELECT** (LFO 1, 2, 3, MOD), **SHAPE** (sine,
-  triangle, saw, square, wave) and **AMOUNT**, which steps through the selected
-  LFO's destinations -- the row of 23 LEDs below, in four runs for LFO 1, LFO 2,
-  LFO 3 and MOD (ASSIGN 1-6). A destination's LED is lit while its amount is not
-  zero and flashes while it is selected; set the amount with **VALUE** or
-  **SOFT 2/VALUE**. The two **RATE** LEDs follow LFO 1 and LFO 2/3.
-* **OSCILLATORS**: **EDIT**, **SYNC**, **OSC 1/2/3** (which oscillator the knobs
-  edit), **OSC 3 ON**.
-* **FILTERS**: **EDIT**, **FILT 1** and **FILT 2** (each with its own LP, HP, BP, BS
-  LEDs) and **SEL 1 / SEL 2**, which filter RESO and ENV AMT act on (both together:
-  both filters).
-* **EFFECTS**: **EDIT** and **SELECT** (DIST, PHA, CHO: what TYPE/MIX and
-  INTENSITY control). **DELAY/REVERB**: **EDIT**, with SEND, DLY/REV TIME and
-  FDBK/DAMP.
-* **ARP ON** and **ARP EDIT**; the display's **EDIT**, **GLOBAL** (global / multi
-  edit) and **RANDOM** (randomises the sound at once; **UNDO** takes it back).
-* **UNDO**, **STORE**, **MULTI**, **SINGLE** (hold it to search by category),
-  **PART -/+** (both together: the demo), **PARAM </>** (in play mode: bank),
-  **VALUE -/+** (in play mode: program), **TRANS -/+** with the five octave LEDs
-  (both together: panic) and the **BPM** LED.
+**Selector knobs** stand in for a button that steps through a list while LEDs show where you
+are. Turn the knob to a position and it presses the key until the unit's LEDs agree, then
+checks; if the unit will not go there the knob returns to what the unit shows. Load a program
+and the knobs follow it. The positions are named on the display, under SELECTED, lit as the
+unit's LEDs were.
+
+* **LFO** (LFO 1, 2, 3, MOD) and **LFO SHAPE** (sine, triangle, saw, square, wave).
+* **OSC** (1, 2, 3: which oscillator the knobs edit).
+* **EFFECT** (distortion, phaser, chorus: what TYPE/MIX and INTENSITY control).
+* **FILT 1** and **FILT 2** (low-, high-, band-pass, band-stop).
+
+Clicking a selector without turning it presses the section's **EDIT**: LFO, OSC and EFFECT
+have one, and its lamp is next to the knob's name. The delay/reverb, arpeggiator, filter and
+program EDITs are buttons.
+
+**Endless knobs** replace a minus/plus pair: **PART** (PART -/+; both together is the demo),
+**PARAMETER** (PARAM </>: in play mode, bank), **VALUE** (VALUE -/+: in play mode, program) and
+**TRANSPOSE** (TRANS -/+, with the five octave lamps beside them). Sixteen detents is a turn and
+each one is a press, at about eleven a second.
+
+**Buttons** that remain: **AMOUNT** (steps through the selected LFO's destinations), **SYNC**,
+**OSC 3 ON**, **DLY/REV** edit, **ARP ON**, **ARP EDIT**, **EDIT**, **GLOBAL** (global / multi
+edit), **RANDOM** (**UNDO** takes it back), **UNDO**, **STORE**, **MULTI**, **SINGLE** (hold
+it to search by category), the filter **EDIT** and **SEL 1 / SEL 2** (which filter RESO and
+ENV AMT act on).
+
+**The display** is one piece of glass. **PARAMETER** is the unit's 2 x 16 LCD as it is now;
+**PRESET** is the last program screen it showed, kept while the LCD is busy with a knob or a
+menu. **AMOUNT** lists what each LFO and the modulation matrix are routed to, lit while the
+amount is not zero and flashing while selected; set the amount with **VALUE** or **SOFT 2/VALUE**.
+The two **RATE** lamps follow LFO 1 and LFO 2/3.
 
 The LEDs are the 80C515's own multiplex, drawn at the brightness the firmware
 drives them, so a flashing one flashes. The two RATE LEDs are not the
-microcontroller's: the DSP drives them itself from its timers, and they are read
+microcontroller's: the DSP drives those itself from its timers, and they are read
 from there. The manual's two-button shortcuts work, because the firmware does them:
 OSC EDIT + SYNC plays a note (audition), STORE + SINGLE sends a dump, ARP EDIT + ARP
-ON holds the arpeggiator, and so on.
+ON holds the arpeggiator, and so on. Not every shortcut has a button to press now; the
+**gate inputs** are one press of a button each.
 
 **Master volume** is the VOLUME knob, as on the hardware. With it low the Virus
 is quiet: the firmware sends the DSP whatever the knob says.
