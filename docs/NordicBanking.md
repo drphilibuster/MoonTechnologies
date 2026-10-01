@@ -38,8 +38,10 @@ program, **1**.
 The 2X keeps its programs in a 64 KB flash chip, not in the OS image. A new Nordic Banking
 starts with that flash **erased**, as a unit fresh from the factory line would: every
 program is blank. Clavia publishes the 2X's factory programs as SysEx (nordkeyboards.com,
-the Nord Lead 2X's legacy downloads); choose **Send SysEx file…** and the firmware receives
-them exactly as it would from a sequencer. **STORE** writes the current program into the
+the Nord Lead 2X's legacy downloads: *Factory Bank v1.00 revA*, whose SysEx folder holds
+`bank0.syx` to `bank3.syx`, one program bank each, and `Perf0.syx`, the performances).
+Choose **Send SysEx file…** for each, and the firmware receives them exactly as it would
+from a sequencer; a bank takes about three seconds, a message at a time. **STORE** writes the current program into the
 flash, and the patch saves the flash, so your programs travel with it. **Erase program
 memory** clears it again.
 

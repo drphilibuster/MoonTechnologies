@@ -24,7 +24,8 @@ menu loads it and a patch keeps the path.
 
 `tests/NordicBanking` boots the OS, plays a note, reads the display and a button's LED,
 stores a program and boots a second unit from the saved flash, with the image from
-`NL2X_ROMS` (SKIP without).
+`NL2X_ROMS` (SKIP without); with `NL2X_SYSEX`, it also loads Clavia's factory bank 0 as
+SysEx into an erased unit and checks the programs land in the flash and play.
 
 ### Changed: SixFigures' avalanche core is the relaxation oscillator's own charge curve
 

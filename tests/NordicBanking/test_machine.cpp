@@ -143,6 +143,54 @@ int main() {
 	CHECK(ok2, "boots from a saved flash");
 	CHECK(std::fabs(sync2 - after) < 0.1, "the stored program comes back (SYNC as stored)");
 
+	// Clavia's factory programs, as SysEx into an erased unit (NL2X_SYSEX: a directory holding the
+	// factory bank's bank0.syx; SKIP without). Paced as the module sends them: one message per tick.
+	if (const char* sx = std::getenv("NL2X_SYSEX")) {
+		std::ifstream f(std::string(sx) + "/bank0.syx", std::ios::binary);
+		std::vector<uint8_t> d((std::istreambuf_iterator<char>(f)), {});
+		std::vector<std::vector<uint8_t>> msgs;
+		for (size_t i = 0; i < d.size(); i++) {
+			if (d[i] != 0xF0) continue;
+			size_t j = i + 1;
+			while (j < d.size() && d[j] != 0xF7) j++;
+			if (j >= d.size()) break;
+			msgs.emplace_back(d.begin() + long(i), d.begin() + long(j) + 1);
+			i = j;
+		}
+		Nord2x n3;
+		CHECK(n3.boot(os, {}), "boot for the factory bank");
+		Run r3(n3);
+		r3.seconds(1.0);
+		std::vector<uint8_t> e0, e1;
+		n3.copyFlash(e0);
+		for (auto& m : msgs) { n3.midi(m.data(), m.size()); r3.seconds(0.025); }
+		r3.seconds(2.0);
+		n3.copyFlash(e1);
+		long filled = 0;
+		for (size_t i = 0; i < e1.size(); i++) filled += e0[i] != e1[i];
+		// Program 1 again (down, up), now the factory one: no longer the blank program, whose
+		// all-0xFF data lights unison and distortion together.
+		r3.press(nb::BUTTONS[20].id);
+		r3.press(nb::BUTTONS[19].id);
+		r3.seconds(0.5);
+		n3.leds(rows, digits); r3.seconds(0.5); n3.leds(rows, digits);
+		const nb::Led* uni = led("unison");
+		const nb::Led* dist = led("distortion");
+		const bool blankLook = rows[uni->row][uni->bit] > 0.5f && rows[dist->row][dist->bit] > 0.5f;
+		n3.midi(on, 3);
+		r3.seconds(1.0);
+		const double factory = r3.rms();
+		n3.midi(off, 3);
+		std::printf("8. factory bank 0: %zu messages, %ld flash bytes written, program 1 %s, note RMS %.4f\n",
+			msgs.size(), filled, blankLook ? "STILL BLANK" : "loaded", factory);
+		CHECK(msgs.size() > 90, "the bank file holds the programs");
+		CHECK(filled > 5000, "the programs land in the flash");
+		CHECK(!blankLook, "program 1 is the factory program, not the blank one");
+		CHECK(factory > 0.005, "the factory program sounds");
+	} else {
+		std::printf("8. factory bank: SKIP (set NL2X_SYSEX to the factory bank's SysEx directory)\n");
+	}
+
 	const double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
 	std::printf("   %.1f s wall in all\n", wall);
 	if (failures) { std::printf("%d failure(s)\n", failures); return 1; }
