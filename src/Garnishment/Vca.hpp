@@ -9,6 +9,8 @@
 #include <algorithm>   // std::max, which this used to get via rack.hpp
 #include <cmath>
 
+#include "IAmO.hpp"
+
 enum GarnishmentMode { MODE_OTA = 0, MODE_VACTROL = 1, MODE_JFET_AM = 2 };
 
 static const int MAX_POLY = 16;
@@ -38,31 +40,18 @@ struct OnePoleLP {
 	void reset() { state = 0.f; }
 };
 
-/** DC blocker for the JFET path's output cap (C1 in the schematic): the drain
-    divider sits on a DC operating point that must not reach the output. */
-struct OnePoleHP {
-	float x1 = 0.f, y1 = 0.f;
-	float process(float x, float r) {
-		float y = x - x1 + r * y1;
-		x1 = x;
-		y1 = y;
-		return y;
-	}
-	void reset() { x1 = y1 = 0.f; }
-};
-
 /** Everything one VCA channel needs to remember between samples, per
     polyphonic voice. Six of these live in the module, one per channel. */
 struct VcaBus {
 	float ctrl[MAX_POLY] = {};   // slewed control voltage, 0..1 -- all three modes
 	OnePoleLP lpg[MAX_POLY];
-	OnePoleHP dcBlock[MAX_POLY];
+	garnishment::IAmO jfet[MAX_POLY];          // the I AM O circuit, solved; C1 is its own DC blocker
 
 	void reset() {
 		for (int i = 0; i < MAX_POLY; i++) {
 			ctrl[i] = 0.f;
 			lpg[i].reset();
-			dcBlock[i].reset();
+			jfet[i].reset();
 		}
 	}
 };

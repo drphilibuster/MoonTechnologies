@@ -13,8 +13,8 @@
 //   VACTROL  Vactrol VCA (Kristian Blasol): an LED driving a photoresistor in
 //            series with the audio -- the classic slow, characterful LPG cell.
 //   JFET AM  "I AM O" (Quincas): a 2N5457 used as a voltage-controlled resistor,
-//            dividing a carrier against its own channel resistance -- a crude
-//            two-signal multiplier riding the JFET's square-law asymmetry.
+//            dividing a carrier against its own channel resistance -- solved as
+//            the circuit (IAmO.hpp), so it saturates and self-pinches like it.
 //
 // One physical control set is reused for all three rather than the panel
 // switching what it shows: BIAS and CV IN (through CV AMOUNT) form the control
@@ -157,16 +157,12 @@ struct Garnishment : Module {
 					break;
 				}
 				case MODE_JFET_AM: {
-					// The schematic's "In" pin (our BIAS/CV) sets the JFET's
-					// channel resistance; "AM" (our audio IN) is divided
-					// against it through R2. Id ~ (1 - Vgs/Vp)^2 gives the
-					// divider its square-law asymmetry. A passive divider
-					// never reaches unity, hence the x2 makeup.
-					float g = ctrl * ctrl;
-					float divGain = g / (g + 1.f);
-					float raw = audioIn * divGain * 2.f;
-					float r = std::exp(-2.f * (float) M_PI * 20.f * args.sampleTime);
-					out = bus.dcBlock[c].process(raw, r);
+					// The schematic's "In" pin (our BIAS/CV) is the JFET's gate, "AM"
+					// (our audio IN) reaches the drain through 100 ohms; the circuit is
+					// solved (IAmO.hpp). The control's 0..1 spans the gate from 0 V (the
+					// channel fully on, 2.3 dB down) to -4 V (past the 2N5457's typical
+					// -2 V pinch-off, no division at all).
+					out = (float) bus.jfet[c].process(-4.0 * ctrl, audioIn, args.sampleRate);
 					break;
 				}
 			}

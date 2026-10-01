@@ -58,6 +58,8 @@ static bool run(int model, float fcHz, float res, float drive, float fs,
 	c.G = c.g / (1.f + c.g);
 	c.res = res;
 	c.drive = drive;
+	c.fc = fc;
+	c.rate = fs;
 
 	const int n = (int) (fs * 1.5f);
 	const float fadeInc = 1.f / (0.005f * fs);
@@ -86,6 +88,50 @@ static bool run(int model, float fcHz, float res, float drive, float fs,
 		}
 	}
 	return true;
+}
+
+/** The -3 dB point of the Q&D's low-pass (res 0), found by sweep, with the cutoff coefficient
+    built the way the module builds it for `factor`x oversampling: the core is called at
+    factor * engine rate. */
+static float corner(float fcAsked, float engineRate, int factor) {
+	const float callRate = engineRate * (float) factor;
+	float refDb = 0.f, best = 0.f, bestErr = 1e9f;
+	for (float f = 100.f; f < 20000.f; f *= 1.02f) {
+		deduction::Voice v;
+		v.setRate(callRate);
+		v.reset();
+		v.model = deduction::QD;
+		v.prevModel = deduction::QD;
+		deduction::Coeffs c;
+		c.g = std::tan((float) M_PI * deduction::normalisedCutoff(fcAsked, engineRate, factor));
+		c.G = c.g / (1.f + c.g);
+		c.res = 0.f;
+		c.drive = 0.1f;
+		c.fc = fcAsked;
+		c.rate = callRate;
+		float mx = 0.f;
+		const int n = (int) (callRate * 0.3f);
+		for (int i = 0; i < n; i++) {
+			float x = 0.02f * std::sin(2.f * (float) M_PI * f * (float) i / callRate);
+			float y = v.process(x, 0.f, false, c, 1.f);
+			if (i > n / 2) mx = std::fmax(mx, std::fabs(y));
+		}
+		float db = 20.f * std::log10(mx / 0.02f);
+		if (f < 101.f) refDb = db;
+		float err = std::fabs((db - refDb) + 3.f);
+		if (err < bestErr) { bestErr = err; best = f; }
+	}
+	return best;
+}
+
+static void testOversampleCutoff() {
+	float plain = corner(1000.f, 48000.f, 1), over = corner(1000.f, 48000.f, 2);
+	checks++;
+	if (std::fabs(over / plain - 1.f) > 0.04f) {
+		failures++;
+		printf("  FAIL  oversampling moved the cutoff: %.0f Hz vs %.0f Hz\n", over, plain);
+	}
+	printf("T3  2x oversampling keeps the cutoff where it was (-3 dB at %.0f Hz plain, %.0f Hz oversampled)\n", plain, over);
 }
 
 int main() {
@@ -177,6 +223,8 @@ int main() {
 		}
 	}
 	printf("T2  switching models under load stays finite\n");
+
+	testOversampleCutoff();
 
 	printf("\n%d checks, %d failures\n", checks, failures);
 	return failures ? 1 : 0;

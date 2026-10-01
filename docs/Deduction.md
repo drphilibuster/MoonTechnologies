@@ -10,13 +10,14 @@ Part of the [Moon Technologies](../README.md) plugin.
 
 Six MiaW designs, credited by circuit rather than by episode:
 
-1. **PAiA 2720-3L** -- a single BC549 common-emitter stage with a twin-T
-   network in its feedback (the fixed R-C-R arm; the C-R-C arm's shunt is a
-   1N4148 whose dynamic resistance the control current sets), and an emitter
-   follower out through a coupling cap. The network makes the stage a 2-pole
-   low-pass with a gentle, fixed peak -- the L board has no resonance control --
-   and the transistor clips single-endedly. Cutoff follows the diode's control
-   current, i.e. control voltage, linearly.
+1. **PAiA 2720-3L** -- two BC549C stages: a common-emitter gain stage with a twin-T
+   from its base round to its collector (the R-C-R arm fixed; the C-R-C arm's shunt
+   a 1N4148 whose dynamic resistance the control current sets) and an emitter
+   follower out through a coupling cap. This one is **solved as the circuit**
+   (`src/Deduction/PaiaCircuit.hpp` on the nodal solver `src/Mna.hpp`: ten nodes,
+   two Ebers-Moll transistors with the Early effect, the diode, trapezoidal
+   capacitors, Newton at each step), not drawn as a filter: the clipping is the
+   transistors' and the diode's own, and the diode's distortion is in the signal path.
 2. **Escobedo Q&D VCF** -- a 2-pole state-variable low-pass whose resonance
    path runs through an asymmetric soft clipper (so the peak folds over rather
    than screaming) ahead of a dirt stage.
@@ -52,8 +53,8 @@ neither.
 |---|---|
 | **CUTOFF** | 20 Hz - 20 kHz, exponential. The primary control. |
 | MODEL | Which of the six circuits is running: PAiA, Q&D, Korg35, MS-20, EFM or DIRT. A 6-position snap control; changing it while a cable is patched still lands on a whole step. Switching models crossfades over about 20 ms so nothing clicks. |
-| RES | Resonance / feedback. Meaning per model: PAiA widens its fixed peak (it never reaches self-oscillation); Q&D, Korg35 and MS-20 raise the loop gain toward self-oscillation; EFM raises the ladder's feedback toward self-oscillation; DIRT raises the amount of output fed back to the input. |
-| DRIVE | Level into the nonlinear stage. Meaning per model: PAiA and Q&D's input gain; Korg35's saturation amount; MS-20's diode threshold (inverted -- higher DRIVE means an *earlier*, harder knee); EFM's ladder input level; DIRT's operating-point BIAS, which can choke the signal to silence at either extreme, as the real CMOS inverter's transfer curve does. The light beside it reports the stage is driven past its own clipping knee. |
+| RES | Resonance / feedback. Meaning per model: PAiA is the board's R11 gain trimmer (1k at zero down to 1 ohm at full: the loop gain, so the peak's height; it never self-oscillates); Q&D, Korg35 and MS-20 raise the loop gain toward self-oscillation; EFM raises the ladder's feedback toward self-oscillation; DIRT raises the amount of output fed back to the input. |
+| DRIVE | Level into the nonlinear stage. Meaning per model: PAiA and Q&D's input gain (for the PAiA, the level into R1, 1/8 to 8 of 5 V); Korg35's saturation amount; MS-20's diode threshold (inverted -- higher DRIVE means an *earlier*, harder knee); EFM's ladder input level; DIRT's operating-point BIAS, which can choke the signal to silence at either extreme, as the real CMOS inverter's transfer curve does. The light beside it reports the stage is driven past its own clipping knee. |
 | NRM/INV | Flips which way CUTOFF's CV drives the frequency: NRM raises cutoff on a rising CV, INV lowers it. From the Q&D's own CV Response switch, applied here to the whole module rather than to one circuit. |
 
 ### WITHHOLDING -- what the CV inputs may take off each control
@@ -104,14 +105,23 @@ reflect channel 1.
 
 ## Notes on fidelity and what was approximated
 
-* Every model is a from-scratch digital reconstruction of the circuit's
+* Except the PAiA, every model is a from-scratch digital reconstruction of the circuit's
   behaviour -- topology, self-oscillation threshold, single- versus
   double-ended clipping -- not a component-level circuit simulation, so exact
   cutoff-to-control-voltage curves and clipping thresholds are chosen to match
   the character described rather than measured against real hardware.
-* The PAiA 2720-3L's RES control is an addition: the L board's twin-T gives it
-  one fixed, modest peak with no resonance pot at all. RES here widens that
-  peak; like the original, it cannot reach self-oscillation.
+* **PAiA (solved circuit).** CUTOFF tunes the twin-T's peak: the module turns it into the
+  control voltage that peaks there (a table built from the circuit's own small-signal
+  response, with R11 at 100 ohms), so CUTOFF reaches only what the board does, about
+  430 Hz to 5 kHz, and clamps outside it. The board's response is -1 dB at its peak with
+  R11 at 100 ohms, about -14 dB at 1k and +16 dB at 1 ohm; there is no make-up gain, so
+  the PAiA is quieter than the other five unless RES is up. A 5 V input already compresses
+  it, as it would the board. Assumed, because the drawing does not give them: the 12 V
+  supply, the BC549C's model (Is from 0.58 V at 0.5 mA, hFE 520, VAF 100 V), a 100k load
+  on the output, and no junction capacitances. It costs more than the other models (a 10x10
+  solve about twice per sample at 48 kHz, roughly 10 % of a core per voice), so a
+  polyphonic PAiA is expensive; the other five models are unchanged. The solver runs at 96 kHz
+  or more however fast the module is.
 * HP IN only does something distinct from LP IN on Korg35 and MS-20, which is
   the one place the MiaW panels document a separate high-pass tap. Feeding
   both models with only the topology to run one path (PAiA, Q&D, EFM, DIRT)

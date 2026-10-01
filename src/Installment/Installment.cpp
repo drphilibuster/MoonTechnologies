@@ -1,6 +1,7 @@
 #include "../plugin.hpp"
 #include "Panel.hpp"
 #include "Curve.hpp"
+#include "Envelope.hpp"
 #include <cmath>
 
 // ---------------------------------------------------------------------------
@@ -9,11 +10,12 @@
 // Two identical channels. Each is one circuit at a time, picked by MODE:
 //   LFO  the Simple LFO / 13700 VCLFO's OTA-integrator triangle -- a linear
 //        ramp up over ATTACK seconds, down over RELEASE seconds, free-running.
-//   AR   Niklas Roennberg's diode-steered RC dual AR -- GATE rises it over
-//        ATTACK, holds at the peak while the gate stays up, falls over
-//        RELEASE when it drops.
-//   AD   PHObos's AD -- GATE triggers a rise over ATTACK and an automatic
-//        fall over RELEASE, gate duration irrelevant once it has fired.
+//   AR   the LMNC ADAR2 (a TL072 comparator behind diodes) -- GATE rises it
+//        over ATTACK, holds at the peak while the gate stays up, falls over
+//        RELEASE when it drops. Solved as the circuit: Envelope.hpp.
+//   AD   PHObos's TLC555 AD -- GATE triggers a rise over ATTACK and an
+//        automatic fall over RELEASE, gate duration irrelevant once it has
+//        fired. Solved as the circuit: Envelope.hpp.
 // LOOP makes an AR retrigger itself the instant it reaches zero (so it never
 // needs a second gate) and makes an AD do the same (so it becomes another
 // LFO, exactly as the PHObos original could). ATTACK and RELEASE are the same
@@ -73,99 +75,18 @@ static inline float polyBlep(float t, float dt) {
     CV/bias-modulated attack and release times so this stays free of panel
     concerns. */
 struct FuncGenVoice {
-	enum Phase { PH_IDLE, PH_RISE, PH_SUSTAIN, PH_FALL };
-	Phase phase = PH_IDLE;
-	float t = 0.f;             // elapsed seconds in the current AR/AD phase
-	float value = 0.f;         // AR/AD output, 0..10 V
-	float fallStart = 0.f;     // value the FALL phase decays from
 	float cyclePhase = 0.f;    // LFO's own 0..1 position in its cycle
+	installment::circuit::Ad555 ad;       // the PHObos TLC555 circuit
+	installment::circuit::ArTl072 ar;     // the LMNC ADAR2 TL072 circuit
 	dsp::SchmittTrigger gateTrig;
 	dsp::PulseGenerator eocPulse;
 
 	void reset() {
-		phase = PH_IDLE;
-		t = 0.f;
-		value = 0.f;
-		fallStart = 0.f;
 		cyclePhase = 0.f;
+		ad.reset();
+		ar.reset();
 		gateTrig.reset();
 		eocPulse.reset();
-	}
-
-	/** Roennberg's AR and PHObos's AD are the same machine with one
-	    difference: whether reaching the top waits for the gate to drop
-	    (`sustain`, AR) or falls immediately (AD). RC exponentials throughout,
-	    time-constant = phase-time / 5 so each phase lands within about 1% of
-	    its target at the nominal time -- diode-steered RC charging into a
-	    reservoir, not a linear ramp. */
-	void runEnvelope(bool sustain, bool loop, float attackSec, float releaseSec,
-	                 bool gateEdge, bool gateHigh, float dt,
-	                 float& mainOut, float& invOut) {
-		switch (phase) {
-			case PH_IDLE:
-				if (gateEdge) {
-					phase = PH_RISE;
-					t = 0.f;
-				}
-				break;
-
-			case PH_RISE:
-				// AR only: releasing the gate mid-attack falls from wherever
-				// the rise had gotten to, rather than snapping to the peak.
-				// Not once LOOP has retriggered this rise itself: the gate that
-				// started this cycle has normally already dropped, so without
-				// the `!loop` guard this fires again on the very next sample,
-				// falling from ~0 back to IDLE and re-triggering RISE forever --
-				// the output pinned near zero and EOC firing every sample
-				// instead of the latched envelope LOOP documents.
-				if (sustain && !gateHigh && !loop) {
-					phase = PH_FALL;
-					fallStart = value;
-					t = 0.f;
-					break;
-				}
-				t += dt;
-				value = 10.f * (1.f - std::exp(-t / std::fmax(attackSec, 1e-4f) * 5.f));
-				if (t >= attackSec || value >= 9.99f) {
-					value = 10.f;
-					if (sustain && gateHigh) {
-						phase = PH_SUSTAIN;
-					}
-					else {
-						phase = PH_FALL;
-						fallStart = 10.f;
-						t = 0.f;
-					}
-				}
-				break;
-
-			case PH_SUSTAIN:
-				value = 10.f;
-				if (!gateHigh) {
-					phase = PH_FALL;
-					fallStart = 10.f;
-					t = 0.f;
-				}
-				break;
-
-			case PH_FALL:
-				t += dt;
-				value = fallStart * std::exp(-t / std::fmax(releaseSec, 1e-4f) * 5.f);
-				if (t >= releaseSec || value <= 0.01f) {
-					value = 0.f;
-					phase = PH_IDLE;
-					eocPulse.trigger(1e-3f);
-					// AD's loop and AR's latched retrigger are the same move:
-					// go straight back to RISE without waiting on the gate.
-					if (loop) {
-						phase = PH_RISE;
-						t = 0.f;
-					}
-				}
-				break;
-		}
-		mainOut = value;
-		invOut = 10.f - value;
 	}
 
 	/** The Simple LFO / 13700 VCLFO core: an OTA integrator, i.e. a linear
@@ -345,10 +266,18 @@ struct Installment : Module {
 				voices[c].runLfo(sine, attackSec, releaseSec, resetEdge, sampleTime, main, inv);
 			}
 			else {
-				bool edge = voices[c].gateTrig.process(gateV, 0.1f, 1.f);
-				bool high = voices[c].gateTrig.isHigh();
-				voices[c].runEnvelope(mode == installment::MODE_AR, loop, attackSec,
-				                      releaseSec, edge, high, sampleTime, main, inv);
+				// The circuits take the gate as volts: the AD's trigger is a capacitor-coupled
+				// step into a transistor, the AR's a comparator behind two diodes.
+				double o;
+				bool eoc;
+				if (mode == installment::MODE_AR)
+					voices[c].ar.process(gateV, loop, attackSec, releaseSec, sampleTime, o, eoc);
+				else
+					voices[c].ad.process(gateV, loop, attackSec, releaseSec, sampleTime, o, eoc);
+				if (eoc)
+					voices[c].eocPulse.trigger(1e-3f);
+				main = (float)o;
+				inv = 10.f - main;
 			}
 
 			// CURVE bends the finished shape. In LFO mode the companion

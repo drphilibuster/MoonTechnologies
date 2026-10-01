@@ -11,17 +11,22 @@ CXXFLAGS := -std=c++11 -O2 -Wall -Wextra -g
 SAN := -fsanitize=address,undefined -fno-omit-frame-pointer
 
 CORE := ../../src/Drum.hpp ../../src/Kickback/Voices.hpp \
-        ../../src/Kickback/Payroll.hpp ../../src/DspCache.hpp
+        ../../src/Kickback/Payroll.hpp ../../src/DspCache.hpp \
+        ../../src/Kickback/AvalancheNoise.hpp ../../src/Mna.hpp
 
-all: test_voices
+all: test_voices test_avalanche
 
-test: test_voices
+test: test_voices test_avalanche
 	./test_voices
+	./test_avalanche
 
 test_voices: test_voices.cpp $(CORE)
 	$(CXX) $(CXXFLAGS) $(SAN) -o $@ test_voices.cpp
 
+test_avalanche: test_avalanche.cpp ../../src/Kickback/AvalancheNoise.hpp ../../src/Mna.hpp
+	$(CXX) $(CXXFLAGS) $(SAN) -o $@ test_avalanche.cpp
+
 clean:
-	rm -rf test_voices *.dSYM
+	rm -rf test_voices test_avalanche *.dSYM
 
 .PHONY: all test clean

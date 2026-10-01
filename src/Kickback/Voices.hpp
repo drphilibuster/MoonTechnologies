@@ -36,6 +36,7 @@
 //   Tiny Dazzler Schematic.png  Tiny Dazzler Electronics -> SNARE's DAZZLE mode, HAT's top end
 
 #include "../Drum.hpp"
+#include "AvalancheNoise.hpp"
 
 namespace kickback {
 
@@ -204,21 +205,22 @@ struct XorEngine {
 
 /** The Percussive Noise Voice: the trig's own decay drives a vactrol, whose
     slow-following LDR sets a lowpass corner over the T1/T2/T3 avalanche-noise
-    tap. The grain term is that lag, from fast (nearly a gate) to slow (a
+    tap. The noise is that circuit solved (AvalancheNoise.hpp): T3's emitter-base junction in
+    breakdown, T2 amplifying it, the loop biasing itself, and what C4 hands T1. The grain term is that lag, from fast (nearly a gate) to slow (a
     smeared, breathing decay) -- the lag is what makes this sound like a
     photoresistor rather than a VCA, and it is the character of the circuit. */
 struct VactrolEngine {
-	Noise noise;
+	kickback::AvalancheSource noise;
 	OnePole lp, lp2;
 	Vactrol vac;
 	Decay env;
 	float fs = 44100.f;
-	//: The vactrol's filter is a lowpass at a corner in hertz, so this engine
-	//: wants noise at constant spectral density -- see noisePsdGain().
-	float psd = 1.f;
+	//: The vactrol's filter is a lowpass at a corner in hertz, so this engine wants noise at
+	//: constant spectral density. The circuit's noise already has it (its source is a current
+	//: density per hertz), so unlike the white noise it replaced it takes no noisePsdGain().
 
 	VactrolEngine() : noise(0x5EAF00Du) {}
-	void setRate(float fs_) { fs = fs_; psd = noisePsdGain(fs_); }
+	void setRate(float fs_) { fs = fs_; noise.setRate(fs_); }
 	void reset() { noise.reset(); lp.reset(); lp2.reset(); vac.reset(); env.reset(); }
 	inline void strike(float vel) { env.strike(vel); }
 
@@ -228,7 +230,7 @@ struct VactrolEngine {
 		float smoothed = vac.process(e, 90.f * std::pow(0.07f, grain), fs);
 		float span = top * (0.25f + 0.75f * (1.f - bend));
 		float g = poleG(140.f + smoothed * span * (1.f + bend * 2.f), fs);
-		return lp2.lp(lp.lp(noise.next() * psd, g), g) * e * (1.5f + 0.4f * grain);
+		return lp2.lp(lp.lp(noise.next(), g), g) * e * (1.5f + 0.4f * grain);
 	}
 };
 

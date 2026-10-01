@@ -15,8 +15,12 @@ Installment consolidates four days from Kristian Blåsol's *Modular in a Week*:
 - **Dual AR**, based on Niklas Rönnberg's diode-steered RC design (also built up on
   LMNC's channel) — a gated attack/release envelope that holds at its peak for as
   long as the gate stays high.
-- **PHObos's AD** (from the Moon Base Xplorer firmware) — an attack/decay envelope
-  that fires once per trigger and, looped, free-runs as an LFO of its own.
+- **PHObos's AD** (the *Moon Base Xplorer: AD/AR*, Rev 1.1, 2013) — an attack/decay envelope
+  that fires once per trigger and, looped, free-runs as an LFO of its own. It is not firmware,
+  as this doc once said: it is an analogue circuit built round a TLC555 timer, which charges a
+  10 µF capacitor through a diode and an attack pot and discharges it through a diode and a
+  decay pot, with a 10 V zener, LM358 buffers and a BC547B trigger transistor. Both envelope
+  modes are solved as these circuits (see "The envelope circuits" and "Approximated or left out").
 - The **Day 12 CV-controllable PWM** sketch (a Falstad circuit built for driving tape
   motors) — a triangle compared against a threshold makes a duty-cycle drive signal.
 
@@ -82,12 +86,47 @@ all-the-way-open or all-the-way-shut duty cycle. Off by default.
   triangle, the OTA integrator's native shape) by default.
 - **Tape-motor duty limit (10-90%)** — see MINIMUM DUE above.
 
+## The envelope circuits
+
+AD and AR are the two boards' circuits, integrated sample by sample (`src/Installment/Envelope.hpp`).
+Each is a source that flips between two levels, behind a diode-steered resistor, into a
+capacitor; the 1N4148 / 1N4448 is the real exponential, with its drop and its tail.
+
+**AD** (TLC555, 12 V, 10 µF): a rising step on GATE goes through 1 nF and 10k into a BC547B,
+which pulls TRIG down and sets the 555; OUT charges the capacitor until it reaches the
+threshold the 51k on CV sets (8.245 V), and then discharges it. TRIG overrides THRES, so a
+trigger that lands during the fall restarts the rise from wherever the capacitor is, and one
+during the rise changes nothing. The trigger is capacitor-coupled: a step of about 0.9 V or more,
+quick enough that the 110 µs high-pass passes it, fires it; a slow ramp does not.
+ATTACK is the time to the threshold; RELEASE is five time constants. The fall counts as finished
+(EOC, and LOOP's next rise) at 0.5 V on the capacitor, the diode's knee, because below that a
+1N4148 passes almost no current and the last of the discharge takes seconds: **the output does
+not return exactly to zero**, it settles toward a few tenths of a volt.
+
+**AR** (TL072, 1 µF): a comparator, GATE against 2.1 V (from 47k and 10k on 12 V) through a
+diode, two 100k resistors, a second diode and a 100k to ground, so **the gate has to exceed
+about 7.1 V** (it was about 1 V before). The comparator drives the capacitor towards its high or
+low rail (±10.5 V, 1.5 V short of the ±12 V supply): the capacitor rests at -10.4 V and the
+output diode shows only its positive half. So: ATTACK is the gate to 90 % of the peak
+(there is about 0.7 time constants of **dead time** while the capacitor climbs from the
+rail to zero, shorter if the gate returns soon after a release); the peak settles to 10.2 V less
+the diode's crawl, shown as 10 V; and RELEASE, the gate dropping to 2 % of the peak, is a
+near-linear fall because the capacitor is heading for -10.5 V and the output is only the part
+above zero. LOOP turns round at 90 % of the peak (the last tenth is the diode's crawl).
+
+Assumed, because the drawings do not give them: the TLC555's three divider resistors (the
+datasheet gives only that they are equal; 100k would put the threshold, 10.3 V, above the 10 V
+zener, so the 5k ratio is used), the ADAR2's -12 V supply (its negative pin is not drawn, but an
+output diode and an unpolarised 1 µF capacitor only make sense if the capacitor can go negative)
+and the TL072's output reaching 1.5 V short of each rail.
+
 ## Approximated or left out
 
-- The AR/AD attack and release/decay segments are RC-style exponentials computed
-  from elapsed phase-time (time-constant = phase time ÷ 5, so each phase reaches
-  about 99% of its target at the nominal time) rather than a literal diode-steered RC
-  network simulation — authentically curved, not a SPICE match.
+- The AD's LM358 follower and 10 V zener, and the AR's output diode, 1k/1k divider and LED,
+  are not modelled: each output is its follower, scaled so the envelope's peak is 10 V.
+  The boards' pots (500k, 1M) and capacitors (10 µF, 1 µF) do not limit the times either:
+  ATTACK and RELEASE are times, turned into the resistance that gives them (the RANGE
+  switch and the CV jacks have always reached past what the pots do), down to a 20 ohm floor.
 - BIAS and CV both shift ATTACK and RELEASE together rather than independently, which
   keeps their skew ratio intact under modulation; the original 13700 VCLFO's Bias
   control was read the same way, as an offset on the same axis a CV would reach.

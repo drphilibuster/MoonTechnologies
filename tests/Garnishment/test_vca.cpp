@@ -2,9 +2,8 @@
 //
 // The claims worth pinning are the ones that are the *point* of each part: the
 // slew is asymmetric because a vactrol is, the LPG's filter closes with its
-// gain because that is what makes it a gate rather than a VCA, and the JFET
-// path blocks DC because its drain divider sits on an operating point that must
-// not reach the output.
+// gain because that is what makes it a gate rather than a VCA. (The JFET stage
+// is a circuit now and has its own suite, test_iamo.cpp.)
 #include "../../src/Garnishment/Vca.hpp"
 
 #include <cmath>
@@ -90,36 +89,6 @@ int main() {
 		}
 	}
 
-	// --- the JFET path's DC blocker -------------------------------------------
-	// A constant in must decay to nothing; a signal must survive.
-	printf("  the JFET path's DC blocker...\n");
-	{
-		const float r = 0.9995f;
-		OnePoleHP hp;
-		float y = 0.f;
-		for (int i = 0; i < (int)kFs; i++) y = hp.process(5.f, r);
-		checks++;
-		if (std::fabs(y) > 0.05f) {
-			char d[128];
-			snprintf(d, sizeof d, "a second of constant 5 V still reads %.4f", (double)y);
-			fail("dc blocker", d);
-		}
-
-		OnePoleHP hp2;
-		double peak = 0.0;
-		for (int i = 0; i < (int)(kFs * 0.2f); i++) {
-			float x = std::sin(2.f * (float)M_PI * 440.f * (float)i / kFs);
-			float v = hp2.process(x, r);
-			if (i > (int)(kFs * 0.1f)) peak = std::fmax(peak, std::fabs((double)v));
-		}
-		checks++;
-		if (peak < 0.9) {
-			char d[128];
-			snprintf(d, sizeof d, "440 Hz through the DC blocker peaked at %.3f", peak);
-			fail("dc blocker", d);
-		}
-	}
-
 	// --- reset clears every voice ---------------------------------------------
 	// Sixteen voices of three pieces of state each: one left behind is a channel
 	// that clicks on the next note it plays.
@@ -129,14 +98,14 @@ int main() {
 		for (int i = 0; i < MAX_POLY; i++) {
 			bus.ctrl[i] = 0.7f;
 			bus.lpg[i].process(1.f, 1000.f, kDt);
-			bus.dcBlock[i].process(1.f, 0.999f);
+			bus.jfet[i].process(-1.0, 0.5, 48000.0);
 		}
 		bus.reset();
 		int dirty = 0;
 		for (int i = 0; i < MAX_POLY; i++) {
 			if (bus.ctrl[i] != 0.f) dirty++;
 			if (bus.lpg[i].state != 0.f) dirty++;
-			if (bus.dcBlock[i].x1 != 0.f || bus.dcBlock[i].y1 != 0.f) dirty++;
+			if (bus.jfet[i].started) dirty++;
 		}
 		checks++;
 		if (dirty) {

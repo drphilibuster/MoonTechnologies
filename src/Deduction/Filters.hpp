@@ -15,6 +15,8 @@
 
 #include <cmath>
 
+#include "PaiaCircuit.hpp"
+
 namespace deduction {
 
 static const float kPi = 3.14159265358979f;
@@ -44,12 +46,21 @@ inline float diodeClip(float x, float t) {
 	return t * u / std::sqrt(std::sqrt(1.f + u2 * u2));
 }
 
+/** A cutoff as a fraction of the rate the filters actually run at. With 2x oversampling the
+    cores are called twice per engine sample, so `g = tan(pi * this)` must use the doubled
+    rate, or the cutoff comes out an octave high. */
+inline float normalisedCutoff(float fcHz, float engineRate, int oversampleFactor) {
+	return fcHz / (engineRate * (float)oversampleFactor);
+}
+
 /** The per-sample control set every model reads. */
 struct Coeffs {
 	float g = 0.f;        // tan(pi fc / fs)
 	float G = 0.f;        // g / (1 + g)
 	float res = 0.f;      // 0 .. 1
 	float drive = 0.5f;   // 0 .. 1, meaning per model
+	float fc = 1000.f;    // the cutoff in Hz (the PAiA's circuit is tuned by it, not by g)
+	float rate = 48000.f; // how often process() is called, Hz
 };
 
 /** TPT one-pole. `lp` advances the state; the static forms only read it. */
@@ -79,40 +90,22 @@ struct DcBlock {
 
 
 // ---------------------------------------------------------------------------
-// PAiA 2720-3L. One BC549 common-emitter stage with a twin-T in its feedback
-// (the R-C-R arm fixed, the C-R-C arm's shunt a 1N4148 whose dynamic
-// resistance the control current sets) and an emitter follower out through a
-// coupling cap. Detuned as the L board is, the network makes the stage a
-// 2-pole low-pass with a modest peak and no resonance control; the transistor
-// clips single-endedly, and cutoff follows diode current, i.e. control voltage,
-// linearly. DRIVE is the input level into the stage. RES here widens the peak
-// the original has fixed; it never reaches self-oscillation.
+// PAiA 2720-3L, as the circuit (PaiaCircuit.hpp, solved by Mna.hpp): two BC549Cs, a twin-T
+// from the first one's base round to its collector with a 1N4148 as the control-current-set
+// resistor in one arm, and an emitter follower out. CUTOFF is turned into the control
+// voltage that tunes the twin-T's peak there; RES is the R11 trimmer (1k down to 1 ohm, which
+// is the gain round the loop, and so the peak's height); DRIVE is the input level. Nothing in
+// it is a waveshaper: the clipping is the transistor's and the diode's own.
 struct Paia {
-	float ic1 = 0.f, ic2 = 0.f;
-	DcBlock dc;
+	PaiaVoice v;
 	float hot = 0.f;
 
-	void reset() { ic1 = ic2 = 0.f; dc.reset(); }
-	void setRate(float fs) { dc.setRate(fs); }
+	void reset() { v.reset(); }
+	void setRate(float) {}
 
 	inline float process(float x, const Coeffs& c) {
-		float gain = std::exp2((c.drive - 0.5f) * 6.f);          // 1/8 .. 8
-		float u = x * gain;
-		hot = std::fabs(u);
-		u = transistorClip(u);
-
-		// Damping from 1.4 (the board's own gentle peak) down to 0.3: Q up to ~3.
-		float k = 1.4f - 1.1f * c.res;
-		float g = c.g;
-		float a1 = 1.f / (1.f + g * (g + k));
-		float a2 = g * a1;
-		float a3 = g * a2;
-		float v3 = u - ic2;
-		float v1 = a1 * ic1 + a2 * v3;
-		float v2 = ic2 + a2 * ic1 + a3 * v3;
-		ic1 = 2.f * v1 - ic1;
-		ic2 = 2.f * v2 - ic2;
-		return dc.process(v2);
+		hot = std::fabs(x * std::exp2((c.drive - 0.5f) * 6.f));
+		return (float)v.process(x, c.fc, c.res, c.drive, c.rate);
 	}
 };
 

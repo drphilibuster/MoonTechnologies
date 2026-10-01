@@ -148,15 +148,22 @@ rather than one sound with a knob, because a snare is the one drum here with no
 single right answer: what people want from it runs from a tuned crack to a wash
 of noise to a rattle.
 
-- **XOR** — XORbell's six 40106 relaxation oscillators through three 4070 XOR
-  gates. XOR of two square waves in their bipolar (±1) encoding is exactly their
+- **XOR** — XORbell's 40106 relaxation oscillators through its 4070 XOR
+  gates. The board has two voices of three oscillators each (each voice is two XOR
+  gates in a chain, four gates in all, with a Uni/Dual switch that gives both outputs the
+  same voice); this is one voice. XOR of two square waves in their bipolar (±1) encoding is exactly their
   *product*, so three band-limited squares multiplied give the inharmonic,
   clangy crack, with a short modal ring underneath for body. **TUNE** 110–900 Hz.
-  *Approximation:* three oscillators rather than six — a third partial already
-  supplies the character the extra three mostly reinforce.
+  *Approximation:* three oscillators, one voice of the board's two, rather than both —
+  a third partial already supplies the character the extra three mostly reinforce.
 - **VACTROL** — the Percussive Noise Voice. The trigger's own RC decay drives a
   vactrol (a photoresistor lit by an LED), whose slow-following resistance sets
   a lowpass corner over noise from a three-transistor avalanche tap (T1–T3).
+  The noise is that tap **solved as the circuit** (`src/Kickback/AvalancheNoise.hpp` on the
+  nodal solver `src/Mna.hpp`): T3's emitter-base junction in reverse breakdown, T2 amplifying its
+  noise current with R3 47k and C3 0.1 µ closing a self-biasing loop round it, C4 1 µ handing
+  the result to T1's base. Its spectrum is the circuit's own, not white: a broad hump from a few
+  hundred hertz to about a kilohertz, falling about 6 dB an octave above it.
   **TUNE** is the C5/C6 pair the original swaps by hand between "Snare" and
   "HiHat" values, made continuous: 500 Hz–9 kHz.
 - **DAZZLE** — Karplus & Strong's 1983 drum recurrence at the long end of its
@@ -433,3 +440,15 @@ a keyboard is [Toll](Toll.md).
 
 There is no context menu — every control the circuits expose has a knob, toggle
 or jack on the panel.
+
+**The VACTROL noise tap, what is and is not the circuit.** Only the noise source is solved. The
+board's output stage (T1 chopping the envelope through D3 and R8, C6) and its trigger envelope
+(C1, D1, D2, C2) are not: the module keeps its own strike envelope, vactrol lag and tunable
+low-pass, and the schematic does not put the vactrol where this module does (on the board the
+photoresistor sets the envelope's decay through R5/R2, not a filter corner). Assumed because
+neither the drawing nor a BC549 datasheet gives them: the 12 V supply, the junction's breakdown
+at 8 V (a BC549's VEBO rating is 5 V; real junctions avalanche at 7–10 V, so this is the figure to
+measure on a real part), an avalanche gain of 30, and C5 at the snare's 0.1 µF. The noise's
+absolute level is therefore not known, and is set so the voice is as loud as the white noise it
+replaced (the spectrum and the self-biasing are the circuit's).
+

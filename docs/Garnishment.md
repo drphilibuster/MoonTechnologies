@@ -13,8 +13,9 @@ it is:
   in series with the audio. Slow, asymmetric, and the reason low-pass gates
   sound the way they do.
 - **JFET AM** — "I AM O" (Quincas): a 2N5457 JFET used as a voltage-controlled
-  resistor, dividing one signal against its own channel resistance — a crude
-  two-input multiplier riding the JFET's square-law asymmetry.
+  resistor, dividing one signal against its own channel resistance. Solved as the circuit
+  (`src/Garnishment/IAmO.hpp` on `src/Mna.hpp`), so it saturates, clips and pinches itself as the
+  board does, rather than multiplying.
 
 Credit: Modular in a Week, circuits by Kristian Blåsol (OTA, Vactrol) and
 Quincas (I AM O). Part of the [Moon Technologies](../README.md) plugin.
@@ -32,7 +33,7 @@ which cell is patched into it:
 | CV IN + CV AMOUNT | adds to the gain | adds to the LED drive | adds to the gate drive |
 | LAG | response smoothing | the vactrol's own attack/decay | response smoothing |
 | IN | the audio being amplified | the audio being gated | the "AM" carrier being divided |
-| OUT | amplified/saturated audio | gated (and optionally filtered) audio | the divided, DC-blocked result |
+| OUT | amplified/saturated audio | gated (and optionally filtered) audio | the drain through C1 |
 
 In the original I AM O circuit the JFET's gate is driven by an "In" signal and
 the drain carries an "AM" carrier through a resistor; that gate drive is what
@@ -50,8 +51,14 @@ control).
 **OTA.** `gain = BIAS/CV combined, optionally squared (EXP CV menu)`; output is
 `5·tanh(in/5 · gain)`, a fixed-drive soft clip that gives unity small-signal
 gain at full open and increasing saturation as either the input level or the
-gain rises — modeling the LM13700's unlinearized input differential pair
-(this schematic does not use the chip's linearizing-diode pins).
+gain rises — a tanh shape that stands in for the LM13700's input stage. **It is not
+what the Day 2 schematic builds:** that board *does* use the linearizing diodes (the
+diode-bias pin 2 is fed from V+ through 12k), takes the signal through 470 nF and 27k to a
+1k BIAS trimmer that sets the differential input, sets the gain current from CV through 22k
+into the amplifier-bias pin (so Iabc is about (CV + 11.3 V) / 22k on a ±12 V supply, and the
+channel is half open at 0 V), and reads the output current across 33k into the chip's buffer
+with a 4k7 pull-down to V-. The shape here is a stand-in for that; the real network is a
+worklist item (see below).
 
 **VACTROL.** The combined control drives an LED-brightness state, slewed with
 the LAG control's asymmetric attack (~2 ms, fixed) and decay (50–200 ms). LED
@@ -63,10 +70,19 @@ one-pole filter (20 Hz–15 kHz) in step with the gain, so the channel darkens
 tonally as it closes, not just in level — the Buchla LPG behaviour the bare
 schematic doesn't have on its own.
 
-**JFET AM.** The combined control (0–1) is squared to `g`, modeling
-`Id ∝ (1 − Vgs/Vp)²`; the audio input is divided against it as
-`g / (g + 1)`, doubled to make up for a passive divider never reaching unity,
-and DC-blocked (~20 Hz) the way the schematic's output capacitor does.
+**JFET AM.** The combined control (0-1) is the 2N5457's gate voltage, 0 V at zero down to
+-4 V at one (the datasheet's typical pinch-off is -2 V). The audio IN is the AM signal: it
+goes through R2 (100 ohm) to the drain, and out through C1 (100 nF, which is the DC blocker),
+into a 100k load. The gate is fed through R1 (100k) and has its two junctions, so the circuit
+is solved: the 2N5457 as a square-law channel (IDSS 3 mA, VGS(off) -2 V, lambda from the
+datasheet's 10 umho output admittance), symmetric in drain and source, and the gate-source and
+gate-drain diodes. What that does, none of it a multiplier:
+- Small signals are divided by R2 against the channel: 2.3 dB down with the gate at 0 V, no loss
+  once the gate passes pinch-off. The whole control range is worth 2.3 dB.
+- A big signal runs the channel out of current (it saturates near 3 mA), so a 5 V carrier is
+  only 0.75 dB down at gate 0 V: the stage compresses less as it is driven harder.
+- A negative carrier forward-biases the gate-drain junction, drags the gate below pinch-off and
+  turns the channel off: the stage pinches itself on the negative half.
 
 ## Controls
 
@@ -127,10 +143,18 @@ per-polyphony-channel.
 
 ## What was approximated
 
-- The OTA and JFET-AM stages are not transistor-level SPICE models; they are
-  DSP shapes chosen to reproduce the *character* the schematic implies (soft
-  saturation growing with level for the OTA; a square-law divider for the
-  JFET) rather than to match measured voltages from real hardware.
+- **The JFET-AM stage is a divider against 100 ohms, not a VCA.** The I AM O board (Day 2)
+  puts the carrier through a fixed 100 ohm resistor into the 2N5457's drain, the gate is fed
+  from IN through 100k, and the output is the drain through 100 nF, so a small carrier comes
+  out times Rds / (Rds + 100): 0.77 (-2.3 dB) with the gate at 0 V and 1.0 with the gate
+  pinched off. That is modelled as the circuit, with the typical part's numbers; a real 2N5457
+  is anywhere in the datasheet's ranges (IDSS 1-5 mA, VGS(off) -0.5 to -6 V), which moves that
+  depth by a couple of dB. Assumed: the output is loaded by 100k, and the gate capacitances
+  (4.5 pF Ciss, 1.5 pF Crss) are left out as they do nothing at audio. The control's -4 V span
+  and the gate-drive sign (control up = gate more negative = more open) are the module's.
+- The OTA is not a transistor-level model; it is a DSP shape chosen to reproduce the
+  *character* the schematic implies (soft saturation growing with level), not to match
+  measured voltages from real hardware.
 - The vactrol's LDR resistance curve (4.7 MΩ dark / 150 Ω lit, log-interpolated)
   and the 100 kΩ assumed load are reasonable stand-ins for a real LED/LDR pair,
   not a measured part.

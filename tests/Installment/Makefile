@@ -9,17 +9,22 @@ CXX ?= c++
 CXXFLAGS := -std=c++11 -O2 -Wall -Wextra -g
 SAN := -fsanitize=address,undefined -fno-omit-frame-pointer
 
-CORE := ../../src/Installment/Curve.hpp
+CORE := ../../src/Installment/Curve.hpp \
+        ../../src/Installment/Envelope.hpp
 
-all: test_curve
+all: test_curve test_envelope
 
-test: test_curve
+test: test_curve test_envelope
 	./test_curve
+	./test_envelope
 
 test_curve: test_curve.cpp $(CORE)
 	$(CXX) $(CXXFLAGS) $(SAN) -o $@ test_curve.cpp
 
+test_envelope: test_envelope.cpp $(CORE)
+	$(CXX) $(CXXFLAGS) $(SAN) -o $@ test_envelope.cpp
+
 clean:
-	rm -rf test_curve *.dSYM
+	rm -rf test_curve test_envelope *.dSYM
 
 .PHONY: all test clean

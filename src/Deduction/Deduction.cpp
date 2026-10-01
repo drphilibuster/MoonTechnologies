@@ -62,6 +62,7 @@ struct Deduction : Module {
 	float dispDrive = 0.5f;
 
 	Deduction() {
+		deduction::PaiaTuning::get();     // builds the PAiA's cutoff table now, not on the audio thread
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 
 		configParam(FREQ_PARAM, kFreqMinLog2, kFreqMaxLog2, kFreqDefLog2,
@@ -111,7 +112,7 @@ struct Deduction : Module {
 		freqSlewCoef = 1.f - std::exp(-1.f / (0.005f * sr));
 		fadeIncPerSample = 1.f / (0.02f * sr);
 		for (int c = 0; c < PORT_MAX_CHANNELS; c++)
-			voice[c].setRate(sr);
+			voice[c].setRate(sr * (oversample ? 2.f : 1.f));
 	}
 
 	void onSampleRateChange(const SampleRateChangeEvent& e) override {
@@ -134,6 +135,7 @@ struct Deduction : Module {
 		// never reset under a sample it is producing.
 		if (oversampleRequest != oversample) {
 			oversample = oversampleRequest;
+			setRate(args.sampleRate);          // the voices' own rate (the DC blockers) follows
 			for (int c = 0; c < PORT_MAX_CHANNELS; c++) {
 				upLp[c].reset();
 				upHp[c].reset();
@@ -177,7 +179,7 @@ struct Deduction : Module {
 			freqLog2 = clamp(freqLog2, kFreqMinLog2, kFreqMaxLog2);
 			freqSmooth[c] += freqSlewCoef * (freqLog2 - freqSmooth[c]);
 			float fc = std::fmin(dsp::exp2_taylor5(freqSmooth[c]), nyquist);
-			float g = gC[c].get(fc / args.sampleRate,
+			float g = gC[c].get(deduction::normalisedCutoff(fc, args.sampleRate, factor),
 				[](float k) { return std::tan(deduction::kPi * k); });
 			float G = g / (1.f + g);
 
@@ -202,6 +204,8 @@ struct Deduction : Module {
 
 			Coeffs co;
 			co.g = g;
+			co.fc = fc;
+			co.rate = args.sampleRate * factor;
 			co.G = G;
 			co.res = res;
 			co.drive = drive;
