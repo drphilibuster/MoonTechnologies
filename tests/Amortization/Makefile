@@ -9,7 +9,7 @@ CXX ?= c++
 CXXFLAGS := -std=c++11 -O2 -Wall -Wextra -g
 SAN := -fsanitize=address,undefined -fno-omit-frame-pointer
 
-CORE := ../../src/Amortization/Verbtronic.hpp
+CORE := ../../src/Amortization/Verbtronic.hpp ../../src/Pt2399.hpp
 
 all: test_verbtronic
 

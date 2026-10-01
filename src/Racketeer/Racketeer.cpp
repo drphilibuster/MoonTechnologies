@@ -58,8 +58,7 @@ struct Racketeer : Module {
 	Pt2399Loop loop;
 	racketeer::Noise seedNoise;
 
-	// Oversampling: the loop runs at fs * os. The loop's ring is sized for 2x
-	// at any engine rate, so flipping this never allocates.
+	// Oversampling: the loop's audio-rate side runs at fs * os.
 	int oversample = 1;
 	int oversampleRequest = 1;
 	dsp::Upsampler<2, 8> up;
@@ -83,8 +82,7 @@ struct Racketeer : Module {
 
 	// Read-outs, published for the panel display from the audio thread.
 	float dispDelaySec = 0.3f;
-	float dispFsInt = 4550.f;
-	float dispBits = 14.f;
+	float dispFsInt = 146700.f;
 	bool  dispLong = true;
 
 	Racketeer() {
@@ -335,7 +333,7 @@ struct Racketeer : Module {
 
 			dispDelaySec = delaySec;
 			dispFsInt = loop.fsInternal;
-			dispBits = loop.bits;
+			
 			dispLong = longRange;
 		}
 	}
@@ -391,9 +389,8 @@ struct RacketeerDisplay : LedDisplay {
 			return;
 		}
 		float sec = module ? module->dispDelaySec : 0.3f;
-		float fsInt = module ? module->dispFsInt : 4550.f;
-		float bits = module ? module->dispBits : 14.f;
-		bool longRange = module ? module->dispLong : true;
+		float fsInt = module ? module->dispFsInt : 146700.f;
+				bool longRange = module ? module->dispLong : true;
 
 		const float pad = 5.f;
 		const float rightX = box.size.x - pad;
@@ -410,13 +407,14 @@ struct RacketeerDisplay : LedDisplay {
 		panel::segValue(args.vg, pad, 12.f, 11.f, num, unit, panel::LIME);
 		panel::text(args.vg, RIGHT, rightX, 12.f, longRange ? "LONG" : "SHORT");
 
-		// Row 2: the chip's sample rate and the bits it has left.
-		float x = panel::text(args.vg, TAG, pad, 24.f, "FS");
-		if (fsInt >= 10000.f) { num = string::f("%.1f", fsInt / 1000.f); unit = "kHz"; }
+		// Row 2: the chip's bit clock, which is what TIME sets.
+		float x = panel::text(args.vg, TAG, pad, 24.f, "CLK");
+		if (fsInt >= 1e6f) { num = string::f("%.2f", fsInt / 1e6f); unit = "MHz"; }
+		else if (fsInt >= 10000.f) { num = string::f("%.1f", fsInt / 1000.f); unit = "kHz"; }
 		else if (fsInt >= 1000.f) { num = string::f("%.2f", fsInt / 1000.f); unit = "kHz"; }
 		else { num = string::f("%.0f", fsInt); unit = "Hz"; }
 		panel::segValue(args.vg, x + 2.5f, 24.f, 8.f, num, unit, dim);
-		panel::text(args.vg, RIGHT.inked(dim), rightX, 24.f, string::f("%.0f BIT", bits));
+		panel::text(args.vg, RIGHT.inked(dim), rightX, 24.f, "1 BIT");
 	}
 };
 

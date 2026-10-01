@@ -1,13 +1,13 @@
 # Racketeer's PT2399 delay loop, tested without Rack.
 #
-# Pt2399Loop.hpp is self-contained -- <cmath>, <cstdint>, <cstring>, <vector>
-# and nothing else -- so it needs no <rack.hpp> shim at all. `make test` at the
+# Pt2399Loop.hpp and src/Pt2399.hpp are self-contained -- <cmath>, <cstdint>,
+# <cstring>, <vector> and nothing else -- so it needs no <rack.hpp> shim at all. `make test` at the
 # repo root runs this.
 CXX ?= c++
 CXXFLAGS := -std=c++11 -O2 -Wall -Wextra -g
 SAN := -fsanitize=address,undefined -fno-omit-frame-pointer
 
-CORE := ../../src/Racketeer/Pt2399Loop.hpp
+CORE := ../../src/Racketeer/Pt2399Loop.hpp ../../src/Pt2399.hpp
 
 all: test_loop
 

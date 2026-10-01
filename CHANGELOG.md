@@ -5,6 +5,19 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Racketeer's chip is the datasheet's, not a delay pedal's
+
+Racketeer modelled the PT2399 as a 1365-sample ring behind a sample-and-hold,
+with a word length that fell with delay time and a reconstruction filter that
+tracked the clock. The datasheet's chip is a 1-bit adaptive delta modulator on
+44 kbit of RAM with fixed filters around it, which Amortization already models.
+Racketeer now uses that same chip (moved to `src/Pt2399.hpp`, shared): TIME sets
+the bit clock (1.47 Mbit/s at 30 ms, 37 kbit/s at 1.2 s), a clock change replays
+the stored bits at the new rate instead of moving a read pointer, ECHO past unity
+is bounded by the op-amp's hard clip rather than a `tanh`, and **Chip noise**
+scales the datasheet's comparator noise floor. The read-out shows the bit clock
+and `1 BIT`. Patches load unchanged; the loop will sound different, as it should.
+
 ### Amortization is the Verbtronic's circuit, not an algorithm in its image
 
 The Verbtronic's schematic is public domain (the image at the foot of

@@ -25,18 +25,31 @@ and one LED.
 
 ### How the chip is modelled
 
-A PT2399 is a fixed-length memory clocked at a variable rate, so the delay time
-sets the chip's sample rate: about 45 kHz at the 30 ms minimum, 4 kHz at 340 ms
-(the top of the datasheet), just over 1 kHz at the 1.2 s the pot can be pushed
-to. Racketeer runs a sample-and-hold at that internal rate ahead of the memory
-and a two-pole reconstruction low-pass that tracks it, so a long delay is dark
-and stair-stepped the way the real thing is. The converters get noisier as the
-chip is pushed: word length falls and a noise floor rises with delay time,
-scaled by the **Chip noise** menu setting. The memory is read with linear
-interpolation, so a moving TIME bends pitch. The loop is DC-blocked, and a
-`tanh` at the memory input stands in for the op-amps, so ECHO past unity
-saturates rather than blowing up. The output is clamped to ±12 V and the loop
-resets itself if it ever goes non-finite (it should not).
+The PT2399 is not a buffer of samples. The datasheet's block diagram is an input
+low-pass, a comparator and a **1-bit adaptive delta modulator** writing **44 kbit
+of RAM**, and a demodulator reading it back, all on a VCO whose rate is set by
+the resistance on pin 6. Racketeer runs that, bit by bit, with the same chip
+model as [Amortization](Amortization.md) (`src/Pt2399.hpp`):
+
+* **TIME is the clock.** Delay = 44 kbit ÷ bit rate: 1.47 Mbit/s at the 30 ms
+  minimum, 129 kbit/s at 340 ms (the top of the datasheet), 37 kbit/s at the 1.2 s
+  the pot can be pushed to. There is no read pointer. Moving TIME changes the
+  rate the stored bits are replayed at, so a sweep bends pitch the way the chip
+  does, and a halved delay plays what is already in the RAM an octave up.
+* **The converter is 1 bit.** What it adds is the modulator's: slope overload on
+  loud fast signals, granular hiss on quiet ones, and a bandwidth that falls with
+  the clock. A fixed RC pair (read from the PB701 schematic as 2k and 4n7, twice)
+  sits ahead of it; nothing in the filtering tracks the clock.
+* **ECHO past unity clips, it does not saturate softly.** The chip's op-amps run
+  from 5 V, so the loop is bounded by a hard clip at ±2.4 V at the modulator's
+  input. The datasheet's −90 dBV noise floor at the comparator is what a loop
+  past unity grows from when nothing is plugged in; **Chip noise** scales it.
+* The loop is DC-blocked, the output is clamped to ±12 V and the loop resets
+  itself if it ever goes non-finite (it should not).
+
+An earlier version modelled the chip as a 1365-sample ring with a sample-and-hold,
+a word length that fell with delay time and a reconstruction filter that tracked
+the clock. That is not the architecture in the datasheet, and it was replaced.
 
 The **LED** on the original is the loop light beside the RACKET caption; it
 follows the loop's envelope.
@@ -103,14 +116,14 @@ IN to OUT.
 ### Read-out
 
 Top line: the delay actually running (after LAG), and SHORT or LONG. Bottom line:
-the chip's internal sample rate at that delay, and the word length it has left.
+the chip's bit clock at that delay (what TIME is actually setting) and the converter's width, 1 BIT.
 
 ## Context menu
 
 | option | choices |
 |---|---|
 | **Oversampling** | Off, 2x. The loop, its S&H and its saturation run at twice the engine rate; the input is upsampled and both outputs decimated. Costs about double. Switching it does not allocate. |
-| **Chip noise** | None, Subtle, Stock (default), Filthy, Ruined. How bad the converters are: at Stock the loop keeps about 14.5 bits at the shortest delay and 10.5 at the longest; Ruined halves the damage again; None is a clean, if still sample-rate-starved, delay. |
+| **Chip noise** | None, Subtle, Stock (default), Filthy, Ruined. The comparator's noise floor: Stock is the datasheet's −90 dBV (40 µV); each step is ×4.5 either way, Ruined is 800 µV. None leaves only the modulator's own granular noise and whatever SEED adds. |
 | **NOISE button** | *Injects noise* (default) or *Kills the loop* — opens the feedback path while held, the other reading of an "on/off" button. |
 
 All three are saved with the patch.
@@ -120,8 +133,13 @@ All three are saved with the patch.
 * The optocoupler is a one-pole slew with asymmetric rates, not a TLP521 model;
   the original's 0–5 V CV input is here a bipolar ±10 V input with an
   attenuverter.
-* The PT2399's internal compander and clock modulator are not modelled beyond
-  their audible consequences (word length, noise floor, sample rate).
+* The modulator's step sizes and syllabic filter are not in the datasheet; they
+  are the ones calibrated against its THD, swing and gain figures (see
+  Amortization's tests). Gain lost per pass through the chip is the biggest
+  unknown: it sets how far below 100 % ECHO the loop stops ringing and where it
+  starts to sing.
+* The input stage's filter values are read off a hand-drawn schematic and are
+  not unambiguous.
 * Resonance, the chopper, LAG as a control, the DIRTY tap, ENV and GATE outputs
   and the three CV inputs are additions the original does not have. Their
   defaults (RES 0, chopper off, LAG 30 %) leave the original character in place.
