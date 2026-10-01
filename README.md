@@ -70,9 +70,9 @@ spectrum and a warped field, driven by audio and CV.
 |---|---|---|---|
 | **[Dependents](docs/Dependents.md)** · 16 HP | **[Bailout](docs/Bailout.md)** · 25 HP | **[Transmittal](docs/Transmittal.md)** · 10 HP | **[Projection](docs/Projection.md)** · 12 HP |
 
-| <img src="tools/previews/Apportionment.png" width="286"> |
-|---|
-| **[Apportionment](docs/Apportionment.md)** · 34 HP |
+| <img src="tools/previews/Apportionment.png" width="286"> | <img src="tools/previews/Rebate.png" width="101"> |
+|---|---|
+| **[Apportionment](docs/Apportionment.md)** · 34 HP | **[Rebate](docs/Rebate.md)** · 12 HP |
 
 
 ## Built for this plugin
@@ -124,6 +124,12 @@ The module's public-domain schematic, solved: three PT2399 echo chips (a 1-bit d
 *An Ensoniq DP/4, running its own firmware. EPROMs not included.*
 
 Four ESP effect units under the DP/4's real operating system and DSP code -- every algorithm, preset and Config is Ensoniq's -- on an emulated 68B03 and four ES5510s. The DP/4's own front panel is here button for button, and the thing the hardware hid in its menus is on the panel: every Config parameter that routes the four units (source count, A-B and C-D serial/parallel/feedback, AB into CD, amounts, mono/stereo inputs, output selects) is a control, and moving one makes the module work the Config pages for you. Per-unit stereo taps for patching the units into the rest of the rack.
+
+### [Rebate](docs/Rebate.md) — 12 HP · *Effect, Reverb, Delay, Hardware clone*
+
+*An Alesis MIDIverb (or MIDIFEX), running its own firmware. EPROMs not included.*
+
+Keith Barr's 1986 discrete-logic reverb: the real microcode on an emulation of the TTL signal processor, verified sample for sample against MAME's, and the real 80C31 firmware behind the real front panel -- two digits, UP, DOWN, CHANNEL, DEFEAT, MIDI program change. The analog board is from the schematic, down to the "Clipping?" diode on the converter's input filter, the sample-and-hold, and the DAC's hold capacitors. A patch keeps program, channel and defeat, and plays them back into the firmware after power-on.
 
 ### [Repossession](docs/Repossession.md) — 34 HP · *Sampler, Sequencer, Visual*
 

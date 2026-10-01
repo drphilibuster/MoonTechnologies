@@ -1,7 +1,7 @@
 # Moon Technologies
 
 One VCV Rack 2 plugin, slug `MoonTechnologies`, brand **Moon Technologies**,
-author **Taxxess**. Twenty-nine modules sharing one panel pipeline: the three
+author **Taxxess**. Thirty modules sharing one panel pipeline: the three
 originals (`PatchAudit`, `Retroactive`, `UncertaintyPolicy`), nine built to
 order (`Dividend`, `TaxBracket`, `Racketeer`, `Gross`, `Amortization`,
 `Repossession`, `Collusion`, `Reconciliation`, `Dependents`), one expander
@@ -11,8 +11,9 @@ order (`Dividend`, `TaxBracket`, `Racketeer`, `Gross`, `Amortization`,
 `Diversified`), one voice that split off from a bank (`Toll`, out of
 `Kickback`), one bank doubled into a module of its own (`Bailout`, out of
 `Consolidation`), two about video (`Transmittal`, which publishes it, and
-`Projection`, which makes it) and one hardware emulation (`Apportionment`, an
-Ensoniq DP/4 running its own firmware; see "ROMs" below).
+`Projection`, which makes it) and two hardware emulations (`Apportionment`, an
+Ensoniq DP/4, and `Rebate`, an Alesis MIDIverb, each running its own firmware;
+see "ROMs" below).
 
 ## VCV Rack UI: use the tool, always
 
@@ -115,7 +116,7 @@ one. A screenshot showing old behaviour after a fix usually means exactly this.
 
 ## Slugs are permanent
 
-`MoonTechnologies` and the twenty-nine module slugs listed at the top of this file.
+`MoonTechnologies` and the thirty module slugs listed at the top of this file.
 Changing any of them orphans every saved patch that used it: Rack's fallback table
 (`Rack/src/plugin.cpp:374`) is maintained by VCV, not by plugin authors.
 
@@ -173,6 +174,11 @@ them; a patch stores their *paths*, never their bytes. `.gitignore` refuses
 `*DP4*.bin` / `*dp4*.bin`, and `tests/Apportionment` reads them from `$DP4_ROMS`
 outside the repo, printing SKIP without them. The MAME code the emulation runs
 on (BSD-3) is vendored in `vendor/mame/` with its own notes in `vendor/README.md`.
+
+`Rebate` does the same with the MIDIverb's EPROMs (the 80C31's MVOP and the
+DSP's MVOBJ or MIDIFEX microcode): `.gitignore` refuses the dumps, `tests/Rebate`
+reads them from `$MIDIVERB_ROMS` (SKIP without it), and only their CRC-32s are in
+the source, to name them.
 
 ## Local checkouts (outside this repo)
 

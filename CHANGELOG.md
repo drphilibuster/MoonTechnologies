@@ -5,6 +5,38 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Added: Rebate, an Alesis MIDIverb running its own firmware
+
+Keith Barr's 1986 reverb, whose signal processor is TTL logic stepping through a
+microcode EPROM, and whose front panel is an 80C31. Both run the real images,
+which are Alesis's and not included (the context menu loads them; a patch keeps
+paths). The MIDIFEX's microcode runs on the same board.
+
+* An MCS-51 core written for it from Intel's manual: every instruction with its
+  cycle count, timers in all four modes, the interrupt system's polling rules,
+  and a UART that receives MIDI a bit at a time from a 31,250-baud line.
+* The DSP, ported from MAME's driver and run interleaved with the CPU on the
+  6 MHz clock, so a program change lands mid-sample as on the board. Checked
+  sample for sample against MAME's loop on all 64 programs of both EPROMs, with
+  no microcode bus conflicts.
+* The analog board from Eric Brombaugh's schematic at 93.75 kHz:
+  * the three-stage pre-emphasis filter (+11 dB at 9.8 kHz, -3 dB at 11.6 kHz);
+  * the "Clipping?" diode that clamps it to the analog switch's soft +5 V rail;
+  * the ADC's sample-and-hold, with its one sample of latency;
+  * the DAC's two hold capacitors at their own times;
+  * the output RC and Sallen-Key as one network;
+  * the loaded mix pot.
+
+  Where it departs from MAME, the schematic is the reason; the departures are
+  listed in `src/Rebate/Analog.hpp`.
+* A patch keeps program, channel and defeat. The unit remembers none of them, so
+  after power-on the module plays them back through the firmware's own buttons
+  and MIDI.
+
+`tests/Rebate` boots the firmware, works the buttons and MIDI, restores
+settings, compares the DSP with MAME's, and checks the analog chain against the
+schematic's annotations, with the ROMs from `MIDIVERB_ROMS` (SKIP without).
+
 ### Racketeer's chip is the datasheet's, not a delay pedal's
 
 Racketeer modelled the PT2399 as a 1365-sample ring behind a sample-and-hold,

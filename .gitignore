@@ -40,3 +40,18 @@ __pycache__/
 # $DP4_ROMS, outside the repository.
 *DP4*.bin
 *dp4*.bin
+
+# Alesis MIDIverb / MIDIFEX EPROM images (Rebate loads them at runtime; they are
+# Alesis's and must never be committed). tests/Rebate reads them from
+# $MIDIVERB_ROMS, outside the repository.
+*MVOP*
+*MVOBJ*
+*mvop*
+*mvobj*
+*MIDIFEX*.bin
+*MIDIFEX*.Bin
+*MIDIFEX*.BIN
+*MIDIVerb*.BIN
+*MIDIVerb*.bin
+*midiverb*.bin
+*midifex*.bin

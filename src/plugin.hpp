@@ -31,6 +31,7 @@ extern Model* modelRacketeer;
 extern Model* modelReconciliation;
 extern Model* modelRepossession;
 extern Model* modelScheduleA;
+extern Model* modelRebate;
 extern Model* modelRetroactive;
 extern Model* modelSignHere;
 extern Model* modelSixFigures;

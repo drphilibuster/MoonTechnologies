@@ -33,6 +33,7 @@ void init(Plugin* p) {
 	p->addModel(modelReconciliation);
 	p->addModel(modelRepossession);
 	p->addModel(modelScheduleA);
+	p->addModel(modelRebate);
 	p->addModel(modelRetroactive);
 	p->addModel(modelSignHere);
 	p->addModel(modelSixFigures);
