@@ -202,6 +202,13 @@ test:
 	done
 
 
+# Rebuilds the PIC firmware from its assembly: the .hex, and the header the module embeds.
+.PHONY: firmware
+firmware:
+	python3 tools/pic16asm.py firmware/varimode/varimode_fixed.asm -q \
+		-o firmware/varimode/varimode_fixed.hex \
+		--cpp src/PaymentSchedule/VarimodeFirmware.hpp VarimodeFixed
+
 help:
 	@echo "Moon Technologies -- VCV Rack plugin"
 	@echo
@@ -216,5 +223,6 @@ help:
 	@echo "  make vcv-NAME        render just one panel (e.g. make vcv-Toll)"
 	@echo
 	@echo "  make test            run the host-side unit tests"
+	@echo "  make firmware        reassemble firmware/varimode from its source"
 	@echo
 	@echo "See docs/BUILDING.md."

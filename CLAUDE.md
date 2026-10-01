@@ -189,6 +189,17 @@ DSP's MVOBJ or MIDIFEX microcode): `.gitignore` refuses the dumps, `tests/Rebate
 reads them from `$MIDIVERB_ROMS` (SKIP without it), and only their CRC-32s are in
 the source, to name them.
 
+## Firmware that runs on an emulated PIC
+
+`Payment Schedule`'s quantizer is a PIC16F684 (`src/Pic16f684.hpp`) running firmware. **Our own
+firmware is in this repo**: `firmware/varimode/varimode_fixed.asm`, with its `.hex` and the
+generated `src/PaymentSchedule/VarimodeFirmware.hpp`. Edit the assembly and `make firmware`;
+`tools/pic16asm.py` is the assembler (no MPASM here), and `make test` fails if the committed
+`.hex` and header are not what the assembly assembles to. **Third-party firmware is not**: the
+Modular in a Week course's `varimodequantizer_100` has no author or licence, so, like the ROMs
+above, the module loads it at runtime from a path and a patch stores only the path. `.gitignore`
+refuses it; `tests/Pic16` runs it from `$VARIMODE_HEX` and `$VARIMODE_ASM` (SKIP without them).
+
 `Contagion` does the same with the Virus OS image (512 KB flash dump): `.gitignore`
 refuses Virus images, `tests/Contagion` reads one from `$VIRUS_ROMS` (SKIP without
 it). Its DSP emulator is vendored in `vendor/dsp56300` (GPLv3, see vendor/README.md).

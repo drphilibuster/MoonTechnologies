@@ -1,19 +1,30 @@
 #include "../plugin.hpp"
 #include "../Quantizer.hpp"
 #include "Panel.hpp"
+#include "Sequencer.hpp"
+#include "Varimode.hpp"
+#include "VarimodeFirmware.hpp"
 
-// Payment Schedule fuses three Modular in a Week Day 10 circuits into one
-// counter: a Baby8 (a 4017 decade counter reading out eight CV/gate steps),
-// the same counter read the other way as a sequential switch (a HEF4516 +
-// CD4051 in the original, collapsed here into direct routing since the
-// counter already lives in software), and a 4031-based tap looper sharing
-// the same eight slots as the steps rather than a separately-sized buffer.
-// The varimode quantizer (chromatic, major, minor and their pentatonics,
-// shared with Dependents' root -- see ../Quantizer.hpp) sits on the CV path
-// leaving the module. See docs/PaymentSchedule.md for the source schematics
-// and exactly what was kept, changed or left out.
+#include <osdialog.h>
 
-static const int NUM_STEPS = 8;
+#include <atomic>
+#include <fstream>
+#include <memory>
+#include <sstream>
+
+// Payment Schedule fuses three Modular in a Week Day 10 circuits onto one clock:
+// a Baby8 (a 74HC4017 decade counter reading out eight CV/gate steps), the same
+// counter read the other way as a sequential switch (a HEF4516 + CD4051 in the
+// original, collapsed here into direct routing since the counter already lives in
+// software), and a 4031 tap recorder/looper (a 64-stage CD4031B recirculating
+// through a diode OR). The counter and the loop are the chips, in Sequencer.hpp,
+// where they can be tested; this file keeps the jacks, the quantizer and the
+// panel. The varimode quantizer is a PIC16F684 running firmware (Varimode.hpp,
+// Pic16f684.hpp): this project's own, embedded, or any other that keeps the board's pin
+// contract, loaded from the context menu. It sits on the CV path leaving the module. See docs/PaymentSchedule.md for the source schematics and
+// exactly what was kept, changed or left out.
+
+static const int NUM_STEPS = paysched::kSteps;
 
 struct PaymentSchedule : Module {
 	enum ParamId {
@@ -45,20 +56,20 @@ struct PaymentSchedule : Module {
 	dsp::PulseGenerator eocPulse, trigOutPulse;
 	dsp::ClockDivider lightDivider;
 
-	int step = 0;
-	bool running = true;       // RUN button / RUN CV toggle this; CYCLE sets it
-	bool armCycleStop = false; // and arms an automatic stop at the next wrap
-	bool runWasDown = false, tapWasDown = false, clearWasDown = false;
+	paysched::Sequencer seq;   // the 74HC4017 counter, the CD4031B loop, RUN
+	bool runWasDown = false, tapWasDown = false;
 	float lastQuantVolt = 0.f;
-	float heldCv = 0.f;
+	float heldRaw = 0.f;       // the CV the quantizer is looking at: the last live step's, after ATTEN
 
-	// The tap loop shares the eight step slots rather than a buffer of its
-	// own -- Payment Schedule used to let this run to 32 or 64 while STEPS
-	// topped out at 8, which meant a "32-step loop" was really eight looping
-	// slots played four times over with no way to see or reach the rest.
-	// Tying it to the same counter is what actually fixes that, not a bigger
-	// number.
-	bool loopBuf[NUM_STEPS] = {};
+	// The quantizer: a PIC16F684 and its firmware. The audio thread owns `pic`; the UI thread
+	// builds a replacement and hands it over, so loading a file never stalls the engine.
+	std::unique_ptr<paysched::varimode::Varimode> pic;
+	std::atomic<paysched::varimode::Varimode*> handover{nullptr};
+	std::atomic<bool> powerCycle{false};
+	std::atomic<bool> firmwareLeftModel{false};
+	double picRate = 0.0;
+	std::string firmwarePath;                  // empty: the built-in firmware. UI thread only.
+	std::string firmwareStatus = "built-in firmware";   // ditto
 
 	// Published for the light-bezel flashes; decayed in the light block.
 	float tapFlash = 0.f, clearFlash = 0.f;
@@ -103,22 +114,50 @@ struct PaymentSchedule : Module {
 		configInput(CYCLE_TRIG_INPUT, "Run one cycle (trigger)");
 
 		configOutput(EOC_OUTPUT, "End of cycle (fires on wrap)");
-		configOutput(LOOP_GATE_OUTPUT, "Loop gate (tap-recorded pattern, current step)");
+		configOutput(LOOP_GATE_OUTPUT, "Loop gate (the 4031 Q: tap-recorded pattern, 64 clocks long)");
 		configOutput(TRIG_OUTPUT, "Quantizer trigger (on note change)");
 		configOutput(A_OUT_OUTPUT, "CV / V-oct out");
 
 		lightDivider.setDivision(32);
+		pic.reset(newBuiltIn());
+	}
+
+	~PaymentSchedule() { delete handover.exchange(nullptr); }
+
+	static paysched::varimode::Varimode* newBuiltIn() {
+		paysched::varimode::Varimode* v = new paysched::varimode::Varimode();
+		v->loadWords(paysched::firmware::kVarimodeFixed, paysched::firmware::kVarimodeFixedWords);
+		return v;
+	}
+
+	/** Loads the firmware from a .HEX the player chose. UI thread. */
+	bool loadFirmwareFile(const std::string& path) {
+		std::ifstream f(path);
+		if (!f) { firmwareStatus = "cannot open " + system::getFilename(path); return false; }
+		std::stringstream ss;
+		ss << f.rdbuf();
+		std::unique_ptr<paysched::varimode::Varimode> v(new paysched::varimode::Varimode());
+		if (!v->loadHex(ss.str())) { firmwareStatus = system::getFilename(path) + " is not a valid Intel HEX file"; return false; }
+		delete handover.exchange(v.release());
+		firmwarePath = path;
+		firmwareStatus = "custom firmware: " + system::getFilename(path);
+		firmwareLeftModel = false;
+		return true;
+	}
+
+	void useBuiltInFirmware() {
+		delete handover.exchange(newBuiltIn());
+		firmwarePath.clear();
+		firmwareStatus = "built-in firmware";
+		firmwareLeftModel = false;
 	}
 
 	void onReset(const ResetEvent& e) override {
 		Module::onReset(e);
-		step = 0;
-		running = true;
-		armCycleStop = false;
-		for (int i = 0; i < NUM_STEPS; i++)
-			loopBuf[i] = false;
+		seq.reset();
 		lastQuantVolt = 0.f;
-		heldCv = 0.f;
+		heldRaw = 0.f;
+		powerCycle = true;
 	}
 
 	int numSteps() {
@@ -142,62 +181,40 @@ struct PaymentSchedule : Module {
 		// CYCLE chains a one-shot run from one into the other. -------------
 		bool runDown = params[RUN_PARAM].getValue() > 0.5f;
 		if (runDown && !runWasDown)
-			running = !running;
+			seq.running = !seq.running;
 		runWasDown = runDown;
 		if (runCvTrigger.process(inputs[RUN_INPUT].getVoltage(), 0.1f, 2.f))
-			running = !running;
-		if (cycleTrigTrigger.process(inputs[CYCLE_TRIG_INPUT].getVoltage(), 0.1f, 2.f)) {
-			running = true;
-			armCycleStop = true;
-			step = 0;
-		}
+			seq.running = !seq.running;
+		if (cycleTrigTrigger.process(inputs[CYCLE_TRIG_INPUT].getVoltage(), 0.1f, 2.f))
+			seq.startCycle();
 
-		bool wrapped = false;
-		if (clockTrigger.process(inputs[CLOCK_INPUT].getVoltage(), 0.1f, 2.f) && running) {
-			bool up = directionUp();
-			int prev = step;
-			step = up ? (step + 1) % n : (step - 1 + n) % n;
-			wrapped = up ? (prev == n - 1) : (prev == 0);
-		}
-		if (wrapped && armCycleStop) {
-			running = false;
-			armCycleStop = false;
-		}
+		// --- the chips. The counter sees the clock and RESET as levels, as the
+		// pins do; the loop sees the tap as a level too, read when the clock
+		// rises. RECORD gates the tap (the hardware's tap is always live), and
+		// CLEAR, held, opens the loop. -----------------------------------------
+		clockTrigger.process(inputs[CLOCK_INPUT].getVoltage(), 0.1f, 2.f);
+		resetTrigger.process(inputs[RESET_INPUT].getVoltage(), 0.1f, 2.f);
+		bool tapDown = params[TAP_PARAM].getValue() > 0.5f;
+		bool tapButtonEdge = tapDown && !tapWasDown;
+		tapWasDown = tapDown;
+		bool tapGateEdge = tapGateTrigger.process(inputs[TAP_GATE_INPUT].getVoltage(), 0.1f, 2.f);
+		if (tapButtonEdge || tapGateEdge)
+			tapFlash = 1.f;
+		bool recording = params[RECORD_PARAM].getValue() > 0.5f;
+		bool tapHigh = recording && (tapDown || tapGateTrigger.isHigh());
+		bool clearHeld = params[CLEAR_PARAM].getValue() > 0.5f;
+		if (clearHeld)
+			clearFlash = 1.f;
 
-		bool doReset = resetTrigger.process(inputs[RESET_INPUT].getVoltage(), 0.1f, 2.f);
-		if (doReset)
-			step = 0;
-		if (step >= n)
-			step = 0;
+		bool wrapped = seq.process(clockTrigger.isHigh(), resetTrigger.isHigh(),
+		                           directionUp(), n, tapHigh, clearHeld);
+		int step = seq.step();
 
 		if (wrapped)
 			eocPulse.trigger(1e-3f);
 		outputs[EOC_OUTPUT].setVoltage(eocPulse.process(args.sampleTime) ? 10.f : 0.f);
 
-		// --- the tap looper: a second gate track sharing the same eight
-		// slots as the steps, its write head the same counter. -------------
-		bool tapDown = params[TAP_PARAM].getValue() > 0.5f;
-		bool tapButtonEdge = tapDown && !tapWasDown;
-		bool tapGateEdge = tapGateTrigger.process(inputs[TAP_GATE_INPUT].getVoltage(), 0.1f, 2.f);
-		bool tapEdge = tapButtonEdge || tapGateEdge;
-		tapWasDown = tapDown;
-		if (tapEdge)
-			tapFlash = 1.f;
-
-		bool clearDown = params[CLEAR_PARAM].getValue() > 0.5f;
-		bool clearEdge = clearDown && !clearWasDown;
-		clearWasDown = clearDown;
-		if (clearEdge) {
-			for (int i = 0; i < NUM_STEPS; i++)
-				loopBuf[i] = false;
-			clearFlash = 1.f;
-		}
-
-		bool recording = params[RECORD_PARAM].getValue() > 0.5f;
-		if (recording && tapEdge)
-			loopBuf[step] = true;   // overdub: taps OR into the pattern
-
-		outputs[LOOP_GATE_OUTPUT].setVoltage(loopBuf[step] ? 10.f : 0.f);
+		outputs[LOOP_GATE_OUTPUT].setVoltage(seq.loopGate() ? 10.f : 0.f);
 
 		// --- the sequential switch: SWITCH IN routes to whichever step's
 		// GATE OUT the count has landed on, and that step's CV IN (or its
@@ -226,20 +243,49 @@ struct PaymentSchedule : Module {
 			float raw = inputs[B_IN_INPUT + step].isConnected()
 			                ? inputs[B_IN_INPUT + step].getVoltageSum()
 			                : params[STEP_PARAM + step].getValue() * range;
-			raw *= atten;
-			float out = quantOn ? quant::quantize(raw, scaleIdx, rootSemi) : raw;
-			heldCv = out;
+			heldRaw = raw * atten;
 		}
-		outputs[A_OUT_OUTPUT].setVoltage(clamp(heldCv, -12.f, 12.f));
 
-		if (std::fabs(heldCv - lastQuantVolt) > 1e-4f) {
-			trigOutPulse.trigger(1e-3f);
-			lastQuantVolt = heldCv;
+		// The quantizer chip. A new firmware, a power cycle and a sample-rate change are all
+		// taken here, on the audio thread, which is the one that owns the chip.
+		if (paysched::varimode::Varimode* fresh = handover.exchange(nullptr)) {
+			pic.reset(fresh);
+			picRate = 0.0;
 		}
+		if (picRate != (double) args.sampleRate) {
+			pic->setSampleRate((double) args.sampleRate);
+			picRate = (double) args.sampleRate;
+		}
+		if (powerCycle.exchange(false))
+			pic->powerOn();
+
+		float cvOut;
+		bool noteChanged;
+		if (quantOn) {
+			// ROOT is this module's addition: the board has none, so the scale is rooted by
+			// moving the input down and the output back up by the same amount.
+			float rootV = (float) rootSemi / 12.f;
+			static const paysched::varimode::Mode modeOf[quant::NUM_SCALES] = {
+				paysched::varimode::CHROMATIC, paysched::varimode::MAJOR, paysched::varimode::MINOR,
+				paysched::varimode::MAJOR_PENT, paysched::varimode::MINOR_PENT };
+			cvOut = (float) pic->process((double) (heldRaw - rootV),
+			                             modeOf[clamp(scaleIdx, 0, quant::NUM_SCALES - 1)]) + rootV;
+			noteChanged = pic->noteChanged();
+		}
+		else {
+			cvOut = heldRaw;
+			noteChanged = std::fabs(cvOut - lastQuantVolt) > 1e-4f;
+			lastQuantVolt = cvOut;
+		}
+		outputs[A_OUT_OUTPUT].setVoltage(clamp(cvOut, -12.f, 12.f));
+
+		if (noteChanged)
+			trigOutPulse.trigger(1e-3f);
 		outputs[TRIG_OUTPUT].setVoltage(trigOutPulse.process(args.sampleTime) ? 10.f : 0.f);
 
 		// --- lights, at a fraction of sample rate -------------------------
 		if (lightDivider.process()) {
+			firmwareLeftModel = pic->unsupported();
 			float dt = args.sampleTime * lightDivider.getDivision();
 			bool up = directionUp();
 			lights[UP_LIGHT].setBrightness(up ? 1.f : 0.f);
@@ -251,34 +297,44 @@ struct PaymentSchedule : Module {
 			lights[TAP_LIGHT].setBrightness(tapFlash);
 			lights[RECORD_LIGHT].setBrightness(recording ? 1.f : 0.f);
 			lights[CLEAR_LIGHT].setBrightness(clearFlash);
-			lights[RUN_LIGHT].setBrightness(running ? 1.f : 0.f);
+			lights[RUN_LIGHT].setBrightness(seq.running ? 1.f : 0.f);
 		}
 	}
 
 	json_t* dataToJson() override {
 		json_t* root = json_object();
-		json_object_set_new(root, "step", json_integer(step));
-		json_object_set_new(root, "running", json_boolean(running));
-		json_object_set_new(root, "armCycleStop", json_boolean(armCycleStop));
-		json_t* buf = json_array();
-		for (int i = 0; i < NUM_STEPS; i++)
-			json_array_append_new(buf, json_boolean(loopBuf[i]));
-		json_object_set_new(root, "loopBuf", buf);
+		json_object_set_new(root, "step", json_integer(seq.step()));
+		json_object_set_new(root, "running", json_boolean(seq.running));
+		json_object_set_new(root, "armCycleStop", json_boolean(seq.armCycleStop));
+		// The 4031's 64 stages as one number, stage 1 in bit 0 (a bit pattern, so the
+		// sign of the integer means nothing).
+		json_object_set_new(root, "loopStages", json_integer((json_int_t) seq.loop.stages));
+		// The firmware, if it is not the built-in one: a path, never the image.
+		json_object_set_new(root, "firmwarePath", json_string(firmwarePath.c_str()));
 		return root;
 	}
 
 	void dataFromJson(json_t* root) override {
 		json_t* j;
 		if ((j = json_object_get(root, "step")))
-			step = clamp((int) json_integer_value(j), 0, NUM_STEPS - 1);
+			seq.counter.setIndex(clamp((int) json_integer_value(j), 0, NUM_STEPS - 1));
 		if ((j = json_object_get(root, "running")))
-			running = json_boolean_value(j);
+			seq.running = json_boolean_value(j);
 		if ((j = json_object_get(root, "armCycleStop")))
-			armCycleStop = json_boolean_value(j);
-		if ((j = json_object_get(root, "loopBuf")) && json_is_array(j)) {
+			seq.armCycleStop = json_boolean_value(j);
+		if ((j = json_object_get(root, "firmwarePath")) && json_is_string(j) && *json_string_value(j))
+			loadFirmwareFile(json_string_value(j));
+		if ((j = json_object_get(root, "loopStages"))) {
+			seq.loop.stages = (uint64_t) json_integer_value(j);
+		}
+		else if ((j = json_object_get(root, "loopBuf")) && json_is_array(j)) {
+			// A patch from before the loop was a 64-stage register: eight slots, one
+			// per step. Tile them along the register so the gates land where they were.
+			bool slots[NUM_STEPS] = {};
 			size_t n = json_array_size(j);
 			for (size_t i = 0; i < n && i < (size_t) NUM_STEPS; i++)
-				loopBuf[i] = json_boolean_value(json_array_get(j, i));
+				slots[i] = json_boolean_value(json_array_get(j, i));
+			seq.importSlots(slots, numSteps(), seq.step());
 		}
 	}
 };
@@ -397,6 +453,20 @@ struct PaymentScheduleWidget : ModuleWidget {
 			for (int i = 0; i < NUM_STEPS; i++)
 				m->params[PaymentSchedule::GATE_PARAM + i].setValue(1.f);
 		}));
+
+		menu->addChild(new MenuSeparator);
+		menu->addChild(createMenuLabel("Quantizer: PIC16F684"));
+		menu->addChild(createMenuLabel(m->firmwareStatus));
+		if (m->firmwareLeftModel)
+			menu->addChild(createMenuLabel("(the firmware used something the emulator does not model)"));
+		menu->addChild(createMenuItem("Load PIC firmware (.HEX)...", "", [=]() {
+			char* p = osdialog_file(OSDIALOG_OPEN, NULL, NULL, NULL);
+			if (p) {
+				m->loadFirmwareFile(p);
+				std::free(p);
+			}
+		}));
+		menu->addChild(createMenuItem("Use the built-in firmware", "", [=]() { m->useBuiltInFirmware(); }));
 	}
 };
 

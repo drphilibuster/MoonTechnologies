@@ -16,6 +16,7 @@
 # Test binaries and rendered audio
 /tests/*/test_*
 !/tests/*/test_*.cpp
+!/tests/*/test_*.py
 /tests/*/render_*
 !/tests/*/render_*.cpp
 /tests/*/out/
@@ -82,3 +83,5 @@ __pycache__/
 # ...nor Lexicon's factory SysEx banks or any recording/IR of the machine.
 *PCM*70*.syx
 
+# Third-party PIC firmware (no licence stated): loaded at runtime, never committed
+*varimodequantizer*
