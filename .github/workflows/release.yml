@@ -57,11 +57,15 @@ jobs:
         if: matrix.os == 'windows-latest'
         uses: msys2/setup-msys2@v2
         with:
+          # MINGW64 (msvcrt), what Rack's own Windows build links against. MSYS2 has
+          # deprecated it and stopped packaging some tools for it; jq comes from the
+          # msys repository instead, which is all the build needs it for.
           msystem: MINGW64
+          suppress-deprecation-warnings: msystem-mingw64
           update: true
           install: >-
             mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-jq
+            jq
             make
             unzip
 
