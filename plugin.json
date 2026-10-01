@@ -16,11 +16,12 @@
     {
       "slug": "Amortization",
       "name": "Amortization",
-      "description": "Verbtronic-style digital reverb: Verb and Tronic algorithms, tonal tilt, feedback, mode gate and wet-only output",
+      "description": "The Pittsburgh Modular Verbtronic as a circuit: three PT2399 echo chips in a recirculating network, tonal tilt, zener-limited feedback, mode gate and wet-only output",
       "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Amortization.md",
       "tags": [
         "Reverb",
-        "Effect"
+        "Effect",
+        "Hardware clone"
       ]
     },
     {

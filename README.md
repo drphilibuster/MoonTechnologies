@@ -46,9 +46,9 @@ spectrum and a warped field, driven by audio and CV.
 |---|---|---|---|
 | **[Patch Audit](docs/PatchAudit.md)** · 26 HP | **[Retroactive](docs/Retroactive.md)** · 15 HP | **[Uncertainty Policy](docs/UncertaintyPolicy.md)** · 11 HP | **[Dividend](docs/Dividend.md)** · 15 HP |
 
-| <img src="tools/previews/TaxBracket.png" width="101"> | <img src="tools/previews/Racketeer.png" width="151"> | <img src="tools/previews/Gross.png" width="168"> | <img src="tools/previews/Amortization.png" width="126"> |
+| <img src="tools/previews/TaxBracket.png" width="101"> | <img src="tools/previews/Racketeer.png" width="151"> | <img src="tools/previews/Gross.png" width="168"> | <img src="tools/previews/Amortization.png" width="92"> |
 |---|---|---|---|
-| **[Tax Bracket](docs/TaxBracket.md)** · 12 HP | **[Racketeer](docs/Racketeer.md)** · 18 HP | **[Gross](docs/Gross.md)** · 20 HP | **[Amortization](docs/Amortization.md)** · 15 HP |
+| **[Tax Bracket](docs/TaxBracket.md)** · 12 HP | **[Racketeer](docs/Racketeer.md)** · 18 HP | **[Gross](docs/Gross.md)** · 20 HP | **[Amortization](docs/Amortization.md)** · 11 HP |
 
 | <img src="tools/previews/Repossession.png" width="286"> | <img src="tools/previews/Collusion.png" width="151"> | <img src="tools/previews/Reconciliation.png" width="160"> | <img src="tools/previews/SixFigures.png" width="210"> |
 |---|---|---|---|
@@ -113,11 +113,11 @@ A PT2399 delay run as a self-sustaining noise voice, with the chip's clock and w
 
 A Wiener–Hammerstein distortion built from the piecewise-tanh mapping and a dynamic bias: input EQ, drive, static and dynamic bias, knees and slopes per polarity, five curve families, output EQ, device presets, and a live transfer-curve read-out.
 
-### [Amortization](docs/Amortization.md) — 15 HP · *Reverb, Effect*
+### [Amortization](docs/Amortization.md) — 11 HP · *Reverb, Effect, Hardware clone*
 
-*After the Verbtronic.*
+*After the Pittsburgh Modular Verbtronic.*
 
-A Dattorro plate for VERB and an eight-line FDN with a limiter for TRONIC, tonal tilt inside the loop, feedback past unity, predelay, freeze, the mode gate, and wet-only outputs beside the mix.
+The module's public-domain schematic, solved: three PT2399 echo chips (a 1-bit delta modulator and 44 kbit of RAM each) in a recirculating network, a tone shelf, a zener feedback limiter, and a linearised VCA mixer. VERB and TRONIC change the chips' clocks, so a mode change replays what is stored at a new rate.
 
 ### [Apportionment](docs/Apportionment.md) — 34 HP · *Effect, Reverb, Delay, Hardware clone*
 

@@ -5,6 +5,47 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Amortization is the Verbtronic's circuit, not an algorithm in its image
+
+The Verbtronic's schematic is public domain (the image at the foot of
+pittsburghmodular.com/verbtronic). It was never a reverb algorithm: it is three
+PT2399 echo chips in a recirculating network, a tone shelf and zener-limited
+feedback in front, a make-up amplifier behind, and a linearised SSM2164 VCA for
+the mix. The previous Amortization -- a Dattorro plate for VERB, a Householder
+FDN for TRONIC, built from the manual's description -- was nothing like it, and
+did not sound like it. It is replaced.
+
+* **The circuit, block by block**, in `src/Amortization/Verbtronic.hpp`: the
+  attenuator, the tone stage solved from its nodal equations, each chip's
+  multiple-feedback input filter (2nd order, 12.5 kHz), the mesh of 12k1 and 10k
+  resistors that feeds every chip from the sum of all three, chip 3's output
+  filter, the make-up gain, the feedback pot loaded by its 10k, the bridge-and-zener
+  limiter solved per sample, and the VCA mixer with its linearising control loop.
+* **The PT2399 is a 1-bit delta modulator, 44 kbit of RAM and a clock**, per its
+  datasheet block diagram. The delay is the RAM's length over the bit rate, and
+  the bit rate is the VCO, set by pin 6. VERB and TRONIC are the DG202s changing
+  those resistors: delays of 60.2 / 48.5 / 39.6 ms (Verb) and 123.7 / 93.9 /
+  73.6 ms (Tronic), from Electric Druid's measured delay-against-resistance
+  relation. **A mode change now replays what is in the RAM at the new rate**,
+  which is what the hardware does, and nothing fades.
+* **Removed**, because the circuit has nothing like them: SIZE, PREDELAY, MOD,
+  FREEZE, the CV inputs for FEEDBACK, TILT and SIZE, stereo, and the Original
+  ranges / Quality menu. Panel and parameters change; **saved patches' Amortization
+  settings will not carry over**. The panel is the original's: FEEDBACK, TILT,
+  MODE, MIX, MIX CV with its attenuverter, MODE GATE, IN, MIX, VERB. 11 HP, from 15.
+* **Added**: TILT direction in the context menu (the schematic and the manual
+  disagree), the chip's noise floor, and a read-out of the first chip's delay and
+  clock.
+* Everything not on the schematic or in a datasheet -- the modulator's step sizes
+  and adaptation above all -- is collected in the `assumed` namespace and listed
+  in docs/Amortization.md, to be measured against a unit.
+* `tests/Amortization` is rewritten: 96 checks against independent statements of
+  the schematic and the datasheets (delay and clock relations, the chip's gain,
+  THD and output swing, the nodal-equation tone and filter responses, the limiter,
+  the mixer law, the loop's decay and self-oscillation, and the first sound out
+  landing exactly on the delays). It caught two real errors on the way: the
+  limiter's Newton start, and a chip input stage modelled one pole where it has two.
+
 ### Apportionment: a warning for OS 1.06
 
 The module reads the OS version off the firmware's boot screen and, for anything
