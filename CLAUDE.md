@@ -83,13 +83,19 @@ which is not what you want between two edits to one spec.
 
 A panel's width is solved, not typed, so a `panelkit/` change can move half the
 family at once -- and those numbers are also written out in prose, where nothing
-checks them. `tools/sync_hp.py` reports every HP figure in README.md and docs/
-that disagrees with the generated headers -- and the README gallery's image
-widths, which are the same fact written a third way and the one nobody
-remembers. It also keeps the spelled-out module count in README.md and this file
+checks them. `tools/sync_hp.py` reports every HP figure in docs/ that disagrees
+with the generated headers, and keeps the spelled-out module count in this file
 equal to the number of modules in `plugin.json`, so adding a module never means
 bumping it by hand. `--write` fixes them. Run it after any change that moves a
 panel's width or adds a module.
+
+**README.md is generated** (`make readme`, from `plugin.json`, the panel headers
+and `tools/readme/`) -- never edit it. Its prose is `tools/readme/README.in.md`
+and each module's blurb is a block in `tools/readme/modules.md`; a new module
+needs one, and the generator refuses to run without it. Keep counts and HP
+figures out of that prose: the generator supplies the ones that are facts, and a
+number typed there is one that goes stale. CI fails if the README differs from
+what the generator writes.
 
 Look at `tools/previews/<Module>.png` before calling a panel done — it goes
 through the real widget tree, so it is the only preview that cannot lie. Do this
@@ -134,7 +140,8 @@ plugins never having been ported.
 
 `src/<New>/<New>.cpp` with a `Model*`, declared in `src/plugin.hpp` and added in
 `src/plugin.cpp`; an entry in `plugin.json` with tags from `Rack/src/tag.cpp`; a
-spec in `tools/panels/<New>.py`; a manual in `docs/<New>.md`. The Makefile globs
+spec in `tools/panels/<New>.py`; a manual in `docs/<New>.md`; a block in `tools/readme/modules.md`, then
+`make readme` and `tools/sync_hp.py --write`. The Makefile globs
 `src/*/*.cpp` and `tools/panels/*.py`, so nothing there needs touching.
 
 ## A negative control needs a forced rebuild

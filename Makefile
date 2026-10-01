@@ -116,6 +116,27 @@ else
 $(DSP56300_OBJ): CXXFLAGS += -fconstexpr-loop-limit=10000000
 endif
 
+# --- the Nord Lead 2X (Nordic Banking) ----------------------------------------------
+# gearmulator's n2xLib (GPLv3) and the MC68331 around it: mc68k with Musashi (MIT; built
+# without its FPU, see vendor/README.md), plus the few framework pieces they use. C++17 like
+# the DSP core it runs on, and so is src/NordicBanking/Nord2x.cpp, the one translation unit
+# of ours that includes it. Musashi itself is C.
+N2X_SRC := $(wildcard vendor/gearmulator/mc68k/*.cpp vendor/gearmulator/n2xLib/*.cpp) \
+	vendor/gearmulator/hardwareLib/i2c.cpp vendor/gearmulator/hardwareLib/i2cFlash.cpp vendor/gearmulator/hardwareLib/sciMidi.cpp \
+	vendor/gearmulator/baseLib/filesystem.cpp \
+	vendor/gearmulator/synthLib/midiBufferParser.cpp vendor/gearmulator/synthLib/deviceException.cpp vendor/gearmulator/synthLib/os.cpp
+M68K_SRC := vendor/gearmulator/mc68k/Musashi/m68kcpu.c vendor/gearmulator/mc68k/Musashi/m68kops.c vendor/gearmulator/mc68k/Musashi/m68kdasm.c
+SOURCES += $(N2X_SRC) $(M68K_SRC)
+N2X_OBJ := $(patsubst %, build/%.o, $(N2X_SRC) src/NordicBanking/Nord2x.cpp)
+$(N2X_OBJ): CXXFLAGS += -std=gnu++17 -DDSP56300_DEBUGGER=0 -DASMJIT_STATIC -Ivendor/dsp56300 -Ivendor/gearmulator
+$(patsubst %, build/%.o, $(N2X_SRC)): CXXFLAGS += -w
+$(patsubst %, build/%.o, $(M68K_SRC)): CFLAGS += -w
+ifeq ($(shell uname -s), Darwin)
+$(N2X_OBJ): FLAGS += -mmacosx-version-min=10.13
+else
+$(N2X_OBJ): CXXFLAGS += -fconstexpr-loop-limit=10000000
+endif
+
 # Added to the .vcvplugin package by `make dist`. The compiled library and
 # plugin.json are added automatically.
 DISTRIBUTABLES += res
@@ -143,7 +164,11 @@ endif
 PYTHON ?= python3
 PANEL_SPECS := $(wildcard tools/panels/*.py)
 
-.PHONY: panel vcv-preview test help
+.PHONY: panel readme vcv-preview test help
+
+# README.md is generated from plugin.json, the panel headers and tools/readme/.
+readme:
+	@$(PYTHON) tools/readme.py
 
 panel:
 	@for spec in $(PANEL_SPECS); do \

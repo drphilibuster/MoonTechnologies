@@ -49,6 +49,11 @@ jobs:
             exit 1
           fi
           echo "Every generated file matches its spec."
+      # README.md is written from plugin.json, the panel headers (just
+      # regenerated above) and tools/readme/, so its module list, widths and
+      # count cannot be edited by hand without this failing.
+      - name: README matches its sources
+        run: python3 tools/readme.py --check
 
   test:
     name: Unit tests
