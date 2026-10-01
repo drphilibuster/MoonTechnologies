@@ -5,6 +5,48 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Changed: Kickback's VACTROL snare noise is the avalanche circuit, solved
+
+The noise under the Percussive Noise Voice is now the T3/T2 circuit itself on the nodal solver:
+T3's emitter-base junction in reverse breakdown (with its shot noise multiplied by the avalanche
+gain), T2 amplifying it in a self-biasing loop, and C4/C5/R7 into T1's base. It is coloured, not
+white (a hump from a few hundred hertz to about 1 kHz, falling above), at the same level as the
+white noise it replaced and the same at every sample rate. The solver gained a breakdown diode
+and an injected-current element (`src/Mna.hpp`). Assumed values are listed in docs/Kickback.md.
+
+### Fixed: Deduction's cutoff was an octave high with Oversample on
+
+With the Oversample option on, the six filter cores run twice per engine sample, but the cutoff
+coefficient was still worked out for the engine rate, so every model's cutoff came out at twice the
+frequency asked for (a 1 kHz setting measured -3 dB at 1287 Hz against 656 Hz without oversampling).
+It now uses the doubled rate, and the voices' DC blockers follow it. The PAiA was not affected.
+Patches that had Oversample on will sound a little darker at the same CUTOFF.
+
+### Changed: Garnishment's JFET AM is the I AM O circuit, solved
+
+The 2N5457 stage is now the Day 2 schematic itself on the new nodal solver: 100k to the gate, the
+carrier through 100 ohms into the drain, a 100 nF out, the channel and both gate junctions.
+It is a 2.3 dB divider for small signals, compresses less when driven hard, and pinches itself
+on negative peaks; the old `g/(g+1)` shape and its 2x make-up are gone. The control now spans
+the gate from 0 V to -4 V. Datasheet-typical part values are used (docs/Garnishment.md).
+
+### Changed: Deduction's PAiA 2720-3L is the circuit, solved
+
+The PAiA model is now the Day 7 schematic itself, solved node by node (new `src/Mna.hpp`, a
+small nonlinear circuit solver, and `src/Deduction/PaiaCircuit.hpp`): two BC549Cs, the twin-T
+with its 1N4148, the coupling and decoupling capacitors, Newton at every step. CUTOFF tunes
+the twin-T's peak (reachable range about 430 Hz to 5 kHz), RES is the R11 gain trimmer, DRIVE
+the input level. It is quieter than the other models and costs about 10 % of a core per voice.
+
+### Changed: Installment's AD and AR are the boards' circuits
+
+AD is the PHOBoSapiens TLC555 circuit and AR the LMNC ADAR2 TL072 circuit, integrated with
+real 1N4148/1N4448 diodes (new `src/Installment/Envelope.hpp`, with a suite). What you will
+hear: the AD's trigger is capacitor-coupled (a slow gate ramp does not fire it); the AR's gate
+must exceed about 7.1 V (was 1 V) and has a short dead time before the output rises, its release
+is near-linear, and LOOP turns at 90 % of the peak; and both leave a small diode-knee tail
+instead of reaching exactly 0 V. Assumptions are listed in docs/Installment.md.
+
 ### Added: Contagion, an Access Virus C running all of its own firmware
 
 Both of the Virus's processors run the unit's 512 KB OS image, which is Access's
@@ -36,6 +78,13 @@ and not included; the context menu loads it, and a patch keeps the path.
 knob, stores a program, presses buttons by their matrix position and checks the
 mapped LEDs answer, and watches the RATE LEDs move, with the image from
 `VIRUS_ROMS` (SKIP without).
+
+### Changed: AuditLogic's INSTALLMENTS is a CD4024B
+
+The divider counts on the clock's falling edge and RESET is a level that holds the
+counter at zero, as the chip does (new `src/Cd4024.hpp`, with a test). It used to count
+rising edges and zero on a RESET edge, so BINARY gates now start one half-clock later and
+stay down while RESET is held. MUSICAL (thirds) is unchanged apart from following the same edge.
 
 ### Added: Rebate, an Alesis MIDIverb running its own firmware
 
@@ -69,22 +118,6 @@ paths). The MIDIFEX's microcode runs on the same board.
 settings, compares the DSP with MAME's, and checks the analog chain against the
 schematic's annotations, with the ROMs from `MIDIVERB_ROMS` (SKIP without).
 
-### Racketeer's chip is the datasheet's, not a delay pedal's
-
-Racketeer modelled the PT2399 as a 1365-sample ring behind a sample-and-hold,
-with a word length that fell with delay time and a reconstruction filter that
-tracked the clock. The datasheet's chip is a 1-bit adaptive delta modulator on
-44 kbit of RAM with fixed filters around it, which Amortization already models.
-Racketeer now uses that same chip (moved to `src/Pt2399.hpp`, shared): TIME sets
-the bit clock (1.47 Mbit/s at 30 ms, 37 kbit/s at 1.2 s), a clock change replays
-the stored bits at the new rate instead of moving a read pointer, ECHO past unity
-is bounded by the op-amp's hard clip rather than a `tanh`, and **Chip noise**
-scales the datasheet's comparator noise floor. The read-out shows the bit clock
-and `1 BIT`. Patches load unchanged; the loop will sound different, as it should.
-
-### Amortization is the Verbtronic's circuit, not an algorithm in its image
-
-The Verbtronic's schematic is public domain (the image at the foot of
 ### Added: Depreciation, a Lexicon PCM 70 running its own firmware (work in progress)
 
 The shell of a PCM 70 digital effects processor: the real firmware on an
@@ -145,6 +178,134 @@ bypass, clock and run have jacks; programs and registers are chosen with ROW, CO
 and LOAD (the module presses the machine's own keys); registers are saved in the
 patch and import/export as SysEx banks; the wet signal has its own outputs.
 
+### Payment Schedule's quantizer is a PIC16F684 running firmware
+
+The quantizer was a nearest-neighbour search in C++, `quant::quantize`. It is now the part the Day
+10 board uses, a PIC16F684, emulated instruction by instruction (`src/Pic16f684.hpp`: all 35
+instructions with the chip's own timing, the A/D converter, TMR2 and the CCP1 PWM, banking,
+indirect addressing and computed jumps; anything outside what it models sets a flag and the menu
+says so) and running firmware. **The built-in firmware is this project's own**
+(`firmware/varimode/varimode_fixed.asm`), assembled by a small assembler written for the purpose
+(`tools/pic16asm.py`, which reproduces the course's `.HEX` from its `.asm` word for word). It
+fixes what the course's firmware does not: PWM steps exactly 1/12 V where the course's are uneven
+and up to four counts (about 26 cents) off, a 10-bit input rather than 8, no inputs left without
+an output (the course's major, minor and minor pentatonic tables keep the last note above 253 of
+255 because MPASM truncates `SUBLW .259` to 3, and its major pentatonic table runs on into the
+minor one), and the true nearest degree with exact ties up. **Any other firmware that keeps the
+board's pin contract runs too:** Load PIC firmware (.HEX)... in the context menu, the course's
+`varimodequantizer_100.HEX` included. That one is third-party with no licence stated, so it is
+never in this repository; the patch stores its path. What it sounds like: the output now glides
+to a new note over a few milliseconds (the PWM goes through an assumed pair of 160 Hz poles, since
+the course folder has the firmware but not the board), TRIG fires on the firmware's decision, and
+ROOT, which the board never had, moves the input and output around the root. About 3 % of a core.
+`tests/Pic16` (69 core checks over every operand pair of the arithmetic, 15 of the wrapper and our
+firmware against an independent quantizer on all 1024 codes in all five modes, 16 of the
+assembler, and a check that the committed `.hex` is what the source assembles to) and, with
+`VARIMODE_HEX` and `VARIMODE_ASM` set, the emulator running the course's firmware against an
+interpreter of its source on every input in every mode. Fifteen bugs were put back to watch the
+tests fail.
+
+### Payment Schedule's counter and tap loop are chips
+
+The step counter was `(step + 1) % n` and the tap loop an eight-slot array indexed
+by the step. They are now the parts the Day 10 schematics use: the Baby8's 74HC4017
+Johnson counter (`src/Cd4017.hpp`, from its datasheet) and the tap looper's CD4031B
+64-stage shift register (`src/Cd4031.hpp`), wired as the schematics wire them, in
+`src/PaymentSchedule/Sequencer.hpp` (moved out of the module's .cpp, where it could
+not be tested). What that changes in use: **the loop is 64 clocks long** whatever
+STEPS is, and is a separate chip on the same clock, so it need not line up with the
+eight steps and RESET and DIR leave it alone; **a tap is only recorded if it is high
+when the clock rises**, which is when the chip reads DATA IN, so a short trigger
+between clocks is lost; **CLR opens the loop rather than emptying it**, so the old
+pattern drains over the next 64 clocks; **RESET is a level** (the chip's MR pin),
+holding the count at step 1 and ignoring the clock for as long as it is high; and
+RUN is the gate in front of the chip's clock, so starting with the clock high counts
+once. Saved patches keep their loops: the old eight slots are tiled along the
+register. The sequential switch's HEF4516 and CD4051 are not modelled as chips (the
+panel has no jack on the pins that would show it); Known approximations in
+`docs/PaymentSchedule.md` says what is left. `tests/PaymentSchedule` (58 checks)
+covers both chips' function tables, the 64-clock delay, recirculation, the clear,
+overdub, the counter against a modular oracle for every STEPS in both directions,
+RESET as a level, RUN, CYCLE and the legacy import; seven bugs were put back to
+watch them fail.
+
+### Volatility's register is a CD4006B, tapped where the chip has pins
+
+NOISE's shift register was a bare 18-bit integer with the textbook taps, stages 18
+and 11. A 4006 has no pin on stage 11 (or on 7, its reciprocal): it brings out only
+the end of each of its four sections, and no 18-stage maximal sequence can be built
+from one chip. The register is now the chip (`src/Cd4006.hpp`, from the datasheet's
+pinout and functional diagram) chained D1, D3, D2, D4 with pins 11 and 8 (stages 12
+and 17) XORed back, which is the best one chip can do: a maximal sequence of
+131071 clocks where there were 262143. It shifts on the clock's negative-going edge,
+as the datasheet has it, so RND and DAC now change half a cycle after the edge the
+sample & hold and the random gate use; stage 18 is a delayed copy of 17; and an
+all-zero register is fed a one, standing in for the real board's start-up network.
+The register logic moved out of `Volatility.cpp`, where it could not be tested,
+into `src/Volatility/Noise.hpp`. `tests/Volatility/test_register.cpp` checks the
+chip's pins, that the chip wiring equals a plain shift register stage for stage over
+600000 steps, the exact period and the balance of one period, by enumerating all 24
+section orders that stages 7 and 11 are never exposed and nothing at 18 stages is
+reachable, the lock-up recovery and the falling-edge detector. Every check was
+watched failing with the bug put back. See Approximated or left out in
+`docs/Volatility.md`.
+
+### Diversified's bitcrusher is the board's converter chain
+
+Program 104 was an eight-bit rounder with a rate knob. It is now the schematic
+(`Schematic_BIT crusher_2021-07-06`): an LTC1799 clock, an ADC0809 that converts
+for ever on 72 clocks a cycle, a 1k/2k resistor ladder solved as a network into an
+inverting op-amp, SW1's 680 ohm / 68 nF filter, a gain stage and C1
+(`src/Adc0809.hpp`, reusing TaxBracket's ladder solver). What that changes: the
+sample rate is the clock over 72 (139 Hz to 46 kHz at the default divider, 1-33 MHz
+clocks otherwise), the converter has the latency of a conversion, a bit left
+unpatched is an open leg that moves its neighbours' weights, the output is
+inverted as on the board, and the reconstruction filter is one pole at 3.44 kHz
+where the doc claimed a second-order 5 kHz. LEVEL is now the input pot, an
+attenuator, and its default is full turn. New context-menu items: clock divider
+(/1 /10 /100), output gain (1x 2x 4x 10x) and a board-faithful 0-5 V input, whose
+default is off, so bipolar audio is still crushed whole. Open items and the
+assumptions the schematic leaves (the op-amps need a negative supply it does not
+draw; the ADC's pin levels) are in Known approximations in `docs/Diversified.md`.
+`tests/Diversified/test_bitcrusher.cpp` covers the clock formula, ladder weights,
+converter transfer and timing, open-leg weights, polarity, the faithful input,
+BITS, SWAP, the filter corner and the start-up charge.
+
+### Diversified's two PT2399 programs run the real chip
+
+Programs 99 (Echomatic) and 100 (Little Angel) modelled the PT2399 as a
+sample-and-hold, a word length that fell with delay time and a delay line. They
+now run `src/Pt2399.hpp`, the datasheet model Amortization and Racketeer already
+share: TIME and the chorus's modulation are the bit clock, a clock change
+replays the stored bits at the new rate (so the pitch bends, which the old read
+pointer could only imitate), and Echomatic's feedback past unity is bounded by
+the chip's own supply clipping instead of a tanh. Little Angel costs about 13 %
+of a core at 48 kHz (its clock is fast and it runs two chips); Echomatic about
+2.5 %. The boards' schematics were not on hand, so what surrounds the chip is
+assumed and collected in `miaw_assumed`; see Known approximations in
+`docs/Diversified.md`. `Pt2399` gained `demodModulate()` and `demodModulate2()`,
+which do what `demod()` then `modulate()` do bit for bit, in one pass and for
+two chips at once; `tests/Diversified/test_pt2399_boards.cpp` proves the equality
+to the last bit, and checks that the delay equals TIME, that moving TIME bends
+the pitch, that feedback past unity stays bounded and that RETURN sits inside the
+loop.
+
+### Racketeer's chip is the datasheet's, not a delay pedal's
+
+Racketeer modelled the PT2399 as a 1365-sample ring behind a sample-and-hold,
+with a word length that fell with delay time and a reconstruction filter that
+tracked the clock. The datasheet's chip is a 1-bit adaptive delta modulator on
+44 kbit of RAM with fixed filters around it, which Amortization already models.
+Racketeer now uses that same chip (moved to `src/Pt2399.hpp`, shared): TIME sets
+the bit clock (1.47 Mbit/s at 30 ms, 37 kbit/s at 1.2 s), a clock change replays
+the stored bits at the new rate instead of moving a read pointer, ECHO past unity
+is bounded by the op-amp's hard clip rather than a `tanh`, and **Chip noise**
+scales the datasheet's comparator noise floor. The read-out shows the bit clock
+and `1 BIT`. Patches load unchanged; the loop will sound different, as it should.
+
+### Amortization is the Verbtronic's circuit, not an algorithm in its image
+
+The Verbtronic's schematic is public domain (the image at the foot of
 pittsburghmodular.com/verbtronic). It was never a reverb algorithm: it is three
 PT2399 echo chips in a recirculating network, a tone shelf and zener-limited
 feedback in front, a make-up amplifier behind, and a linearised SSM2164 VCA for

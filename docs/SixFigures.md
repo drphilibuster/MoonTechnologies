@@ -37,6 +37,14 @@ same oscillator, six different ones, or anything between.
 | **4046 PLL** | 4046 phase-locked-loop VCO | band-limited square, free-running or pulled toward `SIGNAL` | the raw XOR phase-comparator bit, as a 0/10 V logic signal — exactly what the 4046's `PC1` pin actually outputs |
 | **Avalanche** | Kassutronics reverse-avalanche oscillator (a BC337 run in reverse breakdown, charging a cap through the vactrol's LDR) | band-limited saw, bent toward the RC charge curve | a 1 ms, 10 V pulse once per cycle — the avalanche breakdown pulse itself |
 
+**On the 4046 core.** The course's 4046 board (Day 1, "4046 Simple VCO") uses the chip as a VCO
+alone: the inhibit pin is grounded, a 10 nF capacitor is across CX, R1 (pin 11) is 100k to ground,
+R2 (pin 12) is not fitted, both phase comparators are unused, and the control voltage comes from an
+LM358 stage into VCOIN (pin 9). The jack the schematic calls "Signal In / Sync / RingMod" goes to pin
+11, the R1 pin, not to the 4046's signal input (pin 14). So **the phase-locked loop in this core, the
+`SIGNAL` input, `CAPT`, `LOCK` and the PC1 bit on `AUX` are this module's addition**, built on the same
+chip's two sections rather than taken from the board.
+
 All four are band-limited with polyBLEP; the RC "bend" applied to the Schmitt
 core's `AUX` and the avalanche core's `OUT` is a cosmetic reshaping applied
 after band-limiting, for the rounded look a real RC ramp has, and is a
