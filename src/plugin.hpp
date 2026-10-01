@@ -19,6 +19,7 @@ extern Model* modelProjection;
 extern Model* modelDeduction;
 extern Model* modelContagion;
 extern Model* modelDependents;
+extern Model* modelDepreciation;
 extern Model* modelDiversified;
 extern Model* modelDividend;
 extern Model* modelGarnishment;

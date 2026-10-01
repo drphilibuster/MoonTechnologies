@@ -79,6 +79,66 @@ and `1 BIT`. Patches load unchanged; the loop will sound different, as it should
 ### Amortization is the Verbtronic's circuit, not an algorithm in its image
 
 The Verbtronic's schematic is public domain (the image at the foot of
+### Added: Depreciation, a Lexicon PCM 70 running its own firmware (work in progress)
+
+The shell of a PCM 70 digital effects processor: the real firmware on an
+emulated pair of Z80s driving the machine's own signal processor, in later
+milestones. This first step is the part that has to be right before anything
+else: the five firmware images (master, slave, opcode ROM, two PROMs) are
+Lexicon's and are not included. The context menu loads them from a folder; the
+module tells a V2.0 set from a V3.01 set by SHA-256 hash (only the hashes are in
+the source), refuses a mismatched or unrecognised dump with a message that says
+which image and why, remembers the paths plugin-wide in
+`MoonTechnologies/settings.json`, and a patch stores paths, never bytes. There is
+no audio yet. `tests/Depreciation` checks the identification against the real
+dumps when `PCM70_ROMS` is set.
+
+The machine itself is in too, not yet wired to the module: both Z80s with the
+PCM 70's memory map, ports, UART and writable control store, the routine that
+finds the firmware's edit entry points by byte signature, and the battery-RAM
+image layout. The tests boot both software versions, load a program by SysEx and
+find every byte of control store and RAM identical to the research emulation
+this was ported from, and check each stored register against the record the
+firmware itself writes.
+
+The signal processor is in as well: the PCM 70's 128-word program engine, decoded
+once per program into a list of the arithmetic it actually performs and run at the
+machine's own 33.854 kHz. It produces, bit for bit, what the slow tick-accurate
+model produces on random programs, on every program in both library banks, and on
+chorus, flange and hall programs while the firmware retunes them sample by sample;
+the slowest stored program costs about 5% of one core, both Z80s another 1%.
+
+The converter side is in too: the machine's real anti-alias and reconstruction
+filters (a 9-pole elliptic, the DAC hold and an aperture stage, as complex
+responses, so feedback programs decay as the hardware's do) are built into the
+conversion between Rack's sample rate and the machine's 33854.1667 Hz clock,
+along with the level detector the firmware's gates read, the wet/dry mix stage
+and a DC blocker. Put together, an impulse through a whole emulated PCM 70 puts
+its delay and chord echoes within a host sample of the library recordings. The
+voice is not on the panel yet, so the module still produces no sound; it costs
+about 9% of one core at 48 kHz.
+
+The firmware can now be driven from outside as the front panel would: it finds the
+parameter table of whatever program is running by asking the firmware itself
+(and so knows each parameter's range, name and its own printed value), moves
+parameters with the routine the soft knob calls (any amount of CV traffic is
+coalesced and rate-limited so it cannot swamp the master processor), presses the
+panel keys, imports a bank through the MIDI port, assigns Dynamic MIDI patches,
+sets MIDI channel and the other system options, feeds MIDI clock (V3 only; the
+V2 firmware ignores it) and saves and restores the battery RAM. Tests check each
+against the firmware's own behaviour. While doing so a timing bug turned up and
+was fixed: the two Z80s had been running 25% fast against the signal processor.
+
+Depreciation now has its panel (47 HP) and makes sound: load the ROM folder from
+the context menu and, after the nine-second power-up, the whole parameter matrix
+is on the front, five rows of knobs that are the machine's own cells with the
+firmware's name and printed value on a plate under each, following the firmware
+when it moves a value itself. Eight CV lanes are assigned by pressing SET and
+touching a knob; mod wheel, aftertouch, note, gate, sustain, soft-knob, program,
+bypass, clock and run have jacks; programs and registers are chosen with ROW, COL
+and LOAD (the module presses the machine's own keys); registers are saved in the
+patch and import/export as SysEx banks; the wet signal has its own outputs.
+
 pittsburghmodular.com/verbtronic). It was never a reverb algorithm: it is three
 PT2399 echo chips in a recirculating network, a tone shelf and zener-limited
 feedback in front, a make-up amplifier behind, and a linearised SSM2164 VCA for

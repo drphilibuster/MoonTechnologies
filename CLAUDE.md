@@ -1,7 +1,7 @@
 # Moon Technologies
 
 One VCV Rack 2 plugin, slug `MoonTechnologies`, brand **Moon Technologies**,
-author **Taxxess**. Thirty-one modules sharing one panel pipeline: the three
+author **Taxxess**. Thirty-two modules sharing one panel pipeline: the three
 originals (`PatchAudit`, `Retroactive`, `UncertaintyPolicy`), nine built to
 order (`Dividend`, `TaxBracket`, `Racketeer`, `Gross`, `Amortization`,
 `Repossession`, `Collusion`, `Reconciliation`, `Dependents`), one expander
@@ -12,8 +12,8 @@ order (`Dividend`, `TaxBracket`, `Racketeer`, `Gross`, `Amortization`,
 `Kickback`), one bank doubled into a module of its own (`Bailout`, out of
 `Consolidation`), two about video (`Transmittal`, which publishes it, and
 `Projection`, which makes it) and three hardware emulations (`Apportionment`,
-an Ensoniq DP/4, `Rebate`, an Alesis MIDIverb, and `Contagion`, an Access Virus C,
-each running its own firmware; see "ROMs" below).
+an Ensoniq DP/4, `Depreciation`, a Lexicon PCM 70, `Rebate`, an Alesis MIDIverb,
+and `Contagion`, an Access Virus C, each running its own firmware; see "ROMs" below).
 
 ## VCV Rack UI: use the tool, always
 
@@ -116,7 +116,7 @@ one. A screenshot showing old behaviour after a fix usually means exactly this.
 
 ## Slugs are permanent
 
-`MoonTechnologies` and the thirty-one module slugs listed at the top of this file.
+`MoonTechnologies` and the thirty-two module slugs listed at the top of this file.
 Changing any of them orphans every saved patch that used it: Rack's fallback table
 (`Rack/src/plugin.cpp:374`) is maintained by VCV, not by plugin authors.
 
@@ -174,6 +174,13 @@ them; a patch stores their *paths*, never their bytes. `.gitignore` refuses
 `*DP4*.bin` / `*dp4*.bin`, and `tests/Apportionment` reads them from `$DP4_ROMS`
 outside the repo, printing SKIP without them. The MAME code the emulation runs
 on (BSD-3) is vendored in `vendor/mame/` with its own notes in `vendor/README.md`.
+
+`Depreciation` does the same with Lexicon's PCM 70 firmware (master, slave, opcode
+ROM and two PROMs): `.gitignore` refuses the dumps, `tests/Depreciation` reads
+them from `$PCM70_ROMS` outside the repo (SKIP without it), and only their SHA-256
+hashes are in `src/Depreciation/Roms.hpp`. Nothing derived from the ROMs -- parameter
+tables, captions, factory programs -- may be committed either; the module rebuilds
+all of it at runtime from the user's own images.
 
 `Rebate` does the same with the MIDIverb's EPROMs (the 80C31's MVOP and the
 DSP's MVOBJ or MIDIFEX microcode): `.gitignore` refuses the dumps, `tests/Rebate`

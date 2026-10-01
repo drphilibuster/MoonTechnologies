@@ -78,6 +78,10 @@ spectrum and a warped field, driven by audio and CV.
 |---|
 | **[Contagion](docs/Contagion.md)** · 54 HP |
 
+| <img src="tools/previews/Depreciation.png" width="395"> |
+|---|
+| **[Depreciation](docs/Depreciation.md)** · 47 HP |
+
 
 ## Built for this plugin
 
@@ -140,6 +144,13 @@ Both processors run the unit's own OS: the 80C515 that owns the front panel, the
 *An Alesis MIDIverb (or MIDIFEX), running its own firmware. EPROMs not included.*
 
 Keith Barr's 1986 discrete-logic reverb: the real microcode on an emulation of the TTL signal processor, verified sample for sample against MAME's, and the real 80C31 firmware behind the real front panel -- two digits, UP, DOWN, CHANNEL, DEFEAT, MIDI program change. The analog board is from the schematic, down to the "Clipping?" diode on the converter's input filter, the sample-and-hold, and the DAC's hold capacitors. A patch keeps program, channel and defeat, and plays them back into the firmware after power-on.
+
+
+### [Depreciation](docs/Depreciation.md) — 47 HP · *Effect, Reverb, Delay, Hardware clone*
+
+*A Lexicon PCM 70, running its own firmware. ROMs not included.*
+
+The 1986 reverb, chorus, delay and resonant-chord machine on an emulated pair of Z80s and its own signal processor, with the real converter filters around them -- every program, parameter and MIDI patch is Lexicon's, because nothing here re-implements them. The hardware hid its 36-odd parameters behind a key matrix and one soft knob; here they are a 5 x 9 field of knobs that are the machine's own cells, each with the firmware's name and printed value on a plate, following the firmware when it moves a value itself. Eight CV lanes (press SET, touch a knob), mod wheel / aftertouch / note / gate / sustain / soft-knob / program / bypass / clock / run jacks, the headroom meter, a register bank that travels with the patch and imports and exports as SysEx, and wet taps. Both software versions (V2.0 and V3.01) are supported.
 
 ### [Repossession](docs/Repossession.md) — 34 HP · *Sampler, Sequencer, Visual*
 

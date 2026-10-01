@@ -62,3 +62,23 @@ __pycache__/
 *Virus*.BIN
 *virus*.bin
 *am29f040b*
+
+# Lexicon PCM 70 firmware images (Depreciation loads them at runtime; they are
+# Lexicon's and must never be committed). tests/Depreciation reads them from
+# $PCM70_ROMS, outside the repository. Only their SHA-256 hashes are in the source.
+*PCM70*.bin
+*PCM70*.BIN
+*PCM-70*.bin
+*PCM-70*.BIN
+*pcm70*.bin
+*U62*.bin
+*U62*.BIN
+*U95*.bin
+*U95*.BIN
+*U67*.bin
+*U67*.BIN
+0c515e08.bin
+8203b1df.bin
+# ...nor Lexicon's factory SysEx banks or any recording/IR of the machine.
+*PCM*70*.syx
+

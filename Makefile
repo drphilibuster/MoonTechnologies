@@ -85,6 +85,9 @@ LDFLAGS += -framework Cocoa -framework OpenGL -framework IOSurface -framework Co
 $(patsubst %, build/%.o, $(SYPHON_SRC)): FLAGS += -fobjc-arc -mmacosx-version-min=10.13
 endif
 
+# --- Z80 core (Depreciation): vendor/z80 is MIT, plain C ----------------------
+SOURCES += vendor/z80/z80.c
+
 # --- MAME's ES5510 core (Apportionment) ---------------------------------------
 # vendor/mame/es5510 is C++14 (std::make_unique and friends); the SDK compiles
 # as C++11. Only the one translation unit that includes it gets the newer

@@ -118,6 +118,18 @@
       ]
     },
     {
+      "slug": "Depreciation",
+      "name": "Depreciation",
+      "description": "Lexicon PCM 70 digital effects processor running its own firmware (ROMs not included) -- the whole parameter matrix on the panel, CV lanes, MIDI, registers and SysEx banks",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Depreciation.md",
+      "tags": [
+        "Effect",
+        "Reverb",
+        "Delay",
+        "Hardware clone"
+      ]
+    },
+    {
       "slug": "Diversified",
       "name": "Diversified",
       "description": "Modular in a Week effects: the DSP99 program bank plus Echomatic echo, Little Angel chorus, spring reverb, MXR Distortion+, Talk Funny, bitcrusher and 4011 ring modulator",

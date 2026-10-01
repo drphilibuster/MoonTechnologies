@@ -80,3 +80,12 @@ the licence line and copyright holders at the top of every file are kept.
 
 Neither directory is compiled on its own: the Makefile's `SOURCES` glob covers
 `src/` only, and the two translation units above include what they need.
+
+## Z80 (Depreciation)
+
+`z80/` is Nicolas Allemand's [superzazu/z80](https://github.com/superzazu/z80), an MIT-licensed
+Z80 interpreter in plain C (`z80.c`, `z80.h`; its `LICENSE` is retained unmodified). Depreciation
+runs a Lexicon PCM 70's master and slave processors on two instances. It is compiled straight into
+`plugin.dylib` like the other vendored sources, and the tests build it on its own. The copy is the
+one the research emulation was validated with (the machine in `src/Pcm70Machine.hpp` reproduces that
+emulation byte for byte); do not update it without re-running `tests/Depreciation`.

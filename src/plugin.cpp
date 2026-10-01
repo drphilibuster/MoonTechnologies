@@ -21,6 +21,7 @@ void init(Plugin* p) {
 	p->addModel(modelDeduction);
 	p->addModel(modelContagion);
 	p->addModel(modelDependents);
+	p->addModel(modelDepreciation);
 	p->addModel(modelDiversified);
 	p->addModel(modelDividend);
 	p->addModel(modelGarnishment);
