@@ -1,6 +1,6 @@
 # Contagion
 
-**FORM 8300 — the report filed when cash moves. Contagion is what spreads.** 54 HP.
+**FORM 8300 — the report filed when cash moves. Contagion is what spreads.** 61 HP.
 
 An Access Virus C, running its own operating system — all of it. The Virus has
 two processors. The sound comes from a Motorola DSP56362; everything else comes
@@ -48,20 +48,43 @@ copied to IN R.
 
 ## The panel
 
-These are the unit's own 32 knobs and 35 buttons. A knob is read through the
-80C515's A/D converter as the hardware's pot would be, and the firmware only acts
-when it moves. Turn one and the LCD shows the parameter, as on the Virus. A
-program with an edit in it shows its number in lower case ("a0"). **STORE**,
-pressed twice, writes the edit into the user banks. The labels are what the
-firmware itself calls each control, checked against the owner's manual where it
-draws the section. A few buttons are still named by what they do: **PAGE** (two
-LFO edit pages), **SEL 1/SEL 2** (filter select), **RND SND**, and **2,6**,
-whose meaning is not yet confirmed.
+These are the unit's own 32 knobs, 35 buttons and 69 LEDs, grouped as the Virus
+groups them. A knob is read through the 80C515's A/D converter as the hardware's
+pot would be, and the firmware only acts when it moves. Turn one and the LCD shows
+the parameter, as on the Virus. A program with an edit in it shows its number in
+lower case ("a0"). **STORE**, pressed twice, writes the edit into the user banks.
 
-The LEDs beside the select buttons are the unit's: which LFO, oscillator and
-effect is selected, the filter modes, and Sync, Osc 3, Arp and the effect
-buttons. They are drawn from the 80C515's own LED multiplex. The Virus has more
-LEDs than this panel shows; the others are not yet mapped.
+Every control is named from the owner's manual's drawing of its section, and
+matched to the firmware by pressing it and watching what it does, what it sends
+the DSP and which LED answers:
+
+* **LFOS/MOD**: **EDIT**, **SELECT** (LFO 1, 2, 3, MOD), **SHAPE** (sine,
+  triangle, saw, square, wave) and **AMOUNT**, which steps through the selected
+  LFO's destinations -- the row of 23 LEDs below, in four runs for LFO 1, LFO 2,
+  LFO 3 and MOD (ASSIGN 1-6). A destination's LED is lit while its amount is not
+  zero and flashes while it is selected; set the amount with **VALUE** or
+  **SOFT 2/VALUE**. The two **RATE** LEDs follow LFO 1 and LFO 2/3.
+* **OSCILLATORS**: **EDIT**, **SYNC**, **OSC 1/2/3** (which oscillator the knobs
+  edit), **OSC 3 ON**.
+* **FILTERS**: **EDIT**, **FILT 1** and **FILT 2** (each with its own LP, HP, BP, BS
+  LEDs) and **SEL 1 / SEL 2**, which filter RESO and ENV AMT act on (both together:
+  both filters).
+* **EFFECTS**: **EDIT** and **SELECT** (DIST, PHA, CHO: what TYPE/MIX and
+  INTENSITY control). **DELAY/REVERB**: **EDIT**, with SEND, DLY/REV TIME and
+  FDBK/DAMP.
+* **ARP ON** and **ARP EDIT**; the display's **EDIT**, **GLOBAL** (global / multi
+  edit) and **RANDOM** (randomises the sound at once; **UNDO** takes it back).
+* **UNDO**, **STORE**, **MULTI**, **SINGLE** (hold it to search by category),
+  **PART -/+** (both together: the demo), **PARAM </>** (in play mode: bank),
+  **VALUE -/+** (in play mode: program), **TRANS -/+** with the five octave LEDs
+  (both together: panic) and the **BPM** LED.
+
+The LEDs are the 80C515's own multiplex, drawn at the brightness the firmware
+drives them, so a flashing one flashes. The two RATE LEDs are not the
+microcontroller's: the DSP drives them itself from its timers, and they are read
+from there. The manual's two-button shortcuts work, because the firmware does them:
+OSC EDIT + SYNC plays a note (audition), STORE + SINGLE sends a dump, ARP EDIT + ARP
+ON holds the arpeggiator, and so on.
 
 **Master volume** is the VOLUME knob, as on the hardware. With it low the Virus
 is quiet: the firmware sends the DSP whatever the knob says.

@@ -10,10 +10,12 @@ OS image the user supplies. It is FORM 8300 because contagion is what spreads, a
 FORM 8300 is how cash that moves gets reported.
 
 Every control here is one of the unit's: the 32 pots, the 35 buttons of its key
-matrix and the LEDs beside them. A knob reaches the firmware through the 80C515's
-A/D converter and a button through its key matrix, exactly as the hardware's do; the
-firmware decides what they mean. The labels are the names the firmware itself shows
-when a control is touched, or the manual's where the two agree.
+matrix and the LEDs of its multiplex, plus the two LFO rate LEDs the DSP drives. A
+knob reaches the firmware through the 80C515's A/D converter and a button through its
+key matrix, exactly as the hardware's do; the firmware decides what they mean. Names
+and grouping are the owner's manual's section drawings (LFOS/MOD, OSCILLATORS,
+FILTERS, EFFECTS, DELAY/REVERB, the display buttons), matched control by control to
+the firmware by pressing each one (VirusResearch/NOTES.md, "Panel map").
 """
 
 import os
@@ -27,49 +29,73 @@ P = Panel(
     title="CONTAGION",
     subtitle="VIRUS C",
     form="FORM 8300",
-    glass=Glass(h=11.0),
+    glass=Glass(h=10.0),
 )
 
 # --- inside the read-out well -------------------------------------------------
 # The 2 x 16 dot-matrix LCD at about the module's own proportions, centred.
-LCD_W, LCD_H = 66.0, 8.8
-LCD_Y = 10.9
+LCD_W, LCD_H = 66.0, 8.6
+LCD_Y = 10.5
 P.metrics = dict(LCD_W=LCD_W, LCD_H=LCD_H, LCD_Y=LCD_Y)
 
+
+def leds(prefix, labels):
+    return [Light("%s%d" % (prefix, i + 1), text) for i, text in enumerate(labels)]
+
+
 P.sections = [
-    Section("LFO · OSCILLATORS · MIXER · EFFECTS", groups=(2, 6, 5, 3, 3), rows=[
-        Row([Knob("rate", "RATE"), Knob("clock", "CLOCK"),
-             Knob("shape", "SHAPE"), Knob("wave", "WAVE"), Knob("semitone", "SEMI"),
-             Knob("detune", "DETUNE"), Knob("fm", "FM AMT"), Knob("osc_fb", "FEEDBK"),
+    Section("LFOS/MOD · OSCILLATORS · MIXER · EFFECTS · DELAY/REVERB", groups=(1, 5, 5, 2, 3, 3), rows=[
+        Row([Knob("rate", "RATE"),
+             Knob("shape", "SHAPE"), Knob("wave", "WAVE SEL/PW"), Knob("semitone", "SEMITONE"),
+             Knob("detune", "DETUNE 2/3"), Knob("fm", "FM AMOUNT"),
              Knob("osc_bal", "OSC BAL"), Knob("sub", "SUB OSC"), Knob("osc_vol", "OSC VOL"),
-             Knob("noise", "NOISE"), Knob("ring", "RING"),
-             Knob("fx_mix", "TYPE/MIX"), Knob("fx_fb", "FEEDBACK"), Knob("fx_send", "SEND"),
-             Knob("soft1", "SOFT 1"), Knob("soft2", "SOFT 2"), Knob("volume", "VOLUME")]),
-        Row([Button("lfo_edit", "EDIT"), Button("lfo_select", "SELECT"),
-             Button("lfo_page1", "PAGE"), Button("lfo_page2", "PAGE"),
-             Light("lfo1", "1"), Light("lfo2", "2"), Light("lfo3", "3"), Light("lfo_mod", "MOD"),
-             Button("osc_edit", "EDIT"), Bezel("sync", "SYNC"),
-             Button("osc_select", "SELECT"),
-             Light("osc1", "1"), Light("osc2", "2"), Light("osc3", "3"),
-             Bezel("osc3_on", "OSC 3"),
-             Button("fx_edit", "EFFECTS"), Bezel("fx_a", "DIST"), Bezel("fx_b", "PHA"), Bezel("fx_c", "CHO"),
-             Button("dly_edit", "DELAY")], own_grid=True),
+             Knob("noise", "NOISE"), Knob("ring", "RING MOD"),
+             Knob("fx_mix", "TYPE/MIX"), Knob("fx_int", "INTENSITY"),
+             Knob("dly_send", "SEND"), Knob("dly_time", "DLY/REV TIME"), Knob("dly_fb", "FDBK/DAMP"),
+             Knob("soft1", "SOFT 1"), Knob("soft2", "SOFT 2/VALUE"), Knob("volume", "VOLUME")]),
+        # The LFOS/MOD buttons and their LEDs; the oscillators'; the effects'.
+        Row([Button("lfo_edit", "EDIT", light="lfo_edit_led"), Button("lfo_select", "SELECT")]
+            + leds("lfo", ["1", "2", "3", "MOD"])
+            + [Light("rate1", "RATE 1"), Light("rate23", "2/3"),
+               Button("lfo_shape", "SHAPE")]
+            + leds("shp", ["SIN", "TRI", "SAW", "SQR", "WAVE"])
+            + [Button("lfo_amount", "AMOUNT"),
+               Button("osc_edit", "EDIT", light="osc_edit_led"), Bezel("sync", "SYNC"),
+               Button("osc1", "OSC 1", light="osc1_led"), Button("osc2", "OSC 2", light="osc2_led"),
+               Button("osc3", "OSC 3", light="osc3_led"), Bezel("osc3_on", "OSC 3 ON"),
+               Button("fx_edit", "EDIT", light="fx_edit_led"), Button("fx_select", "SELECT")]
+            + leds("fx", ["DIST", "PHA", "CHO"])
+            + [Button("dly_edit", "EDIT", light="dly_edit_led")], own_grid=True),
+        # What AMOUNT steps through, for LFO 1, 2, 3 and MOD in turn (lit while the
+        # amount is not zero, flashing while selected); then the arpeggiator and the
+        # display's own buttons.
+        Row(leds("d1_", ["OSC 1", "OSC 2", "PW 1+2", "RESO", "F GAIN", "ASSIGN"])
+            + leds("d2_", ["FILT 1", "FILT 2", "SHAPE", "FM AMT", "PAN", "ASSIGN"])
+            + leds("d3_", ["OSC 1", "OSC 2", "PW 1", "PW 2", "SYNC PH"])
+            + leds("dm_", ["ASGN 1", "ASGN 2", "ASGN 3", "ASGN 4", "ASGN 5", "ASGN 6"])
+            + [Bezel("arp_on", "ARP ON"), Button("arp_edit", "ARP EDIT", light="arp_edit_led"),
+               Button("edit", "EDIT", light="edit_led"), Button("global", "GLOBAL", light="global_led"),
+               Button("random", "RANDOM")],
+            own_grid=True),
     ]),
-    Section("FILTERS · ENVELOPES · PROGRAM", groups=(5, 4, 4), rows=[
+    Section("FILTERS · ENVELOPES · PROGRAM", groups=(5, 4, 4, 4, 6), rows=[
         Row([Knob("cutoff", "CUTOFF", primary=True), Knob("cutoff2", "CUTOFF 2"),
              Knob("reso", "RESO"), Knob("env_amt", "ENV AMT"), Knob("flt_bal", "FLT BAL"),
              Knob("f_att", "ATTACK"), Knob("f_dec", "DECAY"), Knob("f_sus", "SUSTAIN"), Knob("f_rel", "RELEASE"),
-             Knob("a_att", "ATTACK"), Knob("a_dec", "DECAY"), Knob("a_sus", "SUSTAIN"), Knob("a_rel", "RELEASE")]),
-        Row([Button("flt_edit", "EDIT"),
-             Button("flt1_mode", "FILT 1"), Light("f1m1", "HP"), Light("f1m2", "BP"), Light("f1m3", "BS"),
-             Button("flt2_mode", "FILT 2"), Light("f2m1", "LP"), Light("f2m2", "HP"), Light("f2m3", "BP"), Light("f2m4", "BS"),
-             Button("flt_sel1", "SEL 1"), Button("flt_sel2", "SEL 2"),
-             Bezel("arp_on", "ARP"), Button("arp_edit", "EDIT"),
-             Button("clock_edit", "CLOCK"), Button("random", "RANDOM"), Button("random_snd", "RND SND")], own_grid=True),
-        Row([Button("undo", "UNDO"), Button("store", "STORE"), Button("multi", "MULTI"), Button("single", "SINGLE"),
-             Button("prog_dn", "SK1 -"), Button("prog_up", "SK1 +"), Button("bank_dn", "SK2 -"), Button("bank_up", "SK2 +"),
-             Button("search", "SEARCH"), Button("tr_dn", "TRANS -"), Button("tr_up", "TRANS +"),
-             Button("key26", "2,6")], own_grid=True),
+             Knob("a_att", "ATTACK"), Knob("a_dec", "DECAY"), Knob("a_sus", "SUSTAIN"), Knob("a_rel", "RELEASE"),
+             Button("undo", "UNDO"), Button("store", "STORE"),
+             Button("multi", "MULTI", light="multi_led"), Button("single", "SINGLE", light="single_led"),
+             Button("part_dn", "PART -"), Button("part_up", "PART +"),
+             Button("param_dn", "PARAM <"), Button("param_up", "PARAM >"),
+             Button("value_dn", "VALUE -"), Button("value_up", "VALUE +")]),
+        Row([Button("flt_edit", "EDIT", light="flt_edit_led"), Button("flt1_mode", "FILT 1")]
+            + leds("f1m", ["LP", "HP", "BP", "BS"])
+            + [Button("flt2_mode", "FILT 2")]
+            + leds("f2m", ["LP", "HP", "BP", "BS"])
+            + [Button("flt_sel1", "SEL 1", light="sel1_led"), Button("flt_sel2", "SEL 2", light="sel2_led"),
+               Button("tr_dn", "TRANS -")]
+            + leds("tr", ["-2", "-1", "0", "+1", "+2"])
+            + [Button("tr_up", "TRANS +"), Light("bpm", "BPM")], own_grid=True),
     ]),
 ]
 

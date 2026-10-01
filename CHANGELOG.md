@@ -24,12 +24,18 @@ and not included; the context menu loads it, and a patch keeps the path.
   * the LCD controller's busy time is what makes the firmware's 4-bit start-up
     work;
   * banks $40000-$5FFFF are battery RAM.
-* The panel is the unit's 32 knobs and 35 buttons, with the LEDs mapped so far
-  and a dot-matrix LCD drawn from the controller's own character ROM and CGRAM.
-  A patch keeps the battery RAM (global settings, edit buffers, user banks).
+* The panel is the unit's: 32 knobs, 35 buttons and 69 LEDs in its own sections,
+  each named from the owner's manual's drawings and matched to the firmware by
+  pressing it (the key matrix, the LED multiplex, the two-button shortcuts). The
+  LEDs are drawn at the brightness the firmware drives them, so selected LFO
+  destinations flash; the two RATE LEDs come from the DSP's timers, as on the
+  board. A dot-matrix LCD is drawn from the controller's own character ROM and
+  CGRAM. A patch keeps the battery RAM (global settings, edit buffers, user banks).
 
 `tests/Contagion` boots OS 5.5 and 6.6 to program A0, plays a MIDI chord, turns a
-knob and stores a program, with the image from `VIRUS_ROMS` (SKIP without).
+knob, stores a program, presses buttons by their matrix position and checks the
+mapped LEDs answer, and watches the RATE LEDs move, with the image from
+`VIRUS_ROMS` (SKIP without).
 
 ### Added: Rebate, an Alesis MIDIverb running its own firmware
 

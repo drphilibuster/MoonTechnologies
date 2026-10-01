@@ -55,8 +55,11 @@ public:
 	void setButton(int row, int col, bool down);
 	/** The LCD: 32 character codes (2 x 16 as shown) and the 64 bytes of CGRAM. */
 	void lcd(uint8_t chars[32], uint8_t cgram[64]) const;
-	/** Lit LEDs since the last call (14-bit mask per group, as the eye sees them). */
-	void leds(uint16_t groups[7]);
+	/** Each LED's brightness since the last call, as the eye sees it: its lit share of
+	    its group's multiplex slot (7 groups x 14 bits; see the panel map in Contagion.cpp). */
+	void leds(float bright[7][14]);
+	/** The two RATE LEDs (LFO 1, LFO 2/3), which the DSP drives from its timers. */
+	void rateLeds(float out[2]) const;
 	std::string lcdText() const;
 	long dspWordsIn() const;
 

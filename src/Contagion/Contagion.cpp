@@ -6,6 +6,7 @@
 // is saved in the patch, as the battery would keep it.
 #include "../plugin.hpp"
 #include "Panel.hpp"
+#include "PanelMap.hpp"
 #include "VirusC.hpp"
 
 #include <osdialog.h>
@@ -16,6 +17,11 @@
 #include <iterator>
 #include <mutex>
 #include <thread>
+
+using vc::KEY;
+using vc::KEY_NAME;
+using vc::LED;
+using vc::BEZEL;
 
 namespace {
 
@@ -28,38 +34,15 @@ std::vector<uint8_t> readFile(const std::string& path) {
 // The 32 pots in panel order, as (ADC group * 8 + channel) -- found by turning each one and
 // reading what the firmware shows (VirusResearch/out/pots.txt).
 const int POT_INDEX[32] = {
-	0, 1,                       // RATE, CLOCK
-	24, 3, 27, 11, 19, 9,       // SHAPE, WAVE, SEMI, DETUNE, FM AMT, FEEDBK
-	2, 26, 5, 21, 29,           // OSC BAL, SUB OSC, OSC VOL, NOISE, RING
-	17, 25, 8,                  // TYPE/MIX, FEEDBACK, SEND
-	10, 18, 16,                 // SOFT 1, SOFT 2, VOLUME
+	0, 1,                       // LFO RATE, DELAY/REV TIME
+	24, 3, 27, 11, 19, 9,       // SHAPE, WAVE SEL/PW, SEMITONE, DETUNE 2/3, FM AMOUNT, effects INTENSITY
+	2, 26, 5, 21, 29,           // OSC BAL, SUB OSC, OSC VOL, NOISE, RING MOD
+	17, 25, 8,                  // effects TYPE/MIX, delay FEEDBACK/DAMPING, delay SEND
+	10, 18, 16,                 // SOFT KNOB 1, SOFT KNOB 2 (VALUE), MASTER VOLUME
 	13, 20, 23, 31, 14,         // CUTOFF, CUTOFF 2, RESO, ENV AMT, FLT BAL
 	12, 7, 15, 6,               // filter ATTACK, DECAY, SUSTAIN, RELEASE
 	4, 28, 22, 30,              // amp ATTACK, DECAY, SUSTAIN, RELEASE
 };
-
-// The 35 buttons in panel order, as (row, column) of the key matrix (out/buttons.txt).
-const uint8_t KEY[35][2] = {
-	{ 0, 5 }, { 1, 0 }, { 0, 6 }, { 1, 1 },             // LFO EDIT, SELECT, PAGE, PAGE
-	{ 1, 4 }, { 1, 5 }, { 0, 4 }, { 4, 1 },             // OSC EDIT, SYNC, SELECT, OSC 3
-	{ 0, 1 }, { 1, 6 }, { 3, 0 }, { 4, 0 }, { 0, 2 },   // EFFECTS, DIST, PHA, CHO, DELAY
-	{ 4, 2 }, { 4, 3 }, { 4, 4 }, { 4, 5 }, { 4, 6 },   // FILTER EDIT, FILT 1, FILT 2, SEL 1, SEL 2
-	{ 0, 3 }, { 0, 0 }, { 1, 2 }, { 1, 3 }, { 2, 0 },   // ARP, EDIT, CLOCK, RANDOM, RND SND
-	{ 2, 1 }, { 2, 4 }, { 2, 5 }, { 3, 3 },             // UNDO, STORE, MULTI, SINGLE
-	{ 3, 4 }, { 3, 6 }, { 3, 2 }, { 3, 5 },             // SK1 -, SK1 +, SK2 -, SK2 +
-	{ 3, 1 }, { 2, 2 }, { 2, 3 }, { 2, 6 },             // SEARCH, TRANS -, TRANS +, 2,6
-};
-
-// The mapped LEDs as (group, bit) of the 7 x 14 multiplex (out/cycles.txt).
-const uint8_t LED[18][2] = {
-	{ 4, 11 }, { 5, 7 }, { 0, 3 },                      // SYNC, OSC 3, ARP
-	{ 5, 2 }, { 5, 3 }, { 5, 4 },                       // DIST, PHA, CHO
-	{ 1, 4 }, { 1, 7 }, { 1, 8 }, { 1, 9 },             // LFO 1, 2, 3, MOD
-	{ 0, 4 }, { 0, 7 }, { 0, 8 },                       // OSC 1, 2, 3
-	{ 5, 9 }, { 5, 10 }, { 5, 11 },                     // FILT 1 HP, BP, BS
-	{ 6, 1 }, { 6, 2 },                                 // FILT 2 LP, HP (BP, BS below)
-};
-const uint8_t LED2[2][2] = { { 6, 3 }, { 6, 4 } };      // FILT 2 BP, BS
 
 /** What the UI thread draws. */
 struct Snapshot {
@@ -73,7 +56,7 @@ struct Contagion : Module {
 	enum ParamId { POT_PARAM, KEY_PARAM = POT_PARAM + 32, PARAMS_LEN = KEY_PARAM + 35 };
 	enum InputId { IN_L_INPUT, IN_R_INPUT, INPUTS_LEN };
 	enum OutputId { OUT1L_OUTPUT, OUT1R_OUTPUT, OUT2L_OUTPUT, OUT2R_OUTPUT, OUT3L_OUTPUT, OUT3R_OUTPUT, OUTPUTS_LEN };
-	enum LightId { LED_LIGHT, LIGHTS_LEN = LED_LIGHT + 20 };
+	enum LightId { LED_LIGHT, RATE_LIGHT = LED_LIGHT + 67, LIGHTS_LEN = RATE_LIGHT + 2 };
 
 	static constexpr float VOLTS = 5.f;   // the DSP's full scale, as a Rack audio level
 
@@ -100,18 +83,14 @@ struct Contagion : Module {
 
 	Contagion() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-		static const char* pots[32] = { "LFO rate", "Clock", "Osc shape", "Wave", "Semitone", "Detune", "FM amount",
-			"Feedback (osc)", "Osc balance", "Sub osc", "Osc volume", "Noise", "Ring mod", "Effect type/mix",
-			"Effect feedback", "Delay send", "Soft knob 1", "Soft knob 2", "Master volume", "Cutoff", "Cutoff 2",
-			"Resonance", "Envelope amount", "Filter balance", "Filter attack", "Filter decay", "Filter sustain",
-			"Filter release", "Amp attack", "Amp decay", "Amp sustain", "Amp release" };
+		static const char* pots[32] = { "LFO rate", "Delay/reverb time", "Osc shape", "Wave select / pulse width",
+			"Semitone", "Detune 2/3", "FM amount", "Effect intensity", "Osc balance", "Sub osc", "Osc volume", "Noise",
+			"Ring mod", "Effect type/mix", "Delay feedback / reverb damping", "Delay/reverb send", "Soft knob 1",
+			"Soft knob 2 / value", "Master volume", "Cutoff", "Cutoff 2", "Resonance", "Envelope amount",
+			"Filter balance", "Filter attack", "Filter decay", "Filter sustain", "Filter release", "Amp attack",
+			"Amp decay", "Amp sustain", "Amp release" };
 		for (int i = 0; i < 32; i++) configParam(POT_PARAM + i, 0.f, 1.f, 0.75f, pots[i], "%", 0.f, 100.f);
-		static const char* keys[35] = { "LFO edit", "LFO select", "LFO page", "LFO page", "Osc edit", "Sync",
-			"Osc select", "Osc 3 on", "Effects edit", "Distortion", "Phaser", "Chorus", "Delay edit", "Filter edit",
-			"Filter 1 mode", "Filter 2 mode", "Filter select 1", "Filter select 2", "Arp on", "Arp edit", "Clock",
-			"Random", "Random sound", "Undo", "Store", "Multi", "Single", "Soft knob 1 -", "Soft knob 1 +",
-			"Soft knob 2 / value -", "Soft knob 2 / value +", "Search", "Transpose -", "Transpose +", "Key 2,6" };
-		for (int i = 0; i < 35; i++) configButton(KEY_PARAM + i, keys[i]);
+		for (int i = 0; i < 35; i++) configButton(KEY_PARAM + i, KEY_NAME[i]);
 		configInput(IN_L_INPUT, "Left");
 		configInput(IN_R_INPUT, "Right");
 		static const char* outs[6] = { "Out 1 left", "Out 1 right", "Out 2 left", "Out 2 right", "Out 3 left", "Out 3 right" };
@@ -254,10 +233,12 @@ struct Contagion : Module {
 		// Housekeeping, about 40 times a second: the LEDs, the LCD, and the battery RAM.
 		if (++housekeeping >= int(args.sampleRate / 40)) {
 			housekeeping = 0;
-			uint16_t g[7];
+			float g[7][14];
 			v.leds(g);
-			for (int i = 0; i < 18; i++) lights[LED_LIGHT + i].setBrightness(g[LED[i][0]] >> LED[i][1] & 1 ? 1.f : 0.f);
-			for (int i = 0; i < 2; i++) lights[LED_LIGHT + 18 + i].setBrightness(g[LED2[i][0]] >> LED2[i][1] & 1 ? 1.f : 0.f);
+			for (int i = 0; i < 67; i++) lights[LED_LIGHT + i].setBrightness(g[LED[i][0]][LED[i][1]]);
+			float rate[2];
+			v.rateLeds(rate);
+			for (int i = 0; i < 2; i++) lights[RATE_LIGHT + i].setBrightness(rate[i]);
 			if (snapMutex.try_lock()) {
 				v.lcd(snap.chars, snap.cgram);
 				// 160 KB of battery RAM: copy it for the patch every few seconds.
@@ -352,38 +333,54 @@ struct ContagionWidget : ModuleWidget {
 		lcd->box = panel::mmRect((panel::W - panel::LCD_W) / 2, panel::LCD_Y, panel::LCD_W, panel::LCD_H);
 		addChild(lcd);
 
-		const Vec pots[32] = { panel::RATE_POS, panel::CLOCK_POS, panel::SHAPE_POS, panel::WAVE_POS, panel::SEMITONE_POS,
-			panel::DETUNE_POS, panel::FM_POS, panel::OSC_FB_POS, panel::OSC_BAL_POS, panel::SUB_POS, panel::OSC_VOL_POS,
-			panel::NOISE_POS, panel::RING_POS, panel::FX_MIX_POS, panel::FX_FB_POS, panel::FX_SEND_POS, panel::SOFT1_POS,
-			panel::SOFT2_POS, panel::VOLUME_POS, panel::CUTOFF_POS, panel::CUTOFF2_POS, panel::RESO_POS, panel::ENV_AMT_POS,
-			panel::FLT_BAL_POS, panel::F_ATT_POS, panel::F_DEC_POS, panel::F_SUS_POS, panel::F_REL_POS, panel::A_ATT_POS,
-			panel::A_DEC_POS, panel::A_SUS_POS, panel::A_REL_POS };
+		const Vec pots[32] = { panel::RATE_POS, panel::DLY_TIME_POS, panel::SHAPE_POS, panel::WAVE_POS,
+			panel::SEMITONE_POS, panel::DETUNE_POS, panel::FM_POS, panel::FX_INT_POS, panel::OSC_BAL_POS, panel::SUB_POS,
+			panel::OSC_VOL_POS, panel::NOISE_POS, panel::RING_POS, panel::FX_MIX_POS, panel::DLY_FB_POS,
+			panel::DLY_SEND_POS, panel::SOFT1_POS, panel::SOFT2_POS, panel::VOLUME_POS, panel::CUTOFF_POS,
+			panel::CUTOFF2_POS, panel::RESO_POS, panel::ENV_AMT_POS, panel::FLT_BAL_POS, panel::F_ATT_POS,
+			panel::F_DEC_POS, panel::F_SUS_POS, panel::F_REL_POS, panel::A_ATT_POS, panel::A_DEC_POS, panel::A_SUS_POS,
+			panel::A_REL_POS };
 		for (int i = 0; i < 32; i++)
 			addParam(createParamCentered<RoundSmallBlackKnob>(panel::mm(pots[i].x, pots[i].y), module, Contagion::POT_PARAM + i));
 
-		const Vec keys[35] = { panel::LFO_EDIT_POS, panel::LFO_SELECT_POS, panel::LFO_PAGE1_POS, panel::LFO_PAGE2_POS,
-			panel::OSC_EDIT_POS, panel::SYNC_POS, panel::OSC_SELECT_POS, panel::OSC3_ON_POS, panel::FX_EDIT_POS,
-			panel::FX_A_POS, panel::FX_B_POS, panel::FX_C_POS, panel::DLY_EDIT_POS, panel::FLT_EDIT_POS, panel::FLT1_MODE_POS,
-			panel::FLT2_MODE_POS, panel::FLT_SEL1_POS, panel::FLT_SEL2_POS, panel::ARP_ON_POS, panel::ARP_EDIT_POS,
-			panel::CLOCK_EDIT_POS, panel::RANDOM_POS, panel::RANDOM_SND_POS, panel::UNDO_POS, panel::STORE_POS,
-			panel::MULTI_POS, panel::SINGLE_POS, panel::PROG_DN_POS, panel::PROG_UP_POS, panel::BANK_DN_POS,
-			panel::BANK_UP_POS, panel::SEARCH_POS, panel::TR_DN_POS, panel::TR_UP_POS, panel::KEY26_POS };
-		// The buttons with their own LED are bezels lit by it; the rest are plain.
-		const int lit[6][2] = { { 5, 0 }, { 7, 1 }, { 18, 2 }, { 9, 3 }, { 10, 4 }, { 11, 5 } };
+		const Vec keys[35] = { panel::LFO_EDIT_POS, panel::LFO_SELECT_POS, panel::LFO_SHAPE_POS, panel::LFO_AMOUNT_POS,
+			panel::OSC_EDIT_POS, panel::SYNC_POS, panel::OSC1_POS, panel::OSC2_POS, panel::OSC3_POS, panel::OSC3_ON_POS,
+			panel::FX_EDIT_POS, panel::FX_SELECT_POS, panel::DLY_EDIT_POS, panel::ARP_ON_POS, panel::ARP_EDIT_POS,
+			panel::EDIT_POS, panel::GLOBAL_POS, panel::RANDOM_POS, panel::UNDO_POS, panel::STORE_POS, panel::MULTI_POS,
+			panel::SINGLE_POS, panel::PART_DN_POS, panel::PART_UP_POS, panel::PARAM_DN_POS, panel::PARAM_UP_POS,
+			panel::VALUE_DN_POS, panel::VALUE_UP_POS, panel::FLT_EDIT_POS, panel::FLT1_MODE_POS, panel::FLT2_MODE_POS,
+			panel::FLT_SEL1_POS, panel::FLT_SEL2_POS, panel::TR_DN_POS, panel::TR_UP_POS };
 		for (int i = 0; i < 35; i++) {
 			int light = -1;
-			for (auto& l : lit) if (l[0] == i) light = l[1];
+			for (auto& b : BEZEL) if (b[0] == i) light = b[1];
 			if (light >= 0)
 				addParam(createLightParamCentered<VCVLightBezel<panel::LimeLight> >(panel::mm(keys[i].x, keys[i].y), module,
 					Contagion::KEY_PARAM + i, Contagion::LED_LIGHT + light));
 			else
 				addParam(createParamCentered<VCVButton>(panel::mm(keys[i].x, keys[i].y), module, Contagion::KEY_PARAM + i));
 		}
-		const Vec leds[14] = { panel::LFO1_POS, panel::LFO2_POS, panel::LFO3_POS, panel::LFO_MOD_POS, panel::OSC1_POS,
-			panel::OSC2_POS, panel::OSC3_POS, panel::F1M1_POS, panel::F1M2_POS, panel::F1M3_POS, panel::F2M1_POS,
-			panel::F2M2_POS, panel::F2M3_POS, panel::F2M4_POS };
-		for (int i = 0; i < 14; i++)
-			addChild(createLightCentered<SmallLight<panel::ClayLight> >(panel::mm(leds[i].x, leds[i].y), module, Contagion::LED_LIGHT + 6 + i));
+		// The LEDs in LED[] order; the bezels' entries are never drawn here.
+		const Vec leds[67] = { panel::LFO_EDIT_LED_POS, panel::LFO1_POS, panel::LFO2_POS, panel::LFO3_POS, panel::LFO4_POS,
+			panel::SHP1_POS, panel::SHP2_POS, panel::SHP3_POS, panel::SHP4_POS, panel::SHP5_POS,
+			panel::OSC_EDIT_LED_POS, Vec(), panel::OSC1_LED_POS, panel::OSC2_LED_POS, panel::OSC3_LED_POS, Vec(),
+			panel::FX_EDIT_LED_POS, panel::FX1_POS, panel::FX2_POS, panel::FX3_POS, panel::DLY_EDIT_LED_POS,
+			panel::D1_1_POS, panel::D1_2_POS, panel::D1_3_POS, panel::D1_4_POS, panel::D1_5_POS, panel::D1_6_POS,
+			panel::D2_1_POS, panel::D2_2_POS, panel::D2_3_POS, panel::D2_4_POS, panel::D2_5_POS, panel::D2_6_POS,
+			panel::D3_1_POS, panel::D3_2_POS, panel::D3_3_POS, panel::D3_4_POS, panel::D3_5_POS,
+			panel::DM_1_POS, panel::DM_2_POS, panel::DM_3_POS, panel::DM_4_POS, panel::DM_5_POS, panel::DM_6_POS,
+			Vec(), panel::ARP_EDIT_LED_POS, panel::EDIT_LED_POS, panel::GLOBAL_LED_POS,
+			panel::MULTI_LED_POS, panel::SINGLE_LED_POS, panel::FLT_EDIT_LED_POS,
+			panel::F1M1_POS, panel::F1M2_POS, panel::F1M3_POS, panel::F1M4_POS,
+			panel::F2M1_POS, panel::F2M2_POS, panel::F2M3_POS, panel::F2M4_POS, panel::SEL1_LED_POS, panel::SEL2_LED_POS,
+			panel::TR1_POS, panel::TR2_POS, panel::TR3_POS, panel::TR4_POS, panel::TR5_POS, panel::BPM_POS };
+		for (int i = 0; i < 67; i++) {
+			bool bezel = false;
+			for (auto& b : BEZEL) if (b[1] == i) bezel = true;
+			if (!bezel)
+				addChild(createLightCentered<SmallLight<panel::ClayLight> >(panel::mm(leds[i].x, leds[i].y), module, Contagion::LED_LIGHT + i));
+		}
+		addChild(createLightCentered<SmallLight<panel::ClayLight> >(panel::mm(panel::RATE1_POS.x, panel::RATE1_POS.y), module, Contagion::RATE_LIGHT));
+		addChild(createLightCentered<SmallLight<panel::ClayLight> >(panel::mm(panel::RATE23_POS.x, panel::RATE23_POS.y), module, Contagion::RATE_LIGHT + 1));
 
 		addInput(createInputCentered<panel::PortInMain>(panel::mm(panel::IN_L_POS.x, panel::IN_L_POS.y), module, Contagion::IN_L_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::IN_R_POS.x, panel::IN_R_POS.y), module, Contagion::IN_R_INPUT));

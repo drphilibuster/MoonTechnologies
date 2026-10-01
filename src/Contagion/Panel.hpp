@@ -14,8 +14,8 @@
 namespace panel {
 
 // --- identity --------------------------------------------------------------
-static const int   HP = 54;
-static const float W  = 274.3200f;  // mm
+static const int   HP = 61;
+static const float W  = 309.8800f;  // mm
 static const float H  = 128.5000f;  // mm
 
 // --- the read-out well: the spec's numbers, not the widget's ---------------
@@ -24,112 +24,149 @@ static const float H  = 128.5000f;  // mm
 // they drifted. The widget takes them from here now.
 static const float GLASS_X = 4.2000f;
 static const float GLASS_Y = 9.8000f;
-static const float GLASS_W = 265.9200f;
-static const float GLASS_H = 11.0000f;
+static const float GLASS_W = 301.4800f;
+static const float GLASS_H = 10.0000f;
 
 // --- panel metrics, mirrored from tools/panels/Contagion.py ---
-static const float LCD_H          = 8.8000f;
+static const float LCD_H          = 8.6000f;
 static const float LCD_W          = 66.0000f;
-static const float LCD_Y          = 10.9000f;
+static const float LCD_Y          = 10.5000f;
 
 // --- silkscreen ------------------------------------------------------------
 static const Label LABELS[] = {
 	{ 11.5600f,   5.5000f, 10.50f, 1.50f, PAPER    , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "CONTAGION"},
-	{262.7600f,   5.5000f,  6.00f, 0.00f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "VIRUS C"},
+	{298.3200f,   5.5000f,  6.00f, 0.00f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "VIRUS C"},
 	{ 11.5600f,   8.2500f,  7.40f, 0.00f, LIME     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, true,  "$"},
 	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
-	{270.1200f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 8300"},
-	{137.1600f,  25.0000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LFO · OSCILLATORS · MIXER · EFFECTS"},
-	{ 10.9000f,  40.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RATE"},
-	{ 24.4229f,  40.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CLOCK"},
-	{ 40.2229f,  40.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SHAPE"},
-	{ 53.7457f,  40.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "WAVE"},
-	{ 67.2686f,  40.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SEMI"},
-	{ 80.7914f,  40.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DETUNE"},
-	{ 94.3143f,  40.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FM AMT"},
-	{107.8371f,  40.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FEEDBK"},
-	{123.6371f,  40.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OSC BAL"},
-	{137.1600f,  40.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SUB OSC"},
-	{150.6829f,  40.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OSC VOL"},
-	{164.2057f,  40.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "NOISE"},
-	{177.7286f,  40.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RING"},
-	{193.5286f,  40.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TYPE/MIX"},
-	{207.0514f,  40.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FEEDBACK"},
-	{220.5743f,  40.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SEND"},
-	{236.3743f,  40.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SOFT 1"},
-	{249.8971f,  40.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SOFT 2"},
-	{263.4200f,  40.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "VOLUME"},
-	{ 32.0056f,  54.0362f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EDIT"},
-	{ 43.9156f,  54.0362f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SELECT"},
-	{ 55.8256f,  54.0362f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PAGE"},
-	{ 67.7356f,  54.0362f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PAGE"},
-	{ 78.0456f,  54.0362f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "1"},
-	{ 86.7556f,  54.0362f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "2"},
-	{ 95.4656f,  54.0362f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "3"},
-	{104.1756f,  54.0362f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MOD"},
-	{114.4856f,  54.0362f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EDIT"},
-	{126.9456f,  54.0362f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SYNC"},
-	{139.4056f,  54.0362f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SELECT"},
-	{149.7156f,  54.0362f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "1"},
-	{158.4256f,  54.0362f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "2"},
-	{167.1356f,  54.0362f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "3"},
-	{177.9956f,  54.0362f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OSC 3"},
-	{190.9150f,  54.0362f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EFFECTS"},
-	{203.8344f,  54.0362f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DIST"},
-	{216.8444f,  54.0362f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PHA"},
-	{229.8544f,  54.0362f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CHO"},
-	{242.3144f,  54.0362f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DELAY"},
-	{137.1600f,  61.9634f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FILTERS · ENVELOPES · PROGRAM"},
-	{ 20.0277f,  79.8703f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CUTOFF"},
-	{ 38.7477f,  79.8703f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CUTOFF 2"},
-	{ 56.1677f,  79.8703f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RESO"},
-	{ 73.5877f,  79.8703f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ENV AMT"},
-	{ 91.0077f,  79.8703f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FLT BAL"},
-	{121.0400f,  79.8703f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ATTACK"},
-	{138.4600f,  79.8703f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
-	{155.8800f,  79.8703f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SUSTAIN"},
-	{173.3000f,  79.8703f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RELEASE"},
-	{203.3323f,  79.8703f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ATTACK"},
-	{220.7523f,  79.8703f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
-	{238.1723f,  79.8703f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SUSTAIN"},
-	{255.5923f,  79.8703f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RELEASE"},
-	{ 52.0706f,  93.0069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EDIT"},
-	{ 63.9806f,  93.0069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FILT 1"},
-	{ 74.2906f,  93.0069f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "HP"},
-	{ 83.0006f,  93.0069f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BP"},
-	{ 91.7106f,  93.0069f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BS"},
-	{102.0206f,  93.0069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FILT 2"},
-	{112.3306f,  93.0069f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LP"},
-	{121.0406f,  93.0069f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "HP"},
-	{129.7506f,  93.0069f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BP"},
-	{138.4606f,  93.0069f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BS"},
-	{148.7706f,  93.0069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SEL 1"},
-	{160.6806f,  93.0069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SEL 2"},
-	{173.1406f,  93.0069f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ARP"},
-	{185.6006f,  93.0069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EDIT"},
-	{197.5106f,  93.0069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CLOCK"},
-	{209.4206f,  93.0069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RANDOM"},
-	{221.7900f,  93.0069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RND SND"},
-	{ 65.4561f, 104.9460f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "UNDO"},
-	{ 78.3261f, 104.9460f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "STORE"},
-	{ 91.1961f, 104.9460f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MULTI"},
-	{104.0661f, 104.9460f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SINGLE"},
-	{116.9361f, 104.9460f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SK1 -"},
-	{129.8061f, 104.9460f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SK1 +"},
-	{142.6761f, 104.9460f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SK2 -"},
-	{155.5461f, 104.9460f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SK2 +"},
-	{168.4161f, 104.9460f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SEARCH"},
-	{181.7456f, 104.9460f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRANS -"},
-	{195.5344f, 104.9460f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRANS +"},
-	{208.8639f, 104.9460f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "2,6"},
-	{ 87.2010f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN L"},
-	{101.4750f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN R"},
-	{115.7490f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT 1L"},
-	{130.0230f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT 1R"},
-	{144.2970f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT 2L"},
-	{158.5710f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT 2R"},
-	{172.8450f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT 3L"},
-	{187.1190f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT 3R"},
+	{305.6800f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 8300"},
+	{154.9400f,  24.0000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LFOS/MOD · OSCILLATORS · MIXER · EFFECTS · DELAY/REVERB"},
+	{ 10.9000f,  39.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RATE"},
+	{ 26.7000f,  39.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SHAPE"},
+	{ 43.1668f,  39.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "WAVE SEL/PW"},
+	{ 59.6337f,  39.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SEMITONE"},
+	{ 75.3893f,  39.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DETUNE 2/3"},
+	{ 91.8457f,  39.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FM AMOUNT"},
+	{108.3465f,  39.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OSC BAL"},
+	{122.6902f,  39.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SUB OSC"},
+	{137.0338f,  39.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OSC VOL"},
+	{151.3774f,  39.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "NOISE"},
+	{165.7210f,  39.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RING MOD"},
+	{181.5210f,  39.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TYPE/MIX"},
+	{196.5655f,  39.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "INTENSITY"},
+	{213.0663f,  39.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SEND"},
+	{230.2443f,  39.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DLY/REV TIME"},
+	{248.1231f,  39.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FDBK/DAMP"},
+	{264.6239f,  39.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SOFT 1"},
+	{281.8020f,  39.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SOFT 2/VALUE"},
+	{298.9800f,  39.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "VOLUME"},
+	{  9.1500f,  52.6089f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EDIT"},
+	{ 24.0733f,  52.6089f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SELECT"},
+	{ 34.2469f,  52.6089f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "1"},
+	{ 42.8205f,  52.6089f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "2"},
+	{ 51.3941f,  52.6089f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "3"},
+	{ 59.9677f,  52.6089f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MOD"},
+	{ 69.7270f,  52.6089f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RATE 1"},
+	{ 79.4863f,  52.6089f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "2/3"},
+	{ 89.6599f,  52.6089f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SHAPE"},
+	{ 99.8335f,  52.6089f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SIN"},
+	{108.4071f,  52.6089f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRI"},
+	{116.9807f,  52.6089f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SAW"},
+	{125.5543f,  52.6089f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SQR"},
+	{134.1350f,  52.6089f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "WAVE"},
+	{144.3157f,  52.6089f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "AMOUNT"},
+	{156.0893f,  52.6089f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EDIT"},
+	{171.5626f,  52.6089f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SYNC"},
+	{183.8862f,  52.6089f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OSC 1"},
+	{199.4394f,  52.6089f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OSC 2"},
+	{214.9926f,  52.6089f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OSC 3"},
+	{231.9603f,  52.6089f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OSC 3 ON"},
+	{245.1484f,  52.6089f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EDIT"},
+	{260.0717f,  52.6089f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SELECT"},
+	{270.2524f,  52.6089f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DIST"},
+	{278.8331f,  52.6089f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PHA"},
+	{287.4067f,  52.6089f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CHO"},
+	{297.5803f,  52.6089f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EDIT"},
+	{  8.1464f,  66.5023f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OSC 1"},
+	{ 17.5976f,  66.5023f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OSC 2"},
+	{ 27.6382f,  66.5023f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PW 1+2"},
+	{ 37.0894f,  66.5023f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RESO"},
+	{ 46.5406f,  66.5023f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "F GAIN"},
+	{ 57.1704f,  66.5023f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ASSIGN"},
+	{ 67.8002f,  66.5023f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FILT 1"},
+	{ 78.4300f,  66.5023f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FILT 2"},
+	{ 88.4705f,  66.5023f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SHAPE"},
+	{ 98.5110f,  66.5023f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FM AMT"},
+	{107.9552f,  66.5023f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PAN"},
+	{117.3993f,  66.5023f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ASSIGN"},
+	{127.4398f,  66.5023f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OSC 1"},
+	{136.8910f,  66.5023f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OSC 2"},
+	{145.7530f,  66.5023f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PW 1"},
+	{154.0257f,  66.5023f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PW 2"},
+	{164.0662f,  66.5023f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SYNC PH"},
+	{175.2852f,  66.5023f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ASGN 1"},
+	{185.9150f,  66.5023f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ASGN 2"},
+	{196.5448f,  66.5023f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ASGN 3"},
+	{207.1746f,  66.5023f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ASGN 4"},
+	{217.8044f,  66.5023f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ASGN 5"},
+	{228.4342f,  66.5023f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ASGN 6"},
+	{240.0283f,  66.5023f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ARP ON"},
+	{253.1261f,  66.5023f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ARP EDIT"},
+	{270.2539f,  66.5023f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EDIT"},
+	{284.8620f,  66.5023f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GLOBAL"},
+	{300.7300f,  66.5023f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RANDOM"},
+	{154.9400f,  75.1864f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FILTERS · ENVELOPES · PROGRAM"},
+	{ 12.2000f,  93.0933f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CUTOFF"},
+	{ 27.1342f,  93.0933f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CUTOFF 2"},
+	{ 40.7684f,  93.0933f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RESO"},
+	{ 54.4026f,  93.0933f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ENV AMT"},
+	{ 68.0367f,  93.0933f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FLT BAL"},
+	{ 83.8367f,  93.0933f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ATTACK"},
+	{ 97.4709f,  93.0933f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
+	{111.1051f,  93.0933f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SUSTAIN"},
+	{124.7393f,  93.0933f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RELEASE"},
+	{140.5393f,  93.0933f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ATTACK"},
+	{154.1735f,  93.0933f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
+	{167.8077f,  93.0933f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SUSTAIN"},
+	{181.4419f,  93.0933f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RELEASE"},
+	{195.4919f,  93.0933f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "UNDO"},
+	{205.6261f,  93.0933f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "STORE"},
+	{215.7602f,  93.0933f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MULTI"},
+	{229.6740f,  93.0933f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SINGLE"},
+	{246.3835f,  93.0933f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PART -"},
+	{256.5177f,  93.0933f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PART +"},
+	{267.1114f,  93.0933f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PARAM <"},
+	{278.1644f,  93.0933f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PARAM >"},
+	{289.2175f,  93.0933f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "VALUE -"},
+	{300.2706f,  93.0933f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "VALUE +"},
+	{ 51.9667f, 106.3733f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EDIT"},
+	{ 67.0264f, 106.3733f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FILT 1"},
+	{ 77.3364f, 106.3733f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LP"},
+	{ 86.0464f, 106.3733f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "HP"},
+	{ 94.7564f, 106.3733f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BP"},
+	{103.4664f, 106.3733f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BS"},
+	{113.7764f, 106.3733f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FILT 2"},
+	{124.0864f, 106.3733f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LP"},
+	{132.7964f, 106.3733f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "HP"},
+	{141.5064f, 106.3733f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BP"},
+	{150.2164f, 106.3733f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BS"},
+	{160.5264f, 106.3733f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SEL 1"},
+	{176.2160f, 106.3733f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SEL 2"},
+	{192.3650f, 106.3733f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRANS -"},
+	{203.1344f, 106.3733f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "-2"},
+	{211.8444f, 106.3733f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "-1"},
+	{220.5544f, 106.3733f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "0"},
+	{229.2644f, 106.3733f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "+1"},
+	{237.9744f, 106.3733f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "+2"},
+	{248.7439f, 106.3733f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRANS +"},
+	{259.5133f, 106.3733f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BPM"},
+	{104.9810f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN L"},
+	{119.2550f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN R"},
+	{133.5290f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT 1L"},
+	{147.8030f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT 1R"},
+	{162.0770f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT 2L"},
+	{176.3510f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT 2R"},
+	{190.6250f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT 3L"},
+	{204.8990f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT 3R"},
 };
 
 /** Draws this panel's silkscreen. `static` so each module keeps its own,
@@ -140,94 +177,146 @@ static inline void addLabels(app::ModuleWidget* mw) {
 
 // --- widget positions, by the names used in tools/panels/Contagion.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
-static const Vec RATE_POS = Vec(10.9000, 32.1000);
-static const Vec CLOCK_POS = Vec(24.4229, 32.1000);
-static const Vec SHAPE_POS = Vec(40.2229, 32.1000);
-static const Vec WAVE_POS = Vec(53.7457, 32.1000);
-static const Vec SEMITONE_POS = Vec(67.2686, 32.1000);
-static const Vec DETUNE_POS = Vec(80.7914, 32.1000);
-static const Vec FM_POS = Vec(94.3143, 32.1000);
-static const Vec OSC_FB_POS = Vec(107.8371, 32.1000);
-static const Vec OSC_BAL_POS = Vec(123.6371, 32.1000);
-static const Vec SUB_POS = Vec(137.1600, 32.1000);
-static const Vec OSC_VOL_POS = Vec(150.6829, 32.1000);
-static const Vec NOISE_POS = Vec(164.2057, 32.1000);
-static const Vec RING_POS = Vec(177.7286, 32.1000);
-static const Vec FX_MIX_POS = Vec(193.5286, 32.1000);
-static const Vec FX_FB_POS = Vec(207.0514, 32.1000);
-static const Vec FX_SEND_POS = Vec(220.5743, 32.1000);
-static const Vec SOFT1_POS = Vec(236.3743, 32.1000);
-static const Vec SOFT2_POS = Vec(249.8971, 32.1000);
-static const Vec VOLUME_POS = Vec(263.4200, 32.1000);
-static const Vec LFO_EDIT_POS = Vec(32.0056, 47.1268);
-static const Vec LFO_SELECT_POS = Vec(43.9156, 47.1268);
-static const Vec LFO_PAGE1_POS = Vec(55.8256, 47.1268);
-static const Vec LFO_PAGE2_POS = Vec(67.7356, 47.1268);
-static const Vec LFO1_POS = Vec(78.0456, 47.1268);
-static const Vec LFO2_POS = Vec(86.7556, 47.1268);
-static const Vec LFO3_POS = Vec(95.4656, 47.1268);
-static const Vec LFO_MOD_POS = Vec(104.1756, 47.1268);
-static const Vec OSC_EDIT_POS = Vec(114.4856, 47.1268);
-static const Vec SYNC_POS = Vec(126.9456, 47.1268);
-static const Vec OSC_SELECT_POS = Vec(139.4056, 47.1268);
-static const Vec OSC1_POS = Vec(149.7156, 47.1268);
-static const Vec OSC2_POS = Vec(158.4256, 47.1268);
-static const Vec OSC3_POS = Vec(167.1356, 47.1268);
-static const Vec OSC3_ON_POS = Vec(177.9956, 47.1268);
-static const Vec FX_EDIT_POS = Vec(190.9150, 47.1268);
-static const Vec FX_A_POS = Vec(203.8344, 47.1268);
-static const Vec FX_B_POS = Vec(216.8444, 47.1268);
-static const Vec FX_C_POS = Vec(229.8544, 47.1268);
-static const Vec DLY_EDIT_POS = Vec(242.3144, 47.1268);
-static const Vec CUTOFF_POS = Vec(20.0277, 70.3634);
-static const Vec CUTOFF2_POS = Vec(38.7477, 70.3634);
-static const Vec RESO_POS = Vec(56.1677, 70.3634);
-static const Vec ENV_AMT_POS = Vec(73.5877, 70.3634);
-static const Vec FLT_BAL_POS = Vec(91.0077, 70.3634);
-static const Vec F_ATT_POS = Vec(121.0400, 70.3634);
-static const Vec F_DEC_POS = Vec(138.4600, 70.3634);
-static const Vec F_SUS_POS = Vec(155.8800, 70.3634);
-static const Vec F_REL_POS = Vec(173.3000, 70.3634);
-static const Vec A_ATT_POS = Vec(203.3323, 70.3634);
-static const Vec A_DEC_POS = Vec(220.7523, 70.3634);
-static const Vec A_SUS_POS = Vec(238.1723, 70.3634);
-static const Vec A_REL_POS = Vec(255.5923, 70.3634);
-static const Vec FLT_EDIT_POS = Vec(52.0706, 86.0976);
-static const Vec FLT1_MODE_POS = Vec(63.9806, 86.0976);
-static const Vec F1M1_POS = Vec(74.2906, 86.0976);
-static const Vec F1M2_POS = Vec(83.0006, 86.0976);
-static const Vec F1M3_POS = Vec(91.7106, 86.0976);
-static const Vec FLT2_MODE_POS = Vec(102.0206, 86.0976);
-static const Vec F2M1_POS = Vec(112.3306, 86.0976);
-static const Vec F2M2_POS = Vec(121.0406, 86.0976);
-static const Vec F2M3_POS = Vec(129.7506, 86.0976);
-static const Vec F2M4_POS = Vec(138.4606, 86.0976);
-static const Vec FLT_SEL1_POS = Vec(148.7706, 86.0976);
-static const Vec FLT_SEL2_POS = Vec(160.6806, 86.0976);
-static const Vec ARP_ON_POS = Vec(173.1406, 86.0976);
-static const Vec ARP_EDIT_POS = Vec(185.6006, 86.0976);
-static const Vec CLOCK_EDIT_POS = Vec(197.5106, 86.0976);
-static const Vec RANDOM_POS = Vec(209.4206, 86.0976);
-static const Vec RANDOM_SND_POS = Vec(221.7900, 86.0976);
-static const Vec UNDO_POS = Vec(65.4561, 98.6842);
-static const Vec STORE_POS = Vec(78.3261, 98.6842);
-static const Vec MULTI_POS = Vec(91.1961, 98.6842);
-static const Vec SINGLE_POS = Vec(104.0661, 98.6842);
-static const Vec PROG_DN_POS = Vec(116.9361, 98.6842);
-static const Vec PROG_UP_POS = Vec(129.8061, 98.6842);
-static const Vec BANK_DN_POS = Vec(142.6761, 98.6842);
-static const Vec BANK_UP_POS = Vec(155.5461, 98.6842);
-static const Vec SEARCH_POS = Vec(168.4161, 98.6842);
-static const Vec TR_DN_POS = Vec(181.7456, 98.6842);
-static const Vec TR_UP_POS = Vec(195.5344, 98.6842);
-static const Vec KEY26_POS = Vec(208.8639, 98.6842);
-static const Vec IN_L_POS = Vec(87.2010, 118.6000);
-static const Vec IN_R_POS = Vec(101.4750, 118.6000);
-static const Vec OUT1L_POS = Vec(115.7490, 118.6000);
-static const Vec OUT1R_POS = Vec(130.0230, 118.6000);
-static const Vec OUT2L_POS = Vec(144.2970, 118.6000);
-static const Vec OUT2R_POS = Vec(158.5710, 118.6000);
-static const Vec OUT3L_POS = Vec(172.8450, 118.6000);
-static const Vec OUT3R_POS = Vec(187.1190, 118.6000);
+static const Vec RATE_POS = Vec(10.9000, 31.1000);
+static const Vec SHAPE_POS = Vec(26.7000, 31.1000);
+static const Vec WAVE_POS = Vec(43.1668, 31.1000);
+static const Vec SEMITONE_POS = Vec(59.6337, 31.1000);
+static const Vec DETUNE_POS = Vec(75.3893, 31.1000);
+static const Vec FM_POS = Vec(91.8457, 31.1000);
+static const Vec OSC_BAL_POS = Vec(108.3465, 31.1000);
+static const Vec SUB_POS = Vec(122.6902, 31.1000);
+static const Vec OSC_VOL_POS = Vec(137.0338, 31.1000);
+static const Vec NOISE_POS = Vec(151.3774, 31.1000);
+static const Vec RING_POS = Vec(165.7210, 31.1000);
+static const Vec FX_MIX_POS = Vec(181.5210, 31.1000);
+static const Vec FX_INT_POS = Vec(196.5655, 31.1000);
+static const Vec DLY_SEND_POS = Vec(213.0663, 31.1000);
+static const Vec DLY_TIME_POS = Vec(230.2443, 31.1000);
+static const Vec DLY_FB_POS = Vec(248.1231, 31.1000);
+static const Vec SOFT1_POS = Vec(264.6239, 31.1000);
+static const Vec SOFT2_POS = Vec(281.8020, 31.1000);
+static const Vec VOLUME_POS = Vec(298.9800, 31.1000);
+static const Vec LFO_EDIT_POS = Vec(9.1500, 45.6995);
+static const Vec LFO_SELECT_POS = Vec(24.0733, 45.6995);
+static const Vec LFO1_POS = Vec(34.2469, 45.6995);
+static const Vec LFO2_POS = Vec(42.8205, 45.6995);
+static const Vec LFO3_POS = Vec(51.3941, 45.6995);
+static const Vec LFO4_POS = Vec(59.9677, 45.6995);
+static const Vec RATE1_POS = Vec(69.7270, 45.6995);
+static const Vec RATE23_POS = Vec(79.4863, 45.6995);
+static const Vec LFO_SHAPE_POS = Vec(89.6599, 45.6995);
+static const Vec SHP1_POS = Vec(99.8335, 45.6995);
+static const Vec SHP2_POS = Vec(108.4071, 45.6995);
+static const Vec SHP3_POS = Vec(116.9807, 45.6995);
+static const Vec SHP4_POS = Vec(125.5543, 45.6995);
+static const Vec SHP5_POS = Vec(134.1350, 45.6995);
+static const Vec LFO_AMOUNT_POS = Vec(144.3157, 45.6995);
+static const Vec OSC_EDIT_POS = Vec(156.0893, 45.6995);
+static const Vec SYNC_POS = Vec(171.5626, 45.6995);
+static const Vec OSC1_POS = Vec(183.8862, 45.6995);
+static const Vec OSC2_POS = Vec(199.4394, 45.6995);
+static const Vec OSC3_POS = Vec(214.9926, 45.6995);
+static const Vec OSC3_ON_POS = Vec(231.9603, 45.6995);
+static const Vec FX_EDIT_POS = Vec(245.1484, 45.6995);
+static const Vec FX_SELECT_POS = Vec(260.0717, 45.6995);
+static const Vec FX1_POS = Vec(270.2524, 45.6995);
+static const Vec FX2_POS = Vec(278.8331, 45.6995);
+static const Vec FX3_POS = Vec(287.4067, 45.6995);
+static const Vec DLY_EDIT_POS = Vec(297.5803, 45.6995);
+static const Vec LFO_EDIT_LED_POS = Vec(14.3097, 51.8530);
+static const Vec OSC_EDIT_LED_POS = Vec(161.2490, 51.8530);
+static const Vec OSC1_LED_POS = Vec(189.6758, 51.8530);
+static const Vec OSC2_LED_POS = Vec(205.2290, 51.8530);
+static const Vec OSC3_LED_POS = Vec(220.7822, 51.8530);
+static const Vec FX_EDIT_LED_POS = Vec(250.3081, 51.8530);
+static const Vec DLY_EDIT_LED_POS = Vec(302.7400, 51.8530);
+static const Vec D1_1_POS = Vec(8.1464, 59.5930);
+static const Vec D1_2_POS = Vec(17.5976, 59.5930);
+static const Vec D1_3_POS = Vec(27.6382, 59.5930);
+static const Vec D1_4_POS = Vec(37.0894, 59.5930);
+static const Vec D1_5_POS = Vec(46.5406, 59.5930);
+static const Vec D1_6_POS = Vec(57.1704, 59.5930);
+static const Vec D2_1_POS = Vec(67.8002, 59.5930);
+static const Vec D2_2_POS = Vec(78.4300, 59.5930);
+static const Vec D2_3_POS = Vec(88.4705, 59.5930);
+static const Vec D2_4_POS = Vec(98.5110, 59.5930);
+static const Vec D2_5_POS = Vec(107.9552, 59.5930);
+static const Vec D2_6_POS = Vec(117.3993, 59.5930);
+static const Vec D3_1_POS = Vec(127.4398, 59.5930);
+static const Vec D3_2_POS = Vec(136.8910, 59.5930);
+static const Vec D3_3_POS = Vec(145.7530, 59.5930);
+static const Vec D3_4_POS = Vec(154.0257, 59.5930);
+static const Vec D3_5_POS = Vec(164.0662, 59.5930);
+static const Vec DM_1_POS = Vec(175.2852, 59.5930);
+static const Vec DM_2_POS = Vec(185.9150, 59.5930);
+static const Vec DM_3_POS = Vec(196.5448, 59.5930);
+static const Vec DM_4_POS = Vec(207.1746, 59.5930);
+static const Vec DM_5_POS = Vec(217.8044, 59.5930);
+static const Vec DM_6_POS = Vec(228.4342, 59.5930);
+static const Vec ARP_ON_POS = Vec(240.0283, 59.5930);
+static const Vec ARP_EDIT_POS = Vec(253.1261, 59.5930);
+static const Vec EDIT_POS = Vec(270.2539, 59.5930);
+static const Vec GLOBAL_POS = Vec(284.8620, 59.5930);
+static const Vec RANDOM_POS = Vec(300.7300, 59.5930);
+static const Vec ARP_EDIT_LED_POS = Vec(260.8055, 65.7464);
+static const Vec EDIT_LED_POS = Vec(275.4136, 65.7464);
+static const Vec GLOBAL_LED_POS = Vec(291.2816, 65.7464);
+static const Vec CUTOFF_POS = Vec(12.2000, 83.5864);
+static const Vec CUTOFF2_POS = Vec(27.1342, 83.5864);
+static const Vec RESO_POS = Vec(40.7684, 83.5864);
+static const Vec ENV_AMT_POS = Vec(54.4026, 83.5864);
+static const Vec FLT_BAL_POS = Vec(68.0367, 83.5864);
+static const Vec F_ATT_POS = Vec(83.8367, 83.5864);
+static const Vec F_DEC_POS = Vec(97.4709, 83.5864);
+static const Vec F_SUS_POS = Vec(111.1051, 83.5864);
+static const Vec F_REL_POS = Vec(124.7393, 83.5864);
+static const Vec A_ATT_POS = Vec(140.5393, 83.5864);
+static const Vec A_DEC_POS = Vec(154.1735, 83.5864);
+static const Vec A_SUS_POS = Vec(167.8077, 83.5864);
+static const Vec A_REL_POS = Vec(181.4419, 83.5864);
+static const Vec UNDO_POS = Vec(195.4919, 83.5864);
+static const Vec STORE_POS = Vec(205.6261, 83.5864);
+static const Vec MULTI_POS = Vec(215.7602, 83.5864);
+static const Vec SINGLE_POS = Vec(229.6740, 83.5864);
+static const Vec PART_DN_POS = Vec(246.3835, 83.5864);
+static const Vec PART_UP_POS = Vec(256.5177, 83.5864);
+static const Vec PARAM_DN_POS = Vec(267.1114, 83.5864);
+static const Vec PARAM_UP_POS = Vec(278.1644, 83.5864);
+static const Vec VALUE_DN_POS = Vec(289.2175, 83.5864);
+static const Vec VALUE_UP_POS = Vec(300.2706, 83.5864);
+static const Vec MULTI_LED_POS = Vec(221.5498, 92.3374);
+static const Vec SINGLE_LED_POS = Vec(236.0935, 92.3374);
+static const Vec FLT_EDIT_POS = Vec(51.9667, 99.5274);
+static const Vec FLT1_MODE_POS = Vec(67.0264, 99.5274);
+static const Vec F1M1_POS = Vec(77.3364, 99.5274);
+static const Vec F1M2_POS = Vec(86.0464, 99.5274);
+static const Vec F1M3_POS = Vec(94.7564, 99.5274);
+static const Vec F1M4_POS = Vec(103.4664, 99.5274);
+static const Vec FLT2_MODE_POS = Vec(113.7764, 99.5274);
+static const Vec F2M1_POS = Vec(124.0864, 99.5274);
+static const Vec F2M2_POS = Vec(132.7964, 99.5274);
+static const Vec F2M3_POS = Vec(141.5064, 99.5274);
+static const Vec F2M4_POS = Vec(150.2164, 99.5274);
+static const Vec FLT_SEL1_POS = Vec(160.5264, 99.5274);
+static const Vec FLT_SEL2_POS = Vec(176.2160, 99.5274);
+static const Vec TR_DN_POS = Vec(192.3650, 99.5274);
+static const Vec TR1_POS = Vec(203.1344, 99.5274);
+static const Vec TR2_POS = Vec(211.8444, 99.5274);
+static const Vec TR3_POS = Vec(220.5544, 99.5274);
+static const Vec TR4_POS = Vec(229.2644, 99.5274);
+static const Vec TR5_POS = Vec(237.9744, 99.5274);
+static const Vec TR_UP_POS = Vec(248.7439, 99.5274);
+static const Vec BPM_POS = Vec(259.5133, 99.5274);
+static const Vec FLT_EDIT_LED_POS = Vec(57.1264, 105.6174);
+static const Vec SEL1_LED_POS = Vec(166.3160, 105.6174);
+static const Vec SEL2_LED_POS = Vec(182.0056, 105.6174);
+static const Vec IN_L_POS = Vec(104.9810, 118.6000);
+static const Vec IN_R_POS = Vec(119.2550, 118.6000);
+static const Vec OUT1L_POS = Vec(133.5290, 118.6000);
+static const Vec OUT1R_POS = Vec(147.8030, 118.6000);
+static const Vec OUT2L_POS = Vec(162.0770, 118.6000);
+static const Vec OUT2R_POS = Vec(176.3510, 118.6000);
+static const Vec OUT3L_POS = Vec(190.6250, 118.6000);
+static const Vec OUT3R_POS = Vec(204.8990, 118.6000);
 
 } // namespace panel

@@ -20,7 +20,8 @@ DSP_SRC := $(filter-out %test.cpp %tests.cpp,$(wildcard $(V)/dsp56300/dsp56kEmu/
            $(V)/gearmulator/hardwareLib/hd44780.cpp $(V)/gearmulator/hardwareLib/lcdfonts.cpp
 DSP_OBJ := $(patsubst $(V)/%.cpp,obj/%.o,$(DSP_SRC))
 
-CORE := ../../src/Contagion/Mcs515.hpp ../../src/Contagion/VirusC.hpp ../../src/Contagion/VirusC.cpp
+CORE := ../../src/Contagion/Mcs515.hpp ../../src/Contagion/VirusC.hpp ../../src/Contagion/VirusC.cpp \
+	../../src/Contagion/PanelMap.hpp
 
 all: test_machine
 
@@ -35,7 +36,7 @@ obj/VirusC.o: $(CORE)
 	@mkdir -p obj
 	$(CXX) $(FLAGS) -Wall -Wextra -Wno-unused-parameter -c -o $@ ../../src/Contagion/VirusC.cpp
 
-test_machine: test_machine.cpp obj/VirusC.o $(DSP_OBJ)
+test_machine: test_machine.cpp obj/VirusC.o $(DSP_OBJ) $(CORE)
 	$(CXX) $(FLAGS) -Wall -o $@ test_machine.cpp obj/VirusC.o $(DSP_OBJ)
 
 clean:

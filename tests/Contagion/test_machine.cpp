@@ -1,6 +1,8 @@
 // Contagion's Virus C, run without Rack against the real firmware. See the Makefile.
+#include "../../src/Contagion/PanelMap.hpp"
 #include "../../src/Contagion/VirusC.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -112,8 +114,49 @@ int main() {
 	std::printf("5. store: LCD [%s], %ld bank-RAM bytes changed\n", v.lcdText().c_str(), changed);
 	CHECK(changed > 0, "STORE changed bank RAM");
 
+	// The panel map: press a button by its matrix position and the LED the map gives it
+	// must answer. One second back in play mode first, then each press settles for 0.6 s.
+	v.setButton(vc::KEY[vc::K_SINGLE][0], vc::KEY[vc::K_SINGLE][1], true); r.seconds(0.15);
+	v.setButton(vc::KEY[vc::K_SINGLE][0], vc::KEY[vc::K_SINGLE][1], false); r.seconds(1.0);
+	float g[7][14];
+	auto led = [&](int i) { return g[vc::LED[i][0]][vc::LED[i][1]]; };
+	auto look = [&]() { v.leds(g); r.seconds(0.5); v.leds(g); };
+	auto press = [&](int k) {
+		v.setButton(vc::KEY[k][0], vc::KEY[k][1], true); r.seconds(0.15);
+		v.setButton(vc::KEY[k][0], vc::KEY[k][1], false); r.seconds(0.45);
+		look();
+	};
+	look();
+	std::printf("6. panel map: SINGLE %.2f MULTI %.2f, FILT 1 LP %.2f", led(vc::L_SINGLE), led(vc::L_MULTI), led(vc::L_F1_LP));
+	CHECK(led(vc::L_SINGLE) > 0.8 && led(vc::L_MULTI) < 0.1, "SINGLE lit, MULTI dark in single mode");
+	CHECK(led(vc::L_F1_LP) > 0.8 && led(vc::L_F1_HP) < 0.1, "filter 1 starts low-pass");
+	press(vc::K_FLT1_MODE);
+	std::printf(" -> HP %.2f", led(vc::L_F1_HP));
+	CHECK(led(vc::L_F1_HP) > 0.8 && led(vc::L_F1_LP) < 0.1, "FILT 1 steps the mode to high-pass");
+	press(vc::K_OSC2);
+	std::printf(", OSC 2 %.2f", led(vc::L_OSC2));
+	CHECK(led(vc::L_OSC2) > 0.8 && led(vc::L_OSC1) < 0.1, "OSC 2 selects oscillator 2");
+	press(vc::K_LFO_SELECT);
+	std::printf(", LFO 2 %.2f", led(vc::L_LFO2));
+	CHECK(led(vc::L_LFO2) > 0.8 && led(vc::L_LFO1) < 0.1, "SELECT steps to LFO 2");
+	press(vc::K_MULTI);
+	std::printf(", MULTI %.2f\n", led(vc::L_MULTI));
+	CHECK(led(vc::L_MULTI) > 0.8 && led(vc::L_SINGLE) < 0.1, "MULTI lights MULTI");
+
+	// The RATE LEDs come from the DSP's timers and follow the LFOs.
+	float lo[2] = { 1, 1 }, hi[2] = { 0, 0 };
+	for (int i = 0; i < 200; i++) {
+		r.seconds(0.01);
+		float rate[2];
+		v.rateLeds(rate);
+		for (int k = 0; k < 2; k++) { lo[k] = std::min(lo[k], rate[k]); hi[k] = std::max(hi[k], rate[k]); }
+	}
+	std::printf("7. RATE LEDs over 2 s: LFO 1 %.2f-%.2f, LFO 2/3 %.2f-%.2f\n", lo[0], hi[0], lo[1], hi[1]);
+	CHECK(hi[0] - lo[0] > 0.2, "the LFO 1 RATE LED moves");
+	CHECK(hi[1] - lo[1] > 0.2, "the LFO 2/3 RATE LED moves");
+
 	const double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-	std::printf("   %.1f s of machine time in %.1f s wall\n", 16.75 + 3 + 1.3, wall);
+	std::printf("   %.1f s of machine time in %.1f s wall\n", 16.75 + 3 + 1.3 + 1.15 + 5 * 1.1 + 2, wall);
 	if (failures) { std::printf("%d failure(s)\n", failures); return 1; }
 	std::printf("all passed\n");
 	return 0;

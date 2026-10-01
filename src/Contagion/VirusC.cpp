@@ -226,13 +226,15 @@ struct VirusC::Impl : Mcs515Bus {
 	uint8_t pressed[5] = {};
 	uint8_t ledA = 0, ledB = 0, lastP4 = 0xff, lastP5 = 0xff;
 	uint64_t ledSince = 0;
-	double ledOn[7][14] = {}, ledWindow = 0;
+	// Time each LED is lit, and time each group is driven at all: the eye sees an LED's
+	// share of its own group's slot, so a steady one is full and a flashing one is not.
+	double ledOn[7][14] = {}, groupOn[7] = {};
 	void ledAccumulate() {
 		const double dt = double(uc.cycles - ledSince);
 		ledSince = uc.cycles;
-		ledWindow += dt;
 		const int g = uc.latch(5) & 7;
 		if (g >= 7) return;
+		groupOn[g] += dt;
 		for (int b = 0; b < 7; b++) {
 			if (ledA >> b & 1) ledOn[g][b] += dt;
 			if (ledB >> b & 1) ledOn[g][7 + b] += dt;
@@ -387,16 +389,29 @@ std::string VirusC::lcdText() const {
 	return t;
 }
 
-void VirusC::leds(uint16_t groups[7]) {
+void VirusC::leds(float bright[7][14]) {
 	Impl& m = *impl;
 	m.ledAccumulate();
 	for (int g = 0; g < 7; g++) {
-		groups[g] = 0;
 		for (int b = 0; b < 14; b++)
-			if (m.ledWindow > 0 && m.ledOn[g][b] / m.ledWindow > 0.03) groups[g] |= uint16_t(1 << b);
+			bright[g][b] = m.groupOn[g] > 0 ? float(std::min(1.0, m.ledOn[g][b] / m.groupOn[g])) : 0.f;
 		for (double& t : m.ledOn[g]) t = 0;
+		m.groupOn[g] = 0;
 	}
-	m.ledWindow = 0;
+}
+
+void VirusC::rateLeds(float out[2]) const {
+	// Not in the 80C515's multiplex: the DSP drives the two RATE LEDs itself, as PWM from
+	// its timers -- timer 2 for LFO 1, timer 1 for LFO 2/3 (gearmulator's frontpanelState,
+	// for the A/B/C). Brightness is the compare value's place between load and full scale.
+	const Impl& m = *impl;
+	if (!m.dsp) { out[0] = out[1] = 0.f; return; }
+	const auto& t = m.dsp->periphX.getTimers();
+	const int timer[2] = { 2, 1 };
+	for (int i = 0; i < 2; i++) {
+		const double load = t.readTLR(timer[i]), range = double(0xffffff) - load;
+		out[i] = range > 0 ? float(std::max(0.0, std::min(1.0, (double(t.readTCPR(timer[i])) - load) / range))) : 0.f;
+	}
 }
 
 long VirusC::dspWordsIn() const { return impl->wordsIn; }

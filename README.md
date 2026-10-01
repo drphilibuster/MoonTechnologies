@@ -74,9 +74,9 @@ spectrum and a warped field, driven by audio and CV.
 |---|---|
 | **[Apportionment](docs/Apportionment.md)** · 34 HP | **[Rebate](docs/Rebate.md)** · 12 HP |
 
-| <img src="tools/previews/Contagion.png" width="454"> |
+| <img src="tools/previews/Contagion.png" width="512"> |
 |---|
-| **[Contagion](docs/Contagion.md)** · 54 HP |
+| **[Contagion](docs/Contagion.md)** · 61 HP |
 
 | <img src="tools/previews/Depreciation.png" width="395"> |
 |---|
@@ -133,7 +133,7 @@ The module's public-domain schematic, solved: three PT2399 echo chips (a 1-bit d
 
 Four ESP effect units under the DP/4's real operating system and DSP code -- every algorithm, preset and Config is Ensoniq's -- on an emulated 68B03 and four ES5510s. The DP/4's own front panel is here button for button, and the thing the hardware hid in its menus is on the panel: every Config parameter that routes the four units (source count, A-B and C-D serial/parallel/feedback, AB into CD, amounts, mono/stereo inputs, output selects) is a control, and moving one makes the module work the Config pages for you. Per-unit stereo taps for patching the units into the rest of the rack.
 
-### [Contagion](docs/Contagion.md) — 54 HP · *Synth voice, Polyphonic, Effect, Hardware clone*
+### [Contagion](docs/Contagion.md) — 61 HP · *Synth voice, Polyphonic, Effect, Hardware clone*
 
 *An Access Virus C, running all of its own firmware. OS image not included.*
 
