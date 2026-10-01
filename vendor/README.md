@@ -31,10 +31,17 @@ Nothing else in this plugin depends on it, and nothing outside macOS builds it.
 with `asmjit` (zlib, `asmjit/LICENSE.md`) for the JIT. It is compatible with this
 plugin's GPL-3.0-or-later. Vendored at the commit in `dsp56300/COMMIT` (taken from
 gearmulator's submodule); only the build files are dropped. The unit tests in it
-are not compiled. One change, marked `MoonTechnologies` in the source: the JIT chose
-its calling convention with `_MSC_VER`, so a MinGW build (which is what Rack on
-Windows is) would emit System V code into a Win64 process. `jitregtypes.h` and
-`jitstackhelper.cpp` now test `_WIN32`, as `jittrampoline.cpp` already did.
+are not compiled. gearmulator builds it with MSVC on Windows; Rack plugins are MinGW,
+so a few changes, each marked `MoonTechnologies` in the source, make it build and run
+there:
+
+* the JIT chose its calling convention with `_MSC_VER`, so a MinGW build would emit
+  System V code into a Win64 process. `jitregtypes.h` and `jitstackhelper.cpp` now
+  test `_WIN32`, as `jittrampoline.cpp` already did;
+* `mmuhelper.cpp` raises `NTDDI_VERSION` under MinGW so its headers declare
+  `VirtualAlloc2` and `MapViewOfFile3` (still looked up at run time);
+* `threadtools.cpp` names threads with `SetThreadDescription` only under MinGW: the
+  debugger-exception way needs MSVC's `__try`.
 
 `gearmulator/hardwareLib/` is gearmulator's HD44780 controller model and character
 ROM (<https://github.com/dsp56300/gearmulator>, GPLv3, `gearmulator/LICENSE.md`), at

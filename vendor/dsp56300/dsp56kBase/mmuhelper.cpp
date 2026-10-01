@@ -5,6 +5,15 @@
 #include "logging.h"
 
 #ifdef _WIN32
+#	if defined(__MINGW32__)
+		// MoonTechnologies: mingw-w64 declares VirtualAlloc2/MapViewOfFile3 only for
+		// NTDDI_WIN10_RS4 and up. They are still looked up at run time below, with the
+		// legacy path as the fallback, so this changes declarations only.
+#		undef _WIN32_WINNT
+#		define _WIN32_WINNT 0x0A00
+#		undef NTDDI_VERSION
+#		define NTDDI_VERSION 0x0A000005
+#	endif
 #	define NOMINMAX
 #	define NOSERVICE
 #	define WIN32_LEAN_AND_MEAN

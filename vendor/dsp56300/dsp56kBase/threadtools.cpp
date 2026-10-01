@@ -29,6 +29,9 @@
 namespace dsp56k
 {
 #ifdef _WIN32
+	// MoonTechnologies: the debugger-exception way of naming a thread needs MSVC's SEH
+	// (__try/__except); MinGW names it with SetThreadDescription below only.
+#ifdef _MSC_VER
 	constexpr DWORD MS_VC_EXCEPTION = 0x406D1388;
 
 #pragma pack(push,8)
@@ -57,6 +60,7 @@ namespace dsp56k
 		{
 		}
 	}
+#endif
 
 	// SetThreadDescription is Win10 1607+. Load it dynamically so we stay compatible with Win7.
 	using SetThreadDescriptionFunc = HRESULT (WINAPI*)(HANDLE, PCWSTR);
@@ -74,7 +78,9 @@ namespace dsp56k
 	void ThreadTools::setCurrentThreadName(const std::string& _name)
 	{
 #ifdef _WIN32
+#ifdef _MSC_VER
 		SetThreadName(-1, _name.c_str());
+#endif
 
 		if (const auto setDesc = getSetThreadDescription())
 		{
