@@ -11,10 +11,15 @@ third way, and the one nobody thinks to update: four had drifted before this
 checked them, one of them showing an 18 HP panel at the size of a 10 HP one for
 however many sessions it had been since that module grew.
 
+It also keeps the module count, which README.md and CLAUDE.md spell out in words
+("Thirty-two modules"), equal to the number of modules in plugin.json -- so adding
+a module never means remembering to bump it.
+
     tools/sync_hp.py            report what disagrees
     tools/sync_hp.py --write    fix it
 """
 import glob
+import json
 import os
 import re
 import sys
@@ -31,6 +36,45 @@ def widths():
         if m:
             out[slug] = int(m.group(1))
     return out
+
+
+_ONES = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+         'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen',
+         'eighteen', 'nineteen']
+_TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety']
+
+
+def words(n):
+    """1..99 in English, hyphenated: 32 -> 'thirty-two'."""
+    if n < 20:
+        return _ONES[n]
+    return _TENS[n // 10] + ('-' + _ONES[n % 10] if n % 10 else '')
+
+
+def module_count():
+    return len(json.load(open(os.path.join(ROOT, 'plugin.json')))['modules'])
+
+
+#: Where the count is written: (file, regex whose group 1 is the number word).
+COUNTS = {
+    'README.md': [r'^([A-Za-z-]+) modules for \[VCV Rack 2\]', r'^## All ([a-z-]+)$'],
+    'CLAUDE.md': [r'\*\*Taxxess\*\*\. ([A-Za-z-]+) modules sharing', r'and the ([a-z-]+) module slugs',
+                  r'reaches all ([a-z-]+)\.'],
+}
+
+
+def fix_counts(text, name):
+    """Rewrite the spelled-out module count; returns (text, [(was, now)])."""
+    now, changed = words(module_count()), []
+    for pat in COUNTS.get(name, []):
+        def repl(m):
+            was = m.group(1)
+            new = now.capitalize() if was[:1].isupper() else now
+            if was != new:
+                changed.append((was, new))
+            return m.group(0)[:m.start(1) - m.start(0)] + new + m.group(0)[m.end(1) - m.start(0):]
+        text = re.sub(pat, repl, text, flags=re.M)
+    return text, changed
 
 
 #: How a module's name is written in prose, where that differs from its slug.
@@ -89,24 +133,26 @@ def fix(text, hp):
 def main():
     write = '--write' in sys.argv
     hp = widths()
-    files = [os.path.join(ROOT, 'README.md')]
+    files = [os.path.join(ROOT, 'README.md'), os.path.join(ROOT, 'CLAUDE.md')]
     files += sorted(glob.glob(os.path.join(ROOT, 'docs', '*.md')))
     total = 0
     for f in files:
         src = open(f).read()
-        out, changed = fix(src, hp)
+        out, cchanged = fix_counts(src, os.path.basename(f))
+        for was, now in cchanged:
+            print('  %-22s module count: %s -> %s' % (os.path.relpath(f, ROOT), was, now))
+        out, changed = fix(out, hp)
         for slug, was, now in changed:
             print('  %-22s %s: %d -> %d HP' % (os.path.relpath(f, ROOT), slug, was, now))
         out, wchanged = fix_widths(out, hp)
         for slug, was, now in wchanged:
             print('  %-22s %s: gallery image %d -> %d px' %
                   (os.path.relpath(f, ROOT), slug, was, now))
-        changed += wchanged
-        total += len(changed)
-        if changed and write:
+        total += len(changed) + len(wchanged) + len(cchanged)
+        if (changed or wchanged or cchanged) and write:
             open(f, 'w').write(out)
     if not total:
-        print('  every HP figure and gallery width already matches the panels')
+        print('  every HP figure, gallery width and the module count already match')
     elif not write:
         print('\n  %d disagree; run with --write to fix' % total)
     return 1 if (total and not write) else 0

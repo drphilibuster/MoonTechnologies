@@ -86,13 +86,15 @@ family at once -- and those numbers are also written out in prose, where nothing
 checks them. `tools/sync_hp.py` reports every HP figure in README.md and docs/
 that disagrees with the generated headers -- and the README gallery's image
 widths, which are the same fact written a third way and the one nobody
-remembers. `--write` fixes them. Run it after any change that moves a panel's
-width.
+remembers. It also keeps the spelled-out module count in README.md and this file
+equal to the number of modules in `plugin.json`, so adding a module never means
+bumping it by hand. `--write` fixes them. Run it after any change that moves a
+panel's width or adds a module.
 
 Look at `tools/previews/<Module>.png` before calling a panel done — it goes
 through the real widget tree, so it is the only preview that cannot lie. Do this
 for **every** module whose header the change touched, not just the one you were
-working in; a `panelkit/` change reaches all twenty-nine.
+working in; a `panelkit/` change reaches all thirty-two.
 
 See `panelkit/README.md` for the design language, the spec API and what the
 linter checks.
