@@ -84,6 +84,11 @@ Changes, each marked `MoonTechnologies` in the source:
   power-on contents are a constructor argument, set before the 68331 starts.
 * `n2xdsp`: the debugger include is behind `DSP56300_DEBUGGER`, as its use already was.
 * `i2cFlash::getData()` and `Microcontroller::getFlash()`, so a patch can keep the flash.
+* MinGW (Rack's Windows toolchain): `baseLib/filesystem.cpp` and `synthLib/os.cpp` include
+  `shlobj.h` where MSVC has `shlobj_core.h`; `synthLib/deviceException.cpp` includes
+  `<cstdint>`, which MSVC supplied transitively. The Makefile also builds these sources
+  without `UNICODE` on Windows, as gearmulator's own builds are: they call the narrow Win32
+  APIs, which the SDK's `-municode` would turn into the wide ones.
 
 ## MAME: ES5510 and MC6803 (Apportionment)
 

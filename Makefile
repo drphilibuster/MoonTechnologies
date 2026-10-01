@@ -136,6 +136,11 @@ $(N2X_OBJ): FLAGS += -mmacosx-version-min=10.13
 else
 $(N2X_OBJ): CXXFLAGS += -fconstexpr-loop-limit=10000000
 endif
+# gearmulator calls the narrow (A) Win32 APIs, as its own builds do; the SDK's -municode would
+# make them the wide ones. (uname, not ARCH_WIN: arch.mk is included at the bottom.)
+ifneq ($(findstring MINGW,$(shell uname -s)),)
+$(patsubst %, build/%.o, $(N2X_SRC)): CXXFLAGS += -UUNICODE -U_UNICODE
+endif
 
 # Added to the .vcvplugin package by `make dist`. The compiled library and
 # plugin.json are added automatically.

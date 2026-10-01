@@ -1,5 +1,6 @@
 #include "deviceException.h"
 
+#include <cstdint>	// MoonTechnologies: int32_t, which MSVC happens to supply transitively
 #include <string>
 
 namespace synthLib

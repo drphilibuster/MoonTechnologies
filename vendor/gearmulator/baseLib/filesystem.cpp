@@ -26,7 +26,11 @@
 #define NOMINMAX
 #define NOSERVICE
 #include <Windows.h>
+#ifdef _MSC_VER
 #include <shlobj_core.h>
+#else
+#include <shlobj.h>	// MoonTechnologies: MinGW has no shlobj_core.h; shlobj.h declares the same
+#endif
 #else
 #include <dlfcn.h>
 #endif
