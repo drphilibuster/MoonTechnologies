@@ -421,7 +421,7 @@ struct WellDisplay : widget::Widget {
 		const float hx = 112.f * mmx, hy = 3.f * mmx;
 		panel::text(vg, small, hx, hy - 0.6f * mmx, "HEADROOM");
 		for (int i = 0; i < 5; i++) {
-			const bool lit = live && s.leds >= 5 - i;
+			const bool lit = live && s.leds >= i + 1;      // leds() counts from the bottom of the bar: 1 = only -24 dB, 5 = 0 dB overload
 			nvgBeginPath(vg); nvgRoundedRect(vg, hx + i * 5.2f * mmx, hy + 1.2f * mmx, 4.4f * mmx, 2.6f * mmx, 0.4f * mmx);
 			nvgFillColor(vg, panel::alpha(i == 4 ? panel::CLAY : panel::LIME, lit ? 1.f : 0.14f)); nvgFill(vg);
 		}
