@@ -1,6 +1,6 @@
 # Moon Technologies
 
-Twenty-nine modules for [VCV Rack 2](https://vcvrack.com), by **Taxxess**.
+Thirty-two modules for [VCV Rack 2](https://vcvrack.com), by **Taxxess**.
 
 They share a panel language borrowed from money — a pale engraved note, sage
 guilloche round every field, a scroll in every corner, a form number in the
@@ -38,7 +38,7 @@ projector while the same patch is making the sound. And
 [Projection](docs/Projection.md) makes the video in the first place: a scope, a
 spectrum and a warped field, driven by audio and CV.
 
-## All twenty-nine
+## All thirty-two
 
 *(Every panel below is rendered by Rack itself, not mocked up.)*
 
