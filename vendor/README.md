@@ -23,6 +23,23 @@ compiler this build does not invoke.
 
 Nothing else in this plugin depends on it, and nothing outside macOS builds it.
 
+## dsp56300 and gearmulator's HD44780 (Contagion)
+
+`dsp56300/` is the Motorola DSP56300-family emulator by the dsp56300 project
+(<https://github.com/dsp56300/dsp56300>), the core gearmulator runs on: `dsp56kEmu`
+(the DSP, its peripherals, the JIT) and `dsp56kBase`, under GPLv3 (`LICENSE.md`),
+with `asmjit` (zlib, `asmjit/LICENSE.md`) for the JIT. It is compatible with this
+plugin's GPL-3.0-or-later. Vendored at the commit in `dsp56300/COMMIT` (taken from
+gearmulator's submodule), unmodified; only the build files are dropped. The unit
+tests in it are not compiled.
+
+`gearmulator/hardwareLib/` is gearmulator's HD44780 controller model and character
+ROM (<https://github.com/dsp56300/gearmulator>, GPLv3, `gearmulator/LICENSE.md`), at
+the commit in `gearmulator/COMMIT`.
+
+`src/Contagion/VirusC.cpp` is the only translation unit of ours that includes
+either; the Makefile compiles them as C++17.
+
 ## MAME: ES5510 and MC6803 (Apportionment)
 
 `mame/` holds the parts of [MAME](https://github.com/mamedev/mame) that

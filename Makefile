@@ -92,6 +92,27 @@ endif
 # depending on C++14 by accident.
 build/src/Apportionment/Esp.cpp.o: CXXFLAGS += -std=c++14 -Wno-deprecated-declarations -Wno-sign-compare
 
+# --- the DSP56300 emulator (Contagion) -----------------------------------------
+# vendor/dsp56300 is the DSP56300-family core gearmulator runs on (GPLv3) with asmjit
+# (zlib) for its JIT; vendor/gearmulator holds its HD44780 model and character ROM. All
+# of it is C++17, and so is src/Contagion/VirusC.cpp, the one translation unit of ours
+# that includes it -- the module's own code (Contagion.cpp) stays C++11 behind a header
+# with no emulator types in it. The unit tests are left out of the build.
+DSP56300_SRC := $(filter-out %test.cpp %tests.cpp, \
+	$(wildcard vendor/dsp56300/dsp56kEmu/*.cpp vendor/dsp56300/dsp56kBase/*.cpp)) \
+	$(wildcard vendor/dsp56300/asmjit/core/*.cpp vendor/dsp56300/asmjit/x86/*.cpp vendor/dsp56300/asmjit/arm/*.cpp) \
+	vendor/gearmulator/hardwareLib/hd44780.cpp vendor/gearmulator/hardwareLib/lcdfonts.cpp
+SOURCES += $(DSP56300_SRC)
+DSP56300_OBJ := $(patsubst %, build/%.o, $(DSP56300_SRC) src/Contagion/VirusC.cpp)
+$(DSP56300_OBJ): CXXFLAGS += -std=gnu++17 -DDSP56300_DEBUGGER=0 -DASMJIT_STATIC -Ivendor/dsp56300
+$(patsubst %, build/%.o, $(DSP56300_SRC)): CXXFLAGS += -w
+ifeq ($(shell uname -s), Darwin)
+# std::optional and aligned new want 10.13; Rack 2 does not run on anything older.
+$(DSP56300_OBJ): FLAGS += -mmacosx-version-min=10.13
+else
+$(DSP56300_OBJ): CXXFLAGS += -fconstexpr-loop-limit=10000000
+endif
+
 # Added to the .vcvplugin package by `make dist`. The compiled library and
 # plugin.json are added automatically.
 DISTRIBUTABLES += res

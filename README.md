@@ -74,6 +74,10 @@ spectrum and a warped field, driven by audio and CV.
 |---|---|
 | **[Apportionment](docs/Apportionment.md)** · 34 HP | **[Rebate](docs/Rebate.md)** · 12 HP |
 
+| <img src="tools/previews/Contagion.png" width="454"> |
+|---|
+| **[Contagion](docs/Contagion.md)** · 54 HP |
+
 
 ## Built for this plugin
 
@@ -124,6 +128,12 @@ The module's public-domain schematic, solved: three PT2399 echo chips (a 1-bit d
 *An Ensoniq DP/4, running its own firmware. EPROMs not included.*
 
 Four ESP effect units under the DP/4's real operating system and DSP code -- every algorithm, preset and Config is Ensoniq's -- on an emulated 68B03 and four ES5510s. The DP/4's own front panel is here button for button, and the thing the hardware hid in its menus is on the panel: every Config parameter that routes the four units (source count, A-B and C-D serial/parallel/feedback, AB into CD, amounts, mono/stereo inputs, output selects) is a control, and moving one makes the module work the Config pages for you. Per-unit stereo taps for patching the units into the rest of the rack.
+
+### [Contagion](docs/Contagion.md) — 54 HP · *Synth voice, Polyphonic, Effect, Hardware clone*
+
+*An Access Virus C, running all of its own firmware. OS image not included.*
+
+Both processors run the unit's own OS: the 80C515 that owns the front panel, the LCD, MIDI and preset memory -- which every other Virus emulation replaces with C++ -- and the DSP56362 it boots and drives, on the dsp56300 core gearmulator uses. The 32 knobs and 35 buttons reach the firmware through the microcontroller's own A/D converter and key matrix; the dot-matrix LCD shows what the unit shows. Played over MIDI; the patch keeps the battery RAM.
 
 ### [Rebate](docs/Rebate.md) — 12 HP · *Effect, Reverb, Delay, Hardware clone*
 

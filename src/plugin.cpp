@@ -19,6 +19,7 @@ void init(Plugin* p) {
 	p->addModel(modelTransmittal);
 	p->addModel(modelProjection);
 	p->addModel(modelDeduction);
+	p->addModel(modelContagion);
 	p->addModel(modelDependents);
 	p->addModel(modelDiversified);
 	p->addModel(modelDividend);

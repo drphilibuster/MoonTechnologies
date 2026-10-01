@@ -5,6 +5,32 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Added: Contagion, an Access Virus C running all of its own firmware
+
+Both of the Virus's processors run the unit's 512 KB OS image, which is Access's
+and not included; the context menu loads it, and a patch keeps the path.
+
+* The 80C515 front-panel microcontroller is emulated instruction by instruction:
+  Rebate's MCS-51 core extended to the SAB 80C515's ports, timer 2, A/D converter,
+  watchdog and four-level interrupts. Its firmware runs untouched. It boots the
+  DSP56362 through the DSP's host port, drives the LCD, scans 32 pots and 35
+  buttons, multiplexes the LEDs and receives MIDI at 31,250 baud.
+* The DSP is dsp56300, the core gearmulator runs on (GPLv3, with asmjit), vendored
+  in `vendor/dsp56300`. Every other Virus emulation replaces the 80C515 with C++;
+  this one runs it.
+* Board facts found by running the firmware (research notes in the workspace):
+  * the host port at $0400 is selected only while P3.3 is low, and its interrupt
+    request is INT0;
+  * the LCD controller's busy time is what makes the firmware's 4-bit start-up
+    work;
+  * banks $40000-$5FFFF are battery RAM.
+* The panel is the unit's 32 knobs and 35 buttons, with the LEDs mapped so far
+  and a dot-matrix LCD drawn from the controller's own character ROM and CGRAM.
+  A patch keeps the battery RAM (global settings, edit buffers, user banks).
+
+`tests/Contagion` boots OS 5.5 and 6.6 to program A0, plays a MIDI chord, turns a
+knob and stores a program, with the image from `VIRUS_ROMS` (SKIP without).
+
 ### Added: Rebate, an Alesis MIDIverb running its own firmware
 
 Keith Barr's 1986 reverb, whose signal processor is TTL logic stepping through a

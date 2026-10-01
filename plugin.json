@@ -93,6 +93,18 @@
       ]
     },
     {
+      "slug": "Contagion",
+      "name": "Contagion",
+      "description": "Access Virus C running its own front-panel firmware and DSP code: the real 80C515 OS boots and drives an emulated DSP56362 (OS image not included)",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Contagion.md",
+      "tags": [
+        "Synth voice",
+        "Polyphonic",
+        "Effect",
+        "Hardware clone"
+      ]
+    },
+    {
       "slug": "Dependents",
       "name": "Dependents",
       "description": "A chord made by distorting one inaudible sine: Chebyshev harmonic exciters tuned to just triads, with a morph between two chords",

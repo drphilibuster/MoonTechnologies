@@ -55,3 +55,10 @@ __pycache__/
 *MIDIVerb*.bin
 *midiverb*.bin
 *midifex*.bin
+
+# Access Virus OS images (Contagion loads them at runtime; they are Access's and must
+# never be committed). tests/Contagion reads them from $VIRUS_ROMS, outside the repository.
+*Virus*.bin
+*Virus*.BIN
+*virus*.bin
+*am29f040b*
