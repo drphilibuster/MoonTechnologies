@@ -1,6 +1,6 @@
 # Depreciation
 
-**FORM 4562 — Depreciation and Amortization, the form on which value is written down on a schedule.** 47 HP.
+**FORM 4562 — Depreciation and Amortization, the form on which value is written down on a schedule.** 34 HP.
 
 A Lexicon PCM 70 digital effects processor (1986) — reverb, chorus, delay and
 resonant chords — running its own operating system. The module emulates the
@@ -13,8 +13,8 @@ is based on a 1986 Lexicon PCM 70; it is not made or endorsed by Lexicon.
 
 What the module adds is what the hardware hid behind a key matrix and one soft
 knob: the whole **parameter matrix** is on the panel, every parameter with the
-firmware's own name and printed value under its knob, plus CV lanes into the
-machine's own MIDI patch system.
+firmware's own name and printed value under its knob, and the dedicated jacks
+into the machine's own MIDI patch system.
 
 ---
 
@@ -58,7 +58,7 @@ machine (keeping its registers).
 | | V2.0 | V3.01 |
 |---|---|---|
 | power-up program | 0.0 CHORUS | 0.0 MOD WOBBLE |
-| factory program rows | 0 to 5 | 0 to 6 (row 6 is Inverse Room, Inverse 2, Head Banger, Ski Jump, Atom Smasher, Gated Room, kept in the master ROM) |
+| factory program rows | 0 to 6 (row 6 holds the MIDI programs: MIDI Echo BPM, Cascade BPM, Filtr Pan BPM …) | 0 to 6 (row 6 is Inverse Room, Inverse 2, Head Banger, Ski Jump, Atom Smasher, Gated Room, kept in the master ROM) |
 | MIDI clock | **ignored** (the firmware has no handler) | tempo from clock; the BPM programs' RATE parameter becomes an *offset* to the clock tempo (64 to 191 BPM), and the tempo is held when the clock stops |
 | display | 16 digits | the first two digits carry a symbol; programs may show glyphs outside the font table (drawn as `?`) |
 
@@ -72,23 +72,57 @@ panel, tests and MIDI behaviour apply.
 ### Read-out well
 
 The machine's own **16-digit display**, drawn live from the firmware's display
-RAM. Under it: the parameter you last touched, with the firmware's printed value
-(`1.1  RT MID  1.2 S`). On the right the **HEADROOM** bar (0, −6, −12, −18, −24 dB
-of the converter's full scale, from the same peak detector the firmware's gates
-read) and the **LOAD** meter: how much of the last second the master processor
-spent on this module's calls. If the firmware ever fails to come back from one,
-the meter goes red and says so, and the call is abandoned.
+RAM, and nothing else of the firmware's is drawn: the display holds a few
+symbols its font has no letter for (the MIDI-sync mark in the first two digits),
+and they are left blank rather than drawn as `?`. It shows the display the
+firmware settled on, not the instant-by-instant RAM, which the module's own
+parameter probes briefly rewrite.
 
-### Program
+Under it, one line:
 
-**ROW** and **COL** choose a program (PGM) or a register (REG); **LOAD** loads it
-— the module presses the machine's own keys, so the display shows what the
-hardware showed (`LOADING PROGRAM`, `1.3 CIRCULAR DLYS`). The **PGM | REG** switch
-decides what ROW/COL/LOAD mean: programs are rows 0 to 7 by columns 0 to 9
-(row 7 holds the machine's control programs: auto load, register clear, MIDI reset and channel, clear memory …), registers rows 0 to 4. **STORE**
-files the running program as the register ROW/COL names. **BYPASS** is the BYP key
-(light shows the machine's own bypass flag): in bypass the firmware mutes the wet
-path and keeps the dry.
+* what the **PRESET** selector points at and what LOAD will do with it —
+  `FACTORY 13  MIDI MOD PAN   PRESS LOAD`, `USER 07  SINGLE DELAY   RUNNING`,
+  `USER 01  EMPTY` (the number is the row and column run together, so `13` is the
+  firmware's `1.3`);
+* for four seconds after you touch a parameter knob, that parameter with the
+  firmware's printed value (`1.1  RT MID  1.2 S`);
+* for three seconds after a refused LOAD or STORE, why it was refused.
+
+On the right the **HEADROOM** bar (0, −6, −12, −18, −24 dB of the converter's
+full scale, from the same peak detector the firmware's gates read). If the
+firmware ever fails to come back from one of the module's calls the well says
+`FIRMWARE STALLED` and the call is abandoned.
+
+### Presets
+
+One detented selector and one switch.
+
+**PRESET** picks a slot, 0 upward. The **FACTORY | USER** switch says what a slot
+is:
+
+* **FACTORY** — the machine's own programs, the effects: Chorus, Concert Hall,
+  Gated Room … Ten to a row, slot = 10 × row + column, so slot 13 is the
+  firmware's `1.3`. The selector stops at the last program the firmware has
+  (both versions have rows 0 to 6, with fewer than ten in most), and the
+  names come from the machine itself: a few seconds after power-up a scratch
+  machine reads every slot's name, off the audio thread, so the well can say what
+  you are about to load before you load it. The row of housekeeping programs
+  (clear memory, MIDI reset …) is not offered here; **Clear memory**, the MIDI
+  settings and the rest are in the context menu.
+* **USER** — your 50 registers, 0 to 49: a program with the parameters you left it
+  at. Each shows its own name, or `EMPTY`.
+
+**LOAD** loads the slot. Loading an empty register would show `UNUSED` and do
+nothing useful, so the module does not send it: the well says `EMPTY: NOTHING
+STORED THERE`. **STORE** files the running program as the USER slot; with FACTORY
+selected it is refused (`SWITCH TO USER TO STORE`) because there is nowhere to
+file it. The module presses the machine's own keys, so the display shows what the
+hardware showed (`LOADING PROGRAM`, `1.3 CIRCULAR DLYS`).
+
+**BYPASS** is the BYP key (the light shows the machine's own bypass flag): in
+bypass the firmware mutes the wet path and keeps the dry. The flag lives in the
+battery RAM, which a patch keeps, so a patch saved while bypassed used to come back
+bypassed and silent-looking; the module now always powers up live.
 
 ### Parameters
 
@@ -110,19 +144,16 @@ program does not have is dimmed with `--`.
 * Some programs use fewer cells (Concert Hall 29); the most any program uses is 36.
 * The tooltip of every knob is the firmware's name and value.
 
-### CV lanes
+### No CV lanes
 
-Eight lanes, each a jack, an **ATT** attenuverter (default +100%), a **SET**
-button with a light, and a plate naming the lane's target. To assign a lane:
-press **SET** (the plate says `TOUCH`), then touch any parameter knob. Touch the
-same knob again with the lane armed to release it. Then
-`target = knob + ATT × CV / 10 V` (full range for ±10 V at ATT 100%). The assigned
-knob keeps its caption fresh while a lane drives it.
-
-Lanes drive the machine through the same edit routine the hardware's soft knob
-uses, through a scheduler that keeps any amount of CV from swamping the master
-processor (see *How much CV the machine can take*). They are **not** Dynamic MIDI
-patches; those are separate and live in the registers (below).
+Earlier versions had eight CV lanes (jack, attenuverter, SET button) that could be
+assigned to any parameter. They are gone. Every lane was a stream of edits into
+the master processor through the firmware's own soft-knob routine, which is slow
+enough that a handful of lanes kept the machine busy most of the time; nothing in
+the module could make that routine cheaper, so the lanes could not be made to
+cost less, only fewer. What remains is the parameter matrix by hand, the
+**SOFT** jack (one parameter, the firmware's own MIDI source) and the registers'
+own Dynamic MIDI patches, driven from MOD, AT, NOTE and the rest.
 
 ### Dedicated jacks
 
@@ -134,7 +165,7 @@ patches; those are separate and live in the registers (below).
 | **GATE** | rising edge sends a note on (velocity = voltage, 10 V = 127) with the NOTE jack's note, falling edge a note off |
 | **SUST** | gate above 1 V → CC 64 (sustain pedal) |
 | **SOFT** | 0 to 10 V adds to cell 0.2, SOFT KNOB, over its whole range |
-| **CLOCK** | clock edges, at the rate **CLK /** selects (1, 2, 4, 8 or 24 per quarter note; 24 is the hardware's own); *V3 firmware only* |
+| **CLOCK** | clock edges, at the rate **CLK /** (the small knob below the left-hand controls) selects: 1, 2, 4, 8 or 24 per quarter note, 24 being the hardware's own; *V3 firmware only* |
 | **RUN** | rising edge restarts the firmware's tempo measurement (MIDI start); *V3 only* |
 | **PGM** | 0.1 V per register (0 to 4.9 V = registers 0 to 49); turns **program change** on while it is patched |
 | **BYP** | rising edge toggles bypass |
@@ -180,7 +211,7 @@ load off, memory protect off). Program change being off in a fresh machine is th
 firmware's own default: a MIDI program change does nothing until you enable it in
 the menu (or patch the PGM jack, which enables it).
 
-* **Store** a register: set REG, choose ROW/COL, and press **STORE** (the machine's
+* **Store** a register: set USER, choose the slot, and press **STORE** (the machine's
   own gesture: hold F3, press LOAD).
 * **Export SysEx bank** writes every used register as the machine's own bulk
   dump (one message per register, stored form); **Import SysEx bank** feeds a
@@ -198,12 +229,11 @@ driving a parameter with a signed scaling of ±1 to ±128, applied as steps of t
 parameter's value (a patch reaches at most ±127 steps from the stored value, and
 controllers are 7-bit, as on the hardware). A patch moves what the slave hears,
 not the stored value. These are the firmware's, shown in PARAM mode row 5 on the
-hardware; the module's CV lanes are separate and use the edit routine, because a
-patch update costs the master the same as an edit.
+hardware.
 
 ---
 
-## How much CV the machine can take
+## How much the machine can take
 
 The master processor's main loop serves about **100 events per second in total**
 (parameter edits and MIDI messages share it). The module therefore never queues
@@ -214,9 +244,11 @@ how long they have waited and how far they are from where they are going,
 at once and cost 50–100 ms) wait their turn, and the firmware is never busy with
 the module more than about 65% of the time. **SIZE** and the masters are slow by
 nature on the hardware (SIZE rescales the whole program in 0.4 to 0.6 seconds):
-a fast CV on them is served as fast as the firmware can take it, no faster. The
-LOAD meter shows the duty. The tests flood every parameter at 1 kHz with a
-different program loaded in the middle; the firmware stays healthy.
+a fast move on them is served as fast as the firmware can take it, no faster. The
+tests flood every parameter at 1 kHz with a different program loaded in the
+middle; the firmware stays healthy. The panel no longer carries the load meter
+the lanes needed: with the lanes gone there is nothing for it to warn about, and
+at rest it only showed the module's own housekeeping.
 
 ---
 

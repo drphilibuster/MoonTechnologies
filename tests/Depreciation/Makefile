@@ -44,7 +44,7 @@ voice_ir: voice_ir.cpp fixtures.hpp $(MACHINE) ../../src/Pcm70Analog.hpp ../../s
 test_control: test_control.cpp fixtures.hpp $(MACHINE) ../../src/Pcm70Control.hpp z80.o
 	$(CXX) $(CXXFLAGS) -o $@ test_control.cpp z80.o
 
-test_panel: test_panel.cpp fixtures.hpp $(MACHINE) ../../src/Pcm70Analog.hpp ../../src/Pcm70Voice.hpp ../../src/Pcm70Panel.hpp z80.o
+test_panel: test_panel.cpp fixtures.hpp $(MACHINE) ../../src/Pcm70Analog.hpp ../../src/Pcm70Voice.hpp ../../src/Pcm70Panel.hpp ../../src/Pcm70Names.hpp ../../src/Pcm70Keys.hpp z80.o
 	$(CXX) $(CXXFLAGS) -o $@ test_panel.cpp z80.o
 
 test_analog: test_analog.cpp ../../src/Pcm70Analog.hpp

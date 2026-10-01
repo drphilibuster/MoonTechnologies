@@ -39,6 +39,9 @@ public:
     // ---- planned sequences ------------------------------------------------------------------------------------------------------------------------
     // PGM mode: row with F1/F2 (wraps 0..7), digit = program within the row, LOAD.
     void selectProgram(int row, int col) { enqueue([this]() { gotoMode(2); }); enqueue([this, row]() { moveRow(row, 8); }); enqueue([this, col]() { press(digit(col), tapSeconds); press(LOAD, tapSeconds); }); }
+    // PGM mode, no LOAD: the firmware shows the name of the program it would load ("1.3 MIDI MOD PA") as soon as the digit is down, so a name can be read without
+    // running anything. Leaves the machine in PGM mode with that program selected.
+    void browseProgram(int row, int col) { enqueue([this]() { gotoMode(2); }); enqueue([this, row]() { moveRow(row, 8); }); enqueue([this, col]() { press(digit(col), tapSeconds); }); }
     // REG mode: row 0..4 (wraps), digit = register column, LOAD.
     void selectRegister(int row, int col) { enqueue([this]() { gotoMode(4); }); enqueue([this, row]() { moveRow(row, 5); }); enqueue([this, col]() { press(digit(col), tapSeconds); press(LOAD, tapSeconds); }); }
     // file the current program as register (row, col): REG mode, choose it, hold F3 and press LOAD.

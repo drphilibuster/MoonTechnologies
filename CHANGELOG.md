@@ -5,6 +5,26 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Changed: Depreciation, redesigned around what it was like to use
+
+* **The display no longer flickers.** The panel read the firmware's display RAM raw, and the
+  module's own parameter probes blank and rewrite that RAM while they ask the firmware for a
+  caption; the well drew every frame of it. It now reads the copy the control layer takes between
+  probes (a 10 s run of idling and knob work: one frame, where there had been five and ten blanks).
+  The firmware's symbols the font has no letter for are left blank, not drawn as `?`.
+* **One preset selector.** ROW and COL are one detented PRESET knob, and PGM | REG is
+  FACTORY | USER. The well says what the knob points at before LOAD (`FACTORY 13  MIDI MOD PAN`,
+  `USER 07  SINGLE DELAY`, `USER 01  EMPTY`); the factory names are read out of the user's own
+  firmware by a scratch machine after power-up (`src/Pcm70Names.hpp`, nothing stored). LOAD on an
+  empty register and STORE while FACTORY is showing are refused, with the reason on screen. The
+  housekeeping row 7 (clear memory ...) is no longer reachable from the knob.
+* **It starts live.** The bypass flag is part of the battery RAM, so a patch saved while bypassed
+  came back bypassed; the module now clears it at power-up.
+* **The CV lanes and the LOAD meter are gone.** Each lane was a stream of edits through the
+  firmware's slow soft-knob routine and the module could not make that cheaper. The ids they held
+  are kept so saved patches' cables and knobs do not move. The dedicated jacks stay, as a column on
+  the right; the panel is 34 HP, not 47.
+
 ### Added: Nordic Banking, a Clavia Nord Lead 2X running its own firmware
 
 The 2X's MC68331 operating system runs instruction by instruction (Musashi) and drives two

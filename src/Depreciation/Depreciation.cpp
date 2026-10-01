@@ -5,6 +5,12 @@
 // and is tested without Rack; the panel's meaning (what each control does to it) is src/Pcm70Panel.hpp, tested the same way. This file is only the Rack side:
 // parameters in, voltages out, a read-out well, and the menus for what is not a control.
 //
+// There are no CV lanes: eight of them were each a stream of edits into the master Z80 through the firmware's own soft-knob routine, and that routine is slow
+// enough that the machine spent most of its time answering them. The ids they held are kept (below) so a saved patch's cables and knobs stay where they were.
+//
+// There are no CV lanes: eight of them were each a stream of edits into the master Z80 through the firmware's own soft-knob routine, and that routine is slow
+// enough that the machine spent most of its time answering them. The ids they held are kept (below) so a saved patch's cables and knobs stay where they were.
+//
 // Threads: the machine is built and booted (about nine seconds of its own time) on a worker, then handed to the audio thread, which is the only thing that
 // touches it afterwards. The UI reads a snapshot the audio thread leaves under a lock it never waits on, and asks for anything it wants done (bank import,
 // configuration bytes) through a queue the audio thread drains.
@@ -13,6 +19,8 @@
 #include "Roms.hpp"
 #include "../Pcm70Panel.hpp"
 #include "../Pcm70BatRam.hpp"
+#include "../Pcm70Names.hpp"
+#include "../Pcm70Names.hpp"
 
 #include <osdialog.h>
 
@@ -60,25 +68,20 @@ std::vector<uint8_t> unbase64(const std::string& s) {
 #define ROWCAP(r) { panel::CAP##r##0_POS, panel::CAP##r##1_POS, panel::CAP##r##2_POS, panel::CAP##r##3_POS, panel::CAP##r##4_POS, panel::CAP##r##5_POS, panel::CAP##r##6_POS, panel::CAP##r##7_POS, panel::CAP##r##8_POS }
 const Vec CELL_POS[5][9] = { ROWPOS(0), ROWPOS(1), ROWPOS(2), ROWPOS(3), ROWPOS(4) };
 const Vec CAP_POS[5][9] = { ROWCAP(0), ROWCAP(1), ROWCAP(2), ROWCAP(3), ROWCAP(4) };
-const Vec CV_POS[8] = { panel::CV1_POS, panel::CV2_POS, panel::CV3_POS, panel::CV4_POS, panel::CV5_POS, panel::CV6_POS, panel::CV7_POS, panel::CV8_POS };
-const Vec ATT_POS[8] = { panel::ATT1_POS, panel::ATT2_POS, panel::ATT3_POS, panel::ATT4_POS, panel::ATT5_POS, panel::ATT6_POS, panel::ATT7_POS, panel::ATT8_POS };
-const Vec ASG_POS[8] = { panel::ASG1_POS, panel::ASG2_POS, panel::ASG3_POS, panel::ASG4_POS, panel::ASG5_POS, panel::ASG6_POS, panel::ASG7_POS, panel::ASG8_POS };
-const Vec ASG_LED_POS[8] = { panel::ASG_LED1_POS, panel::ASG_LED2_POS, panel::ASG_LED3_POS, panel::ASG_LED4_POS, panel::ASG_LED5_POS, panel::ASG_LED6_POS, panel::ASG_LED7_POS, panel::ASG_LED8_POS };
-const Vec LANE_POS[8] = { panel::LANE1_POS, panel::LANE2_POS, panel::LANE3_POS, panel::LANE4_POS, panel::LANE5_POS, panel::LANE6_POS, panel::LANE7_POS, panel::LANE8_POS };
 
 } // namespace
 
 struct Depreciation : Module {
-	static const int ROWS = 5, COLS = 9, LANES = 8;
+	static const int ROWS = 5, COLS = 9, LANES = 8;       // LANES: the retired CV lanes' ids, held so old patches' cables and knobs keep their meaning
 	enum ParamId {
-		ROW_PARAM, COL_PARAM, REGMODE_PARAM, LOAD_PARAM, STORE_PARAM, BYPASS_PARAM, INPUT_PARAM, TRIM_PARAM, IN_PAD_PARAM, OUT_PAD_PARAM, CLK_DIV_PARAM,
-		ATT_PARAM, ASG_PARAM = ATT_PARAM + LANES, CELL_PARAM = ASG_PARAM + LANES, PARAMS_LEN = CELL_PARAM + ROWS * COLS
+		SLOT_PARAM, COL_PARAM_RETIRED, REGMODE_PARAM, LOAD_PARAM, STORE_PARAM, BYPASS_PARAM, INPUT_PARAM, TRIM_PARAM, IN_PAD_PARAM, OUT_PAD_PARAM, CLK_DIV_PARAM,
+		LANE_PARAMS_RETIRED, CELL_PARAM = LANE_PARAMS_RETIRED + 2 * LANES, PARAMS_LEN = CELL_PARAM + ROWS * COLS
 	};
 	enum InputId {
-		IN_INPUT, IN_R_INPUT, CV_INPUT, MOD_INPUT = CV_INPUT + LANES, AT_INPUT, NOTE_INPUT, GATE_INPUT, SUSTAIN_INPUT, SOFT_INPUT, CLOCK_INPUT, RUN_INPUT, PGM_INPUT, BYPASS_CV_INPUT, INPUTS_LEN
+		IN_INPUT, IN_R_INPUT, CV_INPUTS_RETIRED, MOD_INPUT = CV_INPUTS_RETIRED + LANES, AT_INPUT, NOTE_INPUT, GATE_INPUT, SUSTAIN_INPUT, SOFT_INPUT, CLOCK_INPUT, RUN_INPUT, PGM_INPUT, BYPASS_CV_INPUT, INPUTS_LEN
 	};
 	enum OutputId { OUT_L_OUTPUT, OUT_R_OUTPUT, WET_L_OUTPUT, WET_R_OUTPUT, OUTPUTS_LEN };
-	enum LightId { BYPASS_LED, ASG_LED, LIGHTS_LEN = ASG_LED + LANES };
+	enum LightId { BYPASS_LED, LANE_LIGHTS_RETIRED, LIGHTS_LEN = LANE_LIGHTS_RETIRED + LANES };
 
 	// ROMs (UI thread; guarded)
 	std::mutex romMutex;
@@ -91,12 +94,14 @@ struct Depreciation : Module {
 	std::thread bootThread;
 	std::atomic<bool> booting{false};
 	double voiceRate = 0.0;
-	pcm70::PanelLogic logic;                            // audio thread only (laneTarget is saved in the patch)
+	pcm70::PanelLogic logic;                            // audio thread only
 
 	// UI <-> audio
 	std::mutex snapMutex;
 	pcm70::PanelLogic::Snap snap;                       // guarded by snapMutex
 	std::vector<uint8_t> battery;                       // the 8 KB RAM image; guarded by snapMutex
+	pcm70::ProgramNames names;                          // the factory programs' names, read from a scratch machine after power-up; guarded by snapMutex
+	std::atomic<bool> cancelNames{false};
 	std::string family;                                 // guarded by snapMutex
 	std::mutex cmdMutex;
 	std::vector<std::function<void(pcm70::Voice&)>> cmds;
@@ -104,28 +109,23 @@ struct Depreciation : Module {
 
 	// audio-thread bookkeeping
 	int ctlCount = 0, snapCount = 0, ramCount = 0;
+	int lastFactoryCached = pcm70::PanelLogic::FACTORY_SLOTS - 1; bool factoryMissing[pcm70::ProgramNames::SLOTS] = {};     // from `names`, refreshed with the snapshot
 	float prevClock = 0.f, prevRun = 0.f;
 	bool clockWas = false, runWas = false;
 
 	Depreciation() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-		configParam(ROW_PARAM, 0.f, 7.f, 0.f, "Program row (register row 0-4)")->snapEnabled = true;
-		configParam(COL_PARAM, 0.f, 9.f, 0.f, "Program column")->snapEnabled = true;
-		configSwitch(REGMODE_PARAM, 0.f, 1.f, 0.f, "LOAD / STORE act on", { "Programs (PGM)", "Registers (REG)" });
-		configButton(LOAD_PARAM, "Load the chosen program or register");
-		configButton(STORE_PARAM, "Store the running program as the chosen register");
+		SlotQuantity* sq = configParam<SlotQuantity>(SLOT_PARAM, 0.f, (float)(pcm70::PanelLogic::FACTORY_SLOTS - 1), 0.f, "Preset");
+		sq->module_ = this; sq->snapEnabled = true;
+		configSwitch(REGMODE_PARAM, 0.f, 1.f, 0.f, "Preset bank", { "Factory programs (the machine's own effects)", "User registers (your stored settings)" });
+		configButton(LOAD_PARAM, "Load the chosen preset");
+		configButton(STORE_PARAM, "Store the running program in the chosen user register");
 		configButton(BYPASS_PARAM, "Bypass (footswitch)");
 		configParam(INPUT_PARAM, 0.f, 1.f, 1.f, "Input level", "%", 0.f, 100.f);
 		configParam(TRIM_PARAM, 1.f, 10.f, 5.f, "Full scale (the converter's limit)", " V peak");
 		configSwitch(IN_PAD_PARAM, 0.f, 1.f, 0.f, "Input level", { "+4 dBu", "-20 dBV (15 dB less)" });
 		configSwitch(OUT_PAD_PARAM, 0.f, 1.f, 0.f, "Output level", { "+4 dBu", "-20 dBV (24.7 dB less)" });
 		configSwitch(CLK_DIV_PARAM, 0.f, 4.f, 4.f, "Clock edges per quarter note", { "1", "2", "4", "8", "24" });
-		for (int i = 0; i < LANES; i++) {
-			configParam(ATT_PARAM + i, -1.f, 1.f, 1.f, "CV " + std::to_string(i + 1) + " amount", "%", 0.f, 100.f);
-			configButton(ASG_PARAM + i, "CV " + std::to_string(i + 1) + ": then touch a parameter to assign it (touch it again to release)");
-			configLight(ASG_LED + i, "CV " + std::to_string(i + 1) + " assigned");
-			configInput(CV_INPUT + i, "CV " + std::to_string(i + 1));
-		}
 		for (int r = 0; r < ROWS; r++) for (int c = 0; c < COLS; c++) {
 			CellQuantity* q = configParam<CellQuantity>(CELL_PARAM + r * COLS + c, 0.f, 1.f, 0.5f, "Parameter " + std::to_string(r) + "." + std::to_string(c));
 			q->module_ = this; q->r = r; q->c = c;
@@ -141,6 +141,7 @@ struct Depreciation : Module {
 	}
 
 	~Depreciation() {
+		cancelNames = true;
 		if (bootThread.joinable()) bootThread.join();
 		delete handover.exchange(nullptr);
 	}
@@ -162,6 +163,44 @@ struct Depreciation : Module {
 		}
 		std::string getUnit() override { return ""; }
 	};
+
+	/** What the preset selector points at, in words: "FACTORY 13  MIDI MOD PAN", "USER 07  SINGLE DELAY", "USER 01  EMPTY". The slot number is 10 x row + column, so
+	    13 is the firmware's own 1.3. UI thread. */
+	std::string slotText(bool user, int slot, bool* empty = nullptr) {
+		char num[8]; std::snprintf(num, sizeof num, "%02d", slot);
+		std::lock_guard<std::mutex> lock(snapMutex);
+		std::string nm; bool none = false;
+		if (user) {
+			if (battery.size() == 0x2000) nm = pcm70::PanelLogic::registerName(battery.data(), slot < 50 ? slot : 49);
+			none = nm.empty();
+			if (none) nm = battery.size() == 0x2000 ? "EMPTY" : "";
+		} else if (slot >= 0 && slot < pcm70::ProgramNames::SLOTS) {
+			nm = names.name[slot]; none = names.done && nm.empty();
+			if (none) nm = "NO PROGRAM HERE";
+		}
+		if (empty) *empty = none;
+		return std::string(user ? "USER " : "FACTORY ") + num + (nm.empty() ? "" : "  " + nm);
+	}
+
+	/** The selector: its range follows the bank (50 registers, or the programs the firmware has) and its tooltip says what it points at. */
+	struct SlotQuantity : ParamQuantity {
+		Depreciation* module_ = nullptr;
+		float getMaxValue() override {
+			if (!module_) return ParamQuantity::getMaxValue();
+			return module_->params[REGMODE_PARAM].getValue() > 0.5f ? (float)(pcm70::PanelLogic::USER_SLOTS - 1) : (float)module_->lastFactoryUi();
+		}
+		std::string getDisplayValueString() override {
+			if (!module_) return ParamQuantity::getDisplayValueString();
+			return module_->slotText(module_->params[REGMODE_PARAM].getValue() > 0.5f, (int)std::lround(getValue()));
+		}
+		std::string getUnit() override { return ""; }
+	};
+	/** The highest FACTORY slot that holds a program (all 70 until the names are read). UI thread. */
+	int lastFactoryUi() {
+		std::lock_guard<std::mutex> lock(snapMutex);
+		if (names.done) for (int s = pcm70::ProgramNames::SLOTS - 1; s >= 0; s--) if (!names.name[s].empty()) return s;
+		return pcm70::PanelLogic::FACTORY_SLOTS - 1;
+	}
 
 	// --- ROMs -------------------------------------------------------------------------------------
 	void loadFiles(const std::vector<std::string>& paths) {
@@ -221,11 +260,13 @@ struct Depreciation : Module {
 			set = roms;
 			status = "POWERING ON";
 		}
+		cancelNames = true;                                  // a name harvest from the previous set stops at its next sample
 		if (bootThread.joinable()) bootThread.join();
+		cancelNames = false;
 		std::vector<uint8_t> ram;
 		{
 			std::lock_guard<std::mutex> lock(snapMutex);
-			ram = battery; family = set.family;
+			ram = battery; family = set.family; names = pcm70::ProgramNames();
 		}
 		if (rate <= 0.0) rate = APP->engine->getSampleRate();
 		booting = true;
@@ -243,6 +284,10 @@ struct Depreciation : Module {
 			setStatus("");
 			rememberRoms();
 			booting = false;
+			// the factory names: a scratch machine, off the audio thread, a few seconds of CPU
+			pcm70::ProgramNames found = pcm70::ProgramNames::harvest(set.data[pcm70::U62], set.data[pcm70::U95], set.data[pcm70::U67], set.data[pcm70::U48], set.data[pcm70::U49],
+				set.family == "3.01", cancelNames);
+			if (found.done) { std::lock_guard<std::mutex> lock(snapMutex); names = found; }
 		});
 	}
 
@@ -290,15 +335,10 @@ struct Depreciation : Module {
 			std::lock_guard<std::mutex> lock(snapMutex);
 			if (battery.size() == 0x2000) json_object_set_new(root, "batteryRam", json_string(base64(battery).c_str()));   // the registers and settings: the user's own, no ROM data
 		}
-		json_t* lanes = json_array();
-		for (int i = 0; i < LANES; i++) json_array_append_new(lanes, json_integer(logic.laneTarget[i]));
-		json_object_set_new(root, "laneTargets", lanes);
 		return root;
 	}
 
 	void dataFromJson(json_t* root) override {
-		if (json_t* l = json_object_get(root, "laneTargets"))
-			for (int i = 0; i < LANES && i < (int)json_array_size(l); i++) logic.laneTarget[i] = (int)json_integer_value(json_array_get(l, i));
 		if (json_t* b = json_object_get(root, "batteryRam"))
 			if (json_is_string(b)) { std::vector<uint8_t> ram = unbase64(json_string_value(b)); if (ram.size() == 0x2000) { std::lock_guard<std::mutex> lock(snapMutex); battery = ram; } }
 		std::vector<std::string> paths;
@@ -319,7 +359,7 @@ struct Depreciation : Module {
 			boot(args.sampleRate);
 		}
 		if (!voice) {
-			if (pcm70::Voice* h = handover.exchange(nullptr)) { voice.reset(h); voiceRate = args.sampleRate; ctlCount = 0; clockWas = runWas = false; }
+			if (pcm70::Voice* h = handover.exchange(nullptr)) { voice.reset(h); voiceRate = args.sampleRate; ctlCount = 0; clockWas = runWas = false; logic.powerUp(); }
 		}
 		if (!voice) {
 			outputs[OUT_L_OUTPUT].setVoltage(0.f); outputs[OUT_R_OUTPUT].setVoltage(0.f); outputs[WET_L_OUTPUT].setVoltage(0.f); outputs[WET_R_OUTPUT].setVoltage(0.f);
@@ -340,13 +380,16 @@ struct Depreciation : Module {
 		if (--ctlCount <= 0) {
 			const int n = std::max(1, (int)(args.sampleRate / 1000.f)); ctlCount = n;
 			pcm70::PanelLogic::In in; in.dt = n * args.sampleTime;
-			in.row = params[ROW_PARAM].getValue(); in.col = params[COL_PARAM].getValue(); in.regMode = params[REGMODE_PARAM].getValue() > 0.5f;
+			in.regMode = params[REGMODE_PARAM].getValue() > 0.5f;
+			{
+				// the selector's range follows the bank: coming back from 69 to USER must not leave it pointing past register 49
+				const float top = (float)(in.regMode ? pcm70::PanelLogic::USER_SLOTS - 1 : lastFactoryCached);
+				if (params[SLOT_PARAM].getValue() > top) params[SLOT_PARAM].setValue(top);
+				in.slot = (int)std::lround(params[SLOT_PARAM].getValue());
+				in.programMissing = !in.regMode && in.slot >= 0 && in.slot < pcm70::ProgramNames::SLOTS && factoryMissing[in.slot];
+			}
 			in.load = params[LOAD_PARAM].getValue() > 0.5f; in.store = params[STORE_PARAM].getValue() > 0.5f; in.bypass = params[BYPASS_PARAM].getValue() > 0.5f;
 			for (int r = 0; r < ROWS; r++) for (int c = 0; c < COLS; c++) in.knob[r][c] = params[CELL_PARAM + r * COLS + c].getValue();
-			for (int i = 0; i < LANES; i++) {
-				in.att[i] = params[ATT_PARAM + i].getValue(); in.asg[i] = params[ASG_PARAM + i].getValue() > 0.5f;
-				in.cvOn[i] = inputs[CV_INPUT + i].isConnected(); in.cv[i] = inputs[CV_INPUT + i].getVoltageSum();
-			}
 			auto jack = [&](int id, float& val, bool& on) { on = inputs[id].isConnected(); val = on ? inputs[id].getVoltageSum() : 0.f; };
 			jack(MOD_INPUT, in.mod, in.modOn); jack(AT_INPUT, in.at, in.atOn); jack(NOTE_INPUT, in.note, in.noteOn); jack(GATE_INPUT, in.gate, in.gateOn);
 			jack(SUSTAIN_INPUT, in.sust, in.sustOn); jack(SOFT_INPUT, in.soft, in.softOn); jack(PGM_INPUT, in.pgm, in.pgmOn); jack(BYPASS_CV_INPUT, in.byp, in.bypOn);
@@ -355,7 +398,6 @@ struct Depreciation : Module {
 			pcm70::PanelLogic::Out out;
 			logic.control(v, in, out);
 			for (int r = 0; r < ROWS; r++) for (int c = 0; c < COLS; c++) if (out.setKnob[r][c]) params[CELL_PARAM + r * COLS + c].setValue(out.knob[r][c]);
-			for (int i = 0; i < LANES; i++) lights[ASG_LED + i].setBrightness(out.asgLight[i]);
 			lights[BYPASS_LED].setBrightness(out.bypassLed ? 1.f : 0.f);
 		}
 		// the signal
@@ -370,6 +412,8 @@ struct Depreciation : Module {
 			std::unique_lock<std::mutex> lock(snapMutex, std::try_to_lock);
 			if (lock) {
 				logic.snapshot(v, snap);
+				lastFactoryCached = pcm70::PanelLogic::FACTORY_SLOTS - 1;
+				for (int s = 0; s < pcm70::ProgramNames::SLOTS; s++) { factoryMissing[s] = names.done && names.name[s].empty(); if (!factoryMissing[s]) lastFactoryCached = std::max(lastFactoryCached, s); }
 				if (--ramCount <= 0) { ramCount = 50; battery.assign(v.batteryRam(), v.batteryRam() + 0x2000); }
 			}
 		}
@@ -381,9 +425,11 @@ struct Depreciation : Module {
 
 namespace {
 
-/** The read-out well: the machine's own 16-digit display, the last parameter touched, the headroom bar, the firmware's load, and what the module is doing. */
+/** The read-out well: the machine's own 16-digit display, what the selector points at (and what LOAD will do with it), the last parameter touched, the headroom bar
+    and what the module is doing. */
 struct WellDisplay : widget::Widget {
 	Depreciation* module = nullptr;
+	int shownSlot = -1; bool shownUser = false; double slotMovedAt = -99.0;      // UI-thread memory: when the selector last moved, so the cue gives way to a touched parameter only after
 
 	void drawLayer(const DrawArgs& args, int layer) override {
 		if (layer != 1) return;
@@ -410,12 +456,23 @@ struct WellDisplay : widget::Widget {
 			if (digits[i].second) { nvgBeginPath(vg); nvgCircle(vg, x + dw - 0.9f * mmx, dy + dh - 1.0f * mmx, 0.45f * mmx); nvgFillColor(vg, panel::LIME); nvgFill(vg); }
 		}
 		const panel::TextStyle small(panel::Face::Mono, 3.5f * mmx, panel::SAGE, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
-		// the last parameter touched
-		if (live && s.touched >= 0 && s.sinceTouch < 4.0) {
-			const int r = s.touched / 9, c = s.touched % 9;
-			panel::text(vg, small.inked(panel::LIME), dx, dy + dh + 2.0f * mmx, (std::to_string(r) + "." + std::to_string(c) + "  " + s.name[r][c] + "  " + s.caption[r][c]).c_str());
-		} else if (live) {
-			panel::text(vg, small, dx, dy + dh + 2.0f * mmx, family.empty() ? "" : ("PCM 70 V" + family).c_str());
+		// the line under the digits: a refusal, the last parameter touched, or what the selector points at and what LOAD will do
+		const float ly = dy + dh + 2.0f * mmx;
+		if (live) {
+			const bool user = module->params[Depreciation::REGMODE_PARAM].getValue() > 0.5f;
+			const int slot = (int)std::lround(module->params[Depreciation::SLOT_PARAM].getValue());
+			const double now = glfwGetTime();
+			if (slot != shownSlot || user != shownUser) { if (shownSlot >= 0) slotMovedAt = now; shownSlot = slot; shownUser = user; }
+			if (!s.refusal.empty() && s.sinceRefusal < 3.0)
+				panel::text(vg, small.inked(panel::CLAY), dx, ly, s.refusal.c_str());
+			else if (s.touched >= 0 && s.sinceTouch < 4.0 && now - slotMovedAt > s.sinceTouch) {
+				const int r = s.touched / 9, c = s.touched % 9;
+				panel::text(vg, small.inked(panel::LIME), dx, ly, (std::to_string(r) + "." + std::to_string(c) + "  " + s.name[r][c] + "  " + s.caption[r][c]).c_str());
+			} else {
+				bool empty = false; const std::string what = module->slotText(user, slot, &empty);
+				const bool running = s.loadedSlot == slot && s.loadedUser == user;
+				panel::text(vg, small.inked(empty ? panel::CLAY : panel::LIME), dx, ly, (what + (empty ? "" : (running ? "   RUNNING" : "   PRESS LOAD"))).c_str());
+			}
 		}
 		// headroom bar (the detector the firmware's gates read), 0 / -6 / -12 / -18 / -24 dB
 		const float hx = 112.f * mmx, hy = 3.f * mmx;
@@ -426,22 +483,17 @@ struct WellDisplay : widget::Widget {
 			nvgFillColor(vg, panel::alpha(i == 4 ? panel::CLAY : panel::LIME, lit ? 1.f : 0.14f)); nvgFill(vg);
 		}
 		panel::text(vg, small.sized(2.9f * mmx), hx, hy + 6.4f * mmx, "-24  -18  -12  -6   0");
-		// the firmware's load, and the fault light
-		const float lx = 144.f * mmx;
-		panel::text(vg, small, lx, hy - 0.6f * mmx, "LOAD");
-		nvgBeginPath(vg); nvgRoundedRect(vg, lx, hy + 1.2f * mmx, 24.f * mmx, 2.6f * mmx, 0.4f * mmx); nvgFillColor(vg, panel::alpha(panel::LIME, 0.14f)); nvgFill(vg);
-		if (live) { nvgBeginPath(vg); nvgRoundedRect(vg, lx, hy + 1.2f * mmx, 24.f * mmx * std::min(1.0, s.load / 0.7), 2.6f * mmx, 0.4f * mmx); nvgFillColor(vg, s.fault ? panel::CLAY : panel::LIME); nvgFill(vg); }
-		if (live && s.fault) panel::text(vg, small.inked(panel::CLAY), lx, hy + 6.4f * mmx, "FIRMWARE STALLED");
+		if (live && s.fault) panel::text(vg, small.inked(panel::CLAY), hx, hy + 9.5f * mmx, "FIRMWARE STALLED");
 		// what the module is doing
-		if (!live && module) panel::text(vg, small.inked(ok ? panel::SAGE : panel::CLAY), 112.f * mmx, 9.5f * mmx, ok ? "POWER-UP TAKES ABOUT 9 SECONDS" : "RIGHT-CLICK: LOAD ROM FOLDER");
+		if (!live && module) panel::text(vg, small.inked(ok ? panel::SAGE : panel::CLAY), hx, hy + 9.5f * mmx, ok ? "POWER-UP TAKES ABOUT 9 SECONDS" : "RIGHT-CLICK: LOAD ROM FOLDER");
 	}
 };
 
 /** The 45 plates under the matrix knobs: each parameter's own name, and its printed value for a moment after a touch; the knobs the program does not use are
-    dimmed. The lane plates name what each CV lane drives. */
+    dimmed. */
 struct MatrixPlates : widget::Widget {
 	Depreciation* module = nullptr;
-	panel::FittedText fitted[5 * 9 + 8];
+	panel::FittedText fitted[5 * 9];
 
 	void drawLayer(const DrawArgs& args, int layer) override {
 		if (layer != 1) return;
@@ -463,10 +515,6 @@ struct MatrixPlates : widget::Widget {
 				nvgBeginPath(vg); nvgCircle(vg, k.x, k.y, mm2px(3.9f)); nvgFillColor(vg, nvgRGBAf(0.f, 0.f, 0.f, 0.45f)); nvgFill(vg);
 			}
 		}
-		for (int i = 0; i < 8; i++) {
-			const Vec p = mm2px(LANE_POS[i]) - box.pos;
-			panel::text(vg, st.inked(s.laneName[i] == "TOUCH" ? panel::LIME : panel::SAGE), p.x, p.y, fitted[45 + i].get(vg, st, s.laneName[i].empty() ? std::string("--") : s.laneName[i], pw - 1.f).c_str());
-		}
 	}
 };
 
@@ -485,8 +533,7 @@ struct DepreciationWidget : ModuleWidget {
 		well->box.size = panel::mm(panel::GLASS_W, panel::GLASS_H);
 		addChild(well);
 
-		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::ROW_POS.x, panel::ROW_POS.y), module, Depreciation::ROW_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::COL_POS.x, panel::COL_POS.y), module, Depreciation::COL_PARAM));
+		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::SLOT_POS.x, panel::SLOT_POS.y), module, Depreciation::SLOT_PARAM));
 		addParam(createParamCentered<CKSS>(panel::mm(panel::REGMODE_POS.x, panel::REGMODE_POS.y), module, Depreciation::REGMODE_PARAM));
 		addParam(createParamCentered<VCVButton>(panel::mm(panel::LOAD_POS.x, panel::LOAD_POS.y), module, Depreciation::LOAD_PARAM));
 		addParam(createParamCentered<VCVButton>(panel::mm(panel::STORE_POS.x, panel::STORE_POS.y), module, Depreciation::STORE_PARAM));
@@ -500,12 +547,6 @@ struct DepreciationWidget : ModuleWidget {
 
 		for (int r = 0; r < 5; r++) for (int c = 0; c < 9; c++)
 			addParam(createParamCentered<Trimpot>(panel::mm(CELL_POS[r][c].x, CELL_POS[r][c].y), module, Depreciation::CELL_PARAM + r * 9 + c));
-		for (int i = 0; i < 8; i++) {
-			addInput(createInputCentered<panel::PortIn>(panel::mm(CV_POS[i].x, CV_POS[i].y), module, Depreciation::CV_INPUT + i));
-			addParam(createParamCentered<Trimpot>(panel::mm(ATT_POS[i].x, ATT_POS[i].y), module, Depreciation::ATT_PARAM + i));
-			addParam(createParamCentered<VCVButton>(panel::mm(ASG_POS[i].x, ASG_POS[i].y), module, Depreciation::ASG_PARAM + i));
-			addChild(createLightCentered<SmallLight<panel::LimeLight>>(panel::mm(ASG_LED_POS[i].x, ASG_LED_POS[i].y), module, Depreciation::ASG_LED + i));
-		}
 		MatrixPlates* plates = new MatrixPlates;
 		plates->module = module;
 		plates->box.pos = Vec(0.f, 0.f);

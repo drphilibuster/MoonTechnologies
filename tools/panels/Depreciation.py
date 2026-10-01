@@ -15,6 +15,12 @@ firmware shows is drawn: the 16-digit display, every parameter's own name and
 value under its knob, the headroom bar. The knobs ARE the parameter matrix --
 row 0 to 4 of the machine's own cell table, whatever program is running -- and
 their ranges, names and printed values come from the firmware itself.
+
+Presets are one detented selector and one switch: PRESET picks a slot, and
+FACTORY | USER says whether that slot is one of the machine's own programs
+(effects) or one of your 50 stored registers. The well names what the selector
+points at before LOAD is pressed. There are no CV lanes: they cost the machine
+more than they gave.
 """
 
 import os
@@ -35,32 +41,33 @@ P = Panel(
 def cell(r, c):
     return Trim("p%d%d" % (r, c), "", readout="cap%d%d" % (r, c))
 
-def lane(rowi, i):
-    n = i + 1
-    return [Jack("cv%d" % n, "CV %d" % n), Trim("att%d" % n, "ATT"),
-            Button("asg%d" % n, "SET", light="asg_led%d" % n), Readout("lane%d" % n, "")][rowi]
-
 LEFT = [
-    [Knob("row", "ROW", steps=8), Knob("col", "COL", steps=10)],
-    [Switch("regmode", "PGM  REG"), Button("load", "LOAD", primary=True)],
-    [Button("store", "STORE"), Button("bypass", "BYPASS", light="bypass_led")],
-    [Knob("input", "INPUT"), Knob("trim", "VOLT TRIM")],
-    [Switch("in_pad", "IN +4 -20"), Switch("out_pad", "OUT +4 -20")],
+    [Knob("slot", "PRESET"), Switch("regmode", "FACTORY  USER")],
+    [Button("load", "LOAD", primary=True), Button("store", "STORE")],
+    [Button("bypass", "BYPASS", light="bypass_led"), Knob("input", "INPUT")],
+    [Knob("trim", "VOLT TRIM"), Switch("in_pad", "IN +4 -20")],
+    [Switch("out_pad", "OUT +4 -20"), Trim("clk_div", "CLK /", steps=5)],
 ]
-DED = [Jack("mod", "MOD"), Jack("at", "AT"), Jack("note", "NOTE"), Jack("gate", "GATE"),
-       Jack("sustain", "SUST"), Jack("soft", "SOFT"), Jack("clock", "CLOCK"), Jack("run", "RUN")]
+# the dedicated inputs: a column of pairs down the right edge
+def jk(name, label):
+    return Jack(name, label, side="right")
+
+DED = [
+    [jk("mod", "MOD"), jk("at", "AT")],
+    [jk("note", "NOTE"), jk("gate", "GATE")],
+    [jk("sustain", "SUST"), jk("soft", "SOFT")],
+    [jk("clock", "CLOCK"), jk("run", "RUN")],
+    [],
+]
 
 rows = []
 for r in range(5):
-    items = list(LEFT[r]) + [cell(r, c) for c in range(9)]
-    items += [lane(r, i) for i in range(8)] if r < 4 else DED
-    rows.append(Row(items))
+    rows.append(Row(list(LEFT[r]) + [cell(r, c) for c in range(9)] + DED[r]))
 
 P.sections = [Section("PARAMETERS AND CONTROL", rows=rows)]
 
 P.footer = [
     Row([Jack("in", "IN"), Jack("in_r", "IN R"), Jack("pgm", "PGM"), Jack("bypass_cv", "BYP"),
-         Trim("clk_div", "CLK /", steps=5, side="above"),
          Jack("out_l", "OUT L", ink="MINT"), Jack("out_r", "OUT R", ink="MINT"),
          Jack("wet_l", "WET L", ink="MINT"), Jack("wet_r", "WET R", ink="MINT")], y=118.6),
 ]
