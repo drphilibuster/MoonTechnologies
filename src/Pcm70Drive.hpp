@@ -13,17 +13,17 @@ extern "C" {
 }
 struct Pcm70Drive {
     Pcm70Loc L; z80* cpu = nullptr; uint8_t* ram = nullptr;          // ram[0] = master address 0x8000
-    int state = 0; unsigned long injCyc = 0; int cr = 0, cc = 0, cd = 0;
-    unsigned long idleHits = 0, edits = 0, busyCyc = 0, maxEditCyc = 0, stuck = 0;
-    std::function<bool(unsigned long, int&, int&, int&)> pick;      // at an idle pass: choose an edit (return false = nothing to do)
-    std::function<void(int, int, int, unsigned long)> done;         // edit finished: row, col, delta, duration in cycles
+    int state = 0; uint64_t injCyc = 0; int cr = 0, cc = 0, cd = 0;
+    uint64_t idleHits = 0, edits = 0, busyCyc = 0, maxEditCyc = 0, stuck = 0;
+    std::function<bool(uint64_t, int&, int&, int&)> pick;      // at an idle pass: choose an edit (return false = nothing to do)
+    std::function<void(int, int, int, uint64_t)> done;         // edit finished: row, col, delta, duration in cycles
     uint8_t rd(unsigned a) const { return ram[a - 0x8000]; }
     unsigned word(unsigned k) const { return rd(L.wbase + 2 * k) | rd(L.wbase + 2 * k + 1) << 8; }
     void push16(unsigned v) { cpu->sp -= 2; ram[cpu->sp - 0x8000] = v & 255; ram[cpu->sp + 1 - 0x8000] = v >> 8; }
     void step() {                                                   // call after every master z80_step
         if (cpu->pc != L.idle) { if (state == 2 && cpu->cyc - injCyc > 3250000UL * 3) stuck++; return; }
         idleHits++;
-        if (state == 2) { unsigned long d = cpu->cyc - injCyc; busyCyc += d; if (d > maxEditCyc) maxEditCyc = d; edits++; state = 0; if (done) done(cr, cc, cd, d); }
+        if (state == 2) { uint64_t d = cpu->cyc - injCyc; busyCyc += d; if (d > maxEditCyc) maxEditCyc = d; edits++; state = 0; if (done) done(cr, cc, cd, d); }
         int r, c, d;
         if (state == 0 && pick && pick(cpu->cyc, r, c, d)) {
             cr = r; cc = c; cd = d; injCyc = cpu->cyc; state = 2;
@@ -31,12 +31,12 @@ struct Pcm70Drive {
         }
     }
 };
-struct Pcm70EqCell { int row = 0, col = 0, k = 0, lo = 0, hi = 0; bool master = false; int target = -1, word = -1, pre = -1; bool dirty = false; unsigned long lastInj = 0, dirtySince = 0, nInj = 0, superseded = 0; };
+struct Pcm70EqCell { int row = 0, col = 0, k = 0, lo = 0, hi = 0; bool master = false; int target = -1, word = -1, pre = -1; bool dirty = false; uint64_t lastInj = 0, dirtySince = 0, nInj = 0, superseded = 0; };
 struct Pcm70EditQueue {
     static constexpr double HZ = 3.25e6;
-    std::vector<Pcm70EqCell> cells; double errw = 1.0, minPlain = 0.006, minMaster = 0.150, duty = 0.65; unsigned long gapUntil = 0; int cur = -1, rr = 0;
-    unsigned long overwritten = 0, nGap = 0, nNone = 0, nDirtyAtNone = 0;
-    void set(int i, int tgt, unsigned long now) {                   // latest target wins (coalescing); out-of-range clamped
+    std::vector<Pcm70EqCell> cells; double errw = 1.0, minPlain = 0.006, minMaster = 0.150, duty = 0.65; uint64_t gapUntil = 0; int cur = -1, rr = 0;
+    uint64_t overwritten = 0, nGap = 0, nNone = 0, nDirtyAtNone = 0;
+    void set(int i, int tgt, uint64_t now) {                   // latest target wins (coalescing); out-of-range clamped
         Pcm70EqCell& c = cells[i]; if (tgt < c.lo) tgt = c.lo; if (tgt > c.hi) tgt = c.hi;
         if (tgt == c.target) return;
         if (c.dirty) { c.superseded++; overwritten++; }
@@ -44,7 +44,7 @@ struct Pcm70EditQueue {
         if (tgt == c.word) { c.dirty = false; return; }
         if (!c.dirty) c.dirtySince = now; c.dirty = true;
     }
-    bool pick(unsigned long now, int& r, int& col, int& d) {
+    bool pick(uint64_t now, int& r, int& col, int& d) {
         if (now < gapUntil) { nGap++; return false; }
         int best = -1; double bs = -1;
         for (size_t n = 0; n < cells.size(); n++) {
@@ -58,11 +58,11 @@ struct Pcm70EditQueue {
         if (best < 0) { nNone++; for (auto& c : cells) if (c.dirty) { nDirtyAtNone++; break; } return false; }
         Pcm70EqCell& c = cells[best]; cur = best; r = c.row; col = c.col; d = c.target - c.word; c.pre = c.word; c.lastInj = now; c.nInj++; return true;
     }
-    void done(const Pcm70Drive& fw, unsigned long dur, unsigned long now) { doneWith([&](unsigned k) { return fw.word(k); }, dur, now); }
-    template <class WordOf> void doneWith(WordOf wordOf, unsigned long dur, unsigned long now) {
+    void done(const Pcm70Drive& fw, uint64_t dur, uint64_t now) { doneWith([&](unsigned k) { return fw.word(k); }, dur, now); }
+    template <class WordOf> void doneWith(WordOf wordOf, uint64_t dur, uint64_t now) {
         for (auto& c : cells) c.word = (int)wordOf((unsigned)c.k);   // the firmware is the truth: masters move children, limits clamp
         if (cur >= 0) { Pcm70EqCell& c = cells[cur]; c.dirty = (c.target != c.word) && (c.word != c.pre); }   // no progress (dynamic limit) -> stop asking
         for (auto& c : cells) if (&c != &cells[cur >= 0 ? cur : 0] && c.dirty && c.target == c.word) c.dirty = false;
-        gapUntil = now + (unsigned long)((double)dur * (1.0 / duty - 1.0)); cur = -1;
+        gapUntil = now + (uint64_t)((double)dur * (1.0 / duty - 1.0)); cur = -1;
     }
 };

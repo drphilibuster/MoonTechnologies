@@ -24,7 +24,7 @@ public:
     double fullScaleVolts = 5.0, inputGain = 1.0, outputPad = 1.0;
     Machine machine; Hsp hsp; analog::LevelDetector detector; analog::MixStage mix;
     Control control; Keys keys; Midi midi;           // the host's hands on the firmware: parameter calls, front-panel keys, the MIDI UART
-    unsigned long underruns = 0;
+    uint64_t underruns = 0;
     double wetL = 0.0, wetR = 0.0;                   // the wet signal after the output filter, before the mix (volts, after outputPad): for the WET jacks
 
     Voice() : control(machine), keys(machine), midi(machine) { dc[0].init(); dc[1].init(); }
@@ -68,9 +68,9 @@ public:
 
 private:
     analog::InputStage in; analog::OutputStage out; analog::DcBlock dc[2];
-    unsigned long cycTarget = 0;
+    uint64_t cycTarget = 0;
     std::vector<double> dry; long long hostIndex = 0, delayHs = 0; double host = 48000.0; bool configured = false;
-    uint8_t opcode[0x2000] = {}; unsigned long lastWrites = ~0ul; int lastCopies = -1;
+    uint8_t opcode[0x2000] = {}; uint64_t lastWrites = ~0ul; int lastCopies = -1;
 
     void startStages() {
         in.init(host);

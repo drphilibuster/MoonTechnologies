@@ -5,6 +5,7 @@
 //   * every register of the two library banks as the firmware itself loads them,
 //   * a live run, program rebuilt from the machine's control store every sample (the modulated words of chorus/flange programs).
 // With $PCM70_ROMS / $PCM70_SYX unset the real-data parts print SKIP and pass.
+#include <cinttypes>
 #include "fixtures.hpp"
 #include "hsp_ref.hpp"
 #include "../../src/Pcm70Hsp.hpp"
@@ -20,7 +21,7 @@ static int failures = 0;
 #define CHECK(cond) do { if (!(cond)) { std::printf("FAIL %s:%d  %s\n", __FILE__, __LINE__, #cond); failures++; } } while (0)
 
 struct Pair {
-	HspRef ref; Hsp opt; unsigned long samples = 0, bad = 0; double energy = 0, maxdiff = 0;
+	HspRef ref; Hsp opt; uint64_t samples = 0, bad = 0; double energy = 0, maxdiff = 0;
 	explicit Pair(const uint8_t* u48, const uint8_t* u49) { ref.U48 = u48; ref.U49 = u49; opt.setProms(u48, u49); ref.reset(); opt.reset(); }
 	void program(const uint32_t* w) { ref.setProgram(w); opt.setProgram(w); }
 	void step(double in) {
@@ -29,8 +30,8 @@ struct Pair {
 		if (a != c || b != d) { bad++; maxdiff = std::fmax(maxdiff, std::fmax(std::fabs(a - c), std::fabs(b - d))); }
 	}
 	// the whole machine state, not only the outputs
-	unsigned long stateDiffs() const {
-		unsigned long n = 0;
+	uint64_t stateDiffs() const {
+		uint64_t n = 0;
 		for (int i = 0; i < 4; i++) n += ref.R[i] != opt.reg(i);
 		n += ref.ACC != opt.reg(4); n += ref.O != opt.reg(5); n += ref.A != opt.reg(6); n += ref.P != opt.reg(7);
 		for (int a = 0; a < 65536; a++) n += ref.mem[a] != opt.peek(a);
@@ -39,14 +40,14 @@ struct Pair {
 };
 
 static void report(const char* what, const Pair& p) {
-	std::printf("%-44s %8lu samples, %lu output mismatches, %lu state differences, energy %.1f, %lu decodes\n", what, p.samples, p.bad, p.stateDiffs(), p.energy, p.opt.decodes);
+	std::printf("%-44s %8" PRIu64 " samples, %" PRIu64 " output mismatches, %" PRIu64 " state differences, energy %.1f, %" PRIu64 " decodes\n", what, p.samples, p.bad, p.stateDiffs(), p.energy, p.opt.decodes);
 	CHECK(p.bad == 0); CHECK(p.stateDiffs() == 0);
 }
 
 // ---- random programs ----------------------------------------------------------------------------------------------------
 static void testRandomPrograms(const char* label, const uint8_t* u48, const uint8_t* u49, int programs, int samples, bool realProms) {
 	std::mt19937 g(realProms ? 7 : 11); std::normal_distribution<double> nd(0.0, 0.3);
-	unsigned long bad = 0, decodes = 0, n = 0; double energy = 0; unsigned long sd = 0;
+	uint64_t bad = 0, decodes = 0, n = 0; double energy = 0; uint64_t sd = 0;
 	for (int k = 0; k < programs; k++) {
 		Pair p(u48, u49); uint32_t w[128];
 		const int style = k % 3;                                      // 0: any word; 1: sparse (few memory words, like real programs); 2: real-looking control, random offsets
@@ -63,9 +64,9 @@ static void testRandomPrograms(const char* label, const uint8_t* u48, const uint
 			p.step(t < samples / 2 ? nd(g) : 0.0);
 		}
 		bad += p.bad; decodes += p.opt.decodes; n += p.samples; energy += p.energy; sd += p.stateDiffs();
-		if (p.bad || p.stateDiffs()) std::printf("  program %d (style %d): %lu mismatches, %lu state differences\n", k, style, p.bad, p.stateDiffs());
+		if (p.bad || p.stateDiffs()) std::printf("  program %d (style %d): %" PRIu64 " mismatches, %" PRIu64 " state differences\n", k, style, p.bad, p.stateDiffs());
 	}
-	std::printf("%-44s %8lu samples in %d programs, %lu output mismatches, %lu state differences, energy %.1f, %lu decodes\n", label, n, programs, bad, sd, energy, decodes);
+	std::printf("%-44s %8" PRIu64 " samples in %d programs, %" PRIu64 " output mismatches, %" PRIu64 " state differences, energy %.1f, %" PRIu64 " decodes\n", label, n, programs, bad, sd, energy, decodes);
 	CHECK(bad == 0); CHECK(sd == 0); CHECK(energy > 0);
 }
 
@@ -83,7 +84,7 @@ static void testBanks(const std::vector<Fw>& fws) {
 			if (low.size() < 4 || low.substr(low.size() - 4) != ".syx" || (low.find("ver-3") != std::string::npos) != v3) continue;
 			std::vector<Reg> regs = parseSyx(readFile(f)); if (regs.empty()) continue;
 			Machine* M = new Machine(); M->load(fw.u62.data(), fw.u62.size(), fw.u95.data(), fw.u95.size()); M->runSeconds(9.0);
-			unsigned long bad = 0, sdiff = 0, n = 0, decodes = 0, progs = 0; double energy = 0, worstUs = 0; size_t worstOps = 0;
+			uint64_t bad = 0, sdiff = 0, n = 0, decodes = 0, progs = 0; double energy = 0, worstUs = 0; size_t worstOps = 0;
 			for (const Reg& r : regs) {
 				if (r.data[0] == 0) continue;                                         // unused register: no program
 				Bytes m = activeMessage(r); M->sendMidi(m.data(), m.size());                     // a stored-form message only files the register; the active form loads and runs it
@@ -96,9 +97,9 @@ static void testBanks(const std::vector<Fw>& fws) {
 				  auto t0 = std::chrono::steady_clock::now(); for (int t = 0; t < 20000; t++) h.process(t & 1 ? 0.1 : 0.0, l, r);
 				  double us = std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - t0).count() / 20000; if (us > worstUs) worstUs = us; if (h.opCount() > worstOps) worstOps = h.opCount(); }
 				bad += p.bad; sdiff += p.stateDiffs(); n += p.samples; decodes += p.opt.decodes; energy += p.energy; progs++;
-				if (p.bad || p.stateDiffs()) std::printf("  register %d: %lu mismatches\n", r.n, p.bad);
+				if (p.bad || p.stateDiffs()) std::printf("  register %d: %" PRIu64 " mismatches\n", r.n, p.bad);
 			}
-			std::printf("V%s %s: %lu programs, %lu samples, %lu output mismatches, %lu state differences, energy %.1f, %lu decodes\n", fw.family.c_str(), f.substr(f.rfind('/') + 1).c_str(), progs, n, bad, sdiff, energy, decodes);
+			std::printf("V%s %s: %" PRIu64 " programs, %" PRIu64 " samples, %" PRIu64 " output mismatches, %" PRIu64 " state differences, energy %.1f, %" PRIu64 " decodes\n", fw.family.c_str(), f.substr(f.rfind('/') + 1).c_str(), progs, n, bad, sdiff, energy, decodes);
 			std::printf("   slowest program: %.3f us/sample (%.1f%% of a core), most micro-ops %zu\n", worstUs, worstUs * 3.3854, worstOps);
 			CHECK(bad == 0); CHECK(sdiff == 0); CHECK(progs >= 30); CHECK(energy > 0);
 			delete M;
@@ -127,7 +128,7 @@ static void testLive(const std::vector<Fw>& fws) {
 				while (!M->midi.empty()) M->runSeconds(0.1);
 				M->runSeconds(5.0);
 				Pair p(fw.u48.data(), fw.u49.data()); std::mt19937 g(9); std::normal_distribution<double> nd(0.0, 0.25);
-				uint32_t w[128], prev[128] = {}; unsigned long changes = 0; const int N = 60000; unsigned long cyc = M->m.cyc;
+				uint32_t w[128], prev[128] = {}; uint64_t changes = 0; const int N = 60000; uint64_t cyc = M->m.cyc;
 				for (int t = 0; t < N; t++) {
 					pcm70BuildProgram(M->wcs, fw.u67.data(), M->lastNzPage, w);
 					if (memcmp(w, prev, sizeof w)) { changes++; memcpy(prev, w, sizeof w); }
@@ -135,7 +136,7 @@ static void testLive(const std::vector<Fw>& fws) {
 					p.step(t < 8000 ? nd(g) : 0.0);
 					cyc += 96; M->runTo(cyc);                                              // one audio sample of machine time
 				}
-				char label[96]; std::snprintf(label, sizeof label, "V%s live \"%s\" (%lu program updates)", fw.family.c_str(), nm, changes);
+				char label[96]; std::snprintf(label, sizeof label, "V%s live \"%s\" (%" PRIu64 " program updates)", fw.family.c_str(), nm, changes);
 				report(label, p);
 				CHECK(changes > 1);
 				delete M;

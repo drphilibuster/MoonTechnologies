@@ -99,3 +99,5 @@ runs a Lexicon PCM 70's master and slave processors on two instances. It is comp
 `plugin.dylib` like the other vendored sources, and the tests build it on its own. The copy is the
 one the research emulation was validated with (the machine in `src/Pcm70Machine.hpp` reproduces that
 emulation byte for byte); do not update it without re-running `tests/Depreciation`.
+
+Local change: the Z80 `cyc` counter is widened from `unsigned long` to `uint64_t`, because it is 32 bits on Windows (LLP64) and wraps after about 22 minutes at 3.25 MHz.

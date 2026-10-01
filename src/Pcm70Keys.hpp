@@ -29,7 +29,7 @@ public:
     void hold(Key k, double seconds) { enqueue([this, k, seconds]() { press(k, seconds); }); }
     // F3 held for `seconds`, with LOAD tapped in the middle (the STORE gesture)
     void storeGesture(double seconds = 1.2) {
-        enqueue([this, seconds]() { const unsigned long t = M.m.cyc; events.push_back({ t, F3, true }); events.push_back({ t + cyc(seconds * 0.4), LOAD, true }); events.push_back({ t + cyc(seconds * 0.4 + 0.1), LOAD, false }); events.push_back({ t + cyc(seconds), F3, false }); settleAt = t + cyc(seconds + settleSeconds); });
+        enqueue([this, seconds]() { const uint64_t t = M.m.cyc; events.push_back({ t, F3, true }); events.push_back({ t + cyc(seconds * 0.4), LOAD, true }); events.push_back({ t + cyc(seconds * 0.4 + 0.1), LOAD, false }); events.push_back({ t + cyc(seconds), F3, false }); settleAt = t + cyc(seconds + settleSeconds); });
     }
     void bypassTap() { tap(BYP); }                                                       // toggles BYPASS ON / OFF (Control::bypassed() reads the flag)
     // The raw footswitch bit: the firmware treats it as a latching switch whose LEVEL is the state (it acts on each change; the first change after power-up
@@ -44,7 +44,7 @@ public:
     // file the current program as register (row, col): REG mode, choose it, hold F3 and press LOAD.
     void storeRegister(int row, int col) {
         enqueue([this]() { gotoMode(4); }); enqueue([this, row]() { moveRow(row, 5); }); enqueue([this, col]() { press(digit(col), tapSeconds); });
-        enqueue([this]() { const unsigned long t = nextFree(); const double s = 1.2;
+        enqueue([this]() { const uint64_t t = nextFree(); const double s = 1.2;
             events.push_back({ t, F3, true }); events.push_back({ t + cyc(s * 0.4), LOAD, true }); events.push_back({ t + cyc(s * 0.4 + 0.1), LOAD, false }); events.push_back({ t + cyc(s), F3, false }); tail = t + cyc(s + gapSeconds); settleAt = tail + cyc(settleSeconds); });
     }
     // PARAM mode: row (0..5) and digit, so the display shows that parameter (for the user to read; edits themselves use Control)
@@ -56,19 +56,19 @@ public:
 
     // call regularly (once per machine sample is plenty)
     void tick() {
-        const unsigned long now = M.m.cyc;
+        const uint64_t now = M.m.cyc;
         while (!events.empty() && events.front().t <= now) { apply(events.front()); events.pop_front(); }
         if (events.empty() && now >= settleAt && !tasks.empty() && now >= tail) { std::function<void()> f = tasks.front(); tasks.pop_front(); tail = now; f(); }
     }
 
 private:
-    struct Ev { unsigned long t; Key k; bool down; };
+    struct Ev { uint64_t t; Key k; bool down; };
     Machine& M;
-    std::deque<std::function<void()>> tasks; std::deque<Ev> events; unsigned long tail = 0, settleAt = 0;
-    static unsigned long cyc(double s) { return (unsigned long)(s * 3.25e6); }
+    std::deque<std::function<void()>> tasks; std::deque<Ev> events; uint64_t tail = 0, settleAt = 0;
+    static uint64_t cyc(double s) { return (uint64_t)(s * 3.25e6); }
     void enqueue(std::function<void()> f) { tasks.push_back(f); }
-    unsigned long nextFree() { return tail > M.m.cyc ? tail : M.m.cyc; }
-    void press(Key k, double down) { const unsigned long t = nextFree(); events.push_back({ t, k, true }); events.push_back({ t + cyc(down), k, false }); tail = t + cyc(down + gapSeconds); settleAt = tail + cyc(settleSeconds - gapSeconds > 0 ? settleSeconds - gapSeconds : 0); }
+    uint64_t nextFree() { return tail > M.m.cyc ? tail : M.m.cyc; }
+    void press(Key k, double down) { const uint64_t t = nextFree(); events.push_back({ t, k, true }); events.push_back({ t + cyc(down), k, false }); tail = t + cyc(down + gapSeconds); settleAt = tail + cyc(settleSeconds - gapSeconds > 0 ? settleSeconds - gapSeconds : 0); }
     static void where(Key k, int& col, int& row) {
         static const int dc[10] = { 1, 2, 3, 4, 5, 1, 2, 3, 4, 5 }, dr[10] = { 1, 1, 1, 1, 1, 0, 0, 0, 0, 0 };
         if (k <= K9) { col = dc[k]; row = dr[k]; return; }

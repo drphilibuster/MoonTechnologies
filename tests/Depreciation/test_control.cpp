@@ -1,6 +1,7 @@
 // Depreciation: the host's control of the firmware (src/Pcm70Control.hpp, Pcm70Keys.hpp, Pcm70Midi.hpp, ...), against the research results and against the
 // firmware's own behaviour. Needs the user's ROMs and the library banks (PCM70_ROMS, PCM70_SYX); PCM70_CELLS = the research tree's results/cell_tables_v2.json
 // enables the cell-table comparison. Each missing input prints SKIP.
+#include <cinttypes>
 #include "fixtures.hpp"
 #include "../../src/Pcm70Machine.hpp"
 #include "../../src/Pcm70Control.hpp"
@@ -22,7 +23,7 @@ struct Rig {
 	explicit Rig(const Fw& fw, const uint8_t* ram = nullptr) : M(new Machine()), C(new Control(*M)), K(new Keys(*M)), Mi(new Midi(*M)), v3(fw.family == "3.01") {
 		if (ram) memcpy(M->mram, ram, 0x2000);
 		M->load(fw.u62.data(), fw.u62.size(), fw.u95.data(), fw.u95.size()); M->hook = C.get(); C->setV3(v3); }
-	unsigned long target = 0;
+	uint64_t target = 0;
 	void run(double s) { if (!target) target = M->m.cyc; const long n = (long)(s * 3.25e6 / 96.0); for (long i = 0; i < n; i++) { target += 96; M->runTo(target); K->tick(); Mi->tick(); } }
 	void send(const Bytes& b) { M->sendMidi(b.data(), b.size()); while (!M->midi.empty()) run(0.1); }
 	void settle(double maxSeconds = 20.0) { double t = 0; run(0.5); while (t < maxSeconds && (C->busy() || K->busy() || Mi->pending())) { run(0.25); t += 0.25; } }
@@ -39,7 +40,7 @@ static void testCells(const Fw& fw, const std::vector<Reg>& regs) {
 	const char* cj = std::getenv(fw.family == "3.01" ? "PCM70_CELLS3" : "PCM70_CELLS");
 	Rig R(fw); R.run(12.0); R.settle();
 	CHECK(R.C->tableReady());
-	std::printf("V%s default program: epoch %lu, %lu probes, display \"%s\"\n", fw.family.c_str(), R.C->programEpoch, R.C->probes, R.C->displayText().c_str());
+	std::printf("V%s default program: epoch %" PRIu64 ", %" PRIu64 " probes, display \"%s\"\n", fw.family.c_str(), R.C->programEpoch, R.C->probes, R.C->displayText().c_str());
 	int valid = 0; for (int r = 0; r < 5; r++) for (int c = 0; c < 10; c++) valid += R.C->cell(r, c).valid;
 	CHECK(valid > 20);
 	// MIX at 0.0: the same descriptor family on every program: "MIX     % WET", 462..562
@@ -114,14 +115,14 @@ static void testFlood(const Fw& fw, const std::vector<Reg>& regs) {
 	const Reg* a = find(regs, 32); const Reg* b = find(regs, 26); CHECK(a && b); if (!a || !b) return;
 	Rig R(fw); R.run(9.0); R.loadReg(*a);
 	unsigned rs = 12345; auto rnd = [&]() { rs = rs * 1664525u + 1013904223u; return (rs >> 8) / 16777216.0; };
-	const unsigned long t0 = R.M->m.cyc; unsigned long calls = 0;
+	const uint64_t t0 = R.M->m.cyc; uint64_t calls = 0;
 	for (int ms = 0; ms < 15000; ms++) {
 		if (ms == 7000) R.M->sendMidi(activeMessage(*b).data(), activeMessage(*b).size());
 		for (int r = 0; r < 5; r++) for (int c = 0; c < 10; c++) { const Cell& x = R.C->cell(r, c); if (R.C->tableReady() && x.editable()) { R.C->setTarget(r, c, x.lo + rnd() * (x.hi - x.lo)); calls++; } }
 		R.M->run(3250);
 	}
 	const double total = (double)(R.M->m.cyc - t0);
-	std::printf("flood: %lu target updates in 15 s, %lu edits/probes done, firmware busy %.0f%%, longest call %.0f ms, stuck %lu, epochs %lu, queue superseded %lu\n", calls, R.C->editsDone(), 100.0 * R.C->busyCycles / total, R.C->maxCallCycles / 3250.0, R.C->stuck, R.C->programEpoch, R.C->eq.overwritten);
+	std::printf("flood: %" PRIu64 " target updates in 15 s, %" PRIu64 " edits/probes done, firmware busy %.0f%%, longest call %.0f ms, stuck %" PRIu64 ", epochs %" PRIu64 ", queue superseded %" PRIu64 "\n", calls, R.C->editsDone(), 100.0 * R.C->busyCycles / total, R.C->maxCallCycles / 3250.0, R.C->stuck, R.C->programEpoch, R.C->eq.overwritten);
 	CHECK(R.C->stuck == 0); CHECK(R.C->busyCycles / total < 0.75); CHECK(R.C->programEpoch >= 2);          // Tiled Room (type 8), then Concert Hall (type 7)
 	// quiet: fixed targets on everything, settle, then the control store must be what a fresh load of the same words gives
 	std::vector<std::pair<int, int>> list; for (int r = 0; r < 5; r++) for (int c = 0; c < 10; c++) { const Cell& x = R.C->cell(r, c); if (x.editable() && !(r == 0 && c == 9)) list.push_back({ r, c }); }
@@ -157,7 +158,7 @@ static void testKeysAndState(const Fw& fw, const std::vector<Reg>& regs, int reg
 	// register 3.2 by keys: REG, row 3, digit 2, LOAD
 	R.K->selectRegister(regNo / 10, regNo % 10); R.settle(30.0); R.run(5.0); R.settle(10.0);
 	const int d1 = same(wcsOf(R));
-	std::printf("V%s bank import + keys (REG, row %d, digit %d, LOAD): display \"%s\", control store differs from the sysex load of register %d on %d words; program epoch %lu\n", fw.family.c_str(), regNo / 10, regNo % 10, R.C->displayText().c_str(), regNo, d1, R.C->programEpoch);
+	std::printf("V%s bank import + keys (REG, row %d, digit %d, LOAD): display \"%s\", control store differs from the sysex load of register %d on %d words; program epoch %" PRIu64 "\n", fw.family.c_str(), regNo / 10, regNo % 10, R.C->displayText().c_str(), regNo, d1, R.C->programEpoch);
 	CHECK(d1 == 0);
 	// a factory program by keys: 1.3
 	R.K->selectProgram(1, 3); R.settle(30.0); R.run(3.0);

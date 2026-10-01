@@ -40,8 +40,8 @@ struct Cell {
 class Control : public Hook {
 public:
     static const int ROWS = 5, COLS = 10;
-    unsigned long programEpoch = 0;         // increments whenever the firmware loads a different program (cells are re-harvested)
-    unsigned long wordsRefreshed = 0;
+    uint64_t programEpoch = 0;         // increments whenever the firmware loads a different program (cells are re-harvested)
+    uint64_t wordsRefreshed = 0;
     double minTime = 9.5;                   // machine seconds before the host touches the firmware (the power-up routine is not at its main loop yet)
     bool isV3 = false;
     double captionInterval = 0.04;          // at most one caption call per this many machine seconds
@@ -93,7 +93,7 @@ public:
     void setMemoryProtect(bool on) { poke(isV3 ? 0x9C6C : 0x9C6A, on ? 1 : 0); }
     void probeNow(int row, int col) { Job j; j.kind = PROBE; j.row = row; j.col = col; jobs.push_back(j); }
     bool busy() const { return !jobs.empty() || phase != 0 || harvestPending > 0 || anyDirty(); }
-    unsigned long editsDone() const { return nEdits; }
+    uint64_t editsDone() const { return nEdits; }
 
     // ---- what the panel should show on the 16-digit display (the live display RAM, except while a probe has it blanked) ------------------------------
     std::string displayText() const { return M.decodeDisplay(shown0, shown1); }
@@ -110,7 +110,7 @@ public:
     void reset() { ready = false; haveIdent = false; jobs.clear(); eq.cells.clear(); lastReal.clear(); phase = 0; harvestPending = 0; faultUntil = 0; loadMeter = 0; for (Cell& c : cells) c = Cell(); }
 
     // diagnostics
-    unsigned long probes = 0, stuck = 0, idlePasses = 0; unsigned long busyCycles = 0, maxCallCycles = 0;
+    uint64_t probes = 0, stuck = 0, idlePasses = 0; uint64_t busyCycles = 0, maxCallCycles = 0;
     Pcm70EditQueue eq;
 
     void step(Machine& m) override {
@@ -133,16 +133,16 @@ private:
 
     Machine& M;
     Cell cells[ROWS * COLS]; bool ready = false; int harvestPending = 0;
-    bool watched[ROWS * COLS] = {}; std::vector<double> lastReal; unsigned long captionAt[ROWS * COLS] = {};
+    bool watched[ROWS * COLS] = {}; std::vector<double> lastReal; uint64_t captionAt[ROWS * COLS] = {};
     int cellToEq[ROWS * COLS];
     std::deque<Job> jobs;
     uint8_t shown0[16] = {}, shown1[16] = {};
     // program identity
-    unsigned identLoads = 0; bool haveIdent = false; double loadMeter = 0; unsigned long winStart = 0, winBusy = 0, faultUntil = 0;
-    unsigned long nextWordRefresh = 0, nextCaption = 0, nEdits = 0;
+    unsigned identLoads = 0; bool haveIdent = false; double loadMeter = 0; uint64_t winStart = 0, winBusy = 0, faultUntil = 0;
+    uint64_t nextWordRefresh = 0, nextCaption = 0, nEdits = 0;
     // call in progress
     int phase = 0;                          // 0 idle, 1 edit running, 2 probe: selector running, 3 probe: formatter running
-    Job cur; unsigned long phaseStart = 0; int curEq = -1;
+    Job cur; uint64_t phaseStart = 0; int curEq = -1;
     uint8_t savedDisp[0x21] = {}; uint8_t savedSel[64] = {}; unsigned savedSelBase = 0, savedSelLen = 0;
     unsigned curDesc = 0;
 
@@ -187,7 +187,7 @@ private:
         // captions of watched cells whose word moved
         if (ready && m.m.cyc >= nextCaption) {
             for (int i = 0; i < ROWS * COLS; i++) if (watched[i] && cells[i].valid && (cells[i].captionStale || m.m.cyc - captionAt[i] >= 812500)) {   // a changed word, or 0.25 s (a clocked tempo moves a caption without moving the word)
-                cur = Job(); cur.kind = PROBE; cur.row = i / COLS; cur.col = i % COLS; cur.caption = true; nextCaption = m.m.cyc + (unsigned long)(captionInterval * 3.25e6); begin(m); return;
+                cur = Job(); cur.kind = PROBE; cur.row = i / COLS; cur.col = i % COLS; cur.caption = true; nextCaption = m.m.cyc + (uint64_t)(captionInterval * 3.25e6); begin(m); return;
             }
         }
         if (ready) {
@@ -209,7 +209,7 @@ private:
         probes++; phase = 0;
     }
     void advance(Machine& m) {
-        const unsigned long d = m.m.cyc - phaseStart; busyCycles += d; if (d > maxCallCycles) maxCallCycles = d;
+        const uint64_t d = m.m.cyc - phaseStart; busyCycles += d; if (d > maxCallCycles) maxCallCycles = d;
         if (phase == 1) {                                                              // edit finished
             nEdits++; phase = 0;
             if (curEq >= 0) { eq.doneWith([&](unsigned k) { return word((int)k); }, d, m.m.cyc); curEq = -1; } else nextWordRefresh = 0;

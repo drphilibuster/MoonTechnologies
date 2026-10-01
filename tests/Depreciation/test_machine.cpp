@@ -4,6 +4,7 @@
 //   PCM70_SYX     the library .syx banks                        -> battery-RAM records written by the firmware itself
 //   PCM70_ORACLE  m1_oracle/ from the research harness          -> bit-exact comparison with the harness this was ported from
 // Each missing input prints SKIP and passes, so `make test` stays green without them.
+#include <cinttypes>
 #include "fixtures.hpp"
 #include "../../src/Pcm70Machine.hpp"
 #include "../../src/Pcm70BatRam.hpp"
@@ -42,7 +43,7 @@ static void testBoot(const std::vector<Fw>& fws) {
 		CHECK(M->loc.ok);
 		M->runSeconds(9.0);
 		const std::string disp = M->displayText();
-		std::printf("V%s boot 9 s: display \"%s\" copyPage %d wcsWrites %lu\n", fw.family.c_str(), disp.c_str(), M->copyPage, M->wcsWrites);
+		std::printf("V%s boot 9 s: display \"%s\" copyPage %d wcsWrites %" PRIu64 "\n", fw.family.c_str(), disp.c_str(), M->copyPage, M->wcsWrites);
 		CHECK(disp.find(fw.family == "3.01" ? "MOD WOBBLE" : "CHORUS") != std::string::npos);   // power-up default: V2 0.0 CHORUS, V3 0.0 MOD WOBBLE
 		CHECK(M->copyPage == 1);                                              // the default program is on opcode page 1
 		const char* od = std::getenv("PCM70_ORACLE");
@@ -115,8 +116,8 @@ static void testBatRam(const std::vector<Fw>& fws) {
 }
 
 static void testConstants() {                                              // derived independently of the header's literals
-	CHECK(Machine::MIDI_PERIOD == (unsigned long)(3.25e6 * 10.0 / 31250.0));            // 31250 baud, 10 bits per byte
-	CHECK(Machine::IRQ_PERIOD == (unsigned long)(3.25e6 * 8 * 128 * 230e-9));           // 8 x 128 x 230 ns interrupt divider, truncated as in the research harness
+	CHECK(Machine::MIDI_PERIOD == (uint64_t)(3.25e6 * 10.0 / 31250.0));            // 31250 baud, 10 bits per byte
+	CHECK(Machine::IRQ_PERIOD == (uint64_t)(3.25e6 * 8 * 128 * 230e-9));           // 8 x 128 x 230 ns interrupt divider, truncated as in the research harness
 	CHECK(Machine::HZ == 13e6 / 4);                                                      // 13 MHz / 4; 96 clocks per audio sample = 33854.1667 Hz
 	CHECK(std::fabs(Machine::HZ / 96.0 - 33854.1667) < 1e-3);
 }

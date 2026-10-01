@@ -48,10 +48,10 @@ public:
     // ---- clock (V3) -------------------------------------------------------------------------------------------------------------------------------
     // One call per incoming clock edge at `ppqnIn` edges per quarter note; the pulses for the following interval are spread over it.
     void clockEdge(int ppqnIn) {
-        const unsigned long now = M.m.cyc;
+        const uint64_t now = M.m.cyc;
         if (haveEdge) {
-            const unsigned long interval = now - lastEdge; const int per = 24 / (ppqnIn < 1 ? 1 : ppqnIn) < 1 ? 1 : 24 / (ppqnIn < 1 ? 1 : ppqnIn);
-            for (int i = 0; i < per; i++) pulses.push_back(now + interval * (unsigned long)i / (unsigned long)per);
+            const uint64_t interval = now - lastEdge; const int per = 24 / (ppqnIn < 1 ? 1 : ppqnIn) < 1 ? 1 : 24 / (ppqnIn < 1 ? 1 : ppqnIn);
+            for (int i = 0; i < per; i++) pulses.push_back(now + interval * (uint64_t)i / (uint64_t)per);
         } else pulses.push_back(now);
         haveEdge = true; lastEdge = now;
     }
@@ -60,7 +60,7 @@ public:
     bool pending() const { return !ordered.empty() || anyDirty() || !pulses.empty() || !M.midi.empty(); }
 
     void tick() {
-        const unsigned long now = M.m.cyc;
+        const uint64_t now = M.m.cyc;
         if (startPending) { M.midi.push_front(0xFA); startPending = false; }
         while (!pulses.empty() && pulses.front() <= now) { M.midi.push_front(0xF8); pulses.pop_front(); }      // real-time bytes may interleave anywhere
         if (!M.midi.empty() || now < nextSend) return;
@@ -69,17 +69,17 @@ public:
         for (size_t i = 0; i < n; i++) {
             auto it = ctl.begin(); std::advance(it, (rr + i) % n); Ctl& c = it->second; if (!c.dirty) continue;
             uint8_t b[3] = { (uint8_t)c.status, (uint8_t)c.d1, (uint8_t)c.d2 }; M.sendMidi(b, c.len); c.dirty = false; rr = (rr + i + 1) % n;
-            nextSend = now + (unsigned long)(3.25e6 / rate); return;
+            nextSend = now + (uint64_t)(3.25e6 / rate); return;
         }
     }
 
 private:
     struct Msg { Bytes bytes; double gap; };
     struct Ctl { int status = 0, d1 = 0, d2 = 0, len = 3; bool dirty = false; };
-    Machine& M; std::deque<Msg> ordered; std::map<int, Ctl> ctl; size_t rr = 0; unsigned long nextSend = 0;
-    std::deque<unsigned long> pulses; bool haveEdge = false, startPending = false; unsigned long lastEdge = 0;
+    Machine& M; std::deque<Msg> ordered; std::map<int, Ctl> ctl; size_t rr = 0; uint64_t nextSend = 0;
+    std::deque<uint64_t> pulses; bool haveEdge = false, startPending = false; uint64_t lastEdge = 0;
     static int clamp7(int v) { return v < 0 ? 0 : (v > 127 ? 127 : v); }
-    unsigned long gapCycles(double gap, size_t bytes) const { return (unsigned long)(gap * 3.25e6) + (unsigned long)(bytes * 1040); }
+    uint64_t gapCycles(double gap, size_t bytes) const { return (uint64_t)(gap * 3.25e6) + (uint64_t)(bytes * 1040); }
     bool anyDirty() const { for (const auto& kv : ctl) if (kv.second.dirty) return true; return false; }
     void set(int key, int status, int d1, int d2, int len) { Ctl& c = ctl[key]; c.status = status; c.d1 = d1; c.d2 = d2; c.len = len; c.dirty = true; }
 };

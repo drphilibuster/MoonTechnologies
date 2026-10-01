@@ -77,7 +77,7 @@ public:
     double peek(int a) const { return mem[a & 0xFFFF]; }
     uint16_t position() const { return pos; }
     size_t opCount() const { return cache.empty() ? 0 : cache.back().ops.size(); }
-    unsigned long decodes = 0;                              // how many times a sample had to be decoded (diagnostic)
+    uint64_t decodes = 0;                              // how many times a sample had to be decoded (diagnostic)
 
 private:
     enum { R0 = 0, ACC = 4, O = 5, A = 6, P = 7, T0 = 8, T1 = 9, T2 = 10, NREG = 11 };

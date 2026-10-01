@@ -777,7 +777,7 @@ void z80_debug_output(z80* const z) {
       z->pc, (z->a << 8) | get_f(z), get_bc(z), get_de(z), get_hl(z), z->sp,
       z->ix, z->iy, z->i, z->r);
 
-  printf("\t(%02X %02X %02X %02X), cyc: %lu\n", rb(z, z->pc), rb(z, z->pc + 1),
+  printf("\t(%02X %02X %02X %02X), cyc: %llu\n", rb(z, z->pc), rb(z, z->pc + 1),
       rb(z, z->pc + 2), rb(z, z->pc + 3), z->cyc);
 }
 

@@ -25,8 +25,8 @@ struct Hook { virtual ~Hook() {} virtual void step(Machine& m) = 0; };
 
 struct Machine {
     static constexpr double HZ = 3.25e6;
-    static const unsigned long IRQ_PERIOD = 765;      // 8 * 128 * 230 ns at 3.25 MHz, truncated as the research harness did
-    static const unsigned long MIDI_PERIOD = 1040;    // 31250 baud, 10 bits = 320 us
+    static const uint64_t IRQ_PERIOD = 765;      // 8 * 128 * 230 ns at 3.25 MHz, truncated as the research harness did
+    static const uint64_t MIDI_PERIOD = 1040;    // 31250 baud, 10 bits = 320 us
     static const unsigned SCAN_PHASE = 0x9B3B;        // front-panel scan ISR phase (low nibble), identical in V2 and V3 (Step 41)
 
     z80 m, s;
@@ -35,18 +35,18 @@ struct Machine {
     bool mdav = false; uint8_t m2s = 0;               // master -> slave latch
     bool sdav = false; uint8_t s2m = 0;               // slave -> master latch
     // MIDI in (1602-style UART): bytes are delivered one per 320 us
-    std::deque<uint8_t> midi; bool da = false; uint8_t rxbyte = 0; unsigned long nextMidi = 0;
+    std::deque<uint8_t> midi; bool da = false; uint8_t rxbyte = 0; uint64_t nextMidi = 0;
     // opcode ROM page chosen by the slave's copy strobes (bits 1-6 of the COPY port); lastNzPage = the last non-zero one
-    int copyPage = -1, lastNzPage = 0; unsigned long wcsWrites = 0; int copyEvents = 0;
+    int copyPage = -1, lastNzPage = 0; uint64_t wcsWrites = 0; int copyEvents = 0;
     std::vector<uint8_t>* m2sTrace = nullptr;               // if set, every byte the master sends the slave is appended (FF idx value triples)
-    unsigned long slaveLoads = 0; uint8_t prevM2s = 0;      // the master's FF 80 command = download a program to the slave (power-up, program/register load, sysex load)
+    uint64_t slaveLoads = 0; uint8_t prevM2s = 0;      // the master's FF 80 command = download a program to the slave (power-up, program/register load, sysex load)
     // host inputs
     uint8_t headrm = 0;                               // port 70: level-detector ADC code (host sets it from the input peak)
     uint8_t keyCol[8] = {0, 0, 0, 0, 0, 0, 0, 0};     // key matrix: STATIN bits for each column while a key is down
     uint8_t direct = 0;                               // the direct switch bits read on even scan phases (mask 0xC5; bit7 = BYPASS footswitch)
     // host outputs
     int mixWet = -1, mixDry = -1;                     // U22 mix DAC codes (0.392 dB/LSB), selected by STATOUT bit 1
-    unsigned long irqNext = 0;
+    uint64_t irqNext = 0;
     Hook* hook = nullptr;                             // if set, called after every master instruction
     Pcm70Loc loc;
 
@@ -70,19 +70,19 @@ struct Machine {
     void sendMidi(const uint8_t* p, size_t n) { for (size_t i = 0; i < n; i++) midi.push_back(p[i]); }
 
     // Run the machine for `cycles` master clocks (both CPUs, kept in lock-step to within one slice).
-    void run(unsigned long cycles) { runTo(m.cyc + cycles); }
+    void run(uint64_t cycles) { runTo(m.cyc + cycles); }
     // Run until the master's clock reaches `end` (absolute). Instructions are executed in slices of 40 clocks, so the clock may finish up to 39 clocks past `end`;
     // callers that step in small pieces (one audio sample = 96 clocks) must use absolute targets, or each call would overshoot and the machine would run ~25% fast.
-    void runTo(unsigned long end) {
+    void runTo(uint64_t end) {
         while (m.cyc < end) {
             if (m.cyc >= irqNext) { z80_gen_int(&m, 0xFF); z80_gen_int(&s, 0xFF); irqNext += IRQ_PERIOD; }
             if (!da && !midi.empty() && m.cyc >= nextMidi) { rxbyte = midi.front(); midi.pop_front(); da = true; nextMidi = m.cyc + MIDI_PERIOD; }
-            unsigned long slice = m.cyc + 40;
+            uint64_t slice = m.cyc + 40;
             while (m.cyc < slice) { z80_step(&m); if (hook) hook->step(*this); }
             while (s.cyc < m.cyc) z80_step(&s);
         }
     }
-    void runSeconds(double sec) { run((unsigned long)(sec * HZ)); }
+    void runSeconds(double sec) { run((uint64_t)(sec * HZ)); }
 
     // The 16-digit display as the firmware wrote it: (segment0, segment1) per digit, segment1 bit 0 = decimal point.
     // Decoded through the firmware's own font tables, located by signature in the user's ROM.
