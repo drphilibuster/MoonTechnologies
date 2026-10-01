@@ -8,7 +8,7 @@
 [![Downloads](https://img.shields.io/github/downloads/drphilibuster/MoonTechnologies/total?label=downloads)](https://github.com/drphilibuster/MoonTechnologies/releases)
 [![Licence](https://img.shields.io/badge/code-GPL--3.0--or--later-blue)](LICENSE.md)
 
-Thirty-two modules for [VCV Rack 2](https://vcvrack.com), by **Taxxess**.
+Thirty-three modules for [VCV Rack 2](https://vcvrack.com), by **Taxxess**.
 
 They share a panel language borrowed from money — a pale engraved note, sage
 guilloche round every field, a scroll in every corner, a form number in the
@@ -64,29 +64,33 @@ spectrum and a warped field, driven by audio and CV.
 |---|---|
 | **[Apportionment](docs/Apportionment.md)** | **[Contagion](docs/Contagion.md)** |
 
-| <img src="tools/previews/Rebate.png" width="101"> | <img src="tools/previews/Depreciation.png" width="395"> | <img src="tools/previews/Repossession.png" width="286"> |
+| <img src="tools/previews/NordicBanking.png" width="437"> | <img src="tools/previews/Rebate.png" width="101"> |
+|---|---|
+| **[Nordic Banking](docs/NordicBanking.md)** | **[Rebate](docs/Rebate.md)** |
+
+| <img src="tools/previews/Depreciation.png" width="395"> | <img src="tools/previews/Repossession.png" width="286"> | <img src="tools/previews/Collusion.png" width="151"> |
 |---|---|---|
-| **[Rebate](docs/Rebate.md)** | **[Depreciation](docs/Depreciation.md)** | **[Repossession](docs/Repossession.md)** |
+| **[Depreciation](docs/Depreciation.md)** | **[Repossession](docs/Repossession.md)** | **[Collusion](docs/Collusion.md)** |
 
-| <img src="tools/previews/Collusion.png" width="151"> | <img src="tools/previews/Reconciliation.png" width="160"> | <img src="tools/previews/Dependents.png" width="134"> | <img src="tools/previews/SixFigures.png" width="210"> |
+| <img src="tools/previews/Reconciliation.png" width="160"> | <img src="tools/previews/Dependents.png" width="134"> | <img src="tools/previews/SixFigures.png" width="210"> | <img src="tools/previews/Garnishment.png" width="151"> |
 |---|---|---|---|
-| **[Collusion](docs/Collusion.md)** | **[Reconciliation](docs/Reconciliation.md)** | **[Dependents](docs/Dependents.md)** | **[Six Figures](docs/SixFigures.md)** |
+| **[Reconciliation](docs/Reconciliation.md)** | **[Dependents](docs/Dependents.md)** | **[Six Figures](docs/SixFigures.md)** | **[Garnishment](docs/Garnishment.md)** |
 
-| <img src="tools/previews/Garnishment.png" width="151"> | <img src="tools/previews/Consolidation.png" width="118"> | <img src="tools/previews/Bailout.png" width="210"> | <img src="tools/previews/Projection.png" width="101"> |
+| <img src="tools/previews/Consolidation.png" width="118"> | <img src="tools/previews/Bailout.png" width="210"> | <img src="tools/previews/Projection.png" width="101"> | <img src="tools/previews/Transmittal.png" width="84"> |
 |---|---|---|---|
-| **[Garnishment](docs/Garnishment.md)** | **[Consolidation](docs/Consolidation.md)** | **[Bailout](docs/Bailout.md)** | **[Projection](docs/Projection.md)** |
+| **[Consolidation](docs/Consolidation.md)** | **[Bailout](docs/Bailout.md)** | **[Projection](docs/Projection.md)** | **[Transmittal](docs/Transmittal.md)** |
 
-| <img src="tools/previews/Transmittal.png" width="84"> | <img src="tools/previews/Installment.png" width="134"> | <img src="tools/previews/Volatility.png" width="118"> | <img src="tools/previews/Deduction.png" width="101"> |
+| <img src="tools/previews/Installment.png" width="134"> | <img src="tools/previews/Volatility.png" width="118"> | <img src="tools/previews/Deduction.png" width="101"> | <img src="tools/previews/AuditLogic.png" width="210"> |
 |---|---|---|---|
-| **[Transmittal](docs/Transmittal.md)** | **[Installment](docs/Installment.md)** | **[Volatility](docs/Volatility.md)** | **[Deduction](docs/Deduction.md)** |
+| **[Installment](docs/Installment.md)** | **[Volatility](docs/Volatility.md)** | **[Deduction](docs/Deduction.md)** | **[Audit Logic](docs/AuditLogic.md)** |
 
-| <img src="tools/previews/AuditLogic.png" width="210"> | <img src="tools/previews/Kickback.png" width="252"> | <img src="tools/previews/PaymentSchedule.png" width="260"> |
+| <img src="tools/previews/Kickback.png" width="252"> | <img src="tools/previews/PaymentSchedule.png" width="260"> | <img src="tools/previews/SignHere.png" width="168"> |
 |---|---|---|
-| **[Audit Logic](docs/AuditLogic.md)** | **[Kickback](docs/Kickback.md)** | **[Payment Schedule](docs/PaymentSchedule.md)** |
+| **[Kickback](docs/Kickback.md)** | **[Payment Schedule](docs/PaymentSchedule.md)** | **[Sign Here](docs/SignHere.md)** |
 
-| <img src="tools/previews/SignHere.png" width="168"> | <img src="tools/previews/Diversified.png" width="176"> | <img src="tools/previews/Toll.png" width="92"> | <img src="tools/previews/ScheduleA.png" width="118"> |
-|---|---|---|---|
-| **[Sign Here](docs/SignHere.md)** | **[Diversified](docs/Diversified.md)** | **[Toll](docs/Toll.md)** | **[Schedule A](docs/ScheduleA.md)** |
+| <img src="tools/previews/Diversified.png" width="176"> | <img src="tools/previews/Toll.png" width="92"> | <img src="tools/previews/ScheduleA.png" width="118"> |
+|---|---|---|
+| **[Diversified](docs/Diversified.md)** | **[Toll](docs/Toll.md)** | **[Schedule A](docs/ScheduleA.md)** |
 
 ## Built for this plugin
 
@@ -167,6 +171,12 @@ ESP effect units under the DP/4's real operating system and DSP code -- every al
 *An Access Virus C, running all of its own firmware. OS image not included.*
 
 Both processors run the unit's own OS: the 80C515 that owns the front panel, the LCD, MIDI and preset memory -- which every other Virus emulation replaces with C++ -- and the DSP56362 it boots and drives, on the dsp56300 core gearmulator uses. Every knob and button reaches the firmware through the microcontroller's own A/D converter and key matrix; the dot-matrix LCD shows what the unit shows. Played over MIDI; the patch keeps the battery RAM.
+
+### [Nordic Banking](docs/NordicBanking.md) — 52 HP · *Synth voice, Polyphonic, Hardware clone*
+
+*A Clavia Nord Lead 2X, running its own firmware. OS image not included.*
+
+The real MC68331 operating system, instruction by instruction, driving two emulated DSP56362s on the dsp56300 core -- the whole Nord Lead 2X from its 512 KB OS image. The front panel is the unit's: every knob on the 68331's converter, every button on its key lines, and the LED multiplex and three-digit display drawn at the brightness the firmware drives them, LED pairs and all. Played over MIDI, with Clavia's factory programs loaded as SysEx; the patch keeps the program flash.
 
 ### [Rebate](docs/Rebate.md) — 12 HP · *Effect, Reverb, Delay, Hardware clone*
 

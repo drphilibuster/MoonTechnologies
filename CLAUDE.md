@@ -1,7 +1,7 @@
 # Moon Technologies
 
 One VCV Rack 2 plugin, slug `MoonTechnologies`, brand **Moon Technologies**,
-author **Taxxess**. Thirty-two modules sharing one panel pipeline: the three
+author **Taxxess**. Thirty-three modules sharing one panel pipeline: the three
 originals (`PatchAudit`, `Retroactive`, `UncertaintyPolicy`), nine built to
 order (`Dividend`, `TaxBracket`, `Racketeer`, `Gross`, `Amortization`,
 `Repossession`, `Collusion`, `Reconciliation`, `Dependents`), one expander
@@ -11,9 +11,10 @@ order (`Dividend`, `TaxBracket`, `Racketeer`, `Gross`, `Amortization`,
 `Diversified`), one voice that split off from a bank (`Toll`, out of
 `Kickback`), one bank doubled into a module of its own (`Bailout`, out of
 `Consolidation`), two about video (`Transmittal`, which publishes it, and
-`Projection`, which makes it) and three hardware emulations (`Apportionment`,
+`Projection`, which makes it) and five hardware emulations (`Apportionment`,
 an Ensoniq DP/4, `Depreciation`, a Lexicon PCM 70, `Rebate`, an Alesis MIDIverb,
-and `Contagion`, an Access Virus C, each running its own firmware; see "ROMs" below).
+`Contagion`, an Access Virus C, and `NordicBanking`, a Clavia Nord Lead 2X, each
+running its own firmware; see "ROMs" below).
 
 ## VCV Rack UI: use the tool, always
 
@@ -100,7 +101,7 @@ what the generator writes.
 Look at `tools/previews/<Module>.png` before calling a panel done — it goes
 through the real widget tree, so it is the only preview that cannot lie. Do this
 for **every** module whose header the change touched, not just the one you were
-working in; a `panelkit/` change reaches all thirty-two.
+working in; a `panelkit/` change reaches all thirty-three.
 
 See `panelkit/README.md` for the design language, the spec API and what the
 linter checks.
@@ -124,7 +125,7 @@ one. A screenshot showing old behaviour after a fix usually means exactly this.
 
 ## Slugs are permanent
 
-`MoonTechnologies` and the thirty-two module slugs listed at the top of this file.
+`MoonTechnologies` and the thirty-three module slugs listed at the top of this file.
 Changing any of them orphans every saved patch that used it: Rack's fallback table
 (`Rack/src/plugin.cpp:374`) is maintained by VCV, not by plugin authors.
 
@@ -210,6 +211,13 @@ refuses it; `tests/Pic16` runs it from `$VARIMODE_HEX` and `$VARIMODE_ASM` (SKIP
 `Contagion` does the same with the Virus OS image (512 KB flash dump): `.gitignore`
 refuses Virus images, `tests/Contagion` reads one from `$VIRUS_ROMS` (SKIP without
 it). Its DSP emulator is vendored in `vendor/dsp56300` (GPLv3, see vendor/README.md).
+
+`NordicBanking` does the same with the Nord Lead 2X's OS image (512 KB): `.gitignore`
+refuses Nord Lead images and Clavia's factory SysEx, `tests/NordicBanking` reads an image
+from `$NL2X_ROMS` (SKIP without it). The program flash travels in the patch. Its machine is
+gearmulator's n2xLib with mc68k and Musashi, vendored in `vendor/gearmulator` with the
+changes `vendor/README.md` lists -- among them Musashi built without its FPU, so SoftFloat
+2b (GPL-incompatible licence) is not in the plugin.
 
 ## Local checkouts (outside this repo)
 

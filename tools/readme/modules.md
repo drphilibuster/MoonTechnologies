@@ -62,6 +62,12 @@ credit: *An Access Virus C, running all of its own firmware. OS image not includ
 
 Both processors run the unit's own OS: the 80C515 that owns the front panel, the LCD, MIDI and preset memory -- which every other Virus emulation replaces with C++ -- and the DSP56362 it boots and drives, on the dsp56300 core gearmulator uses. Every knob and button reaches the firmware through the microcontroller's own A/D converter and key matrix; the dot-matrix LCD shows what the unit shows. Played over MIDI; the patch keeps the battery RAM.
 
+## NordicBanking
+group: hardware
+credit: *A Clavia Nord Lead 2X, running its own firmware. OS image not included.*
+
+The real MC68331 operating system, instruction by instruction, driving two emulated DSP56362s on the dsp56300 core -- the whole Nord Lead 2X from its 512 KB OS image. The front panel is the unit's: every knob on the 68331's converter, every button on its key lines, and the LED multiplex and three-digit display drawn at the brightness the firmware drives them, LED pairs and all. Played over MIDI, with Clavia's factory programs loaded as SysEx; the patch keeps the program flash.
+
 ## Rebate
 group: hardware
 credit: *An Alesis MIDIverb (or MIDIFEX), running its own firmware. EPROMs not included.*

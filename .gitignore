@@ -85,3 +85,15 @@ __pycache__/
 
 # Third-party PIC firmware (no licence stated): loaded at runtime, never committed
 *varimodequantizer*
+
+# Nord Lead OS images and flash dumps (Nordic Banking loads them at runtime; they are
+# Clavia's and must never be committed). tests/NordicBanking reads them from $NL2X_ROMS.
+*nord_lead*.bin
+*nord-lead*.bin
+*Nord*Lead*.bin
+*NORD*.BIN
+*nl2x*.bin
+# ...nor Clavia's factory programs (SysEx).
+*Nord*Lead*.syx
+*nord*lead*.syx
+*nl2x*.syx

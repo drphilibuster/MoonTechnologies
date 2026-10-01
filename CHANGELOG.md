@@ -5,6 +5,27 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Added: Nordic Banking, a Clavia Nord Lead 2X running its own firmware
+
+The 2X's MC68331 operating system runs instruction by instruction (Musashi) and drives two
+emulated DSP56362s (dsp56300) -- gearmulator's Nord Lead 2X, vendored with a handful of
+marked changes, Musashi built without the FPU it never uses so that SoftFloat 2b's
+GPL-incompatible licence stays out. The OS image is Clavia's and not included; the context
+menu loads it and a patch keeps the path.
+
+* The front panel is the unit's: 26 knobs on the 68331's converter, 28 buttons on its key
+  lines, and the LED multiplex and three-digit display, which gearmulator does not model,
+  read from the firmware's own refresh -- 46 LEDs drawn at the brightness the firmware gives
+  them, the selectors' LED pairs included. Mapped by pressing every button and setting every
+  selector over MIDI; several of gearmulator's button names were for other controls, and its
+  button press had the wrong polarity.
+* Programs live in the 64 KB flash, which the patch keeps; Clavia's factory programs load as
+  SysEx from the menu.
+
+`tests/NordicBanking` boots the OS, plays a note, reads the display and a button's LED,
+stores a program and boots a second unit from the saved flash, with the image from
+`NL2X_ROMS` (SKIP without).
+
 ### Changed: SixFigures' avalanche core is the relaxation oscillator's own charge curve
 
 The saw is the capacitor charging toward the supply between the reversed junction's release (7.3 V)

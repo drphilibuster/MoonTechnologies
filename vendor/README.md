@@ -50,6 +50,41 @@ the commit in `gearmulator/COMMIT`.
 `src/Contagion/VirusC.cpp` is the only translation unit of ours that includes
 either; the Makefile compiles them as C++17.
 
+## gearmulator's Nord Lead 2X, mc68k and Musashi (Nordic Banking)
+
+From gearmulator (<https://github.com/dsp56300/gearmulator>, GPLv3, `gearmulator/LICENSE.md`),
+at the commit in `gearmulator/COMMIT`:
+
+* `gearmulator/n2xLib/` -- the Nord Lead 2X's hardware: its DSPs, host ports, front panel,
+  flash and ROM (`n2xdsp`, `n2xhdi08`, `n2xfrontpanel`, `n2xflash`, `n2xmc`, `n2xhardware`,
+  `n2xrom`, `n2xromdata`, `n2xtypes.h`, `n2xmiditypes.h`). Its plugin side (device, state,
+  ROM loader) is not vendored; `src/NordicBanking/Nord2x.cpp` takes its place.
+* `gearmulator/mc68k/` -- the MC68331 around Musashi: SIM, QSM, GPT, ports, host interface.
+* `gearmulator/hardwareLib/` `i2c`, `i2cFlash`, `sciMidi`; `gearmulator/baseLib/` `filesystem`,
+  `semaphore.h`; `gearmulator/synthLib/` `midiTypes.h`, `midiBufferParser`, `audioTypes.h`,
+  `deviceException`, `deviceTypes.h`, `os` -- the framework pieces those use.
+* `gearmulator/mc68k/Musashi/` -- Karl Stenerud's Musashi 68000-family emulator (MIT; the
+  licence is in `readme.txt` and atop each file).
+
+Changes, each marked `MoonTechnologies` in the source:
+
+* **Musashi is built without its FPU and PMMU.** The CPU32 core of the MC68331 has neither,
+  and gearmulator runs the core as a 68020, whose FPU path is never taken. `m68kfpu.c`,
+  `m68kmmu.h` and the SoftFloat 2b they need are not vendored -- SoftFloat 2b's licence adds
+  an indemnification condition widely held to be incompatible with the GPL. `m68kcpu.h`
+  keeps the 80-bit register slots as plain storage, and the three coprocessor entry points
+  raise the F-line exception, as a CPU32 does.
+* `mc68k/logging`: a settable sink (`setLogSink`) in place of unconditional stderr.
+* `n2xfrontpanel`: `setButtonState` had its polarity inverted (the key lines are active-low,
+  idle 0xff, as `getButtonState` already read them; upstream's plugin never presses panel
+  buttons, so it never showed); and a write observer, from which the module models the LED
+  multiplex.
+* `n2xflash`, `n2xhardware`: no search of the disk for a ROM or "any 64 KB file" (a plugin
+  must not pick up whatever lies around); the OS image is always given, and the flash's
+  power-on contents are a constructor argument, set before the 68331 starts.
+* `n2xdsp`: the debugger include is behind `DSP56300_DEBUGGER`, as its use already was.
+* `i2cFlash::getData()` and `Microcontroller::getFlash()`, so a patch can keep the flash.
+
 ## MAME: ES5510 and MC6803 (Apportionment)
 
 `mame/` holds the parts of [MAME](https://github.com/mamedev/mame) that
