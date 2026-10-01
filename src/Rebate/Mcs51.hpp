@@ -65,7 +65,7 @@ struct Mcs51 {
 	    Returns the machine cycles consumed. */
 	int step() {
 		const uint8_t op = fetch();
-		const int n = CYCLES[op];
+		const int n = opCycles(op);
 		instrEnd = cycles + n;
 		blockOnce = false;
 		execute(op);
@@ -527,7 +527,10 @@ private:
 	}
 
 public:
-	// Machine cycles per instruction, from the manual's instruction table.
+	// Machine cycles per instruction, from the manual's instruction table. A function-local
+	// table: indexed at run time, a static constexpr member would need an out-of-line
+	// definition before C++17, and GCC links without one only by luck of inlining.
+	static int opCycles(uint8_t op) {
 	static constexpr uint8_t CYCLES[256] = {
 	//  0 1 2 3 4 5 6 7 8 9 A B C D E F
 		1,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0
@@ -566,6 +569,8 @@ public:
 		1,2,1,1,1,2,1,1,1,1,1,1,1,1,1,1,
 		1,2,1,1,1,2,1,1,1,1,1,1,1,1,1,1,
 	};
+	return CYCLES[op];
+	}
 };
 
 } // namespace mv
