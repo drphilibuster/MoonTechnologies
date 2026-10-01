@@ -236,21 +236,28 @@ row.
 
 ## How the dedicated circuits are modelled
 
-**99 Echomatic.** A PT2399 is not a delay line, it is a converter whose clock is
-the delay control: longer delay means a slower internal rate, less bandwidth,
-coarser quantisation and more of the chip's own noise. That is modelled rather
-than faked — a sample-and-hold at the internal rate with an anti-alias pair
-tracking it, and a word length that falls from ten bits at 30 ms to seven at
-1 s. TIME is 30 ms to 1 s, or the TAP clock. FEEDBACK goes past unity into a
-soft ceiling, so it self-oscillates without running away. LEVEL is the echo's
-own output level, ahead of MIX.
+**99 Echomatic.** The PT2399 itself, the model Amortization and Racketeer use
+(`src/Pt2399.hpp`): a 1-bit adaptive delta modulator writing 44 kbit of RAM, a
+demodulator reading it back, and a clock. It is not a delay line. The delay is
+the RAM length over the bit rate, so TIME *is* the clock, and a longer delay is
+a slower clock: less bandwidth, more slope overload and granular hiss, none of
+it added. Moving TIME replays the stored bits at the new rate, so the pitch
+bends the way it does on the board, and the knob is smoothed over about 60 ms so
+a sweep is a bend and not a step. TIME is 30 ms to 1 s, or the TAP clock.
+FEEDBACK goes past unity on purpose; what stops that being a fault is the chip —
+its integrator and the input op-amp clip at the supply — so a loop at 1.25 sings
+at a bounded level and gets dirtier as it does, rather than meeting a tanh added
+to tame it. LEVEL is the echo's own output level, ahead of MIX.
 
-**100 Little Angel.** The same chip, run short: 5–30 ms modulated, nine bits, a
-5.5 kHz roll-off. MODE is one macro carrying both of the board's switches, in
-four positions across the knob's travel: chorus/normal, chorus/warble,
-vibe/normal, vibe/warble. VIBE kills the dry path so only the pitch modulation
-is left; WARBLE adds the slower, irregular drift that makes it sound like a tape
-motor rather than a chorus pedal.
+**100 Little Angel.** The same chip run short, one for each side. The modulation
+is of the clock, as on the board, so the pitch shift is the chip's own and not a
+moving read pointer. The delay swings between 5 and 30 ms, and the clock that
+implies is the clock the chip runs at: about 8.8 Mbit/s at 5 ms. MODE is one
+macro carrying both of the board's switches, in four positions across the knob's
+travel: chorus/normal, chorus/warble, vibe/normal, vibe/warble. VIBE kills the
+dry path so only the pitch modulation is left; WARBLE adds the slower, irregular
+drift that makes it sound like a tape motor rather than a chorus pedal. The board
+is mono; the second chip, a quarter cycle on, is this module's stereo addition.
 
 **101 Spring tank.** Four delay loops, each with an eight-stage allpass chain
 inside the loop, because a spring disperses high frequencies ahead of low ones
@@ -276,13 +283,47 @@ carrier, so the carrier itself cancels out of the output), I with the CHOPPER,
 MODULATION II (AM — a unipolar carrier, so it stays), and II with the CHOPPER.
 The chopper gates the output at a quarter of the carrier.
 
-**104 MW Bitcrusher.** An eight-bit quantiser at a sample rate from 200 Hz to
-48 kHz. BITS masks the word from the bottom, which on the board is what leaving
-a data jack unpatched does. **Swap MSB and LSB** in the context menu reverses
-the whole eight-bit word before the ladder sees it — the extreme of the board's
-joke, which is that the patch cable between the converter and the ladder *is*
-the effect. **Reconstruction filter** is the board's LM358 second-order lowpass
-at 5 kHz; turning it off is the raw staircase.
+**104 MW Bitcrusher.** The board from `Schematic_BIT crusher_2021-07-06`,
+chip by chip (`src/Adc0809.hpp`).
+
+An **LTC1799** is the clock: 10 MHz × 10 kΩ / (N × R_SET), where R_SET is a 3k
+resistor in series with a 1M pot and N is 1, 10 or 100 from the DIV switch.
+RATE is the pot and AUX its CV; the **Clock divider (U6)** menu item is the
+switch. An **ADC0809** converts for ever (START is tied to EOC on the schematic),
+one conversion being 64 clocks plus the START-to-EOC gap, so the sample rate is
+the clock over 72: about 139 Hz to 46 kHz across RATE at the default /10. The
+input is taken as the conversion starts and the result arrives 64 clocks later,
+so the converter has a latency of its own. A converter running faster than the
+audio rate is averaged across each audio sample rather than aliased.
+
+The eight data lines go into the board's **1k/2k ladder**, which sums into an
+inverting op-amp (U7.1, Rf = 1k). The ladder is solved as the network it is: the
+MSB is the leg nearest the op-amp and the LSB the one at the termination end —
+the opposite of the jacks' top-to-bottom numbering — and a leg left open is not
+the same as one driven low, because it stops loading its node and so moves the
+other bits' weights slightly. BITS leaves the low legs open, as leaving a data
+jack unpatched does. **Swap MSB and LSB** reverses the whole word before the
+ladder sees it — the extreme of the board's joke, which is that the patch cable
+between the converter and the ladder *is* the effect.
+
+After the ladder: **SW1**'s passive filter (680 Ω into 68 nF to ground: one pole
+at 3.44 kHz — not the second-order 5 kHz this entry used to claim; that was read
+off the panel, and the schematic says otherwise), U7.2's non-inverting stage
+(gain 1 + RP3 / 2k2, offered as 1×, 2×, 4× and the pot's 10×; 2× by default, which
+makes the converter's full scale ±5 V), and C1 into the next input. The ladder
+stage inverts, so **the output is the input upside down**, as it is on the board.
+At the higher gains the converter's DC offset runs into the op-amp's rails, and
+the output clips asymmetrically, which the board does too.
+
+LEVEL is RP1, the 100k pot at the input: an attenuator, as on the board, so full
+turn is the converter's full scale. (It was an input gain of up to 4× before; the
+default is now full turn rather than 40 %.)
+
+**The input range.** The ADC0809 reads 0 to 5 V and the board puts nothing in
+front of it, so ordinary bipolar audio loses its negative half. By default a 2.5 V
+offset is added ahead of the converter so the whole waveform is crushed, as it
+always was here; **Board-faithful 0-5 V input** in the context menu removes it,
+and then negative half-waves read as code 0, exactly as on the hardware.
 
 **105 4011 ring modulator.** Reading the board: input 1 lands on pins 13 and 9,
 input 2 on pins 8 and 1, pin 10 feeds pins 2 and 12, pin 3 feeds pin 5, pin 11
@@ -309,10 +350,13 @@ menu replaces the gate array with the multiplication it is a caricature of.
 | item | what it does |
 |---|---|
 | **Swap MSB and LSB** | 104 only. Reverses the eight-bit word before the ladder |
-| **Reconstruction filter** | 104 only. The board's 5 kHz output lowpass, in or out of circuit. Default on |
+| **Reconstruction filter (SW1)** | 104 only. The board's 680 ohm / 68 nF lowpass (3.44 kHz, one pole), in or out of circuit. Default on |
+| **Clock divider (U6)** | 104 only. The LTC1799's DIV switch: /1, /10 or /100. Default /10, which gives the 139 Hz to 46 kHz range |
+| **Output gain (RP3)** | 104 only. U7.2's gain: 1×, 2×, 4× or 10×. Default 2× |
+| **Board-faithful 0-5 V input** | 104 only. Takes the 2.5 V offset away from ahead of the converter. Default off |
 | **Smooth (analogue product)** | 105 only. Analogue multiplication instead of the exclusive-or. Default off |
 
-All three are saved with the patch.
+All of them are saved with the patch.
 
 ## Voltages, polyphony and CPU
 
@@ -331,6 +375,13 @@ for 192 kHz. That costs roughly eight megabytes per instance and, briefly, twice
 the CPU during the 30 ms fade. Sweeping PROGRAM under CV is safe: a change
 arriving mid-fade is held until the fade lands, so a sweep is a sequence of
 clean crossfades rather than a stutter of half-finished ones.
+
+The two PT2399 programs have no delay buffer at all — a chip is 44 kbit — and
+what they cost is the bit clock. Measured on an M-series Mac at 48 kHz, Echomatic
+at its fastest (30 ms) is about 2.5 % of one core, and falls as TIME lengthens.
+Little Angel is the expensive one at about 13 %, because its clock is 5 to 30
+times faster and there are two chips; that figure is roughly the same across
+DEPTH. A crossfade into or out of it briefly runs both engines.
 
 ## Known approximations
 
@@ -351,3 +402,33 @@ clean crossfades rather than a stutter of half-finished ones.
 * The 4011's inputs are modelled as comparators with hysteresis rather than as
   CMOS gate thresholds against a real +12 V rail, so BIAS spans a useful range
   at Eurorack levels instead of the tiny one the actual chip would give.
+* **The PT2399 boards' own circuits were not available.** The course folder has
+  the panel numbers (12.3 and 12.6) but neither board's schematic. The chip is
+  the datasheet's; what surrounds it is assumed, and every assumed value is in
+  one place, `miaw_assumed` in `src/Diversified/MiawFx.hpp`: Rack volts to chip
+  volts (5 V is the chip's 2.4 V full scale), the two poles on each side of the
+  Echomatic's chip (7 kHz, a midpoint of the datasheet application circuit's
+  range, not a reading), the Little Angel's 5.5 kHz roll-off and its 5-to-30 ms
+  delay range (both kept from before the chip model), and the 3 ms floor on how
+  fast the Little Angel's clock may be pushed, because the measured delay law the
+  chip model uses stops at 30 ms and the chorus runs below it. With the real
+  schematics these become readings.
+* **The BitCrusher's op-amps are drawn on a single supply, and cannot be.** U7.1
+  inverts a positive current into its input, so its output has to go negative;
+  with pin 4 on ground, as drawn, it would sit at 0 V and the board would be
+  silent. Both LM358s are modelled as running from ±12 V, swinging to +10.5 V and
+  −11.98 V (the datasheet's typical V+ − 1.5 V and V− + 20 mV).
+* **The ADC0809's pins are modelled as ideal 0 V and 5 V.** Its data pins are only
+  guaranteed to 4.5 V at 360 µA, and a ladder leg draws up to 2.5 mA, so the real
+  high level sags by an amount the datasheet does not give. The chip's own error
+  (±1 LSB total unadjusted), its input sample-and-hold droop, and its 10 kHz to
+  1.28 MHz clock limits are not modelled either: a clock outside that range is
+  simply obeyed. ALE and OUTPUT ENABLE are drawn unconnected, and are modelled
+  as tied the usual way.
+* **The START-to-EOC gap is 8 clocks**, the datasheet's worst case (0 to 8 plus
+  2 µs, no typical given), so a cycle is 72 clocks. The LM358s' slew rate is not
+  modelled; at the fastest conversion rates it would round the converter's steps.
+* **RP2's taper is this module's own.** The board's pot taper isn't on record; RATE
+  sweeps R_SET logarithmically from 3k to 1.003M so that it is playable.
+  C1 is loaded by an assumed 100k, which puts its corner at 0.16 Hz, so a level
+  change takes a second or so to settle at the output, as it would on the board.

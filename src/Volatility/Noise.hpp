@@ -1,5 +1,8 @@
 #pragma once
 #include <cmath>
+#include <cstdint>
+
+#include "../Cd4006.hpp"
 
 // ---------------------------------------------------------------------------
 // The two things Volatility's sections needed to be finishable, kept out of the
@@ -102,6 +105,94 @@ struct NoiseColours {
 		redState = redCoef * redState + white * (1.f - redCoef);
 		red = redState * redNorm;
 	}
+};
+
+// ---------------------------------------------------------------------------
+// THE REGISTER. One CD4006B wired as an 18-stage shift register, with two of its
+// pins XORed back into its input.
+//
+// The textbook two-tap solution for 18 stages is stages 18 and 11, and it cannot
+// be built on one chip: a 4006 brings out only the end of each section, so the
+// pins it has are, at most, stages 4, 5, 8, 9, 12, 13, 14, 17 and 18 once the
+// sections are chained, in an order that picks six of those. There is no pin on
+// stage 11, or on stage 7, the reciprocal. No 18-stage trinomial is reachable at
+// all, and the nearest a single 4006 comes is 17: stages 17 and 12, a maximal
+// sequence of 2^17 - 1 = 131071 clocks. That is what this is. (The TR-909's noise
+// source reaches 2^31 - 1 with two 4006s and taps 31 and 13: 18 + 13, and 13.)
+//
+// The chain, section by section, is D1 -> D3 -> D2 -> D4, which numbers the
+// stages
+//
+//     1..4   section 1   (pin 13 is stage 4)
+//     5..8   section 3   (pin 10 is stage 8)
+//     9..13  section 2   (pin 11 is stage 12, pin 12 is stage 13)
+//     14..18 section 4   (pin 8 is stage 17, pin 9 is stage 18)
+//
+// and the XOR takes pins 11 and 8. Stage 18 comes out as a delayed copy of 17,
+// as the TR-909's 36th does.
+//
+// An XOR register locks up on all zeros. The real circuit has a start-up network
+// that holds the input high for 20-30 ms; here an all-zero register is fed a one,
+// which is what that network is for.
+
+static const int kRegisterStages = 18;
+static const int kFeedbackStageA = 12;     // D2+4, pin 11
+static const int kFeedbackStageB = 17;     // D4+4, pin 8
+static const uint32_t kRegisterMask = 0x0003FFFFu;
+static const uint32_t kRegisterSeed = 0x00015555u;   // any nonzero 18-stage fill
+
+struct Register4006 {
+	cd4006::Cd4006 chip;
+
+	Register4006() { setStages(kRegisterSeed); }
+
+	void reset() { setStages(kRegisterSeed); }
+
+	/** The register as one number: bit k-1 is stage k, counting from the input. */
+	uint32_t stages() const {
+		uint32_t v = 0;
+		for (int i = 0; i < 4; i++) v |= (uint32_t) chip.s1[i] << i;          // 1-4
+		for (int i = 0; i < 4; i++) v |= (uint32_t) chip.s3[i] << (4 + i);    // 5-8
+		for (int i = 0; i < 5; i++) v |= (uint32_t) chip.s2[i] << (8 + i);    // 9-13
+		for (int i = 0; i < 5; i++) v |= (uint32_t) chip.s4[i] << (13 + i);   // 14-18
+		return v;
+	}
+
+	void setStages(uint32_t v) {
+		for (int i = 0; i < 4; i++) chip.s1[i] = (v >> i) & 1u;
+		for (int i = 0; i < 4; i++) chip.s3[i] = (v >> (4 + i)) & 1u;
+		for (int i = 0; i < 5; i++) chip.s2[i] = (v >> (8 + i)) & 1u;
+		for (int i = 0; i < 5; i++) chip.s4[i] = (v >> (13 + i)) & 1u;
+	}
+
+	/** What the XOR gate is putting on pin 1 now. */
+	bool feedback() const {
+		if (stages() == 0u)
+			return true;                           // the start-up network
+		return chip.pin11() != chip.pin8();        // stage 12 XOR stage 17
+	}
+
+	/** One negative-going clock edge. Returns the bit that went in. */
+	bool clockFalling() {
+		bool fb = feedback();
+		// Section 1 takes the feedback; each later section takes the pin of the one
+		// before it in the chain, read before the edge.
+		chip.clockFalling(fb, chip.pin10(), chip.pin13(), chip.pin12());
+		return fb;
+	}
+};
+
+/** The clock's level, to find its negative-going edges. The external clock uses
+    a Schmitt trigger on its own; the internal one is a 50 % square, high for the
+    first half of its cycle. */
+struct FallingEdge {
+	bool wasHigh = false;
+	bool process(bool high) {
+		bool fell = wasHigh && !high;
+		wasHigh = high;
+		return fell;
+	}
+	void reset() { wasHigh = false; }
 };
 
 /** COLOUR is one knob across three colours: white at full CCW, pink at centre,

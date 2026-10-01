@@ -95,16 +95,24 @@ struct Pt2399 {
         return m;
     }
 
-    inline void advance(Adm& s, int bit) const {
+    struct Coef { float alpha, kSyl, vsMin, vsMax, clipV; };
+    Coef coef() const { return Coef{alpha, kSyl, vsMin, vsMax, clipV}; }
+
+    /** One bit through one integrator. Static and on a copy of the state, so a
+        caller can keep a whole pass in registers: a store into `ram` is a byte
+        store, which the compiler must assume may alias the state it is about to
+        read again. */
+    static inline void advanceC(Adm& s, int bit, const Coef& k) {
         s.hist = (uint8_t)(((s.hist << 1) | bit) & 7);
         float run = (s.hist == 0 || s.hist == 7) ? 1.f : 0.f;
-        s.u += kSyl * (run - s.u);
-        float vs = vsMin + (vsMax - vsMin) * s.u;
-        s.v += alpha * ((bit ? vs : -vs) - s.v);
+        s.u += k.kSyl * (run - s.u);
+        float vs = k.vsMin + (k.vsMax - k.vsMin) * s.u;
+        s.v += k.alpha * ((bit ? vs : -vs) - s.v);
         // The integrator is an op-amp on a 5 V supply around a 2.5 V reference.
-        if (s.v > clipV) s.v = clipV;
-        else if (s.v < -clipV) s.v = -clipV;
+        if (s.v > k.clipV) s.v = k.clipV;
+        else if (s.v < -k.clipV) s.v = -k.clipV;
     }
+    inline void advance(Adm& s, int bit) const { advanceC(s, bit, coef()); }
 
     /** Pin 12: the demodulator's output, averaged over this audio sample. Reads
         the bits that were written kBits clocks ago; call before modulate(). */
@@ -135,6 +143,80 @@ struct Pt2399 {
             if (++w == (uint32_t)kBits) w = 0;
         }
     }
+
+    /** demod() then modulate(), in one pass, for a caller whose modulator input
+        does not depend on this sample's demodulator output (no feedback around
+        the chip). The result is bit-identical to calling the two in turn
+        (tests/Diversified checks that); it is faster because the state lives in
+        registers for the whole pass. */
+    float demodModulate(float x0, float x1) {
+        Pt2399* self = this;
+        float y;
+        pass(&self, 1, x0, x1, &y);
+        return y;
+    }
+
+    /** Two chips in one pass. Each modulator waits on its own previous bit, so
+        one chip alone is latency-bound; two independent chains in the same loop
+        overlap. Also bit-identical to doing each chip on its own. */
+    static void demodModulate2(Pt2399& a, Pt2399& b, float x0, float x1,
+                               float& ya, float& yb) {
+        Pt2399* chips[2] = { &a, &b };
+        float y[2];
+        pass(chips, 2, x0, x1, y);
+        ya = y[0];
+        yb = y[1];
+    }
+
+private:
+    /** The shared kernel: `n` (1 or 2) chips, the first min(m) bits together and
+        each one's remainder alone. */
+    static void pass(Pt2399** c, int n, float x0, float x1, float* y) {
+        struct S {
+            Adm dem, mod;
+            Coef k;
+            float x, dx;
+            double sum;
+            uint32_t w;
+            int m;
+        } s[2];
+        int mMin = 1 << 30;
+        for (int i = 0; i < n; i++) {
+            Pt2399& p = *c[i];
+            s[i].dem = p.dem; s[i].mod = p.mod; s[i].k = p.coef();
+            s[i].m = p.m;
+            s[i].dx = p.m > 0 ? (x1 - x0) / (float)p.m : 0.f;
+            s[i].x = x0; s[i].sum = 0.0; s[i].w = p.w;
+            if (p.m < mMin) mMin = p.m;
+        }
+        uint8_t* ram0 = c[0]->ram.data();
+        uint8_t* ram1 = n > 1 ? c[1]->ram.data() : nullptr;
+        auto one = [](S& t, uint8_t* ram) {
+            advanceC(t.dem, ram[t.w], t.k);
+            t.sum += t.dem.v;
+            t.x += t.dx;
+            int bit = t.x > t.mod.v ? 1 : 0;
+            advanceC(t.mod, bit, t.k);
+            ram[t.w] = (uint8_t)bit;
+            if (++t.w == (uint32_t)kBits) t.w = 0;
+        };
+        if (n == 2) {
+            for (int j = 0; j < mMin; j++) { one(s[0], ram0); one(s[1], ram1); }
+            for (int j = mMin; j < s[0].m; j++) one(s[0], ram0);
+            for (int j = mMin; j < s[1].m; j++) one(s[1], ram1);
+        } else {
+            for (int j = 0; j < s[0].m; j++) one(s[0], ram0);
+        }
+        for (int i = 0; i < n; i++) {
+            Pt2399& p = *c[i];
+            if (s[i].m > 0) {
+                p.dem = s[i].dem; p.mod = s[i].mod; p.w = s[i].w;
+                p.lastOut = (float)(assumed::CHIP_POLARITY * s[i].sum / s[i].m);
+            }
+            y[i] = p.lastOut;
+        }
+    }
+public:
 };
 
 } // namespace pt2399

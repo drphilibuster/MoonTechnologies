@@ -9,17 +9,22 @@ CXX ?= c++
 CXXFLAGS := -std=c++11 -O2 -Wall -Wextra -g
 SAN := -fsanitize=address,undefined -fno-omit-frame-pointer
 
-CORE := ../../src/Volatility/Noise.hpp
+CORE := ../../src/Volatility/Noise.hpp \
+        ../../src/Cd4006.hpp
 
-all: test_noise
+all: test_noise test_register
 
-test: test_noise
+test: test_noise test_register
 	./test_noise
+	./test_register
 
 test_noise: test_noise.cpp $(CORE)
 	$(CXX) $(CXXFLAGS) $(SAN) -o $@ test_noise.cpp
 
+test_register: test_register.cpp $(CORE)
+	$(CXX) $(CXXFLAGS) $(SAN) -o $@ test_register.cpp
+
 clean:
-	rm -rf test_noise *.dSYM
+	rm -rf test_noise test_register *.dSYM
 
 .PHONY: all test clean

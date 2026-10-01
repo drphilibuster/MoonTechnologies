@@ -1046,7 +1046,7 @@ static const ProgRange PROGRAMS[] = {
 	   A_NONE, 0, {0,0,0,0}, {0,0,0,0}, {"DIST", "LEVEL", "TONE"}, {MA0, MA1, MA2} , 0x7 },
 	{ 103, 103, "TALK FUNNY",  A_MIAW, MW_TALKFUNNY, {0.45f, 0.40f, 0.00f, 0.00f}, {0.45f, 0.40f, 0.00f, 0.00f},
 	   A_NONE, 0, {0,0,0,0}, {0,0,0,0}, {"FREQ", "FM INT", "MODE"}, {MA0, MA1, MA2} , 0x7 },
-	{ 104, 104, "BITCRUSHER",  A_MIAW, MW_BITCRUSH, {0.40f, 0.60f, 0.70f, 0.00f}, {0.40f, 0.60f, 0.70f, 0.00f},
+	{ 104, 104, "BITCRUSHER",  A_MIAW, MW_BITCRUSH, {1.00f, 0.60f, 0.70f, 0.00f}, {1.00f, 0.60f, 0.70f, 0.00f},
 	   A_NONE, 0, {0,0,0,0}, {0,0,0,0}, {"LEVEL", "BITS", "RATE"}, {MA0, MA1, MA2} , 0x7 },
 	{ 105, 105, "4011 RING",   A_MIAW, MW_RING4011, {0.50f, 0.40f, 0.60f, 0.00f}, {0.50f, 0.40f, 0.60f, 0.00f},
 	   A_NONE, 0, {0,0,0,0}, {0,0,0,0}, {"CARR", "BIAS", "TONE"}, {MA0, MA1, MA2} , 0x7 },

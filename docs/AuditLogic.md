@@ -78,8 +78,8 @@ INSTALLMENTS have panel room. Per channel:
   convention, with hysteresis).
 * **1B**/**1C**, **2B**/**2C** -- outputs.
 
-**POLARITY** (shared by both channels, as the original's own jumper was one
-setting for the whole board) chooses whether the channel is on while its gate
+**POLARITY** (shared by both channels here; on the board each of the four channels
+has its own toggle) chooses whether the channel is on while its gate
 is high (**Hi On**) or low (**Lo On**).
 
 **REF V**, centred between **POLARITY** and **ROUTE**, is not part of either
@@ -108,9 +108,12 @@ more than a trace of signal.
 
 ## INSTALLMENTS
 
-One free-running binary counter, incremented on every **CLOCK** rising edge
-(comparator: rising 2 V, falling 0.1 V) and zeroed by **RESET**. Six gate
-outputs tap it: **/2 /4 /8 /16 /32 /64**, each lit MINT while high.
+A CD4024B seven-stage ripple counter (`src/Cd4024.hpp`), the chip the Emiz board is
+built on. It counts on the **falling** edge of **CLOCK** (Schmitt levels: rising 2 V,
+falling 0.1 V), as the datasheet and the board's own note ("all divisions happen on the
+falling edge") say, so the first /2 gate goes high after the first clock has come and gone,
+not on its rising edge. **RESET** is a level: while it is high the counter is held at zero
+and the clock is ignored. Six gate outputs tap it, Q1..Q6 (the chip's Q7, /128, has no jack): **/2 /4 /8 /16 /32 /64**, each lit MINT while high.
 
 **MODE**, at the end of the tap row past **/64**, chooses the division set. In
 **BINARY** mode (its default) each tap is one bit of the counter, which is why
@@ -128,6 +131,9 @@ high for 2 of every 3 counts (66 % duty) rather than 50 %. Every other
 musical tap (/6, /12, /24, /48, /96 by their doubled/quadrupled counts) is
 even and so is an exact 50 % duty gate, same as binary.
 
+In MUSICAL mode the thirds run from a second counter that follows the same falling edges
+and the same RESET, because the chip itself wraps at 128 and /3../96 do not divide it.
+
 **CLOCKED** (section caption light) is lit while a cable is patched into
 CLOCK.
 
@@ -143,18 +149,28 @@ described above.
 * **REFERRAL is two channels, not four.** The original 4066 Quad Gated
   Switch board used one quad-bilateral IC for four independent channels
   (silkscreened 1A/1B .. 4A/4B, Gate 1..4). This panel keeps two so FINDINGS
-  and INSTALLMENTS both fit at 29 HP; POLARITY and ROUTE stay one shared
-  setting for both channels, matching how the original's own jumpers were one
-  setting for its whole board rather than per-channel.
-* **FINDINGS' default function per gate is a documented best guess, not a
-  traced schematic.** The Quad Logic Module's surviving BOM (a 4071 quad-OR,
-  two TL074 comparator packages, eight steering diodes and four transistors)
-  implies real per-channel diode logic ahead of a shared OR gate, but tracing
-  which channel got which function from a component list and an unlabelled
-  schematic sheet was not reliable enough to assert as fact. The order this
-  module defaults to -- Invert A, AND, OR, XOR -- follows the plugin's own
-  registered description; NAND, NOR and XNOR are offered as additional
-  selections rather than claimed history.
+  and INSTALLMENTS both fit at 29 HP; POLARITY and ROUTE are one setting shared by
+  both channels. **That is a panel economy, not the board's way:** the Day 10 schematic
+  ("Quad gate controlled switch", 2020-03-16) gives each of the four channels its own
+  Hi/Lo polarity toggle (L1-L4). Each channel is a TL074 comparator (the gate against about
+  1.09 V, a 100k / 10k divider from VCC) through a 1N4448 and 1k to the HEF4066's enable
+  pin, or, with the toggle the other way, through a BC549 inverter with a 1k pull-up. An
+  LED per channel shows the connection. ROUTE (A-B/A-C) is this module's own. The
+  HEF4066BT is supplied from VCC (12 V) with VSS on ground, so the switch only passes
+  0 to +12 V: the negative half of a bipolar signal is clipped, a property the ideal
+  switch here does not have (and its on-resistance, tens to a hundred ohms at 12 V, is
+  not modelled either).
+* **FINDINGS' gates are not what the Quad Logic Module has.** That board's schematic is in the
+  course folder (Day 8, "MiaW Quad Logic Module") and it is **four OR gates**: eight TL074
+  comparators, each comparing one input against about 1.1 V (a 100k / 10k divider from +12 V),
+  each through a 1N4448 and a 2k7 pull-down into a 4071's inputs, in pairs; each OR gate drives
+  a BC547C emitter follower and an output jack and LED. There is no inversion, AND or XOR on
+  that board. The module's per-gate functions -- Invert A, AND, OR, XOR by default, NAND, NOR
+  and XNOR besides -- are this module's own, kept from the plugin's registered description (the
+  Quad Inverter and Hex Inverter boards are the source of the inverter). The OR is on the
+  board; the rest are additions. The comparators' threshold (1.1 V, not Rack's 0.1/2 V
+  hysteresis) and the buffered output levels are not modelled. The board's outputs are BC547 emitter followers
+  giving under 5 V; the jacks here stay at 10 V gates.
 * **MUSICAL division reuses the printed /2../64 jacks** rather than adding a
   second bank of six outputs for /3../96; see INSTALLMENTS above. /3 and /6
   are consequently ~66 % duty rather than 50 %, an unavoidable consequence of

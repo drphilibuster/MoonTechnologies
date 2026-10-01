@@ -2,10 +2,10 @@
 //
 // Five fixed scales -- chromatic, major, minor, and their pentatonics --
 // exactly the varimode quantizer's own set (Day 10's PIC16F684 firmware,
-// `varimodequantizer_100.asm`). Payment Schedule uses it on its per-step CV
-// path; Dependents uses it on the root, so a chord's fundamental can be
-// snapped to a scale instead of swept continuously. One table and one
-// nearest-neighbour search back both rather than two copies drifting apart.
+// `varimodequantizer_100.asm`). Dependents uses it on the root, so a chord's
+// fundamental can be snapped to a scale instead of swept continuously. (Payment
+// Schedule used to use it too; its quantizer is now the PIC itself, emulated,
+// in src/PaymentSchedule/Varimode.hpp.)
 //
 // Self-contained -- <cmath>, <cstdio>, <string> and nothing else -- so it
 // needs no <rack.hpp> shim to test.

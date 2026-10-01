@@ -143,6 +143,9 @@ struct Diversified : Module {
 	// Menu options, all program-specific but stored for the module.
 	bool crushSwap;
 	bool crushLpf;
+	int crushDiv;
+	int crushGain;
+	bool crushUnipolar;
 	bool ringSmooth;
 
 	// Published for the read-out. Written from the audio thread at control rate,
@@ -155,7 +158,8 @@ struct Diversified : Module {
 	Diversified() : activeVoice(0), fading(false), fadePos(0.f),
 	                pendingProgram(-1), currentProgram(0),
 	                tapCount(0), tapSec(0.f), sinceTap(1e6f), wetMeter(0.f),
-	                crushSwap(false), crushLpf(true), ringSmooth(false),
+	                crushSwap(false), crushLpf(true), crushDiv(1), crushGain(1),
+	                crushUnipolar(false), ringSmooth(false),
 	                dispProgram(0), dispName("SMALL HALL"), dispClocked(false) {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 
@@ -359,6 +363,9 @@ struct Diversified : Module {
 			tmpl.inRConnected = rConnected;
 			tmpl.crushSwap = crushSwap;
 			tmpl.crushLpf = crushLpf;
+			tmpl.crushDiv = crushDiv;
+			tmpl.crushGain = crushGain;
+			tmpl.crushUnipolar = crushUnipolar;
 			tmpl.ringSmooth = ringSmooth;
 
 			float m[divfx::kMacros];
@@ -472,6 +479,9 @@ struct Diversified : Module {
 		json_t* root = json_object();
 		json_object_set_new(root, "bitSwap", json_boolean(crushSwap));
 		json_object_set_new(root, "reconstructionFilter", json_boolean(crushLpf));
+		json_object_set_new(root, "crushClockDivider", json_integer(crushDiv));
+		json_object_set_new(root, "crushOutputGain", json_integer(crushGain));
+		json_object_set_new(root, "crushUnipolarInput", json_boolean(crushUnipolar));
 		json_object_set_new(root, "smoothRing", json_boolean(ringSmooth));
 		return root;
 	}
@@ -482,6 +492,12 @@ struct Diversified : Module {
 		if (j) crushSwap = json_boolean_value(j);
 		j = json_object_get(root, "reconstructionFilter");
 		if (j) crushLpf = json_boolean_value(j);
+		j = json_object_get(root, "crushClockDivider");
+		if (j) crushDiv = clamp((int) json_integer_value(j), 0, 2);
+		j = json_object_get(root, "crushOutputGain");
+		if (j) crushGain = clamp((int) json_integer_value(j), 0, 3);
+		j = json_object_get(root, "crushUnipolarInput");
+		if (j) crushUnipolar = json_boolean_value(j);
 		j = json_object_get(root, "smoothRing");
 		if (j) ringSmooth = json_boolean_value(j);
 	}
@@ -639,9 +655,20 @@ struct DiversifiedWidget : ModuleWidget {
 		menu->addChild(createBoolMenuItem("Swap MSB and LSB", "",
 			[=]() { return m->crushSwap; },
 			[=](bool v) { m->crushSwap = v; }));
-		menu->addChild(createBoolMenuItem("Reconstruction filter", "",
+		menu->addChild(createBoolMenuItem("Reconstruction filter (SW1)", "",
 			[=]() { return m->crushLpf; },
 			[=](bool v) { m->crushLpf = v; }));
+		menu->addChild(createIndexSubmenuItem("Clock divider (U6)",
+			{"/1", "/10", "/100"},
+			[=]() { return m->crushDiv; },
+			[=](int v) { m->crushDiv = v; }));
+		menu->addChild(createIndexSubmenuItem("Output gain (RP3)",
+			{"1x", "2x", "4x", "10x"},
+			[=]() { return m->crushGain; },
+			[=](int v) { m->crushGain = v; }));
+		menu->addChild(createBoolMenuItem("Board-faithful 0-5 V input", "",
+			[=]() { return m->crushUnipolar; },
+			[=](bool v) { m->crushUnipolar = v; }));
 
 		menu->addChild(createMenuLabel("105 Ring modulator"));
 		menu->addChild(createBoolMenuItem("Smooth (analogue product)", "",

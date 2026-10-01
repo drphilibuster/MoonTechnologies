@@ -1,5 +1,6 @@
 #include "../plugin.hpp"
 #include "Panel.hpp"
+#include "../Cd4024.hpp"
 
 // Audit Logic consolidates three Modular in a Week boards behind one panel:
 //
@@ -36,8 +37,8 @@
 //               otherwise. Mono: an analogue switch keeps no per-channel state
 //               worth duplicating sixteen times.
 //
-//   INSTALLMENTS the Emiz Instruments CV2 clock divider (Day 8): one
-//               free-running binary counter, six taps, each a 50 % duty gate
+//   INSTALLMENTS the Emiz Instruments CV2 clock divider (Day 8): a CD4024B
+//               (src/Cd4024.hpp: falling-edge count, level RESET), six taps, each a 50 % duty gate
 //               (BINARY: /2 /4 /8 /16 /32 /64 -- every tap is a single bit of
 //               the counter, which is exactly why the duty cycle is always
 //               50 % in that mode). MUSICAL reinterprets the same six jacks as
@@ -148,8 +149,9 @@ struct AuditLogic : Module {
 	bool declick = false;
 
 	// INSTALLMENTS -- mono.
-	SchmittTrigger clockTrig, resetTrig;
-	uint32_t divCounter = 0;
+	LevelGate clockLevel, resetLevel;
+	cd4024::Cd4024 divChip;
+	uint32_t divCounter = 0;      // MUSICAL mode's count: the chip wraps at 128, thirds do not
 	bool dispDivGate[6] = {};
 	bool dispClocked = false;
 
@@ -216,8 +218,9 @@ struct AuditLogic : Module {
 		for (int i = 0; i < 4; i++) { aGate[i].reset(); bGate[i].reset(); }
 		swGate[0] = LevelGate(); swGate[1] = LevelGate();
 		onGain[0] = onGain[1] = 0.f;
-		clockTrig.reset();
-		resetTrig.reset();
+		clockLevel = LevelGate();
+		resetLevel = LevelGate();
+		divChip = cd4024::Cd4024();
 		divCounter = 0;
 	}
 
@@ -277,20 +280,25 @@ struct AuditLogic : Module {
 			}
 		}
 
-		// --- INSTALLMENTS: one free-running binary counter, six taps ---------
+		// --- INSTALLMENTS: the CD4024 and its six taps -----------------------
 		bool clockConnected = inputs[CLOCK_INPUT].isConnected();
-		if (resetTrig.process(inputs[RESET_INPUT].getVoltage(), 0.1f, 2.f))
-			divCounter = 0;
-		if (clockConnected && clockTrig.process(inputs[CLOCK_INPUT].getVoltage(), 0.1f, 2.f))
-			divCounter++;
+		bool clockHigh = clockConnected && clockLevel.sense(inputs[CLOCK_INPUT].getVoltage(), 0.1f, 2.f);
+		bool resetHigh = resetLevel.sense(inputs[RESET_INPUT].getVoltage(), 0.1f, 2.f);
+		bool advanced = divChip.process(clockHigh, resetHigh);
+		if (resetHigh)       divCounter = 0;
+		else if (advanced)   divCounter++;
 		bool musical = (int)std::round(params[DIVMODE_PARAM].getValue()) == kDivMusical;
 		const int* taps = musical ? kMusicalTaps : kBinaryTaps;
 		int divOutputs[6] = { DIV2_OUTPUT, DIV4_OUTPUT, DIV8_OUTPUT, DIV16_OUTPUT, DIV32_OUTPUT, DIV64_OUTPUT };
 		for (int i = 0; i < 6; i++) {
-			int n = taps[i];
-			int phase = (int)(divCounter % (uint32_t)n);
-			int high = (n + 1) / 2;
-			bool g = phase < high;
+			bool g;
+			if (musical) {
+				int n = taps[i];
+				g = (int)(divCounter % (uint32_t)n) < (n + 1) / 2;
+			}
+			else {
+				g = divChip.q(i + 1);      // Q1..Q6, a bit of the chip's count
+			}
 			outputs[divOutputs[i]].setVoltage(g ? 10.f : 0.f);
 			dispDivGate[i] = g;
 		}

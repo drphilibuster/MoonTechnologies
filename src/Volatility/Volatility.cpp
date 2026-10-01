@@ -11,15 +11,17 @@
 // tempo), and SAMPLE & HOLD's TRIG and RND GATE's own draw both fall back to
 // that same edge when unpatched. CLOCK OUT mirrors whichever is active.
 //
-// NOISE is an 18-stage CD4006-style LFSR -- a real static shift register IC
-// wired with two XOR feedback taps for a maximal-length sequence, per the
-// two-tap table for n=18 (Xilinx XAPP 052): taps at bit 18 and bit 11,
-// 1-indexed from the input end. Clocked at audio rates the bitstream reads as
-// white-ish digital noise; clocked at a crawl, the same bit held between
-// edges reads as a random gate -- one circuit, two characters, purely a
-// function of RATE. DAC OUT reads an 8-bit window of the 18-bit register as a
-// stepped random CV; BITS picks where that window starts.
-//
+// NOISE is one CD4006B wired as an 18-stage shift register with two XOR taps,
+// on the pins the chip actually brings out: stages 17 and 12, a maximal sequence
+// of 2^17 - 1 (src/Volatility/Noise.hpp says why not the textbook 18 and 11, which
+// a single 4006 has no pin for). It shifts on the negative-going clock edge, as the
+// datasheet has it. Clocked at audio rates the bitstream reads as white-ish
+// digital noise; clocked at a crawl, the same bit held between edges reads as a
+// random gate -- one circuit, and the clock rate is the only thing that decides
+// which. DAC OUT reads an 8-bit window of the register as a stepped random CV
+// (the window's stages are inside the chip with no pins: that read is this
+// module's addition); BITS picks where it starts.
+
 // SAMPLE & HOLD's SRC normals to the module's own continuous white noise (the
 // same signal NOISE OUT carries) and TRIG to the shared clock, so it does
 // something useful unpatched; patching either overrides it. RND GATE throws
@@ -28,9 +30,6 @@
 // comparator random gate, given a patchable source instead of a fixed one.
 
 namespace volatility {
-
-static const uint32_t kLfsrMask = 0x0003FFFFu;    // 18 bits
-static const uint32_t kLfsrSeed = 0x00015555u;    // any nonzero 18-bit value
 
 static const float kRateMinHz = 0.05f;
 static const float kRateMaxHz = 4000.f;
@@ -65,7 +64,9 @@ struct Volatility : Module {
 	dsp::PulseGenerator clockOutPulse;
 
 	// --- NOISE: the 4006 LFSR ---
-	uint32_t lfsrReg = volatility::kLfsrSeed;
+	volatility::Register4006 lfsr;
+	volatility::FallingEdge clockFall;
+	dsp::SchmittTrigger clockInFallTrig;
 	float rndOutV = -5.f;
 	float dacOutV = 0.f;
 
@@ -126,7 +127,9 @@ struct Volatility : Module {
 		internalPhase = 0.f;
 		clockInTrig.reset();
 		clockOutPulse.reset();
-		lfsrReg = volatility::kLfsrSeed;
+		lfsr.reset();
+		clockFall.reset();
+		clockInFallTrig.reset();
 		rndOutV = -5.f;
 		dacOutV = 0.f;
 		shTrigSchmitt.reset();
@@ -144,9 +147,14 @@ struct Volatility : Module {
 
 		// --- the shared clock --------------------------------------------------
 		bool clockEdge;
+		bool clockFell;
 		float clockOutV;
 		if (inputs[CLOCK_IN_INPUT].isConnected()) {
-			clockEdge = clockInTrig.process(inputs[CLOCK_IN_INPUT].getVoltage(), 0.1f, 2.f);
+			float clockV = inputs[CLOCK_IN_INPUT].getVoltage();
+			clockEdge = clockInTrig.process(clockV, 0.1f, 2.f);
+			// The CD4006 moves on the negative-going edge: the same thresholds,
+			// seen from the other side.
+			clockFell = clockInFallTrig.process(-clockV, -2.f, -0.1f);
 			if (clockEdge)
 				clockOutPulse.trigger(1e-3f);
 			clockOutV = clockOutPulse.process(sampleTime) ? 10.f : 0.f;
@@ -169,6 +177,7 @@ struct Volatility : Module {
 				clockEdge = true;
 			}
 			clockOutV = (internalPhase < 0.5f) ? 10.f : 0.f;
+			clockFell = clockFall.process(internalPhase < 0.5f);
 		}
 		outputs[CLOCK_OUT_OUTPUT].setVoltage(clockOutV);
 
@@ -188,20 +197,18 @@ struct Volatility : Module {
 		noise = clamp(noise, -12.f, 12.f);
 		outputs[NOISE_OUT_OUTPUT].setVoltage(noise);
 
-		// --- NOISE: the 4006 LFSR, clocked on every shared edge -----------------
-		if (clockEdge) {
-			// Two-tap maximal-length feedback for an 18-bit register: bit 18
-			// XOR bit 11 (1-indexed from the input end, i.e. bit indices 17
-			// and 10 here), fed back into the input.
-			uint32_t fb = ((lfsrReg >> 17) ^ (lfsrReg >> 10)) & 1u;
-			lfsrReg = ((lfsrReg << 1) | fb) & volatility::kLfsrMask;
+		// --- NOISE: the 4006 LFSR, clocked on every shared falling edge ---------
+		// The chip shifts on the negative-going transition of its clock, half a
+		// cycle after the rising edge the sample & hold and the random gate use.
+		if (clockFell) {
+			bool fb = lfsr.clockFalling();
 			rndOutV = fb ? 5.f : -5.f;
 
 			float bitsN = params[BITS_PARAM].getValue();
 			if (inputs[BITS_CV_IN_INPUT].isConnected())
 				bitsN += inputs[BITS_CV_IN_INPUT].getVoltage() / 10.f;
 			int offset = clamp((int) std::round(clamp(bitsN, 0.f, 1.f) * 10.f), 0, 10);
-			uint32_t window = (lfsrReg >> offset) & 0xFFu;
+			uint32_t window = (lfsr.stages() >> offset) & 0xFFu;
 			dacOutV = (window / 255.f) * 10.f;
 		}
 		outputs[RND_OUT_OUTPUT].setVoltage(rndOutV);

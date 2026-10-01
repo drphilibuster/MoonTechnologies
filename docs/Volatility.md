@@ -7,12 +7,14 @@ Part of the [Moon Technologies](../README.md) plugin.
 
 ## What it is based on
 
-- **NOISE** — the 4006 digital noise generator: a CD4006-style static shift
-  register, wired here as 18 stages with two XOR feedback taps for a maximal-length
-  sequence (the two-tap table for an 18-bit register gives taps at bit 18 and bit 11,
-  counting from the input end). Clocked fast, the bitstream reads as broadband
+- **NOISE** — the 4006 digital noise generator: one CD4006B (`src/Cd4006.hpp`,
+  from its datasheet) wired as an 18-stage shift register with two XOR feedback
+  taps, on the pins the chip actually has: stages 12 and 17, a maximal sequence of
+  2¹⁷ − 1 clocks. Clocked fast, the bitstream reads as broadband
   digital noise; clocked slow, the same bit held between edges reads as a random
-  gate — one circuit, and RATE is the only thing that decides which.
+  gate — one circuit, and RATE is the only thing that decides which. The register
+  shifts on the clock's *falling* edge, as the datasheet has it (see the shared
+  clock, below).
 - **SAMPLE & HOLD** — René Schmitz's *Yet Another Sample & Hold* (YASH).
 - **RND GATE** — PHObos's random gate: a probability draw on every clock, either
   from the module's own RNG or from an external voltage compared against the same
@@ -27,8 +29,12 @@ taper follows, so a pitch source drives the clock as a pitch. Patching
 **CLOCK IN** overrides it — the module then follows CLOCK IN's edges
 instead, Schmitt-triggered with the usual 0.1 V/2 V hysteresis. **CLK** mirrors
 whichever is active: the internal square wave, or a 1 ms retriggered pulse on each
-external edge. Every section below reacts to the same edge unless its own jack is
-patched.
+external edge. Every section below reacts to the same rising edge unless its own
+jack is patched, except the register: a CD4006 moves on the negative-going
+transition of its clock, so RND and DAC change half a cycle after the edge the
+sample & hold and the random gate use (at the end of the pulse, for an external
+clock), and a sample & hold triggered by the clock reads a DAC value that has had
+half a cycle to settle.
 
 ## NOISE
 
@@ -37,7 +43,7 @@ patched.
 | **RATE** | The shared clock's rate (see above). |
 | **RATE CV** | 1 V/octave on the clock, on top of RATE. Unattenuated — ±5 V is ±5 octaves. |
 | **CLOCK IN** | Overrides RATE and RATE CV both. |
-| **BITS** | Picks which contiguous 8 of the register's 18 bits DAC reads, as a window offset 0–10. |
+| **BITS** | Picks which contiguous 8 of the register's 18 stages DAC reads, as a window offset 0–10. A real 4006 has no pins on most of those stages; reading them is this module's addition. |
 | **BITS CV** | Adds to BITS, ±5 V covering the window's full travel. Sweeping it re-reads the same register through a different slice, so DAC's stepped CV changes character without the sequence itself changing. |
 | **COLOR** | The colour of the module's continuous noise: white at full CCW, pink at centre, red at full CW, crossfading between neighbours. It moves NOISE **and** both normalled inputs together, which is the point — sampling red is a smooth random walk where sampling white is a jump, and RND GATE's Ext draw goes from a fresh coin flip to a drifting, correlated one. |
 | **RND** | The register's own feedback bit each clock, as ±5 V — white-ish noise at an audio-rate clock, a random gate held between edges at a slow one. |
@@ -100,11 +106,28 @@ single clock rather than sixteen independent copies of each.
 
 ## Approximated or left out
 
-- The LFSR's two feedback taps (bit 18, bit 11) are the standard two-tap maximal-
-  length solution for an 18-bit register rather than a trace of the original 4006
-  wiring, which is not preserved in the source material in enough detail to copy
-  exactly; the resulting sequence is still full-length (2¹⁸−1 states) and passes the
-  same "sounds like noise" test the original circuit was built for.
+- **The taps are what one CD4006 can reach, not the textbook ones.** The standard
+  two-tap solution for 18 stages is stages 18 and 11, and the 4006 has no pin on
+  stage 11: it brings out only the end of each of its four sections (4, 5, 4 and 5
+  stages), so once they are chained the pins are at stages 4, 5, 8, 9, 12, 13,
+  14, 17 and 18 at most, and the order picks six of those. Neither 11 nor its
+  reciprocal 7 is ever on a pin, and no 18-stage maximal sequence is reachable at
+  all; the most one chip can do is 17 stages, and the pairs that manage it are
+  (12, 17) and (5, 17). This uses (12, 17) — chain D1, D3, D2, D4; XOR pins 11 and 8
+  — for a period of 131071 clocks instead of 262143. At the 4 kHz top of RATE that
+  is 33 seconds before the sequence repeats, and three seconds at a 44 kHz
+  external clock. (The TR-909 reaches 2³¹ − 1 with two 4006s and taps 31 and 13.)
+  The original MiaW 4006 noise wiring is not in the course folder (Day 6 holds only
+  the analogue noise circuit the colour source came from), so this is the
+  constraint worked out from the datasheet, not a trace; if the original uses
+  other pins, the period will differ.
+- **The register's stage 18 is a delayed copy of stage 17**, as the TR-909's 36th
+  is of its 31st. RND is the XOR gate's output, the bit entering stage 1.
+- **The chip's start-up network is a rule, not a circuit.** An XOR register locks
+  up on all zeros; the real board has a network that holds the input high for 20 to
+  30 ms at power-up. Here an all-zero register is fed a one. The chip's own
+  delayed fourth-stage output (pin 2), its propagation delay and its 2.5 to 12 MHz
+  clock limits are not modelled.
 - RND GATE's "Ext" source and SAMPLE & HOLD's SRC both normal to the same internally
   generated noise rather than to the digital LFSR output, on the reading that a
   continuous source makes a more useful out-of-the-box default for both a sample and
