@@ -550,6 +550,8 @@ public:
 		2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1, // E
 		2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1, // F
 	};
+	return CYCLES[op];
+	}
 	// Instruction lengths in bytes (for the disassembler and the tests).
 	static constexpr uint8_t LENGTH[256] = {
 		1,2,3,1,1,2,1,1,1,1,1,1,1,1,1,1,
@@ -569,8 +571,6 @@ public:
 		1,2,1,1,1,2,1,1,1,1,1,1,1,1,1,1,
 		1,2,1,1,1,2,1,1,1,1,1,1,1,1,1,1,
 	};
-	return CYCLES[op];
-	}
 };
 
 } // namespace mv
