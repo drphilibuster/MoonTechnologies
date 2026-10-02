@@ -71,6 +71,7 @@ row1 = [
     Switch("quant", "QUANT"),
     Switch("cv_range", "RANGE"),
     Knob("atten", "ATTEN"),
+    Knob("gate_len", "GATE LEN"),
     Bezel("tap", "TAP"),
     Bezel("record", "REC"),
     Bezel("clear", "CLR"),

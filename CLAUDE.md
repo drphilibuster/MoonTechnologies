@@ -1,10 +1,10 @@
 # Moon Technologies
 
 One VCV Rack 2 plugin, slug `MoonTechnologies`, brand **Moon Technologies**,
-author **Taxxess**. Thirty-three modules sharing one panel pipeline: the three
-originals (`PatchAudit`, `Retroactive`, `UncertaintyPolicy`), nine built to
+author **Taxxess**. Thirty-four modules sharing one panel pipeline: the three
+originals (`PatchAudit`, `Retroactive`, `UncertaintyPolicy`), ten built to
 order (`Dividend`, `TaxBracket`, `Racketeer`, `Gross`, `Amortization`,
-`Repossession`, `Collusion`, `Reconciliation`, `Dependents`), one expander
+`Repossession`, `Collusion`, `Reconciliation`, `Dependents`, `Calculation`), one expander
 (`ScheduleA`, which attaches to `Repossession`), eleven Modular-in-a-Week banks
 (`SixFigures`, `Garnishment`, `Consolidation`, `Installment`, `Volatility`,
 `Deduction`, `AuditLogic`, `Kickback`, `PaymentSchedule`, `SignHere`,
@@ -101,7 +101,7 @@ what the generator writes.
 Look at `tools/previews/<Module>.png` before calling a panel done — it goes
 through the real widget tree, so it is the only preview that cannot lie. Do this
 for **every** module whose header the change touched, not just the one you were
-working in; a `panelkit/` change reaches all thirty-three.
+working in; a `panelkit/` change reaches all thirty-four.
 
 See `panelkit/README.md` for the design language, the spec API and what the
 linter checks.
@@ -125,7 +125,7 @@ one. A screenshot showing old behaviour after a fix usually means exactly this.
 
 ## Slugs are permanent
 
-`MoonTechnologies` and the thirty-three module slugs listed at the top of this file.
+`MoonTechnologies` and the thirty-four module slugs listed at the top of this file.
 Changing any of them orphans every saved patch that used it: Rack's fallback table
 (`Rack/src/plugin.cpp:374`) is maintained by VCV, not by plugin authors.
 

@@ -78,7 +78,7 @@ Keith Barr's 1986 discrete-logic reverb: the real microcode on an emulation of t
 group: hardware
 credit: *A Lexicon PCM 70, running its own firmware. ROMs not included.*
 
-The 1986 reverb, chorus, delay and resonant-chord machine on an emulated pair of Z80s and its own signal processor, with the real converter filters around them -- every program, parameter and MIDI patch is Lexicon's, because nothing here re-implements them. The hardware hid its parameters behind a key matrix and one soft knob; here they are a field of knobs that are the machine's own cells, each with the firmware's name and printed value on a plate, following the firmware when it moves a value itself. CV lanes (press SET, touch a knob), mod wheel / aftertouch / note / gate / sustain / soft-knob / program / bypass / clock / run jacks, the headroom meter, a register bank that travels with the patch and imports and exports as SysEx, and wet taps. Both software versions are supported.
+The 1986 reverb, chorus, delay and resonant-chord machine on an emulated pair of Z80s and its own signal processor, with the real converter filters around them -- every program, parameter and MIDI patch is Lexicon's, because nothing here re-implements them. The hardware hid its parameters behind a key matrix and one soft knob; here they are a field of knobs that are the machine's own cells, each with the firmware's name and printed value on a plate, following the firmware when it moves a value itself. a single detented preset selector (FACTORY programs or your USER registers, named in the display before you press LOAD), mod wheel / aftertouch / note / gate / sustain / soft-knob / program / bypass / clock / run jacks, the headroom meter, a register bank that travels with the patch and imports and exports as SysEx, and wet taps. Both software versions are supported.
 
 ## Repossession
 group: built
@@ -102,6 +102,12 @@ group: built
 credit: *After [Astrobear Music](https://www.youtube.com/watch?v=O0QLnR406pQ) and Aspen Instruments' Black Diamond Distortion.*
 
 A chord made by distorting one sine you cannot hear. Chebyshev polynomials of the first kind satisfy Tₙ(cos x) = cos(nx), so a unit-amplitude sine through the nth of them comes out as exactly the nth harmonic — which makes a waveshaper a harmonic recipe, and harmonic numbers in small whole ratios are chords. 4:5:6 is a just major triad, 10:12:15 a minor. Put the root two octaves below hearing and the only thing audible is the chord. Two chord slots and a MORPH that interpolates the *weights* between them, so major to minor passes through spectra with no name; per-harmonic trims as a CUSTOM slot to morph against; and a HOLD that keeps the input at unity, because the identity is only true there — switch it off and the chord dissolves as the signal quietens. Feed it anything but a sine and it is chaos, which is not defended against.
+
+## Calculation
+group: built
+credit: *After Count Modula's Event Timer (Countdown 3 and 5).*
+
+A phrase counter for arranging a patch. One base length N and six lines that each fall due at N times their own ratio, from ÷8 to ×32, with a trigger, a gate and a counter apiece. It does the work of a chain of countdown timers in one module. Every line counts from the same downbeat, and a START that arrives a cable's delay after its clock still claims that clock, so chained sections stay on the beat without setting anything to N−1. Lines can repeat instead of firing once, and a Countdown-compatible start mode is in the menu.
 
 ## SixFigures
 group: miaw

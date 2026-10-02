@@ -48,6 +48,17 @@
       ]
     },
     {
+      "slug": "Calculation",
+      "name": "Calculation",
+      "description": "Phrase counter: one base length N and six lines falling due at N times a ratio (/8 to x32), each with trigger, gate, counter and a repeat option, from one downbeat-anchored start",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Calculation.md",
+      "tags": [
+        "Clock modulator",
+        "Sequencer",
+        "Utility"
+      ]
+    },
+    {
       "slug": "Collusion",
       "name": "Collusion",
       "description": "Six coupled LFOs: a Kuramoto swarm that locks or scatters on one knob, with a Benjolin rungler reading out what they agree on",

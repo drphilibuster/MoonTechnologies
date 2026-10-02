@@ -159,6 +159,14 @@ TMR2, a CCP mode other than PWM).
   patches are unaffected); turning it down tames a `RANGE` of 5 V without
   ever quantizing to a "wrong" voltage, since the quantizer runs on whatever
   comes out the other side. Full counterclockwise inverts the CV.
+- **GATE LEN** (knob) -- how long each `GATE OUT` stays high, as a fraction
+  of the step: 1% to 100% of the clock period last measured. Full clockwise is
+  100%, the default: the gate holds until the next step, as it always did, so
+  existing patches are unaffected. Turned down, the gates become shorter pulses
+  that track the clock tempo. It shapes `GATE OUT` only; the step's CV, `TRIG`
+  and `EOC` are unchanged. The first step after a start has no period to
+  measure yet, so its gate waits for the second clock when `GATE LEN` is
+  below 100%.
 - **TRIG** (jack, out) -- a 1 ms trigger whenever the quantizer picks a new note (repeats on the
   same note don't retrigger). With QUANT off it fires when `CV OUT` moves. The output itself
   glides to the new note over a few milliseconds (see the next section), but the trigger is on the

@@ -13,6 +13,7 @@ void init(Plugin* p) {
 	p->addModel(modelAmortization);
 	p->addModel(modelApportionment);
 	p->addModel(modelAuditLogic);
+	p->addModel(modelCalculation);
 	p->addModel(modelCollusion);
 	p->addModel(modelConsolidation);
 	p->addModel(modelBailout);

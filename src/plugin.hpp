@@ -11,6 +11,7 @@ extern Plugin* pluginInstance;
 extern Model* modelAmortization;
 extern Model* modelApportionment;
 extern Model* modelAuditLogic;
+extern Model* modelCalculation;
 extern Model* modelCollusion;
 extern Model* modelConsolidation;
 extern Model* modelBailout;

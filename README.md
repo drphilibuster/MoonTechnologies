@@ -8,7 +8,7 @@
 [![Downloads](https://img.shields.io/github/downloads/drphilibuster/MoonTechnologies/total?label=downloads)](https://github.com/drphilibuster/MoonTechnologies/releases)
 [![Licence](https://img.shields.io/badge/code-GPL--3.0--or--later-blue)](LICENSE.md)
 
-Thirty-three modules for [VCV Rack 2](https://vcvrack.com), by **Taxxess**.
+Thirty-four modules for [VCV Rack 2](https://vcvrack.com), by **Taxxess**.
 
 They share a panel language borrowed from money — a pale engraved note, sage
 guilloche round every field, a scroll in every corner, a form number in the
@@ -60,37 +60,41 @@ spectrum and a warped field, driven by audio and CV.
 |---|---|---|---|
 | **[Tax Bracket](docs/TaxBracket.md)** | **[Racketeer](docs/Racketeer.md)** | **[Gross](docs/Gross.md)** | **[Amortization](docs/Amortization.md)** |
 
-| <img src="tools/previews/Apportionment.png" width="286"> | <img src="tools/previews/Contagion.png" width="512"> |
-|---|---|
-| **[Apportionment](docs/Apportionment.md)** | **[Contagion](docs/Contagion.md)** |
+| <img src="tools/previews/Apportionment.png" width="286"> |
+|---|
+| **[Apportionment](docs/Apportionment.md)** |
 
-| <img src="tools/previews/NordicBanking.png" width="437"> | <img src="tools/previews/Rebate.png" width="101"> |
-|---|---|
-| **[Nordic Banking](docs/NordicBanking.md)** | **[Rebate](docs/Rebate.md)** |
+| <img src="tools/previews/Contagion.png" width="647"> |
+|---|
+| **[Contagion](docs/Contagion.md)** |
 
-| <img src="tools/previews/Depreciation.png" width="395"> | <img src="tools/previews/Repossession.png" width="286"> | <img src="tools/previews/Collusion.png" width="151"> |
+| <img src="tools/previews/NordicBanking.png" width="437"> | <img src="tools/previews/Rebate.png" width="101"> | <img src="tools/previews/Depreciation.png" width="286"> |
 |---|---|---|
-| **[Depreciation](docs/Depreciation.md)** | **[Repossession](docs/Repossession.md)** | **[Collusion](docs/Collusion.md)** |
+| **[Nordic Banking](docs/NordicBanking.md)** | **[Rebate](docs/Rebate.md)** | **[Depreciation](docs/Depreciation.md)** |
 
-| <img src="tools/previews/Reconciliation.png" width="160"> | <img src="tools/previews/Dependents.png" width="134"> | <img src="tools/previews/SixFigures.png" width="210"> | <img src="tools/previews/Garnishment.png" width="151"> |
+| <img src="tools/previews/Repossession.png" width="286"> | <img src="tools/previews/Collusion.png" width="151"> | <img src="tools/previews/Reconciliation.png" width="160"> | <img src="tools/previews/Dependents.png" width="134"> |
 |---|---|---|---|
-| **[Reconciliation](docs/Reconciliation.md)** | **[Dependents](docs/Dependents.md)** | **[Six Figures](docs/SixFigures.md)** | **[Garnishment](docs/Garnishment.md)** |
+| **[Repossession](docs/Repossession.md)** | **[Collusion](docs/Collusion.md)** | **[Reconciliation](docs/Reconciliation.md)** | **[Dependents](docs/Dependents.md)** |
 
-| <img src="tools/previews/Consolidation.png" width="118"> | <img src="tools/previews/Bailout.png" width="210"> | <img src="tools/previews/Projection.png" width="101"> | <img src="tools/previews/Transmittal.png" width="84"> |
+| <img src="tools/previews/Calculation.png" width="134"> | <img src="tools/previews/SixFigures.png" width="210"> | <img src="tools/previews/Garnishment.png" width="151"> | <img src="tools/previews/Consolidation.png" width="118"> |
 |---|---|---|---|
-| **[Consolidation](docs/Consolidation.md)** | **[Bailout](docs/Bailout.md)** | **[Projection](docs/Projection.md)** | **[Transmittal](docs/Transmittal.md)** |
+| **[Calculation](docs/Calculation.md)** | **[Six Figures](docs/SixFigures.md)** | **[Garnishment](docs/Garnishment.md)** | **[Consolidation](docs/Consolidation.md)** |
 
-| <img src="tools/previews/Installment.png" width="134"> | <img src="tools/previews/Volatility.png" width="118"> | <img src="tools/previews/Deduction.png" width="101"> | <img src="tools/previews/AuditLogic.png" width="210"> |
+| <img src="tools/previews/Bailout.png" width="210"> | <img src="tools/previews/Projection.png" width="101"> | <img src="tools/previews/Transmittal.png" width="84"> | <img src="tools/previews/Installment.png" width="134"> |
 |---|---|---|---|
-| **[Installment](docs/Installment.md)** | **[Volatility](docs/Volatility.md)** | **[Deduction](docs/Deduction.md)** | **[Audit Logic](docs/AuditLogic.md)** |
+| **[Bailout](docs/Bailout.md)** | **[Projection](docs/Projection.md)** | **[Transmittal](docs/Transmittal.md)** | **[Installment](docs/Installment.md)** |
 
-| <img src="tools/previews/Kickback.png" width="252"> | <img src="tools/previews/PaymentSchedule.png" width="260"> | <img src="tools/previews/SignHere.png" width="168"> |
-|---|---|---|
-| **[Kickback](docs/Kickback.md)** | **[Payment Schedule](docs/PaymentSchedule.md)** | **[Sign Here](docs/SignHere.md)** |
+| <img src="tools/previews/Volatility.png" width="118"> | <img src="tools/previews/Deduction.png" width="101"> | <img src="tools/previews/AuditLogic.png" width="210"> | <img src="tools/previews/Kickback.png" width="252"> |
+|---|---|---|---|
+| **[Volatility](docs/Volatility.md)** | **[Deduction](docs/Deduction.md)** | **[Audit Logic](docs/AuditLogic.md)** | **[Kickback](docs/Kickback.md)** |
 
-| <img src="tools/previews/Diversified.png" width="176"> | <img src="tools/previews/Toll.png" width="92"> | <img src="tools/previews/ScheduleA.png" width="118"> |
-|---|---|---|
-| **[Diversified](docs/Diversified.md)** | **[Toll](docs/Toll.md)** | **[Schedule A](docs/ScheduleA.md)** |
+| <img src="tools/previews/PaymentSchedule.png" width="277"> | <img src="tools/previews/SignHere.png" width="168"> | <img src="tools/previews/Diversified.png" width="176"> | <img src="tools/previews/Toll.png" width="92"> |
+|---|---|---|---|
+| **[Payment Schedule](docs/PaymentSchedule.md)** | **[Sign Here](docs/SignHere.md)** | **[Diversified](docs/Diversified.md)** | **[Toll](docs/Toll.md)** |
+
+| <img src="tools/previews/ScheduleA.png" width="118"> |
+|---|
+| **[Schedule A](docs/ScheduleA.md)** |
 
 ## Built for this plugin
 
@@ -158,6 +162,12 @@ A polyphonic just-intonation quantizer that splits "which note?" into two questi
 
 A chord made by distorting one sine you cannot hear. Chebyshev polynomials of the first kind satisfy Tₙ(cos x) = cos(nx), so a unit-amplitude sine through the nth of them comes out as exactly the nth harmonic — which makes a waveshaper a harmonic recipe, and harmonic numbers in small whole ratios are chords. 4:5:6 is a just major triad, 10:12:15 a minor. Put the root two octaves below hearing and the only thing audible is the chord. Two chord slots and a MORPH that interpolates the *weights* between them, so major to minor passes through spectra with no name; per-harmonic trims as a CUSTOM slot to morph against; and a HOLD that keeps the input at unity, because the identity is only true there — switch it off and the chord dissolves as the signal quietens. Feed it anything but a sine and it is chaos, which is not defended against.
 
+### [Calculation](docs/Calculation.md) — 16 HP · *Clock modulator, Sequencer, Utility*
+
+*After Count Modula's Event Timer (Countdown 3 and 5).*
+
+A phrase counter for arranging a patch. One base length N and six lines that each fall due at N times their own ratio, from ÷8 to ×32, with a trigger, a gate and a counter apiece. It does the work of a chain of countdown timers in one module. Every line counts from the same downbeat, and a START that arrives a cable's delay after its clock still claims that clock, so chained sections stay on the beat without setting anything to N−1. Lines can repeat instead of firing once, and a Countdown-compatible start mode is in the menu.
+
 ## Hardware, running its own firmware
 
 ### [Apportionment](docs/Apportionment.md) — 34 HP · *Effect, Reverb, Delay, Hardware clone*
@@ -166,11 +176,11 @@ A chord made by distorting one sine you cannot hear. Chebyshev polynomials of th
 
 ESP effect units under the DP/4's real operating system and DSP code -- every algorithm, preset and Config is Ensoniq's -- on an emulated 68B03 and four ES5510s. The DP/4's own front panel is here button for button, and the thing the hardware hid in its menus is on the panel: every Config parameter that routes the four units (source count, A-B and C-D serial/parallel/feedback, AB into CD, amounts, mono/stereo inputs, output selects) is a control, and moving one makes the module work the Config pages for you. Per-unit stereo taps for patching the units into the rest of the rack.
 
-### [Contagion](docs/Contagion.md) — 61 HP · *Synth voice, Polyphonic, Effect, Hardware clone*
+### [Contagion](docs/Contagion.md) — 77 HP · *Synth voice, Polyphonic, Effect, Hardware clone*
 
 *An Access Virus C, running all of its own firmware. OS image not included.*
 
-Both processors run the unit's own OS: the 80C515 that owns the front panel, the LCD, MIDI and preset memory -- which every other Virus emulation replaces with C++ -- and the DSP56362 it boots and drives, on the dsp56300 core gearmulator uses. Every knob and button reaches the firmware through the microcontroller's own A/D converter and key matrix; the dot-matrix LCD shows what the unit shows. Played over MIDI; the patch keeps the battery RAM.
+Both processors run the unit's own OS: the 80C515 that owns the front panel, the LCD, MIDI and preset memory -- which every other Virus emulation replaces with C++ -- and the DSP56362 it boots and drives, on the dsp56300 core gearmulator uses. Every knob reaches the firmware through the microcontroller's own A/D converter and every control that is not a pot through its key matrix -- the unit's button pairs and cycles are endless and detented knobs here, each a press of the real key with the real LEDs read back; the dot-matrix LCD shows what the unit shows. Played over MIDI, or from cables: polyphonic pitch, gate and velocity, wheels, clock and run turn into MIDI, eight CV inputs move any knob and gates press the navigation buttons. The patch keeps the battery RAM.
 
 ### [Nordic Banking](docs/NordicBanking.md) — 52 HP · *Synth voice, Polyphonic, Hardware clone*
 
@@ -184,11 +194,11 @@ The real MC68331 operating system, instruction by instruction, driving two emula
 
 Keith Barr's 1986 discrete-logic reverb: the real microcode on an emulation of the TTL signal processor, verified sample for sample against MAME's, and the real 80C31 firmware behind the real front panel -- two digits, UP, DOWN, CHANNEL, DEFEAT, MIDI program change. The analog board is from the schematic, down to the "Clipping?" diode on the converter's input filter, the sample-and-hold, and the DAC's hold capacitors. A patch keeps program, channel and defeat, and plays them back into the firmware after power-on.
 
-### [Depreciation](docs/Depreciation.md) — 47 HP · *Effect, Reverb, Delay, Hardware clone*
+### [Depreciation](docs/Depreciation.md) — 34 HP · *Effect, Reverb, Delay, Hardware clone*
 
 *A Lexicon PCM 70, running its own firmware. ROMs not included.*
 
-The 1986 reverb, chorus, delay and resonant-chord machine on an emulated pair of Z80s and its own signal processor, with the real converter filters around them -- every program, parameter and MIDI patch is Lexicon's, because nothing here re-implements them. The hardware hid its parameters behind a key matrix and one soft knob; here they are a field of knobs that are the machine's own cells, each with the firmware's name and printed value on a plate, following the firmware when it moves a value itself. CV lanes (press SET, touch a knob), mod wheel / aftertouch / note / gate / sustain / soft-knob / program / bypass / clock / run jacks, the headroom meter, a register bank that travels with the patch and imports and exports as SysEx, and wet taps. Both software versions are supported.
+The 1986 reverb, chorus, delay and resonant-chord machine on an emulated pair of Z80s and its own signal processor, with the real converter filters around them -- every program, parameter and MIDI patch is Lexicon's, because nothing here re-implements them. The hardware hid its parameters behind a key matrix and one soft knob; here they are a field of knobs that are the machine's own cells, each with the firmware's name and printed value on a plate, following the firmware when it moves a value itself. a single detented preset selector (FACTORY programs or your USER registers, named in the display before you press LOAD), mod wheel / aftertouch / note / gate / sustain / soft-knob / program / bypass / clock / run jacks, the headroom meter, a register bank that travels with the patch and imports and exports as SysEx, and wet taps. Both software versions are supported.
 
 ## About the picture
 
@@ -252,7 +262,7 @@ Four logic gates with selectable functions and the 0 V / 12 V reference, gated a
 
 Started as the six drum voices of that folder and is now a drum machine. The voices are modal banks struck by a real contact pulse: the BaSnaHi kick with the SmurfDrum as its second model, a snare switching between XORbell, the percussive noise voice and Karplus–Strong, a hi-hat whose one knob sweeps metal to noise to the Tiny Dazzler, and all three TomTomTom rings at once as three differently-sized drums. **None of the rest is in the original:** its own clock, a Euclidean pattern engine, per-voice clock ratios, a BURST mode that hands each voice's steps to its own ratio, velocity-scaled gate outputs, and a SEED that swaps patterns on the bar line. The physics is out of the literature rather than the schematic — Bilbao's contact force, Bessel-zero mode ratios, Karplus–Strong's drum recurrence.
 
-### [Payment Schedule](docs/PaymentSchedule.md) — 31 HP · *Sequencer, Switch, Quantizer*
+### [Payment Schedule](docs/PaymentSchedule.md) — 33 HP · *Sequencer, Switch, Quantizer*
 
 *Day 10, consolidated.*
 

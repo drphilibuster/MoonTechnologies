@@ -32,6 +32,7 @@ struct PaymentSchedule : Module {
 		DIR_PARAM, STEPS_PARAM, SCALE_PARAM, ROOT_PARAM,
 		QUANT_PARAM, CV_RANGE_PARAM, ATTEN_PARAM,
 		TAP_PARAM, RECORD_PARAM, CLEAR_PARAM, RUN_PARAM,
+		GATE_LEN_PARAM,   // appended, so patches saved before it keep their param ids
 		PARAMS_LEN
 	};
 	enum InputId {
@@ -58,6 +59,11 @@ struct PaymentSchedule : Module {
 
 	paysched::Sequencer seq;   // the 74HC4017 counter, the CD4031B loop, RUN
 	bool runWasDown = false, tapWasDown = false;
+	int lastStep = -1;
+	float sinceStep = 0.f;     // seconds since the count last landed on a step
+	float stepPeriod = 0.f;    // seconds between the last two clock edges; 0 until two have been seen
+	float sinceClock = 0.f;
+	bool clockSeen = false;
 	float lastQuantVolt = 0.f;
 	float heldRaw = 0.f;       // the CV the quantizer is looking at: the last live step's, after ATTEN
 
@@ -100,6 +106,7 @@ struct PaymentSchedule : Module {
 		configSwitch(CV_RANGE_PARAM, 0.f, 1.f, 0.f, "CV range", {"1 V", "5 V"});
 		configParam(ATTEN_PARAM, -1.f, 1.f, 1.f, "Attenuverter", "%", 0.f, 100.f);
 
+		configParam(GATE_LEN_PARAM, 0.01f, 1.f, 1.f, "Gate length", "%", 0.f, 100.f);
 		configButton(TAP_PARAM, "Tap");
 		configButton(RECORD_PARAM, "Record (overdub loop)");
 		configButton(CLEAR_PARAM, "Clear loop");
@@ -192,7 +199,7 @@ struct PaymentSchedule : Module {
 		// pins do; the loop sees the tap as a level too, read when the clock
 		// rises. RECORD gates the tap (the hardware's tap is always live), and
 		// CLEAR, held, opens the loop. -----------------------------------------
-		clockTrigger.process(inputs[CLOCK_INPUT].getVoltage(), 0.1f, 2.f);
+		bool clockEdge = clockTrigger.process(inputs[CLOCK_INPUT].getVoltage(), 0.1f, 2.f);
 		resetTrigger.process(inputs[RESET_INPUT].getVoltage(), 0.1f, 2.f);
 		bool tapDown = params[TAP_PARAM].getValue() > 0.5f;
 		bool tapButtonEdge = tapDown && !tapWasDown;
@@ -209,6 +216,24 @@ struct PaymentSchedule : Module {
 		bool wrapped = seq.process(clockTrigger.isHigh(), resetTrigger.isHigh(),
 		                           directionUp(), n, tapHigh, clearHeld);
 		int step = seq.step();
+
+		// --- gate length: a fraction of the step, which is as long as the
+		// clock period last measured. At 100% the gate runs to the next step as
+		// it always did, so nothing changes until the knob is turned down. ----
+		sinceClock += args.sampleTime;
+		if (clockEdge) {
+			if (clockSeen && sinceClock > 1e-3f && sinceClock < 10.f)
+				stepPeriod = sinceClock;
+			clockSeen = true;
+			sinceClock = 0.f;
+		}
+		if (clockEdge || step != lastStep)
+			sinceStep = 0.f;
+		else
+			sinceStep += args.sampleTime;
+		lastStep = step;
+		float gateLen = params[GATE_LEN_PARAM].getValue();
+		bool inGate = gateLen >= 0.999f || sinceStep < gateLen * stepPeriod;
 
 		if (wrapped)
 			eocPulse.trigger(1e-3f);
@@ -235,7 +260,7 @@ struct PaymentSchedule : Module {
 		for (int i = 0; i < NUM_STEPS; i++) {
 			bool active = (i == step);
 			bool gateOn = params[GATE_PARAM + i].getValue() > 0.5f;
-			outputs[B_OUT_OUTPUT + i].setVoltage((active && gateOn) ? switchIn : 0.f);
+			outputs[B_OUT_OUTPUT + i].setVoltage((active && gateOn && inGate) ? switchIn : 0.f);
 			lights[GATE_LIGHT + i].setBrightness(!gateOn ? 0.f : (active ? 1.f : 0.28f));
 		}
 
@@ -402,6 +427,8 @@ struct PaymentScheduleWidget : ModuleWidget {
 			panel::mm(panel::CV_RANGE_POS.x, panel::CV_RANGE_POS.y), module, PaymentSchedule::CV_RANGE_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(
 			panel::mm(panel::ATTEN_POS.x, panel::ATTEN_POS.y), module, PaymentSchedule::ATTEN_PARAM));
+		addParam(createParamCentered<RoundBlackKnob>(
+			panel::mm(panel::GATE_LEN_POS.x, panel::GATE_LEN_POS.y), module, PaymentSchedule::GATE_LEN_PARAM));
 
 		addParam(createLightParamCentered<VCVLightBezel<panel::LimeLight> >(
 			panel::mm(panel::TAP_POS.x, panel::TAP_POS.y),
