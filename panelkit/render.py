@@ -25,6 +25,7 @@ renderer and both still binding:
 import math
 from . import spec as S
 from . import palette as P
+from . import art as ART
 from .layout import cap_h, desc_h, label_box, HEADER_H, SCALE, FOOT_Y
 
 TAB_W = 7.0             # the index tab on every block: a form's thumb index
@@ -41,19 +42,68 @@ RIBBON_W = 0.16         # a guilloche strand
 SCREW_CLEAR = 11.2      # x at which the corner screws stop, plus a millimetre
 
 
-def panel_svg(panel, sol):
+def panel_svg(panel, sol, layers=False, art=None):
+    """The panel as SVG.
+
+    `layers=True` writes the same drawing split into one top-level group per
+    stage, in draw order, named `EXPORT_NN_<stage>` -- which is how Illustrator
+    (and Inkscape) turn an SVG into a layer stack. The shapes, their order and
+    their attributes are identical to the plain output; only the grouping is
+    added, and the hidden components layer is left out. tools/art_templates.py
+    uses it to hand out the current art as an editable, layered file.
+
+    Art drawn by hand replaces the generated drawing a stage at a time: if
+    art/panels/<slug>.svg exists (panelkit/art.py, written by tools/art_import.py)
+    each stage it carries is emitted from there and the generator's own shapes
+    for that stage are muted. Stages it lacks are generated as before. `art`
+    overrides the lookup, for checking art before it is stored.
+    """
     w, h = panel.w, panel.h
     m = SCALE[panel.density]
     o = []
-    a = o.append
+    muted = [False]
+
+    def a(s):
+        if not muted[0]:
+            o.append(s)
+    imported = art if art is not None else ART.load(panel.slug)
+    if imported is not None and not imported.stages:
+        imported = None
     a('<?xml version="1.0" encoding="UTF-8"?>')
     a('<svg xmlns="http://www.w3.org/2000/svg" '
       'xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" '
       'width="%.4fmm" height="%.4fmm" viewBox="0 0 %.4f %.4f" version="1.1">'
       % (w, h, w, h))
-    a('<g inkscape:label="panel" inkscape:groupmode="layer" id="panel">')
+    if imported is not None and imported.defs:
+        a('<defs>%s</defs>' % imported.defs)
+    open_stage = []
+
+    def stage(name):
+        """Begin a stage: close the last, and either let the generator draw this
+        one or emit the imported art for it and mute the generator."""
+        if open_stage:
+            o.append('</g>')
+            open_stage[:] = []
+        muted[0] = False
+        mine = imported.stages.get(name) if imported is not None else None
+        label = ('id="EXPORT_%s" inkscape:label="EXPORT_%s" '
+                 'inkscape:groupmode="layer"' % (name, name))
+        if mine is not None:
+            o.append('<g %s%s>' % (label if layers else 'id="EXPORT_%s"' % name, mine[0]))
+            o.append(mine[1])
+            open_stage[:] = [name]
+            muted[0] = True
+        elif layers:
+            o.append('<g %s>' % label)
+            open_stage[:] = [name]
+
+    if layers or imported is not None:
+        stage("01_Paper")
+    else:
+        a('<g inkscape:label="panel" inkscape:groupmode="layer" id="panel">')
     a('  <rect x="0" y="0" width="%.4f" height="%.4f" fill="%s"/>' % (w, h, P.PAPER))
 
+    stage("02_Masthead_band")
     # --- masthead: the dark band a note prints its denomination on, edged in
     # an engraved braid between the two screws and closed by a sage rule
     a('  <rect x="0" y="0" width="%.4f" height="%.4f" fill="%s"/>' % (w, HEADER_H, P.BAND))
@@ -62,6 +112,7 @@ def panel_svg(panel, sol):
     a('  <rect x="0" y="%.4f" width="%.4f" height="0.35" fill="%s"/>'
       % (HEADER_H - 0.35, w, P.RULE))
 
+    stage("03_Footer_band")
     # --- footer band: the signature block, tabbed in mint because what leaves
     # the module leaves from here. A braid runs under the jacks, between the
     # bottom screws.
@@ -75,6 +126,7 @@ def panel_svg(panel, sol):
     _ribbon(a, SCREW_CLEAR, w - SCREW_CLEAR, 126.4, horizontal=True, amp=0.55,
             period=5.0, ink=P.RULE, opacity=0.9)
 
+    stage("04_Margin_ribbons")
     # --- the margins: two braided strands running the height of the face, the
     # way a note's border runs round its engraving. They stop short of the
     # bands so the frame reads as one closed figure.
@@ -85,6 +137,7 @@ def panel_svg(panel, sol):
             _ribbon(a, top, bot, x, horizontal=False, amp=0.5, period=6.0,
                     ink=P.RULE, opacity=0.55)
 
+    stage("05_Readout_glass")
     # --- read-out well
     if sol.glass:
         gy, gh = sol.glass
@@ -94,8 +147,13 @@ def panel_svg(panel, sol):
 
     # --- section blocks: pale plates framed in sage, a scroll curled into each
     # free corner and the thumb-index tab where a scroll would be
+    stage("06_Section_blocks")
     scroll = max(1.2, min(2.1, m["BOT_CLEAR"] - 0.5))
-    for y0, y1 in sol.blocks:
+    for bi, (y0, y1) in enumerate(sol.blocks):
+        if layers:
+            cap = panel.sections[bi].caption if bi < len(panel.sections) else ""
+            a('<g id="Block_%d_%s">' % (bi + 1, "".join(
+                c if c.isalnum() else "_" for c in cap)))
         a('  <rect x="%.4f" y="%.4f" width="%.4f" height="%.4f" rx="%.2f" fill="%s" '
           'stroke="%s" stroke-width="%.2f"/>'
           % (BLOCK_INSET, y0, w - 2 * BLOCK_INSET, y1 - y0, BLOCK_R, P.FELT,
@@ -106,7 +164,10 @@ def panel_svg(panel, sol):
         _scroll(a, x1, y0, -1, 1, scroll)     # top-right
         _scroll(a, x0, y1, 1, -1, scroll)     # bottom-left
         _scroll(a, x1, y1, -1, -1, scroll)    # bottom-right
+        if layers:
+            a('</g>')
 
+    stage("07_Rules")
     # --- subtotal rules inside blocks, with a bead at each end
     for y in sol.rules:
         xa, xb = BLOCK_INSET + 3.0, w - BLOCK_INSET - 3.0
@@ -115,6 +176,7 @@ def panel_svg(panel, sol):
         for x in (xa, xb):
             a('  <circle cx="%.4f" cy="%.4f" r="0.42" fill="%s"/>' % (x, y, P.RULE))
 
+    stage("08_Plates")
     # --- rectangular plates: fields, list wells, buttons on panels that are
     # mostly one live display
     for pl in panel.plates:
@@ -125,6 +187,7 @@ def panel_svg(panel, sol):
             a('  <rect x="%.4f" y="%.4f" width="%.4f" height="%.4f" rx="0.25" fill="%s"/>'
               % (pl.x, pl.y, TAB_W, TAB_H, getattr(P, pl.tab)))
 
+    stage("09_Run_boxes")
     # --- the box round a run the panel names once, drawn before the wells so
     # it reads as the ground those controls stand on rather than as a frame laid
     # over them. Sage at a hairline, like every other rule on the face; a fill a
@@ -135,6 +198,7 @@ def panel_svg(panel, sol):
           'stroke-opacity="0.75"/>'
           % (x0, y0, x1 - x0, y1 - y0, P.PAPER, P.RULE))
 
+    stage("10_Pair_ties")
     # --- the pair rule: a hairline down the column a control shares with its
     # partner below, drawn before the wells so both ends run under their widgets
     # and only the span between them shows. Sage, and a touch narrower than the
@@ -144,6 +208,7 @@ def panel_svg(panel, sol):
         a('  <rect x="%.4f" y="%.4f" width="0.26" height="%.4f" fill="%s" '
           'fill-opacity="0.8"/>' % (x - 0.13, y0, y1 - y0, P.RULE))
 
+    stage("11_Wells")
     # --- recessed seats behind every widget: a dark seal ringed in sage
     for x, y, hw, hh, _name in sol.wells:
         if abs(hw - hh) < 1e-6:
@@ -160,11 +225,13 @@ def panel_svg(panel, sol):
     # -135 deg to +135 deg from straight up, so the ticks land exactly where the
     # pointer will -- and because the whole figure lives inside the well, a
     # selector takes up no more of the panel than the plain knob it replaces.
+    stage("12_Detents")
     for x, y, r, n in sol.steps:
         _detents(a, x, y, r, n)
 
     # --- the primary action: a double ring, the way a seal is struck twice, so
     # the control you reach for is the one the eye lands on first
+    stage("13_Primary_rings")
     for x, y, r in sol.rings:
         a('  <circle cx="%.4f" cy="%.4f" r="%.4f" fill="none" stroke="%s" '
           'stroke-width="0.32"/>' % (x, y, r, P.RULE))
@@ -173,6 +240,7 @@ def panel_svg(panel, sol):
 
     # --- traces, engraved as waves and broken around any label they would
     # otherwise cross; a rosette wherever a wire is tied off
+    stage("14_Traces")
     boxes = _label_boxes(sol)
     for tr in panel.traces:
         for seg in _break_polyline(tr.points, boxes):
@@ -180,7 +248,15 @@ def panel_svg(panel, sol):
         for dx, dy in tr.dots:
             _rosette(a, dx, dy)
 
-    a('</g>')
+    muted[0] = False
+    if layers or imported is not None:
+        if open_stage:
+            o.append('</g>')
+    else:
+        a('</g>')
+
+    if layers:
+        return "\n".join(o) + "\n</svg>\n"
 
     # --- components layer: hidden, read by `helper.py createmodule`
     a('<g inkscape:label="components" inkscape:groupmode="layer" id="components" '
@@ -354,13 +430,19 @@ def _emit_seg(a, seg):
 # Every plugin gets byte-identical copies of these, generated rather than copied,
 # so "the family screw" is a fact rather than a convention.
 
-def screw_svg():
+def screw_svg(art=True):
     """A hex-head brass screw on the stock ScrewSilver canvas.
 
     The 15 x 14.9989 px canvas is not a typo and not negotiable: SvgScrew takes
     its box size straight from the SVG, so matching the stock canvas is what lets
     the screw drop in without moving anything.
+
+    Art imported from Illustrator (art/panels/_Hardware_ScrewHex.svg) is used in
+    place of the generated screw unless `art` is False.
     """
+    over = ART.hardware("ScrewHex") if art else None
+    if over:
+        return over
     w, h = 15.0, 14.9989
     cx, cy = w / 2, h / 2
     pts = " ".join("%.4f,%.4f" % (cx + 3.15 * math.cos(math.radians(t)),
@@ -377,7 +459,7 @@ def screw_svg():
         '</svg>', ""])
 
 
-def port_svg(accent=None, event=False, main=False):
+def port_svg(accent=None, event=False, main=False, art=True):
     """A brass-collared jack on the stock PJ301M canvas (23.7 px square).
 
     The stock port's chrome collar is the loudest off-palette object on the
@@ -399,6 +481,12 @@ def port_svg(accent=None, event=False, main=False):
     A patch is mostly a question of which cable goes where, and those two
     facts answer most of it without reading a word.
     """
+    if art:
+        over = ART.hardware("Port%s%s%s" % ("Trig" if event else "",
+                                            "Out" if accent else "In",
+                                            "Main" if main else ""))
+        if over:
+            return over
     d = 23.7
     c = d / 2
     ring = accent or P.BRASS_MID

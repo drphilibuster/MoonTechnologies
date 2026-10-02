@@ -169,7 +169,7 @@ endif
 PYTHON ?= python3
 PANEL_SPECS := $(wildcard tools/panels/*.py)
 
-.PHONY: panel readme vcv-preview test help
+.PHONY: panel readme art art-status vcv-preview test help
 
 # README.md is generated from plugin.json, the panel headers and tools/readme/.
 readme:
@@ -179,6 +179,14 @@ panel:
 	@for spec in $(PANEL_SPECS); do \
 		$(PYTHON) $$spec || exit 1; \
 	done
+
+# Illustrator templates for repainting the panels; see art/README.md.
+art:
+	@$(PYTHON) tools/art_templates.py
+
+# Which panels carry imported (hand-drawn) art, and whether their layout has moved since.
+art-status:
+	@$(PYTHON) tools/art_import.py --status
 
 panel-%:
 	$(PYTHON) tools/panels/$*.py
@@ -249,6 +257,8 @@ help:
 	@echo
 	@echo "  make panel           regenerate every panel from tools/panels/*.py"
 	@echo "  make panel-<Module>  regenerate one"
+	@echo "  make art             write the Illustrator templates into art/templates/"
+	@echo "  make art-status      which panels use imported art (import: tools/art_import.py)"
 	@echo "  make vcv-preview     render every panel through VCV Rack itself"
 	@echo "  make vcv-NAME        render just one panel (e.g. make vcv-Toll)"
 	@echo

@@ -36,7 +36,7 @@ from . import palette
 from .palette import (INK, FELT, BAND, GLASS as GLASS_COLOUR, RULE, LIME, MINT,
                       CLAY, PAPER, SAGE)
 from .layout import solve, SCALE, required_hp, GROUP_PAD, INTER_GAP
-from . import render, emit, preview, lint, rack
+from . import render, emit, preview, lint, rack, art
 
 __all__ = ["BRAND", "Panel", "Section", "Row", "Widget", "Glass", "Trace", "FreeLabel",
            "Plate",
@@ -102,6 +102,12 @@ def build(panel, root=None, vcv=False, force=False, quiet=False):
     force = force or "--force" in argv
 
     sol = solve(panel)
+    drawn = art.load(panel.slug)
+    if drawn is not None and drawn.stale(panel, sol) and not quiet:
+        print("panelkit: warning: %s's imported art (art/panels/%s.svg) was drawn against a "
+              "different layout than this spec now solves to; seats and controls may no longer "
+              "line up. Re-open the template (`make art`) and import again, or "
+              "`tools/art_import.py --reset %s`." % (panel.slug, panel.slug, panel.slug))
     labels = emit.masthead(panel) + sol.labels
     problems = lint.check(panel, sol, labels)
 

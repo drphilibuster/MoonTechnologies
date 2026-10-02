@@ -97,3 +97,9 @@ __pycache__/
 *Nord*Lead*.syx
 *nord*lead*.syx
 *nl2x*.syx
+
+# Illustrator templates: generated from the specs by `make art`, never committed
+/art/templates/
+
+# scratch copies of art being imported
+/art/work/
