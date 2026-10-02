@@ -83,6 +83,18 @@ moves. Turn one and the LCD shows the parameter, as on the Virus. A program with
 shows its number in lower case ("a0"). **STORE**, pressed twice, writes the edit into the user
 banks.
 
+**The knobs follow the sound.** On the unit the knobs are not motorised: load a program and they
+stay where they were, and the first one you touch makes its parameter jump to the knob's position.
+Here the module reads the sound the unit has loaded and moves each knob to match, on screen only.
+The firmware is never told (a knob reaching it is a knob someone turned, which would mark the
+program edited and put the parameter on the LCD), so a knob you touch afterwards starts from the
+sound's value. This covers every knob that edits the sound, including the ones whose meaning
+follows the selector knobs (LFO RATE for the selected LFO, SHAPE, SEMITONE and the rest for the
+selected oscillator, TYPE/MIX and INTENSITY for the selected effect, RESO and ENV AMT for the
+selected filter). **SOFT 1**, **SOFT 2** and **VOLUME** are not part of the sound and are left
+alone, as is any knob with a CV patched to it. Single mode only; in MULTI the knobs stay put.
+`tests/Contagion` checks the map and every knob's curve against the real firmware.
+
 The unit's 35 buttons and 69 LEDs are not all here. The hardware has no encoders or selectors,
 only buttons, and a modular face can do better, so the pairs and the cycles are knobs. Every
 one of them still reaches the firmware as a press of the unit's own key, and the answer comes
@@ -103,10 +115,24 @@ Clicking a selector without turning it presses the section's **EDIT**: LFO, OSC 
 have one, and its lamp is next to the knob's name. The delay/reverb, arpeggiator, filter and
 program EDITs are buttons.
 
+**PRESET** steps through all 1024 sounds, a detent at a time, wrapping from bank H back to A. It
+sends MIDI (bank select, then program change, on the MIDI channel set in the context menu), so it
+works from any screen and starts from whatever the display shows. Choosing a sound is also in
+the context menu: **Presets**, then the bank, then sixteen sounds at a time, each named as the
+unit's display names it. Banks A and B are the unit's battery RAM, so a sound you stored shows
+under its own name; C and D are the factory copies of A and B, and E to H are the OS image's other
+banks. The names are read from your own OS image and battery RAM when the menu opens.
+
 **Endless knobs** replace a minus/plus pair: **PART** (PART -/+; both together is the demo),
 **PARAMETER** (PARAM </>: in play mode, bank), **VALUE** (VALUE -/+: in play mode, program) and
 **TRANSPOSE** (TRANS -/+, with the five octave lamps beside them). Sixteen detents is a turn and
 each one is a press, at about eleven a second.
+
+**BPM** sets the sound's clock tempo, 63 to 190. The unit keeps it in a menu (EDIT, then CLOCK) and
+has no knob for it; the module sets it with a SysEx parameter change to the edit buffer, the form the
+firmware answers, and the knob follows the tempo of whatever sound is loaded. The BPM lamp beside it
+blinks at the tempo the unit is running. Following an external clock (the CLOCK jack, or MIDI clock)
+overrides it, as on the unit.
 
 **Buttons** that remain: **AMOUNT** (steps through the selected LFO's destinations), **SYNC**,
 **OSC 3 ON**, **DLY/REV** edit, **ARP ON**, **ARP EDIT**, **EDIT**, **GLOBAL** (global / multi

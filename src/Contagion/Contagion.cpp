@@ -10,6 +10,8 @@
 #include "VirusC.hpp"
 #include "Controls.hpp"
 #include "CvMidi.hpp"
+#include "KnobSync.hpp"
+#include "Presets.hpp"
 
 #include <osdialog.h>
 
@@ -64,13 +66,15 @@ const SelDef SELECTORS[6] = {
 	{ "Filter 2 mode", 30, nullptr, 55, 4, false, -1, { "Lowpass", "Highpass", "Bandpass", "Bandstop" } },
 };
 
-/** The four endless knobs: the key a turn counterclockwise presses, and clockwise. Order = ENC_PARAM. */
-const char* const ENC_NAME[4] = { "Part", "Parameter", "Value / program", "Transpose" };
+/** The endless knobs: the key a turn counterclockwise presses, and clockwise (the fifth, PRESET, presses no
+    key: it sends MIDI). Order = ENC_PARAM. */
+const char* const ENC_NAME[5] = { "Part", "Parameter", "Value / program", "Transpose", "Preset" };
 const int ENC_KEYS[4][2] = { { 22, 23 }, { 24, 25 }, { 26, 27 }, { 33, 34 } };
 
 /** A knob that has no end: its tooltip says what turning it does rather than a number of turns. */
 struct EncoderQuantity : ParamQuantity {
 	std::string getDisplayValueString() override { return "turn: - / +"; }
+	std::string getUnit() override { return ""; }
 };
 
 /** The buttons a gate input presses, as indices into KEY[], in the order of their jacks. */
@@ -102,7 +106,7 @@ struct Snapshot {
 
 struct Contagion : Module {
 	enum ParamId { POT_PARAM, KEY_PARAM = POT_PARAM + 32, SEL_PARAM = KEY_PARAM + 35, ENC_PARAM = SEL_PARAM + 6,
-		PARAMS_LEN = ENC_PARAM + 4 };
+		PRESET_PARAM = ENC_PARAM + 4, TEMPO_PARAM, PARAMS_LEN = TEMPO_PARAM + 1 };
 	enum InputId { IN_L_INPUT, IN_R_INPUT,
 		NOTE_V_INPUT, NOTE_GATE_INPUT, NOTE_VEL_INPUT, BEND_INPUT, MOD_INPUT, TOUCH_INPUT, SUSTAIN_INPUT,
 		CLK_INPUT, RUN_INPUT, RST_INPUT,
@@ -130,7 +134,14 @@ struct Contagion : Module {
 	float cvOff[32] = {};                       // what the CV adds to each pot, audio thread
 	vc::KeyPresser keys;                        // presses of the unit's buttons, from any thread
 	vc::Selector sels[6];                       // audio thread
-	vc::Encoder encs[4];
+	vc::Encoder encs[4], presetEnc;
+	vc::Presets presets;                        // guarded by snapMutex: the image's names
+	std::atomic<int> presetRequest{-1};         // a sound to select, from the menu (UI thread)
+	std::atomic<int> shownPreset{-1};           // the sound the LCD names, -1 if it names none
+	int presetIndex = 0, presetPending = 0;     // audio thread: where the PRESET knob is, and turns not yet sent
+	int tempoSent = 38, tempoHold = 0;          // audio thread: the knob's last value the unit has, and a rest for the sync
+	int potHold[32] = {};                       // ticks a knob the hand is on is left alone by the sync
+	int presetQuiet = 0;                        // ticks the LCD needs to show a sound just chosen
 	dsp::SchmittTrigger gateTrig[8];
 	int editHold = 0, presetStill = 0;          // audio thread: when to take the LCD for a program screen
 	bool keyDown[35] = {};
@@ -151,7 +162,10 @@ struct Contagion : Module {
 			paramQuantities[SEL_PARAM + i]->randomizeEnabled = false;
 			resetSelector(i);
 		}
-		for (int i = 0; i < 4; i++) {
+		configParam(TEMPO_PARAM, 0.f, 127.f, 38.f, "Tempo", " BPM", 0.f, 1.f, float(vc::KnobSync::TEMPO_BPM_AT_ZERO));
+		paramQuantities[TEMPO_PARAM]->snapEnabled = true;
+		paramQuantities[TEMPO_PARAM]->randomizeEnabled = false;
+		for (int i = 0; i < 5; i++) {
 			configParam<EncoderQuantity>(ENC_PARAM + i, -INFINITY, INFINITY, 0.f, ENC_NAME[i]);
 			paramQuantities[ENC_PARAM + i]->randomizeEnabled = false;
 		}
@@ -179,6 +193,24 @@ struct Contagion : Module {
 	~Contagion() {
 		if (bootThread.joinable()) bootThread.join();
 		delete handover.exchange(nullptr);
+	}
+
+	/** Make the part play sound `index` (bank * 128 + program): bank select, then program change. */
+	void selectPreset(vc::VirusC& v, int index) {
+		index = clamp(index, 0, vc::Presets::COUNT - 1);
+		for (uint8_t b : vc::Presets::select(cvMidi.channel, index / vc::Presets::PER_BANK, index % vc::Presets::PER_BANK)) v.midi(b);
+		presetIndex = index;
+		presetQuiet = 20;
+	}
+
+	/** A sound's name, from the battery RAM for the user banks and the image otherwise. UI thread. */
+	std::string presetName(int bank, int prog) {
+		std::lock_guard<std::mutex> lock(snapMutex);
+		return presets.name(bank, prog, bankRam);
+	}
+	bool haveNames() {
+		std::lock_guard<std::mutex> lock(snapMutex);
+		return presets.loaded();
 	}
 
 	void resetSelector(int i) {
@@ -212,12 +244,19 @@ struct Contagion : Module {
 		const std::string path = imagePath;
 		bootThread = std::thread([this, path, g, b, pots]() {
 			std::unique_ptr<vc::VirusC> v(new vc::VirusC);
-			const std::string err = v->load(readFile(path));
+			const std::vector<uint8_t> image = readFile(path);
+			const std::string err = v->load(image);
 			if (!err.empty()) { setStatus(err); booting = false; return; }
+			vc::Presets names;
+			names.loadImage(image);
 			v->setRam(g, b);
 			for (int i = 0; i < 32; i++) v->setPot(i, pots[i]);   // the knobs where they stand
 			if (!v->boot()) { setStatus("DSP DID NOT START"); booting = false; return; }
 			INFO("Contagion: Virus OS booted from %s: [%s]", system::getFilename(path).c_str(), v->lcdText().c_str());
+			{
+				std::lock_guard<std::mutex> lock(snapMutex);
+				presets = names;
+			}
 			delete handover.exchange(v.release());
 			setStatus("");
 			rememberImage();
@@ -270,6 +309,10 @@ struct Contagion : Module {
 			keys.clear();
 			for (int i = 0; i < 6; i++) resetSelector(i);    // the knobs take the new unit's word for it
 			for (int i = 0; i < 4; i++) encs[i] = vc::Encoder();
+			presetEnc = vc::Encoder();
+			tempoSent = int(std::floor(params[TEMPO_PARAM].getValue() + 0.5f));
+			tempoHold = 0;
+			presetPending = 0;
 		}
 		midi::Message msg;
 		if (!unit) {
@@ -326,10 +369,15 @@ struct Contagion : Module {
 			});
 		}
 
+		// PRESET steps through the 1024 sounds a detent at a time; what it chose is sent a tick later, once.
+		presetPending += presetEnc.delta(params[PRESET_PARAM].getValue());
+		const int asked = presetRequest.exchange(-1);
+		if (asked >= 0) { selectPreset(v, asked); presetPending = 0; }
+
 		// The front panel: pots into the A/D converter, buttons into the key matrix.
 		for (int i = 0; i < 32; i++) {
 			const uint8_t c = potCode(i);
-			if (c != potSent[i]) { v.setPot(POT_INDEX[i], c); potSent[i] = c; }
+			if (c != potSent[i]) { v.setPot(POT_INDEX[i], c); potSent[i] = c; potHold[i] = 24; }
 		}
 		for (int i = 0; i < 35; i++) {
 			const bool pressed = keys.process(i, args.sampleRate);
@@ -388,14 +436,56 @@ struct Contagion : Module {
 				const int to = sels[i].tick(int(std::floor(params[SEL_PARAM + i].getValue() + 0.5f)), obs, keys, tick);
 				if (to >= 0) params[SEL_PARAM + i].setValue(float(to));
 			}
+			// The knobs follow the sound. Where a knob and the loaded sound disagree it is moved to the
+			// sound's value on screen only (KnobSync.hpp): potSent is set to match, so the firmware is
+			// never told and nothing is marked edited. A knob the hand is on, or a CV is moving, is left.
+			for (int i = 0; i < 32; i++) if (potHold[i] > 0) potHold[i]--;
+			if (tempoHold > 0) tempoHold--;
+			{   // the BPM knob: a turn is a parameter change to the unit, sent once it settles
+				const int t = int(std::floor(params[TEMPO_PARAM].getValue() + 0.5f));
+				if (t != tempoSent) {
+					uint8_t m[11];
+					vc::KnobSync::tempoMessage(t, m);
+					for (uint8_t b : m) v.midi(b);
+					tempoSent = t;
+					tempoHold = 24;
+				}
+			}
+			if (lit(49) > 0.5f) {                                // single mode: the edit buffer is the sound
+				uint8_t buf[vc::KnobSync::EDIT_BUFFER];
+				v.xram(0, buf, sizeof(buf));
+				const vc::KnobSync::Context cx = vc::KnobSync::context(lit);
+				bool cvd[32] = {};
+				for (int k = 0; k < 8; k++) if (cvTarget[k] >= 0 && inputs[CV_INPUT + k].isConnected()) cvd[cvTarget[k]] = true;
+				if (tempoHold == 0 && buf[vc::KnobSync::TEMPO_BYTE] != tempoSent) {    // the sound has another tempo
+					tempoSent = buf[vc::KnobSync::TEMPO_BYTE] & 127;
+					params[TEMPO_PARAM].setValue(float(tempoSent));
+				}
+				for (int i = 0; i < 32; i++) {
+					if (potHold[i] > 0 || cvd[i]) continue;
+					const int c = vc::KnobSync::resync(i, potCode(i), cx, buf);
+					if (c < 0) continue;
+					params[POT_PARAM + i].setValue(float(c) / 255.f);
+					potSent[i] = uint8_t(c);
+				}
+			}
 			// An EDIT lamp lit lately means a menu is up; the program screen is the one with a name on
 			// its first line and no menu, held still for half a second.
 			static const int EDIT_LEDS[8] = { 0, 10, 16, 20, 45, 46, 47, 50 };
 			bool menu = false;
 			for (int e : EDIT_LEDS) if (lit(e) > 0.2f) menu = true;
 			editHold = menu ? 40 : std::max(0, editHold - 1);
+			if (presetPending != 0) {
+				const int n = vc::Presets::COUNT;
+				selectPreset(v, ((presetIndex + presetPending) % n + n) % n);
+				presetPending = 0;
+			}
 			if (snapMutex.try_lock()) {
 				v.lcd(snap.chars, snap.cgram);
+				const int cur = vc::Presets::fromScreen(snap.chars);
+				shownPreset = cur;
+				if (presetQuiet > 0) presetQuiet--;
+				else if (cur >= 0) presetIndex = cur;
 				bool named = false;
 				for (int k = 2; k < 16; k++) if (snap.chars[k] != ' ' && snap.chars[k] != 0) named = true;
 				if (named && editHold == 0) {
@@ -464,6 +554,30 @@ struct PushKnob : RoundSmallBlackKnob {
 	int pushKey = -1;
 	void onAction(const ActionEvent& e) override {
 		if (module && pushKey >= 0) module->keys.press(pushKey);
+	}
+};
+
+/** The endless knobs: a click each. The value counts detents (a whole number, so the stock knob's own
+    snapping rounds a drag to the nearest), the pointer steps 22.5 degrees a detent instead of sliding,
+    and a detent takes about a dozen pixels of drag whatever Rack's knob mode is. */
+struct EncoderKnob : PushKnob {
+	EncoderKnob() {
+		snap = true;
+		smooth = false;
+		forceLinear = true;
+		speed = 80.f;                                    // 1000 / 80: twelve and a half pixels a detent
+	}
+	void onChange(const ChangeEvent& e) override {
+		float angle = 0.f;
+		if (engine::ParamQuantity* pq = getParamQuantity())
+			angle = std::fmod(pq->getValue() * float(2.0 * M_PI / vc::Encoder::DETENTS), float(2.0 * M_PI));
+		tw->identity();
+		math::Vec c = sw->box.getCenter();
+		tw->translate(c);
+		tw->rotate(angle);
+		tw->translate(c.neg());
+		fb->dirty = true;
+		app::Knob::onChange(e);                          // not SvgKnob's, which would turn it a revolution a unit
 	}
 };
 
@@ -599,6 +713,35 @@ struct CvAmountSlider : ui::Slider {
 	~CvAmountSlider() { delete quantity; }
 };
 
+/** Presets > bank > sixteen at a time > the sound, named as the unit's display names it. The names are
+    read from the user's own image and, for banks A and B, from the unit's battery RAM. */
+void appendPresetMenu(Menu* menu, Contagion* m) {
+	const int shown = m->shownPreset.load();
+	std::string now = shown >= 0 ? vc::Presets::label(shown / 128, shown % 128) : "";
+	if (!m->haveNames() && m->imagePath.empty()) {
+		menu->addChild(createMenuLabel("Presets (load an OS image first)"));
+		return;
+	}
+	menu->addChild(createSubmenuItem("Presets", now, [=](Menu* sub) {
+		static const char* const kind[8] = { "A (user)", "B (user)", "C", "D", "E", "F", "G", "H" };
+		for (int bank = 0; bank < 8; bank++) {
+			sub->addChild(createSubmenuItem(std::string("Bank ") + kind[bank], shown / 128 == bank && shown >= 0 ? "*" : "", [=](Menu* bm) {
+				for (int g = 0; g < 8; g++) {
+					const int p0 = g * 16;
+					bm->addChild(createSubmenuItem(vc::Presets::label(bank, p0) + " - " + std::to_string(p0 + 15), "", [=](Menu* gm) {
+						for (int p = p0; p < p0 + 16; p++) {
+							const std::string name = m->presetName(bank, p);
+							gm->addChild(createCheckMenuItem(vc::Presets::label(bank, p) + "  " + (name.empty() ? "-" : name), "",
+								[=]() { return shown == bank * 128 + p; },
+								[=]() { m->presetRequest = bank * 128 + p; }));
+						}
+					}));
+				}
+			}));
+		}
+	}));
+}
+
 struct ContagionWidget : ModuleWidget {
 	ContagionWidget(Contagion* module) {
 		setModule(module);
@@ -651,11 +794,16 @@ struct ContagionWidget : ModuleWidget {
 			addParam(k);
 		}
 		// Endless knobs: a detent is a press of the - or + key.
-		const Vec encs[4] = { panel::PART_POS, panel::PARAM_POS, panel::VALUE_POS, panel::TRANS_POS };
-		for (int i = 0; i < 4; i++) {
-			PushKnob* k = createParamCentered<PushKnob>(panel::mm(encs[i].x, encs[i].y), module, Contagion::ENC_PARAM + i);
-			k->smooth = false;
-			k->speed = 6.f;
+		{
+			RoundSmallBlackKnob* tempo = createParamCentered<RoundSmallBlackKnob>(panel::mm(panel::TEMPO_POS.x, panel::TEMPO_POS.y), module, Contagion::TEMPO_PARAM);
+			tempo->snap = true;
+			tempo->speed = 2.f;
+			addParam(tempo);
+		}
+		const Vec encs[5] = { panel::PART_POS, panel::PARAM_POS, panel::VALUE_POS, panel::TRANS_POS, panel::PRESET_POS };
+		for (int i = 0; i < 5; i++) {
+			EncoderKnob* k = createParamCentered<EncoderKnob>(panel::mm(encs[i].x, encs[i].y), module, Contagion::ENC_PARAM + i);
+			k->module = module;
 			addParam(k);
 		}
 
@@ -710,6 +858,8 @@ struct ContagionWidget : ModuleWidget {
 		menu->addChild(new MenuSeparator);
 		menu->addChild(createMenuLabel("MIDI in"));
 		appendMidiMenu(menu, &m->midiInput);
+		menu->addChild(new MenuSeparator);
+		appendPresetMenu(menu, m);
 		menu->addChild(new MenuSeparator);
 		menu->addChild(createMenuLabel("Note and clock jacks"));
 		menu->addChild(createSubmenuItem("MIDI channel", std::to_string(m->cvMidi.channel + 1), [=](Menu* sub) {

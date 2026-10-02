@@ -60,6 +60,8 @@ public:
 	void leds(float bright[7][14]);
 	/** The two RATE LEDs (LFO 1, LFO 2/3), which the DSP drives from its timers. */
 	void rateLeds(float out[2]) const;
+	/** Read the microcontroller's external RAM (the firmware's global memory, edit buffers included). */
+	void xram(uint16_t addr, uint8_t* out, size_t n) const;
 	std::string lcdText() const;
 	long dspWordsIn() const;
 

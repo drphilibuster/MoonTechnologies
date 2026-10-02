@@ -121,16 +121,16 @@ struct Selector {
 	}
 };
 
-/** An endless knob: one press of the - or + key per detent. The knob's value is turns, so the
-    detents per turn is the feel of it. */
+/** An endless knob: one press of the - or + key per detent. The knob's value counts detents, a whole
+    number, and the knob turns by `STEP` degrees for each, so every click is one visible step. */
 struct Encoder {
 	static constexpr int DETENTS = 16;          // per turn
 	long last = 0;
 	bool init = false;
 
 	/** Detents moved since the last call: positive clockwise. */
-	int delta(float turns) {
-		const long idx = long(std::floor(double(turns) * DETENTS));
+	int delta(float detents) {
+		const long idx = long(std::floor(double(detents) + 0.5));
 		if (!init) { last = idx; init = true; return 0; }
 		const long d = idx - last;
 		last = idx;

@@ -20,7 +20,7 @@ DSP_SRC := $(filter-out %test.cpp %tests.cpp,$(wildcard $(V)/dsp56300/dsp56kEmu/
            $(V)/gearmulator/hardwareLib/hd44780.cpp $(V)/gearmulator/hardwareLib/lcdfonts.cpp
 DSP_OBJ := $(patsubst $(V)/%.cpp,obj/%.o,$(DSP_SRC))
 
-CORE := ../../src/Contagion/Controls.hpp ../../src/Contagion/Mcs515.hpp ../../src/Contagion/VirusC.hpp ../../src/Contagion/VirusC.cpp \
+CORE := ../../src/Contagion/Presets.hpp ../../src/Contagion/Controls.hpp ../../src/Contagion/Mcs515.hpp ../../src/Contagion/VirusC.hpp ../../src/Contagion/VirusC.cpp \
 	../../src/Contagion/PanelMap.hpp
 
 all: test_machine test_cvmidi test_controls
@@ -31,7 +31,7 @@ test: test_machine test_cvmidi test_controls
 	./test_controls
 
 # Knobs as the unit's buttons: a model of the firmware's selector, no ROM and no DSP objects.
-test_controls: test_controls.cpp ../../src/Contagion/Controls.hpp
+test_controls: test_controls.cpp ../../src/Contagion/Controls.hpp ../../src/Contagion/KnobSync.hpp
 	$(CXX) -std=c++11 -O2 -Wall -Wextra -g -fsanitize=address,undefined -o $@ test_controls.cpp
 
 # Cable-level MIDI: self-contained, no ROM and no DSP objects.

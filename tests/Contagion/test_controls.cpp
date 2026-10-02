@@ -1,6 +1,7 @@
 // Controls: a knob made into the unit's buttons, tested against a model of a selector that behaves
 // the way the real firmware was measured to (test_machine.cpp runs the same logic on the firmware).
 #include "../../src/Contagion/Controls.hpp"
+#include "../../src/Contagion/KnobSync.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -132,12 +133,12 @@ int main() {
 		for (int i = 0; i < 4; i++) { const int r = s.tick(0, -1, k, TICK); if (r >= 0) out = r; }
 		CHECK(out == 4, "no LED lit is position 5 (%d)", out);
 	}
-	{   // encoder: sixteen detents a turn, either way, and the first reading is not a move
+	{   // encoder: a whole number of detents, either way, and the first reading is not a move
 		vc::Encoder e;
-		CHECK(e.delta(3.3f) == 0, "first reading");
-		CHECK(e.delta(3.3f + 3.f / 16) == 3, "three detents clockwise");
-		CHECK(e.delta(3.3f - 1.f / 16) == -4, "four back");
-		CHECK(e.delta(3.3f - 1.f / 16) == 0, "still");
+		CHECK(e.delta(5.f) == 0, "first reading");
+		CHECK(e.delta(8.f) == 3, "three detents clockwise");
+		CHECK(e.delta(4.f) == -4, "four back");
+		CHECK(e.delta(4.f) == 0, "still");
 		CHECK(e.delta(100.f) == vc::KeyPresser::MAX_QUEUED, "a jump is limited");
 	}
 	{   // litPosition
@@ -149,6 +150,41 @@ int main() {
 		CHECK(vc::litPosition(f, leds, 4) == -1, "two lit is unknown");
 		b[0] = b[2] = 0;
 		CHECK(vc::litPosition(f, leds, 4) == -1, "none lit is unknown");
+	}
+	{   // KnobSync: every curve can be run backwards, and a knob that agrees with the sound is left alone
+		using vc::KnobSync;
+		const KnobSync::Curve curves[] = { KnobSync::LINEAR, KnobSync::CENTRED, KnobSync::SEMITONE, KnobSync::WAVE, KnobSync::MODE3, KnobSync::TYPE };
+		for (KnobSync::Curve c : curves) {
+			int worst = 0;
+			for (int k = 0; k < 256; k++) {
+				const int v = KnobSync::value(c, k);
+				worst = std::max(worst, std::abs(KnobSync::value(c, KnobSync::code(c, v)) - v));
+			}
+			CHECK(worst == 0, "curve %d: a code for every value the knob reaches (worst error %d)", int(c), worst);
+		}
+		CHECK(KnobSync::value(KnobSync::LINEAR, 255) == 127 && KnobSync::value(KnobSync::LINEAR, 0) == 0, "linear ends");
+		CHECK(KnobSync::value(KnobSync::CENTRED, 128) == 64, "centre detent");
+		uint8_t buf[256] = {};
+		KnobSync::Context cx;
+		buf[40] = 100;
+		CHECK(KnobSync::resync(19, 200, cx, buf) == -1, "cutoff at 100 is where code 200 puts it");
+		const int moved = KnobSync::resync(19, 20, cx, buf);
+		CHECK(moved >= 198 && moved <= 202, "cutoff knob moves to the sound's value (%d)", moved);
+		CHECK(KnobSync::resync(18, 0, cx, buf) == -1 && KnobSync::resync(16, 0, cx, buf) == -1, "volume and soft knobs are not in the sound");
+		cx.lfo = 2;
+		CHECK(KnobSync::map(0, cx, buf).byte == 128 + 7, "LFO 3's rate is in page B");
+		cx.lfo = 3;
+		CHECK(KnobSync::map(0, cx, buf).curve == KnobSync::NONE, "MOD has no rate knob");
+		cx.osc = 0;
+		buf[17] = 0;
+		CHECK(KnobSync::map(3, cx, buf).byte == 19, "shape at wave: the knob selects the wave");
+		buf[17] = 100;
+		CHECK(KnobSync::map(3, cx, buf).byte == 18, "shape past saw: pulse width");
+		buf[17] = 30;
+		CHECK(KnobSync::map(3, cx, buf).curve == KnobSync::NONE, "shape between: nothing");
+		cx.filt1 = true;
+		cx.filt2 = false;
+		CHECK(KnobSync::map(21, cx, buf).byte == 42, "SEL 1: filter 1's resonance");
 	}
 	if (failures) { std::printf("%d FAILED\n", failures); return 1; }
 	std::printf("Controls: ok\n");

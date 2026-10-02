@@ -71,19 +71,20 @@ P.sections = [
              Button("edit", "EDIT", light="edit_led"), Button("global", "GLOBAL", light="global_led"),
              Button("random", "RANDOM")], own_grid=True),
     ]),
-    Section("FILTERS · ENVELOPES · PROGRAM", groups=(5, 4, 4, 4), rows=[
+    Section("FILTERS · ENVELOPES · PROGRAM", groups=(5, 4, 4, 5), rows=[
         Row([Knob("cutoff", "CUTOFF", primary=True), Knob("cutoff2", "CUTOFF 2"),
              Knob("reso", "RESO"), Knob("env_amt", "ENV AMT"), Knob("flt_bal", "FLT BAL"),
              Knob("f_att", "ATTACK"), Knob("f_dec", "DECAY"), Knob("f_sus", "SUSTAIN"), Knob("f_rel", "RELEASE"),
              Knob("a_att", "ATTACK"), Knob("a_dec", "DECAY"), Knob("a_sus", "SUSTAIN"), Knob("a_rel", "RELEASE"),
-             Knob("part", "PART"), Knob("param", "PARAMETER"), Knob("value", "VALUE"), Knob("trans", "TRANSPOSE")]),
+             Knob("preset", "PRESET"), Knob("part", "PART"), Knob("param", "PARAMETER"), Knob("value", "VALUE"),
+             Knob("trans", "TRANSPOSE")]),
         Row([Button("flt_edit", "EDIT", light="flt_edit_led"),
              Knob("flt1_mode", "FILT 1", steps=4), Knob("flt2_mode", "FILT 2", steps=4),
              Button("flt_sel1", "SEL 1", light="sel1_led"), Button("flt_sel2", "SEL 2", light="sel2_led"),
              Button("undo", "UNDO"), Button("store", "STORE"),
              Button("multi", "MULTI", light="multi_led"), Button("single", "SINGLE", light="single_led")]
             + [Light("tr%d" % (i + 1), t) for i, t in enumerate(["-2", "-1", "0", "+1", "+2"])]
-            + [Light("bpm", "BPM")], own_grid=True),
+            + [Knob("tempo", "BPM", light="bpm")], own_grid=True),
     ]),
 ]
 

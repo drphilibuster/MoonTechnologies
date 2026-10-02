@@ -378,6 +378,10 @@ void VirusC::lcd(uint8_t chars[32], uint8_t cgram[64]) const {
 	std::copy(cg.begin(), cg.end(), cgram);
 }
 
+void VirusC::xram(uint16_t addr, uint8_t* out, size_t n) const {
+	for (size_t i = 0; i < n; i++) out[i] = impl->ram[(addr + i) & 0x7fff];
+}
+
 std::string VirusC::lcdText() const {
 	uint8_t ch[32], cg[64];
 	lcd(ch, cg);

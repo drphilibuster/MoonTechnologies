@@ -15,6 +15,8 @@
 #include <vector>
 
 #include "../../src/Contagion/Controls.hpp"
+#include "../../src/Contagion/KnobSync.hpp"
+#include "../../src/Contagion/Presets.hpp"
 
 using vc::VirusC;
 
@@ -67,6 +69,8 @@ struct Run {
 	}
 	double rms() const { return n ? std::sqrt(energy / n) : 0; }
 };
+
+static uint8_t snapChars[32], snapCg[64];
 
 int main() {
 	const std::vector<uint8_t> image = findImage();
@@ -212,6 +216,149 @@ int main() {
 			CHECK(sels[i].knob == wish[i], "%s: the knob settled on %d", sels[i].name, sels[i].knob);
 		}
 		std::printf("\n");
+	}
+
+	// 9. Presets: the names Presets.hpp reads out of the image and the battery RAM are the ones the
+	// firmware shows when MIDI selects them, bank by bank, including C-H flash banks and the user
+	// banks it keeps in RAM.
+	{
+		vc::Presets pre;
+		CHECK(pre.loadImage(image), "image names");
+		std::vector<uint8_t> g, b;
+		v.copyRam(g, b);
+		int checked = 0, wrong = 0;
+		const int progs[] = { 0, 1, 37, 64, 127 };
+		for (int bank = 0; bank < vc::Presets::BANKS; bank++)
+			for (int p : progs) {
+				for (uint8_t byte : vc::Presets::select(0, bank, p)) v.midi(byte);
+				r.seconds(0.4);
+				const std::string lcd = v.lcdText();
+				const std::string want = pre.name(bank, p, b);
+				const std::string lab = vc::Presets::label(bank, p);
+				const bool labelOk = lcd.find(lab) != std::string::npos;
+				// the unit writes its own idea of an unprintable character, so compare the printable run
+				const bool nameOk = want.empty() || lcd.find(want.substr(0, std::min<size_t>(want.size(), 6))) != std::string::npos
+					|| want.find('?') != std::string::npos;
+				checked++;
+				if (!labelOk || !nameOk) { wrong++; std::printf("   %s: wanted [%s] LCD [%s]\n", lab.c_str(), want.c_str(), lcd.c_str()); }
+			}
+		std::printf("9. presets: %d sounds selected over MIDI, %d disagree with the names read from the image/RAM\n", checked, wrong);
+		CHECK(wrong == 0, "preset names match the firmware");
+		// the screen parser, on first lines as the firmware writes them
+		auto parse = [](const char* t) { uint8_t l[16]; for (int i = 0; i < 16; i++) l[i] = uint8_t(t[i]); return vc::Presets::fromScreen(l); };
+		CHECK(parse("\x00 A0  AutoBendBC") == 0, "A0");
+		CHECK(parse("\x00\x01" "C127 - START -") == 2 * 128 + 127, "C127");
+		CHECK(parse("\x00 H5  2-Brass RP") == 7 * 128 + 5, "H5");
+		CHECK(parse("\x00 m0  Sequencer ") == -1, "a multi is not a single");
+		CHECK(parse("                ") == -1 && parse("\x00               ") == -1, "blank lines");
+	}
+
+	// 10. Knobs follow the sound (KnobSync.hpp). The map and the curves are measured; here they are
+	// checked against the firmware in every context, and a knob moved to the sound's value is shown
+	// to be harmless to touch.
+	{
+		using vc::KnobSync;
+		static const int POT_INDEX[32] = { 0, 1, 24, 3, 27, 11, 19, 9, 2, 26, 5, 21, 29, 17, 25, 8, 10, 18, 16, 13, 20, 23, 31, 14,
+			12, 7, 15, 6, 4, 28, 22, 30 };
+		auto pc = [&](int bank, int prog) { v.midi(0xB0); v.midi(32); v.midi(uint8_t(bank)); v.midi(0xC0); v.midi(uint8_t(prog)); r.seconds(0.7); };
+		auto tap = [&](int k) {
+			v.setButton(vc::KEY[k][0], vc::KEY[k][1], true); r.seconds(0.06);
+			v.setButton(vc::KEY[k][0], vc::KEY[k][1], false); r.seconds(0.3);
+		};
+		float lg2[7][14];
+		auto context = [&]() {
+			v.leds(lg2); r.seconds(0.3); v.leds(lg2);
+			return KnobSync::context([&](int i) { return lg2[vc::LED[i][0]][vc::LED[i][1]]; });
+		};
+		uint8_t buf[256];
+		int curveChecks = 0, curveBad = 0, touches = 0, touchBad = 0, controls = 0, controlJumped = 0;
+		auto edit = [&](uint8_t* b) { v.xram(0, b, 256); };
+		// 1. the curve of every knob that has one, in the context that is up: five codes each
+		auto sweep = [&](const char* what, std::vector<int> knobs) {
+			const KnobSync::Context cx = context();
+			for (int k : knobs) {
+				for (int code : { 24, 72, 128, 200, 248 }) {
+					edit(buf);
+					const KnobSync::Map m = KnobSync::map(k, cx, buf);
+					if (m.curve == KnobSync::NONE) break;
+					v.setPot(POT_INDEX[k], uint8_t(code));
+					r.seconds(0.35);
+					edit(buf);
+					const KnobSync::Map after = KnobSync::map(k, cx, buf);
+					if (after.byte != m.byte) break;           // the knob moved the shape across a threshold
+					const int got = buf[m.byte], want = KnobSync::value(m.curve, code);
+					curveChecks++;
+					if (std::abs(got - want) > KnobSync::tolerance(m.curve)) {
+						curveBad++;
+						std::printf("   %s knob %d code %d: byte %d is %d, the curve says %d\n", what, k, code, m.byte, got, want);
+					}
+				}
+			}
+		};
+		tap(vc::K_SINGLE);                                // earlier sections left it in MULTI
+		r.seconds(1.0);
+		pc(0, 3);
+		sweep("defaults", { 1, 2, 4, 5, 6, 8, 9, 10, 11, 12, 14, 15, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31 });
+		for (int i = 0; i < 4; i++) { sweep("lfo", { 0 }); tap(1); }           // LFO 1, 2, 3, MOD
+		for (int osc : { 6, 7, 8 }) { tap(osc); sweep("osc", { 2, 3, 4, 5, 6 }); }
+		for (int i = 0; i < 3; i++) { tap(11); sweep("fx", { 7, 13 }); }
+		for (int sel : { 31, 32 }) { tap(sel); sweep("filter", { 21, 22 }); }
+		// 2. a knob moved to the sound's value, then touched, leaves the sound where it was
+		for (int bank : { 0, 1, 3, 5 })
+			for (int prog : { 4, 40, 90 }) {
+				tap(6);
+				pc(bank, prog);
+				const KnobSync::Context cx = context();
+				edit(buf);
+				for (int k : { 1, 2, 4, 5, 6, 8, 9, 10, 11, 12, 14, 15, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31 }) {
+					const KnobSync::Map m = KnobSync::map(k, cx, buf);
+					if (m.curve == KnobSync::NONE) continue;
+					const int want = buf[m.byte];
+					const int c = KnobSync::resync(k, want < 64 ? 250 : 5, cx, buf);     // the knob was somewhere else
+					if (c < 0) continue;
+					v.setPot(POT_INDEX[k], uint8_t(c));
+					r.seconds(0.35);
+					uint8_t after[256];
+					edit(after);
+					touches++;
+					const int moved = std::abs(after[m.byte] - want);
+					if (moved > KnobSync::tolerance(m.curve) + 3) {     // the firmware settles a knob within a few steps
+						touchBad++;
+						std::printf("   %c%d knob %d: sound %d, touched at its synced position it went to %d\n", vc::Presets::letter(bank), prog, k, want, after[m.byte]);
+					}
+					// the control: the knob left where it was and touched, which is what the unit does, jumps
+					v.setPot(POT_INDEX[k], uint8_t(want < 64 ? 250 : 5));
+					r.seconds(0.35);
+					edit(after);
+					controls++;
+					if (std::abs(after[m.byte] - want) > 8) controlJumped++;
+				}
+			}
+		std::printf("10. knobs follow the sound: %d curve readings (%d off), %d touches after a sync (%d jumped); "
+			"left where they were, %d of %d jump\n", curveChecks, curveBad, touches, touchBad, controlJumped, controls);
+		CHECK(controls > 100 && controlJumped * 10 >= controls * 9, "the control: an unsynced knob jumps the sound (%d of %d)", controlJumped, controls);
+		CHECK(curveChecks > 150 && curveBad == 0, "curves agree with the firmware");
+		CHECK(touches > 100 && touchBad == 0, "a synced knob is safe to touch");
+	}
+
+	// 11. The BPM knob: a SysEx parameter change to the single edit buffer sets the sound's clock tempo.
+	{
+		auto pc = [&](int bank, int prog) { v.midi(0xB0); v.midi(32); v.midi(uint8_t(bank)); v.midi(0xC0); v.midi(uint8_t(prog)); r.seconds(0.7); };
+		v.setButton(vc::KEY[vc::K_SINGLE][0], vc::KEY[vc::K_SINGLE][1], true); r.seconds(0.15);
+		v.setButton(vc::KEY[vc::K_SINGLE][0], vc::KEY[vc::K_SINGLE][1], false); r.seconds(1.0);
+		pc(0, 7);
+		int bad = 0;
+		for (int want : { 0, 20, 77, 127, 5 }) {
+			uint8_t m[11];
+			vc::KnobSync::tempoMessage(want, m);
+			for (uint8_t b : m) v.midi(b);
+			r.seconds(0.5);
+			uint8_t buf[256];
+			v.xram(0, buf, 256);
+			if (buf[vc::KnobSync::TEMPO_BYTE] != want) { bad++; std::printf("   tempo %d: the sound has %d\n", want, buf[vc::KnobSync::TEMPO_BYTE]); }
+		}
+		std::printf("11. BPM knob: tempo set over SysEx, %d of 5 wrong\n", bad);
+		CHECK(bad == 0, "the tempo message sets the clock tempo");
 	}
 
 	const double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
