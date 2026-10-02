@@ -57,6 +57,11 @@ MIDI a keyboard would send. Nothing reaches the firmware but those bytes.
   spread evenly across the interval between pulses; RUN sends Start and Stop, RST starts
   again from the top. With no RUN cable the first clock starts it. Set the unit's
   Global clock to Auto or MIDI for the arpeggiator and delay to follow.
+* **Triggers are notes.** A gate that comes and goes in a sample or two still plays a note, and the
+  context menu's **Minimum note length** (off, 25 ms to 2 s) holds each note at least that long
+  before its gate can end it. The unit's envelopes only open and decay while a note is held, so a
+  sequencer's one-millisecond trigger needs this to be heard; a gate longer than the minimum is
+  untouched.
 * The context menu sets the **MIDI channel**, whether polyphonic channel *n* plays
   channel *n* (to play the multi's parts), and how many clock pulses make a quarter note.
 

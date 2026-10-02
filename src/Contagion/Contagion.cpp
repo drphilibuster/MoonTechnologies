@@ -128,6 +128,7 @@ struct Contagion : Module {
 	Snapshot snap;                              // guarded by snapMutex
 
 	midi::InputQueue midiInput;
+	float minNoteMs = 0.f;                      // settings for cvMidi's minimum note length
 	vc::CvMidi cvMidi;                          // audio thread; its settings are saved in the patch
 	int cvTarget[8];                            // which pot each CV input moves, -1 for none
 	float cvAmount[8];                          // its attenuverter, -1..1: 10 V is the pot's full travel
@@ -362,6 +363,7 @@ struct Contagion : Module {
 			in.run = inputs[RUN_INPUT].getVoltage();
 			in.rstConnected = inputs[RST_INPUT].isConnected();
 			in.rst = inputs[RST_INPUT].getVoltage();
+			cvMidi.minSamples = int(minNoteMs * 0.001f * args.sampleRate);
 			cvMidi.process(in, [&](int a, int b, int c, int n) {
 				v.midi(uint8_t(a));
 				if (n > 1) v.midi(uint8_t(b));
@@ -509,6 +511,7 @@ struct Contagion : Module {
 		json_object_set_new(root, "cvMidiChannel", json_integer(cvMidi.channel));
 		json_object_set_new(root, "cvPolyToChannels", json_boolean(cvMidi.polyToChannels));
 		json_object_set_new(root, "cvClockPpqn", json_integer(cvMidi.ppqn));
+		json_object_set_new(root, "cvMinNoteMs", json_real(minNoteMs));
 		json_t* cv = json_array();
 		for (int i = 0; i < 8; i++) {
 			json_t* o = json_object();
@@ -533,6 +536,7 @@ struct Contagion : Module {
 		if (json_t* j = json_object_get(root, "cvMidiChannel")) cvMidi.channel = clamp(int(json_integer_value(j)), 0, 15);
 		if (json_t* j = json_object_get(root, "cvPolyToChannels")) cvMidi.polyToChannels = json_is_true(j);
 		if (json_t* j = json_object_get(root, "cvClockPpqn")) cvMidi.ppqn = clamp(int(json_integer_value(j)), 1, 24);
+		if (json_t* j = json_object_get(root, "cvMinNoteMs")) minNoteMs = clamp(float(json_number_value(j)), 0.f, 4000.f);
 		if (json_t* cv = json_object_get(root, "cv"))
 			for (int i = 0; i < 8; i++)
 				if (json_t* o = json_array_get(cv, i)) {
@@ -875,6 +879,12 @@ struct ContagionWidget : ModuleWidget {
 		menu->addChild(createIndexSubmenuItem("Clock pulses per quarter note",
 			{ "1", "2", "4 (sixteenths)", "8", "24" },
 			[=]() { return ppqnIndex; }, [=](int i) { m->cvMidi.ppqn = PPQN[i]; }));
+		static const float MIN_MS[8] = { 0.f, 25.f, 50.f, 100.f, 250.f, 500.f, 1000.f, 2000.f };
+		int minIndex = 0;
+		for (int i = 0; i < 8; i++) if (MIN_MS[i] <= m->minNoteMs + 0.5f) minIndex = i;
+		menu->addChild(createIndexSubmenuItem("Minimum note length (triggers)",
+			{ "Off: the gate's own length", "25 ms", "50 ms", "100 ms", "250 ms", "500 ms", "1 s", "2 s" },
+			[=]() { return minIndex; }, [=](int i) { m->minNoteMs = MIN_MS[i]; }));
 		menu->addChild(createMenuLabel("(set the unit's Global > Clock to Auto or MIDI)"));
 		menu->addChild(new MenuSeparator);
 		menu->addChild(createMenuLabel("CV inputs: knob moved, and by how much"));

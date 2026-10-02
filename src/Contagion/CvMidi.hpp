@@ -44,6 +44,8 @@ struct CvMidi {
 	bool polyToChannels = false;      // cable channel n goes out on MIDI channel n instead
 	int ppqn = 4;                     // clock pulses per quarter note: 1, 2, 4, 8 or 24
 	int defaultVelocity = 100;        // when the velocity input is unpatched
+	int minSamples = 0;               // a note sounds at least this long, however short its gate: a sequencer's
+	                                  // trigger is a millisecond, and an envelope needs far longer to open
 
 	// --- state ------------------------------------------------------------------------------
 	struct Edge {
@@ -66,6 +68,7 @@ struct CvMidi {
 	int held[VOICES];                 // note sounding per voice, -1 for none
 	int heldCh[VOICES];               // the MIDI channel it went out on
 	int pending[VOICES];              // samples until a rising gate's note is read
+	int age[VOICES];                  // samples since the voice's note-on
 	int lastBend = 8192, lastMod = 0, lastAt = 0;
 	bool bendSent = false, modSent = false, atSent = false, susSent = false;
 	bool susHigh = false;
@@ -80,7 +83,7 @@ struct CvMidi {
 	CvMidi() { reset(); }
 
 	void reset() {
-		for (int i = 0; i < VOICES; i++) { held[i] = -1; heldCh[i] = 0; pending[i] = 0; gateHigh[i] = Edge(); }
+		for (int i = 0; i < VOICES; i++) { held[i] = -1; heldCh[i] = 0; pending[i] = 0; age[i] = 0; gateHigh[i] = Edge(); }
 		bendSent = modSent = atSent = susSent = susHigh = false;
 		lastBend = 8192;
 		lastMod = lastAt = 0;
@@ -110,17 +113,19 @@ struct CvMidi {
 				pending[c] = 0;
 				continue;
 			}
+			if (held[c] >= 0 && age[c] < (1 << 30)) age[c]++;
 			const bool rose = gateHigh[c].rise(in.gate[c]);
 			const bool gate = gateHigh[c].high;
 			if (rose) {
 				if (held[c] >= 0) { send(0x80 | heldCh[c], held[c], 0, 3); held[c] = -1; }
 				pending[c] = 1;                              // a sequencer moves pitch with the gate: read it a sample on
-			} else if (pending[c] > 0 && --pending[c] == 0 && gate) {
+			} else if (pending[c] > 0 && --pending[c] == 0) {     // even if the gate has already gone: a trigger is a note
 				const int note = noteOf(in.pitch[c]);
 				const int vel = in.velConnected ? std::max(1, sevenBit(in.vel[c])) : defaultVelocity;
 				heldCh[c] = channelOf(c);
 				send(0x90 | heldCh[c], note, vel, 3);
 				held[c] = note;
+				age[c] = 0;
 			} else if (gate && held[c] >= 0) {
 				const int note = noteOf(in.pitch[c]);
 				if (note != held[c]) {                       // legato: the new note before the old one is released
@@ -128,10 +133,11 @@ struct CvMidi {
 					send(0x90 | heldCh[c], note, vel, 3);
 					send(0x80 | heldCh[c], held[c], 0, 3);
 					held[c] = note;
+					age[c] = 0;
 				}
 			} else if (!gate) {
-				pending[c] = 0;
-				if (held[c] >= 0) { send(0x80 | heldCh[c], held[c], 0, 3); held[c] = -1; }
+				// the gate is down; the note comes off when it has sounded for its minimum
+				if (held[c] >= 0 && age[c] >= minSamples) { send(0x80 | heldCh[c], held[c], 0, 3); held[c] = -1; }
 			}
 		}
 

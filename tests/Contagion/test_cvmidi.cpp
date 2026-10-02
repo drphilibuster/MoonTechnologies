@@ -149,6 +149,36 @@ int main() {
 		step(c, in, o);
 		CHECK(o.count(0xFA) == 2, "reset starts again");
 	}
+	{   // a trigger is a note, and a minimum length holds it
+		vc::CvMidi c;
+		vc::CvMidi::In in;
+		Out o;
+		in.voices = 1;
+		in.gate[0] = 10.f;
+		step(c, in, o);           // a one-sample gate
+		in.gate[0] = 0.f;
+		step(c, in, o, 5);
+		CHECK(o.count(0x90) == 1, "a one-sample trigger still plays a note (%d)", o.count(0x90));
+		CHECK(o.count(0x80) == 1, "and ends it");
+		vc::CvMidi d;
+		d.minSamples = 100;
+		Out p;
+		in.gate[0] = 10.f;
+		step(d, in, p);
+		in.gate[0] = 0.f;
+		step(d, in, p, 60);
+		CHECK(p.count(0x90) == 1 && p.count(0x80) == 0, "held while it is shorter than the minimum (%d off)", p.count(0x80));
+		step(d, in, p, 60);
+		CHECK(p.count(0x80) == 1, "released once it has sounded long enough");
+		in.gate[0] = 10.f;        // a long gate is not touched by the minimum
+		Out q;
+		vc::CvMidi e;
+		e.minSamples = 100;
+		step(e, in, q, 400);
+		in.gate[0] = 0.f;
+		step(e, in, q, 2);
+		CHECK(q.count(0x80) == 1, "a long gate ends with its gate");
+	}
 	if (failures) { std::printf("%d FAILED\n", failures); return 1; }
 	std::printf("CvMidi: ok\n");
 	return 0;
