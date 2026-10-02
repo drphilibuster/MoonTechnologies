@@ -150,17 +150,19 @@ def panel_svg(panel, sol, layers=False, art=None):
     stage("06_Section_blocks")
     scroll = max(1.2, min(2.1, m["BOT_CLEAR"] - 0.5))
     for bi, (y0, y1) in enumerate(sol.blocks):
+        x0, x1 = sol.block_x[bi]
+        is_rail = bool(panel.rail) and bi == len(panel.sections)
         if layers:
-            cap = panel.sections[bi].caption if bi < len(panel.sections) else ""
+            cap = (panel.sections[bi].caption if bi < len(panel.sections)
+                   else "Rail" if is_rail else "")
             a('<g id="Block_%d_%s">' % (bi + 1, "".join(
                 c if c.isalnum() else "_" for c in cap)))
         a('  <rect x="%.4f" y="%.4f" width="%.4f" height="%.4f" rx="%.2f" fill="%s" '
           'stroke="%s" stroke-width="%.2f"/>'
-          % (BLOCK_INSET, y0, w - 2 * BLOCK_INSET, y1 - y0, BLOCK_R, P.FELT,
-             P.RULE, FRAME_W))
+          % (x0, y0, x1 - x0, y1 - y0, BLOCK_R, P.FELT, P.RULE, FRAME_W))
+        # the rail holds what leaves the module, so it wears the footer's mint tab
         a('  <rect x="%.4f" y="%.4f" width="%.4f" height="%.4f" rx="0.25" fill="%s"/>'
-          % (BLOCK_INSET, y0, TAB_W, TAB_H, P.INK))
-        x0, x1 = BLOCK_INSET, w - BLOCK_INSET
+          % (x0, y0, TAB_W, TAB_H, P.MINT if is_rail else P.INK))
         _scroll(a, x1, y0, -1, 1, scroll)     # top-right
         _scroll(a, x0, y1, 1, -1, scroll)     # bottom-left
         _scroll(a, x1, y1, -1, -1, scroll)    # bottom-right
@@ -169,8 +171,8 @@ def panel_svg(panel, sol, layers=False, art=None):
 
     stage("07_Rules")
     # --- subtotal rules inside blocks, with a bead at each end
-    for y in sol.rules:
-        xa, xb = BLOCK_INSET + 3.0, w - BLOCK_INSET - 3.0
+    for y, rx0, rx1 in sol.rules:
+        xa, xb = rx0 + 3.0, rx1 - 3.0
         a('  <rect x="%.4f" y="%.4f" width="%.4f" height="0.2" fill="%s"/>'
           % (xa, y - 0.1, xb - xa, P.RULE))
         for x in (xa, xb):

@@ -218,6 +218,21 @@ patch cable which of them belong together. Contagion's footer uses it. A span ca
 say the same thing in words, but it lands on the baseline the jacks' own labels already use, so
 on a footer the gutter is the grouping and the labels carry the names.
 
+## The rail: outputs down the right-hand edge
+
+The footer holds its jacks side by side, so a panel with many of them is as wide as
+they are however narrow its controls. `Panel(rail=Rail([...], caption="OUT"))` stands a
+column of jacks in a felt block of its own beside the sections instead: the panel's
+height is fixed and the sections already span it, so the jacks cost a few millimetres of
+width where the footer charged one column each. The block wears the footer's **mint**
+index tab, labels stand to the left of their jacks (the side-label rule), and the solver
+spaces the jacks down the block's height and reports a shortfall if they do not fit.
+
+Use it only where the footer is what sets the panel's width -- compare the widest section
+row against the footer's natural span first. Where a section is already wider than the
+footer (most panels), a rail adds a column of width and costs more than it saves. Contagion
+is the case it exists for: 77 HP with its six outputs in the footer, 64 HP with them on a rail.
+
 ## Columns, and things that are not columns
 
 A row's items land in columns, and the solver spaces each gap to the two columns

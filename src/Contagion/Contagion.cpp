@@ -661,7 +661,12 @@ struct DisplayWidget : widget::Widget {
 			booting = module->booting;
 		}
 		const float s = box.size.x / panel::GLASS_W;                 // pixels per mm
-		const float lcdW = 74.f, lcdH = 11.4f, lcdY = 5.0f, gap = 5.f, x0 = 4.f;
+		// Everything below is millimetres across a glass GLASS_W wide, and all of it has to end before it:
+		// the LCDs, the SELECTED lamps (two columns of `selW`), the AMOUNT lamps. The LCD's dots are sized by
+		// its cell height (see drawLcd), so 62 mm of width is as sharp as 74 was; the lamp pitches are the
+		// narrowest that still clear the widest word in each column ("SQR", "SYNC PH").
+		const float lcdW = 62.f, lcdH = 11.4f, lcdY = 5.0f, gap = 4.f, x0 = 4.f;
+		const float selW = 46.f, selPitch = 7.f, amtPitch = 11.2f, labelW = 10.5f;
 		const panel::TextStyle cap(panel::Face::Mono, 6.0f, panel::SAGE, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, 0.8f);
 
 		// PRESET: the last program screen, and the PARAMETER screen: the unit's LCD as it is.
@@ -679,15 +684,15 @@ struct DisplayWidget : widget::Widget {
 		}
 
 		// The lamps: the unit lights one per selector position and one per AMOUNT destination.
-		const float sx = x0 + 2 * (lcdW + gap) + 4.f;
+		const float sx = x0 + 2 * (lcdW + gap);
 		panel::text(vg, cap, sx * s, 3.3f * s, "SELECTED");
 		const Row* sel = selectorRows();
 		for (int i = 0; i < 6; i++)
-			drawRow(vg, sel[i], sx + (i / 3) * 54.f, 6.9f + (i % 3) * 3.35f, 11.f, 7.2f, 7.f, s);
-		const float ax = sx + 2 * 54.f + 6.f;
+			drawRow(vg, sel[i], sx + (i / 3) * selW, 6.9f + (i % 3) * 3.35f, labelW, selPitch, 7.f, s);
+		const float ax = sx + 2 * selW + 4.f;
 		panel::text(vg, cap, ax * s, 3.3f * s, "AMOUNT");
 		const Row* amt = amountRows();
-		for (int i = 0; i < 4; i++) drawRow(vg, amt[i], ax, 6.9f + i * 3.35f, 11.f, 12.5f, 7.f, s);
+		for (int i = 0; i < 4; i++) drawRow(vg, amt[i], ax, 6.9f + i * 3.35f, labelW, amtPitch, 7.f, s);
 	}
 };
 

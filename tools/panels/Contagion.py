@@ -30,7 +30,7 @@ P = Panel(
     subtitle="VIRUS C",
     form="FORM 8300",
     glass=Glass(h=18.0),
-    footer_groups=(2, 7, 3, 8, 8, 6),   # audio in, a keyboard, a transport, CV, gates, audio out
+    footer_groups=(2, 7, 3, 8, 8),      # audio in, a keyboard, a transport, CV, gates
 )
 
 # The display is one piece of glass: the unit's own 2 x 16 LCD as it is now (the parameter
@@ -101,12 +101,17 @@ P.footer = [
          Jack("g_part_dn", "PART -"), Jack("g_part_up", "PART +"),
          Jack("g_param_dn", "PARAM <"), Jack("g_param_up", "PARAM >"),
          Jack("g_value_dn", "VALUE -"), Jack("g_value_up", "VALUE +"),
-         Jack("g_arp", "ARP ON"), Jack("g_random", "RANDOM"),
-         Jack("out1l", "OUT 1L", ink="MINT"), Jack("out1r", "OUT 1R", ink="MINT"),
-         Jack("out2l", "OUT 2L", ink="MINT"), Jack("out2r", "OUT 2R", ink="MINT"),
-         Jack("out3l", "OUT 3L", ink="MINT"), Jack("out3r", "OUT 3R", ink="MINT")],
+         Jack("g_arp", "ARP ON"), Jack("g_random", "RANDOM")],
         y=118.6),
 ]
+
+# The three stereo outs stand down the right-hand edge, not along the footer: the footer's
+# thirty-four jacks were what made this the widest panel in the family, wider than its
+# nineteen knobs by sixteen HP. Inputs below, what leaves the module beside the controls.
+P.rail = Rail([Jack(n, t, ink="MINT") for n, t in
+               [("out1l", "1 L"), ("out1r", "1 R"), ("out2l", "2 L"),
+                ("out2r", "2 R"), ("out3l", "3 L"), ("out3r", "3 R")]],
+              caption="OUT")
 
 if __name__ == "__main__":
     raise SystemExit(build(P, root=os.path.abspath(

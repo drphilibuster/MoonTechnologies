@@ -55,6 +55,7 @@ def signature(panel, sol):
     parts += [(n, r(x), r(y), k) for n, x, y, k in sol.widgets]
     parts += [(r(x), r(y), r(a), r(b)) for x, y, a, b, _ in sol.wells]
     parts += [(r(a), r(b)) for a, b in sol.blocks]
+    parts += [(r(a), r(b)) for a, b in sol.block_x if abs(a - 3.0) > 1e-6 or abs(b - (panel.w - 3.0)) > 1e-6]
     parts += [tuple(r(v) for v in g) for g in sol.groups]
     parts += [tuple(r(v) for v in rg) for rg in sol.rings]
     parts += [sol.glass and tuple(r(v) for v in sol.glass)]

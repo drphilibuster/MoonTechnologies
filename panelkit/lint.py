@@ -32,6 +32,16 @@ def screw_rects(panel):
     return [(x0, y0, x1, y1) for x0, x1 in xs for y0, y1 in ys]
 
 
+def _block_at(sol, y, x):
+    """The (x0, x1) of the felt block standing at this height and this column, or
+    None. Blocks can share a height now -- a rail stands beside the sections --
+    so the height alone no longer names one."""
+    for (b0, b1), (x0, x1) in zip(sol.blocks, sol.block_x):
+        if b0 - 0.2 <= y <= b1 + 0.2 and x0 - 0.5 <= x <= x1 + 0.5:
+            return x0, x1
+    return None
+
+
 def _overlap(a, b, slack=0.0):
     return (a[0] < b[2] - slack and b[0] < a[2] - slack
             and a[1] < b[3] - slack and b[1] < a[3] - slack)
@@ -143,13 +153,12 @@ def check(panel, sol, labels):
         y = (box[1] + box[3]) / 2
         on_band = sol.band_footer is not None and y > sol.band_footer
         if not on_band and sol.blocks:
-            in_block = any(b0 - 0.2 <= y <= b1 + 0.2 for b0, b1 in sol.blocks)
-            if in_block and (box[0] < BLOCK_INSET + FRAME_CLEAR
-                             or box[2] > panel.w - BLOCK_INSET - FRAME_CLEAR):
+            blk = _block_at(sol, y, (box[0] + box[2]) / 2)
+            if blk and (box[0] < blk[0] + FRAME_CLEAR or box[2] > blk[1] - FRAME_CLEAR):
                 bad.append("widget '%s' is too close to its block's frame "
                            "(x %.2f..%.2f; keep ink inside %.2f..%.2f)"
-                           % (name, box[0], box[2], BLOCK_INSET + FRAME_CLEAR,
-                              panel.w - BLOCK_INSET - FRAME_CLEAR))
+                           % (name, box[0], box[2], blk[0] + FRAME_CLEAR,
+                              blk[1] - FRAME_CLEAR))
         if box[3] > FOOT_Y + 0.3:
             bad.append("widget '%s' runs into the foot ribbon" % name)
     for i, (a, an) in enumerate(wells):
@@ -166,10 +175,10 @@ def check(panel, sol, labels):
         on_band = sol.band_footer is not None and y > sol.band_footer
         if on_band or not sol.blocks:
             continue
-        if not any(b0 - 0.2 <= y <= b1 + 0.2 for b0, b1 in sol.blocks):
+        blk = _block_at(sol, y, (b[0] + b[2]) / 2)
+        if not blk:
             continue
-        if (b[0] < BLOCK_INSET + TEXT_FRAME_CLEAR
-                or b[2] > panel.w - BLOCK_INSET - TEXT_FRAME_CLEAR):
+        if b[0] < blk[0] + TEXT_FRAME_CLEAR or b[2] > blk[1] - TEXT_FRAME_CLEAR:
             bad.append('"%s" runs into its block\'s frame (x %.2f..%.2f)'
                        % (l["text"], b[0], b[2]))
 

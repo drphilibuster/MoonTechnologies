@@ -60,13 +60,9 @@ spectrum and a warped field, driven by audio and CV.
 |---|---|---|---|
 | **[Tax Bracket](docs/TaxBracket.md)** | **[Racketeer](docs/Racketeer.md)** | **[Gross](docs/Gross.md)** | **[Amortization](docs/Amortization.md)** |
 
-| <img src="tools/previews/Apportionment.png" width="286"> |
-|---|
-| **[Apportionment](docs/Apportionment.md)** |
-
-| <img src="tools/previews/Contagion.png" width="647"> |
-|---|
-| **[Contagion](docs/Contagion.md)** |
+| <img src="tools/previews/Apportionment.png" width="286"> | <img src="tools/previews/Contagion.png" width="538"> |
+|---|---|
+| **[Apportionment](docs/Apportionment.md)** | **[Contagion](docs/Contagion.md)** |
 
 | <img src="tools/previews/NordicBanking.png" width="437"> | <img src="tools/previews/Rebate.png" width="101"> | <img src="tools/previews/Depreciation.png" width="286"> |
 |---|---|---|
@@ -176,7 +172,7 @@ A phrase counter for arranging a patch. One base length N and six lines that eac
 
 ESP effect units under the DP/4's real operating system and DSP code -- every algorithm, preset and Config is Ensoniq's -- on an emulated 68B03 and four ES5510s. The DP/4's own front panel is here button for button, and the thing the hardware hid in its menus is on the panel: every Config parameter that routes the four units (source count, A-B and C-D serial/parallel/feedback, AB into CD, amounts, mono/stereo inputs, output selects) is a control, and moving one makes the module work the Config pages for you. Per-unit stereo taps for patching the units into the rest of the rack.
 
-### [Contagion](docs/Contagion.md) — 77 HP · *Synth voice, Polyphonic, Effect, Hardware clone*
+### [Contagion](docs/Contagion.md) — 64 HP · *Synth voice, Polyphonic, Effect, Hardware clone*
 
 *An Access Virus C, running all of its own firmware. OS image not included.*
 

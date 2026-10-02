@@ -241,6 +241,30 @@ class Section:
 
 
 @dataclass
+class Rail:
+    """A column of jacks standing down the right-hand edge of the face, in a felt
+    block of its own, beside the sections rather than under them.
+
+    For a panel whose footer band is what sets its width: a footer holds its
+    jacks side by side, so thirty-four of them cost thirty-four columns however
+    narrow the controls above are. Moving the outputs to a rail trades a few
+    millimetres of width for the one dimension a panel never runs short of --
+    the panel's height is fixed, and the sections already span it.
+
+    Each jack's label stands to its left on the jack's own centre line (the
+    family's side-label rule), so the rail pays for its names once, horizontally,
+    and its pitch is the jack's own. `items` are jacks; the solver spaces them
+    evenly down the block, below the caption. Their ink follows the footer's
+    rule: outputs ring mint.
+    """
+    items: list
+    caption: str = ""
+    #: Solved:
+    x0: float = 0.0
+    x1: float = 0.0
+
+
+@dataclass
 class Glass:
     """The read-out well under the masthead."""
     h: float = 9.2
@@ -313,6 +337,8 @@ class Panel:
     sections: list = field(default_factory=list)
     #: Rows that sit on the footer band rather than in a section.
     footer: list = field(default_factory=list)
+    #: A column of jacks down the right-hand edge. See Rail.
+    rail: "Rail" = None
     traces: list = field(default_factory=list)
     extra_labels: list = field(default_factory=list)
     lights: list = field(default_factory=list)   # (name, x, y) placed by hand
