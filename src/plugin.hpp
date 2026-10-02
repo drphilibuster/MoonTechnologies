@@ -27,6 +27,7 @@ extern Model* modelGarnishment;
 extern Model* modelGross;
 extern Model* modelInstallment;
 extern Model* modelKickback;
+extern Model* modelLedger;
 extern Model* modelToll;
 extern Model* modelNordicBanking;
 extern Model* modelPatchAudit;

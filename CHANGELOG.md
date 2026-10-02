@@ -5,6 +5,28 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Added: Ledger, an eight-track sequencer after Shoal and Hermod+
+
+Every track is either a seeded generator or a written pattern, sixteen slots each. The
+generator is Ormer Modular's Shoal (MIT), ported line for line and held frame-identical to
+the original by `tests/Ledger/test_golden`. The patterns, effects and MIDI follow Squarp's
+Hermod+ manual. 68 HP.
+
+* **Shoal entire**: chance, bipolar note and octave, fifteen walks, twenty-nine rates,
+  Follow, Evolve, Breathe, Weight, Slop, Freeze, Currents, EOS, reseeding. Per-knob
+  polyphonic CV, CV A–D and a four-slot mod matrix per track, pitch standards, poly hubs.
+* **Patterns**: a grid-free polyphonic piano roll with six modulation lanes, a
+  pattern generator, and CAPTURE, which writes a generator's loop down.
+* **Effects**: Hermod+'s nineteen, up to eight per track in series, with per-slot values
+  and mutes, and every parameter a matrix destination.
+* **MIDI**: input played and recorded (overdub, replace, looper, punch in) into the
+  tracks; CCs into the matrix; a transpose leader; two outputs carrying every track on its
+  own channel, with clock and transport; MIDI clock in.
+* **Rows and the song**: rows launched at a loop's end, on a grid, or when every loop ends
+  together (modulo), shortest, longest or one track's; launched slots start at their first
+  step; a song of up to 32 entries, each a row and a number of passes; undo for the
+  display's edits.
+
 ### Changed: Depreciation, redesigned around what it was like to use
 
 * **The display no longer flickers.** The panel read the firmware's display RAM raw, and the

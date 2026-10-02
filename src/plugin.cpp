@@ -29,6 +29,7 @@ void init(Plugin* p) {
 	p->addModel(modelGross);
 	p->addModel(modelInstallment);
 	p->addModel(modelKickback);
+	p->addModel(modelLedger);
 	p->addModel(modelNordicBanking);
 	p->addModel(modelToll);
 	p->addModel(modelPatchAudit);

@@ -141,3 +141,24 @@ one the research emulation was validated with (the machine in `src/Pcm70Machine.
 emulation byte for byte); do not update it without re-running `tests/Depreciation`.
 
 Local change: the Z80 `cyc` counter is widened from `unsigned long` to `uint64_t`, because it is 32 bits on Windows (LLP64) and wraps after about 22 minutes at 3.25 MHz.
+
+## Shoal and the distingNT API (Ledger's golden tests)
+
+`shoal/shoal.cpp` is Ormer Modular's Shoal, an 8-track generative melody
+sequencer for the Expert Sleepers disting NT
+(<https://github.com/ormermodular/shoal>), copyright 2026 Ormer Modular, under
+the MIT licence in `shoal/LICENSE`. Vendored at commit
+`845b8d0bbbc6315ffa09fd3338137362695f0f1a` (v1.2.1 + "Sync from shoal-dev@7b71cc6").
+
+`distingNT_API/include/distingnt/api.h` is the header that file is written
+against, from <https://github.com/expertsleepersltd/distingNT_API>, copyright
+2025 Expert Sleepers Ltd, MIT (`distingNT_API/LICENSE`). Vendored at commit
+`6975a630cb5f86de6f8c709f5467f4666bbd4579`; only `api.h` is kept.
+
+Neither is compiled into the plugin. Ledger's engine (`src/Ledger/Shoal.hpp`)
+is a transliteration of `shoal.cpp`'s sequencing code, credited there; these
+two files exist so that `tests/Ledger/` can build the original against stub
+`NT_*` functions and check, frame by frame, that the same parameters and seeds
+produce the same gates, pitches, Currents, EOS pulses and MIDI bytes.
+Updating Shoal means replacing `shoal.cpp`, bumping the commit above, and
+re-running `make -C tests/Ledger`.

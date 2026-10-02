@@ -8,7 +8,7 @@
 [![Downloads](https://img.shields.io/github/downloads/drphilibuster/MoonTechnologies/total?label=downloads)](https://github.com/drphilibuster/MoonTechnologies/releases)
 [![Licence](https://img.shields.io/badge/code-GPL--3.0--or--later-blue)](LICENSE.md)
 
-Thirty-four modules for [VCV Rack 2](https://vcvrack.com), by **Taxxess**.
+Thirty-five modules for [VCV Rack 2](https://vcvrack.com), by **Taxxess**.
 
 They share a panel language borrowed from money — a pale engraved note, sage
 guilloche round every field, a scroll in every corner, a form number in the
@@ -72,25 +72,25 @@ spectrum and a warped field, driven by audio and CV.
 |---|---|---|---|
 | **[Repossession](docs/Repossession.md)** | **[Collusion](docs/Collusion.md)** | **[Reconciliation](docs/Reconciliation.md)** | **[Dependents](docs/Dependents.md)** |
 
-| <img src="tools/previews/Calculation.png" width="134"> | <img src="tools/previews/SixFigures.png" width="210"> | <img src="tools/previews/Garnishment.png" width="151"> | <img src="tools/previews/Consolidation.png" width="118"> |
-|---|---|---|---|
-| **[Calculation](docs/Calculation.md)** | **[Six Figures](docs/SixFigures.md)** | **[Garnishment](docs/Garnishment.md)** | **[Consolidation](docs/Consolidation.md)** |
+| <img src="tools/previews/Calculation.png" width="134"> | <img src="tools/previews/Ledger.png" width="571"> |
+|---|---|
+| **[Calculation](docs/Calculation.md)** | **[Ledger](docs/Ledger.md)** |
 
-| <img src="tools/previews/Bailout.png" width="210"> | <img src="tools/previews/Projection.png" width="101"> | <img src="tools/previews/Transmittal.png" width="84"> | <img src="tools/previews/Installment.png" width="134"> |
+| <img src="tools/previews/SixFigures.png" width="210"> | <img src="tools/previews/Garnishment.png" width="151"> | <img src="tools/previews/Consolidation.png" width="118"> | <img src="tools/previews/Bailout.png" width="210"> |
 |---|---|---|---|
-| **[Bailout](docs/Bailout.md)** | **[Projection](docs/Projection.md)** | **[Transmittal](docs/Transmittal.md)** | **[Installment](docs/Installment.md)** |
+| **[Six Figures](docs/SixFigures.md)** | **[Garnishment](docs/Garnishment.md)** | **[Consolidation](docs/Consolidation.md)** | **[Bailout](docs/Bailout.md)** |
 
-| <img src="tools/previews/Volatility.png" width="118"> | <img src="tools/previews/Deduction.png" width="101"> | <img src="tools/previews/AuditLogic.png" width="210"> | <img src="tools/previews/Kickback.png" width="252"> |
+| <img src="tools/previews/Projection.png" width="101"> | <img src="tools/previews/Transmittal.png" width="84"> | <img src="tools/previews/Installment.png" width="134"> | <img src="tools/previews/Volatility.png" width="118"> |
 |---|---|---|---|
-| **[Volatility](docs/Volatility.md)** | **[Deduction](docs/Deduction.md)** | **[Audit Logic](docs/AuditLogic.md)** | **[Kickback](docs/Kickback.md)** |
+| **[Projection](docs/Projection.md)** | **[Transmittal](docs/Transmittal.md)** | **[Installment](docs/Installment.md)** | **[Volatility](docs/Volatility.md)** |
 
-| <img src="tools/previews/PaymentSchedule.png" width="218"> | <img src="tools/previews/SignHere.png" width="168"> | <img src="tools/previews/Diversified.png" width="176"> | <img src="tools/previews/Toll.png" width="92"> |
+| <img src="tools/previews/Deduction.png" width="101"> | <img src="tools/previews/AuditLogic.png" width="210"> | <img src="tools/previews/Kickback.png" width="260"> | <img src="tools/previews/PaymentSchedule.png" width="218"> |
 |---|---|---|---|
-| **[Payment Schedule](docs/PaymentSchedule.md)** | **[Sign Here](docs/SignHere.md)** | **[Diversified](docs/Diversified.md)** | **[Toll](docs/Toll.md)** |
+| **[Deduction](docs/Deduction.md)** | **[Audit Logic](docs/AuditLogic.md)** | **[Kickback](docs/Kickback.md)** | **[Payment Schedule](docs/PaymentSchedule.md)** |
 
-| <img src="tools/previews/ScheduleA.png" width="118"> |
-|---|
-| **[Schedule A](docs/ScheduleA.md)** |
+| <img src="tools/previews/SignHere.png" width="168"> | <img src="tools/previews/Diversified.png" width="176"> | <img src="tools/previews/Toll.png" width="92"> | <img src="tools/previews/ScheduleA.png" width="118"> |
+|---|---|---|---|
+| **[Sign Here](docs/SignHere.md)** | **[Diversified](docs/Diversified.md)** | **[Toll](docs/Toll.md)** | **[Schedule A](docs/ScheduleA.md)** |
 
 ## Built for this plugin
 
@@ -163,6 +163,12 @@ A chord made by distorting one sine you cannot hear. Chebyshev polynomials of th
 *After Count Modula's Event Timer (Countdown 3 and 5).*
 
 A phrase counter for arranging a patch. One base length N and six lines that each fall due at N times their own ratio, from ÷8 to ×32, with a trigger, a gate and a counter apiece. It does the work of a chain of countdown timers in one module. Every line counts from the same downbeat, and a START that arrives a cable's delay after its clock still claims that clock, so chained sections stay on the beat without setting anything to N−1. Lines can repeat instead of firing once, and a Countdown-compatible start mode is in the menu.
+
+### [Ledger](docs/Ledger.md) — 68 HP · *Sequencer, Random, Polyphonic, Clock generator*
+
+*After Ormer Modular's Shoal (MIT) and Squarp's Hermod+.*
+
+An eight-track generative sequencer. Each track's melody is grown from a seed, never written down. Every step is worked out from the seed the moment it plays, so a knob turned back returns the exact line it left, and a seed number recalls a melody anywhere. Its generator is Shoal's engine, ported line for line and tested frame by frame against the original. Ledger therefore keeps all of Shoal: chance, bipolar note and octave variation, fifteen walks, twenty-nine exact clock ratios, Follow (tracks sharing a seed through their own filters, which gives harmonies and canons), Evolve, Breathe, Weight, Slop, Freeze, Currents and end-of-sequence pulses. On top of it sit Hermod-style written patterns: a polyphonic piano roll with modulation lanes, sixteen slots per track launched as sequences, and CAPTURE, which writes a generated loop down so it can be edited. Each track runs its notes through up to eight of Hermod's nineteen effects (arpeggiator, echo, ratchet, Turing register, LFO and the rest), with per-slot values and mutes. MIDI in plays and records into the tracks (overdub, replace or looper), its CCs drive the mod matrix, and a transpose leader moves them. Two MIDI outputs carry every track on its own channel, along with clock and transport. Rows of slots launch together on a loop's end, a grid, or when every loop comes round at once, and a song strings rows together, each played its number of times. Rack's undo covers the pattern, slot, effect and song edits.
 
 ## Hardware, running its own firmware
 
@@ -252,7 +258,7 @@ Filters under one MODEL knob with CV — PAiA 2720-3L, Escobedo Q&D, Korg35, MS-
 
 Four logic gates with selectable functions and the 0 V / 12 V reference, gated analogue switches, and a clock divider. Separate boards, separate blocks, read top to bottom.
 
-### [Kickback](docs/Kickback.md) — 30 HP · *Drum, Synth voice, Sequencer, Clock generator*
+### [Kickback](docs/Kickback.md) — 31 HP · *Drum, Synth voice, Sequencer, Clock generator*
 
 *Day 9 — and a long way past it.*
 

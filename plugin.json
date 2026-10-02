@@ -210,6 +210,18 @@
       ]
     },
     {
+      "slug": "Ledger",
+      "name": "Ledger",
+      "description": "Eight-track generative sequencer: Shoal's seeded melodies, followers, walks and evolution, growing into Hermod-style patterns, effects and MIDI",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Ledger.md",
+      "tags": [
+        "Sequencer",
+        "Random",
+        "Polyphonic",
+        "Clock generator"
+      ]
+    },
+    {
       "slug": "NordicBanking",
       "name": "Nordic Banking",
       "description": "Clavia Nord Lead 2X running its own firmware: the real MC68331 OS drives two emulated DSP56362s, with the whole front panel, LEDs and display (OS image not included)",
