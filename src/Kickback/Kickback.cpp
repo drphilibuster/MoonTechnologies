@@ -22,8 +22,10 @@ static std::vector<std::string> ratioLabels() {
 
 
 struct Kickback : Module {
-	// Nine voices, five controls each, in the order VoiceId has them -- so the
-	// process loop is a loop and not nine near-identical paragraphs.
+	// Six voices, five controls each, in the order VoiceId has them -- so the
+	// process loop is a loop and not six near-identical paragraphs. SHAPE,
+	// EVOLVE and the per-voice LEN came after the rest and sit at the end, so
+	// a patch saved before them still finds every older knob where it left it.
 	enum ParamId {
 		RUN_PARAM, LEVEL_PARAM, RATE_PARAM, ACCENT_PARAM,
 		DIV_PARAM, FILL_PARAM, SWING_PARAM, SEED_PARAM, HUMAN_PARAM, GATELEN_PARAM,
@@ -33,7 +35,10 @@ struct Kickback : Module {
 		BEND_PARAM = DECAY_PARAM + V_COUNT,           // + V_COUNT
 		COLOUR_PARAM = BEND_PARAM + V_COUNT,          // + V_COUNT
 		RATIO_PARAM = COLOUR_PARAM + V_COUNT,         // + V_COUNT
-		PARAMS_LEN = RATIO_PARAM + V_COUNT
+		SHAPE_PARAM = RATIO_PARAM + V_COUNT,
+		EVOLVE_PARAM,
+		LEN_PARAM,                                    // + V_COUNT
+		PARAMS_LEN = LEN_PARAM + V_COUNT
 	};
 	enum InputId {
 		CLK_INPUT, RST_INPUT, ACC_INPUT,
@@ -93,6 +98,13 @@ struct Kickback : Module {
 		configParam(SWING_PARAM, 0.f, 1.f, 0.f, "Swing", "%", 0.f, 100.f);
 		configParam(SEED_PARAM, 0.f, 15.f, 0.f, "Pattern seed");
 		paramQuantities[SEED_PARAM]->snapEnabled = true;
+		// SHAPE: how far the Euclidean necklaces pull on the ranking. At zero the
+		// kit is the metric ladder alone -- kick on the beat, backbeat snare, hat
+		// in 8ths; at the top the necklace decides which in-between steps come next.
+		configParam(SHAPE_PARAM, 0.f, 1.f, 0.5f, "Shape: metric ladder to Euclidean", "%", 0.f, 100.f);
+		// EVOLVE: how much the loop moves from one pass to the next -- ghost notes
+		// that come and go on their own cycle, and a fill on every fourth pass.
+		configParam(EVOLVE_PARAM, 0.f, 1.f, 0.3f, "Evolve", "%", 0.f, 100.f);
 		configParam(HUMAN_PARAM, 0.f, 1.f, 0.25f, "Humanise", "%", 0.f, 100.f);
 		configParam(GATELEN_PARAM, 0.f, 1.f, 0.3f, "Gate length", " ms", 0.f, 1.f);
 		paramQuantities[GATELEN_PARAM]->displayMultiplier = 95.f;
@@ -139,6 +151,11 @@ struct Kickback : Module {
 			             n + " clock ratio", ratioLabels());
 			configOutput(VOICE_OUTPUT + v, n);
 			configOutput(GATE_OUTPUT + v, n + " gate");
+			// Each voice's own cycle, so a hat on 12 or 15 runs against a kick on
+			// 16 and the two come back into step only every 48 or 240 steps.
+			configParam(LEN_PARAM + v, 3.f, (float)kSteps, (float)kSteps,
+			            n + " pattern length", " steps");
+			paramQuantities[LEN_PARAM + v]->snapEnabled = true;
 			configLight(VOICE_LIGHT + v, n);
 		}
 
@@ -195,7 +212,7 @@ struct Kickback : Module {
 	}
 	void dataFromJson(json_t* root) override {
 		json_t* j = json_object_get(root, "step");
-		if (j) payroll.step = clamp((int)json_integer_value(j), 0, kSteps - 1);
+		if (j) payroll.setStep(clamp((int)json_integer_value(j), 0, kSteps - 1));
 	}
 
 	void process(const ProcessArgs& args) override {
@@ -222,8 +239,12 @@ struct Kickback : Module {
 		for (int v = 0; v < V_COUNT; v++)
 			payroll.ratioIndex[v] = (int)clamp(std::round(params[RATIO_PARAM + v].getValue()),
 			                                   0.f, (float)(kRatioCount - 1));
+		int lens[V_COUNT];
+		for (int v = 0; v < V_COUNT; v++)
+			lens[v] = (int)clamp(std::round(params[LEN_PARAM + v].getValue()), 3.f, (float)kSteps);
 		payroll.build(fill, (int)std::round(params[SEED_PARAM].getValue()),
-		              params[HUMAN_PARAM].getValue());
+		              params[HUMAN_PARAM].getValue(), params[SHAPE_PARAM].getValue(),
+		              params[EVOLVE_PARAM].getValue(), lens);
 
 		// 30 to 300 BPM, log-spaced, so the useful half of the range is the
 		// useful half of the knob.
@@ -400,6 +421,9 @@ struct KickbackWidget : ModuleWidget {
 		static const Vec* colourPos[V_COUNT] = {
 			&panel::KICK_MODEL_POS, &panel::SNARE_MODE_POS, &panel::HAT_RATTLE_POS,
 			&panel::TOM1_STRIKE_POS, &panel::TOM2_STRIKE_POS, &panel::TOM3_STRIKE_POS };
+		static const Vec* lenPos[V_COUNT] = {
+			&panel::KICK_LEN_POS, &panel::SNARE_LEN_POS, &panel::HAT_LEN_POS,
+			&panel::TOM1_LEN_POS, &panel::TOM2_LEN_POS, &panel::TOM3_LEN_POS };
 		static const Vec* gatePos[V_COUNT] = {
 			&panel::KICK_GATE_POS, &panel::SNARE_GATE_POS, &panel::HAT_GATE_POS,
 			&panel::TOM1_GATE_POS, &panel::TOM2_GATE_POS, &panel::TOM3_GATE_POS };
@@ -416,6 +440,8 @@ struct KickbackWidget : ModuleWidget {
 				panel::mm(tunePos[v]->x, tunePos[v]->y), module, Kickback::TUNE_PARAM + v));
 			addParam(createParamCentered<SmallKnob>(
 				panel::mm(ratioPos[v]->x, ratioPos[v]->y), module, Kickback::RATIO_PARAM + v));
+			addParam(createParamCentered<SmallKnob>(
+				panel::mm(lenPos[v]->x, lenPos[v]->y), module, Kickback::LEN_PARAM + v));
 			addParam(createParamCentered<SmallKnob>(
 				panel::mm(decayPos[v]->x, decayPos[v]->y), module, Kickback::DECAY_PARAM + v));
 			addParam(createParamCentered<SmallKnob>(
@@ -462,6 +488,8 @@ struct KickbackWidget : ModuleWidget {
 		addParam(createParamCentered<SmallKnob>(panel::mm(panel::FILL_POS.x, panel::FILL_POS.y), module, Kickback::FILL_PARAM));
 		addParam(createParamCentered<SmallKnob>(panel::mm(panel::SWING_POS.x, panel::SWING_POS.y), module, Kickback::SWING_PARAM));
 		addParam(createParamCentered<SmallKnob>(panel::mm(panel::SEED_POS.x, panel::SEED_POS.y), module, Kickback::SEED_PARAM));
+		addParam(createParamCentered<SmallKnob>(panel::mm(panel::SHAPE_POS.x, panel::SHAPE_POS.y), module, Kickback::SHAPE_PARAM));
+		addParam(createParamCentered<SmallKnob>(panel::mm(panel::EVOLVE_POS.x, panel::EVOLVE_POS.y), module, Kickback::EVOLVE_PARAM));
 		addParam(createParamCentered<SmallKnob>(panel::mm(panel::HUMAN_POS.x, panel::HUMAN_POS.y), module, Kickback::HUMAN_PARAM));
 		addParam(createParamCentered<SmallKnob>(panel::mm(panel::GATELEN_POS.x, panel::GATELEN_POS.y), module, Kickback::GATELEN_PARAM));
 		addInput(createInputCentered<panel::PortTrigIn>(panel::mm(panel::RST_IN_POS.x, panel::RST_IN_POS.y), module, Kickback::RST_INPUT));

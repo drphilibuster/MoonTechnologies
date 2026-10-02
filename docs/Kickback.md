@@ -2,7 +2,7 @@
 
 **A Modular in a Week drum bank that is also a drum machine.** Six percussion
 voices from Modular in a Week's Day 9 folder, each with its own trigger and
-output; a clock; a Euclidean pattern engine that plays any voice whose trigger
+output; a clock; a ranked pattern engine (a metric spine plus Euclidean necklaces) that plays any voice whose trigger
 jack is empty; and a grid mode where each voice instead runs at its own multiple
 or division of the clock, from /256 to ×256. 31 HP, monophonic (drums; no
 per-channel processing).
@@ -250,9 +250,12 @@ those.
 | **CLK** (input) | External clock. Each edge is a *beat*: Kickback measures the period and subdivides it by DIV, so a quarter-note clock still drives a sixteenth-note grid. The grid resyncs to every edge, so it cannot drift. |
 | **DIV** (6 detents) | 1/4, 1/8, 1/8 triplet, 1/16, 1/16 triplet, 1/32 — how the beat is subdivided. |
 | **SWING** | Pushes the odd sixteenths later, up to about 62% of a step. The even ones never move, so CLK OUT stays where a downbeat should be. |
-| **FILL** | Every voice's Euclidean onset count at once, and at its bottom stop, grid mode. Monotone: turning it up may only ever add onsets. |
+| **FILL** | Every voice's hit count at once, and at its bottom stop, grid mode. Nested: the hits at one setting are all still there at any higher one, so turning it up only ever adds the next most important hit. |
 | **BURST** (switch) | Hands each voice's steps to its own RATIO: an onset becomes a ratchet at that multiple, or thins out at that division. Ignored at FILL 0, which is grid mode already. |
-| **SEED** (16 detents) | Rotates each voice's necklace by a different amount, and nudges one onset of any voice whose pattern would otherwise be perfectly regular (see below). Same density, different beat. **Takes effect at the top of the next bar**, not under your hand — see below. |
+| **SHAPE** | From the metric ladder alone (0) to the Euclidean necklaces deciding which in-between steps come next (100%). The anchors — kick on 1 and 3, snare on both backbeats — are pinned at every setting. |
+| **EVOLVE** | How far the loop moves from one pass to the next: ghost notes that come and go on their own cycle, a little re-ranking of the in-between steps, and a fill on every fourth pass. At zero every pass is the same pass. |
+| **LENGTH** (one per voice) | That voice's cycle, 3 to 16 steps. A hat on 12 against a kick on 16 comes back into step every 48 steps; on 15, every 240. RST puts every voice back at the top. |
+| **SEED** (16 detents) | Picks each voice's Euclidean necklace and where it is turned. Same density, different beat. **Takes effect at the top of the next bar**, not under your hand — see below. |
 | **HUMAN** | Velocity spread and microtiming, together. Downbeats move least, as a player's do. Works in both modes. |
 | **GATE** | How long the gate outputs stay high: 5 to 100 ms. |
 | **RST** (input) | Resets the grid, and every voice's grid-mode phase, to the top. |
@@ -260,37 +263,40 @@ those.
 | **CLK** (output) | A 1 ms pulse on every grid step, so Kickback can be the clock for the rest of the rack. |
 | **KICK / SNARE / HAT / TOM I / TOM II / TOM III** (outputs) | One gate per voice, down the right-hand column. Held high for GATE and **scaled by that hit's velocity**, so the accent travels with the trigger instead of on a second cable — and a ghost note still clears a 1 V trigger threshold. Six separate jacks rather than one polyphonic bus: a drum machine that needs a split module to drive six external voices is not self-contained. |
 
-### The patterns are Euclidean
+### The patterns are ranked, not Euclidean
 
-Each voice gets `E(k,16)` — Bjorklund's algorithm, which places k onsets as
-evenly as possible across sixteen steps. It is the same sequence Euclid's
-algorithm produces for `gcd(k,n)`, and Toussaint's observation is that E(k,n)
-for small integers is most of the world's ostinati: E(3,8) is the tresillo,
-E(5,8) the cinquillo, E(2,5) the khafif-e-ramal.
+FILL decides how many hits a voice has; *which* steps they are comes from a
+ranking. Every step of a voice's cycle is scored:
 
-Euclid says how to spread k onsets; it does not say what k should be, and a kit
-where every voice has the same k is a polyrhythm demo rather than a beat. So
-each voice has a *role*: the FILL at which it first speaks, how much of the
-remaining knob it takes to reach its fullest, and the rotation that puts its
-default pattern where a player would — E(4,16) unrotated is four on the floor,
-E(2,16) rotated by four is the backbeat. Turning FILL up fills a kit out in the
-order a kit fills out, and all six voices speak by the middle of the knob.
+* its **spine** — what the step is worth to that voice. The kick's is a ladder a
+  drummer would recognise (1, then 3, then the "and" of 3, then the other beats);
+  the snare's puts both backbeats first and the ghost notes either side of them
+  next; the hat's is quarters, then 8ths, then 16ths. At other lengths the spine
+  is derived from the cycle's metric weights (Barlow's indispensability, as a
+  ladder), the snare shifted a quarter of the cycle;
+* plus **SHAPE** times a bonus if the step is an onset of the voice's Euclidean
+  necklace E(kE, L), turned by its rotation. SEED chooses the necklace;
+* plus a little seeded noise that grows with EVOLVE.
 
-Sixteen is a power of two, so gcd(k,16) — not merely whether k divides 16 — is
-greater than one for *every even* k, and Morrill's Corollary 2 to Bjorklund's
-own work says that number is exactly how many times a Euclidean rhythm repeats
-its minimal period. k=4 is a single gap played four times (four on the floor,
-the extreme case, and the one with a name); k=6 is no different in kind, only
-milder — an eight-step idea (E(3,8), the tresillo) played twice. Odd k needs
-nothing done to it: it is already coprime to sixteen and already uses the
-whole bar as one shape rather than a short one on a loop. SEED 0 leaves every
-k exactly as Euclid gives it, which is why the paragraph above can say
-"E(4,16) unrotated is four on the floor" and mean it literally. Any other seed
-also breaks a repeating pattern by moving one onset to the nearest free step
-in a seed-chosen direction — 4,4,4,4 into, say, 4,3,5,4 — so turning SEED past
-its first detent stops the kit from falling back on a short idea repeated
-gcd(k,16) times every time FILL's k comes out even, without changing how many
-onsets any voice has.
+The voice plays its k best. The strongest one or two steps of each voice are
+*pinned* and outrank everything. The earlier engine asked Bjorklund's algorithm
+for E(k,16) at every k, and that is a density control with no memory: E(3,16)
+is not E(2,16) plus a hit, so at 40% FILL the kick was `x....x....x.....` — on
+no beat after the first — while the snare and hat were busier than it was. Now
+the kick at 20% is the downbeat and the half bar whatever SEED and SHAPE say,
+and every hit FILL adds is the next most important one (the tests check both).
+
+Euclid is still here, and it is where the interest comes from at higher FILL:
+Toussaint's observation is that E(k,n) for small integers is most of the world's
+ostinati, and as a bonus on the ranking it picks the syncopated step a pattern
+reaches for once its anchors are down, rather than being the whole pattern.
+
+Hits on weak steps are **ghosts**: quieter, and a few ticks late. Offsets are
+quantised to 1/384 of a step, and each voice has its own lay-back — the snare
+sits behind the beat. With EVOLVE up, some ghosts carry Elektron-style conditions
+(every other pass, three in four, one in four, half the time), so the loop
+breathes rather than repeating, and every fourth pass is a fill: more snare, hat
+and toms, and no conditions.
 
 The engine emits a velocity with every trigger, not just a gate. A grid of
 identical hits is not a performance — the point the symbolic drum-generation
@@ -309,9 +315,9 @@ Kickback holds the new seed and swaps patterns at the top of the next bar. The
 swap happens *before* step 0 is armed, so the first thing you hear of the new
 figure is its own downbeat.
 
-FILL and HUMAN are not held back, deliberately. FILL only ever adds onsets to or
-removes them from the pattern already playing, and HUMAN is a spread applied at
-the moment a voice speaks; those are the two you want to hear yourself moving.
+FILL, SHAPE, EVOLVE and HUMAN are not held back, deliberately. FILL only ever adds hits to or
+removes them from the pattern already playing, SHAPE only re-ranks them, and HUMAN is a spread applied at
+the moment a voice speaks; those are the ones you want to hear yourself moving.
 And a stopped module takes a seed at once — there is no bar to wait for, and the
 next thing anyone hears is step 0 regardless.
 
@@ -390,6 +396,7 @@ voice each; the one at the right is what the rest of the rack gets.
 | decay | **DECAY** | **DIV**, **FILL** | **TOM I** gate |
 | bend | **BEND** | **SWING**, **SEED** | **TOM II** gate |
 | ratio | **RATIO** | **HUMAN**, **GATE** | **TOM III** gate |
+| length | **LENGTH** | **SHAPE**, **EVOLVE** | |
 | footer | **OUT** | **CLK** out, **MIX** out | **ACC** in |
 
 Two things about that order are load-bearing rather than taste. RATIO sits at

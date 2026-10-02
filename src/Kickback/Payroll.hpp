@@ -6,7 +6,7 @@
 // The normalling rule is the whole design. A voice whose TRIG jack is empty is
 // played by the engine; a voice with something patched into its TRIG is played
 // by that and nothing else. So an unpatched Kickback runs a kit, patching one
-// TRIG takes that one voice over, and patching all nine leaves the engine doing
+// TRIG takes that one voice over, and patching all six leaves the engine doing
 // nothing but driving CLK OUT. Nothing has to be switched on or off to move
 // between those.
 //
@@ -78,30 +78,116 @@ inline void euclid(int k, int n, bool* out) {
 		for (int j = blen - 1; j >= 0 && at < n; j--) out[at++] = (bpat >> j) & 1u;
 }
 
-/** Each voice's place in the queue, as (start, span, base rotation).
+/** Each voice's place in the queue and its Euclidean character.
 
-    Euclid says how to spread k onsets over sixteen steps; it does not say what
-    k should be, and a kit where every voice has the same k is a polyrhythm
-    demo rather than a beat. `start` is the FILL at which the voice first
-    speaks, `span` how much of the remaining knob it takes to reach its
-    fullest, `most` the largest k it ever asks for, and `rot` the rotation that
-    puts its default pattern where a player would: E(2,16) rotated by four is
-    the backbeat, E(4,16) unrotated is four on the floor.
+    FILL decides how many hits a voice has, `k`; *which* steps they are is
+    decided by ranking (see Payroll::buildVoice), never by Bjorklund alone. The
+    old engine asked E(k,16) for the pattern at every k, and that is a density
+    control with no memory: E(3,16) is not E(2,16) plus one hit, it is a new
+    shape, so the kick at 40% FILL was `x....x....x.....` -- on no beat after the
+    first -- while the snare and hat were busier than it was.
 
-    The starts matter more than they look. They were first set so the toms
-    arrived late, as fills -- which put all three of them at k = 0 for the whole
-    lower half of the knob, including at the FILL the module ships with, so an
-    unpatched Kickback simply never played a tom. A voice that is silent at the
-    default is a voice the module does not appear to have. */
-struct Role { float start, span; int most, rot; };
+    `start` is the FILL at which the voice first speaks, `span` how much of the
+    knob it takes to reach `most` hits in a sixteen-step bar. `kLo..kHi` is the
+    range of E(kE,L) the SEED picks this voice's *character necklace* from, and
+    `rot` that necklace's base rotation. The necklace does not set the count;
+    it is a bonus on the ranking, so it decides which of the in-between steps a
+    voice reaches for once its anchors are down. `bias` is the voice's
+    lay-back, in steps. */
+struct Role { float start, span; int most, rot, kLo, kHi; float bias; };
 static const Role kRole[V_COUNT] = {
-	{ 0.00f, 0.80f,  7,  0 },   // KICK    -- in from the first turn of the knob
-	{ 0.06f, 0.74f,  6,  4 },   // SNARE   -- the backbeat
-	{ 0.03f, 0.94f, 16,  0 },   // HAT     -- fills all the way to sixteenths
-	{ 0.20f, 0.75f,  5, 10 },   // TOM I   -- the toms are part of the kit, not
-	{ 0.28f, 0.70f,  5, 13 },   // TOM II     a garnish on top of it: at the
-	{ 0.36f, 0.62f,  4, 11 },   // TOM III    default FILL all three speak
+	{ 0.00f, 0.80f,  7,  0, 3, 5, 0.00f },   // KICK    -- in from the first turn of the knob
+	{ 0.06f, 0.74f,  6,  2, 3, 5, 0.04f },   // SNARE   -- the backbeat; necklace on the 8ths
+	{ 0.03f, 0.94f, 16,  0, 5, 9, 0.02f },   // HAT     -- fills all the way to sixteenths
+	{ 0.20f, 0.75f,  5, 10, 3, 5, 0.02f },   // TOM I   -- the toms are part of the kit, not
+	{ 0.28f, 0.70f,  5, 13, 3, 5, 0.02f },   // TOM II     a garnish on top of it: at the
+	{ 0.36f, 0.62f,  4, 11, 3, 5, 0.02f },   // TOM III    default FILL all three speak
 };
+
+//: How many onsets of a voice are pinned: the steps that *are* the voice. The
+//: kick keeps its downbeat and the half bar, the snare both backbeats, and the
+//: rest their single strongest step. A pinned step outranks everything FILL,
+//: SHAPE, SEED and EVOLVE can do, so no setting takes the kick off the one.
+static const int kPins[V_COUNT] = { 2, 2, 1, 1, 1, 1 };
+
+//: The role profiles for a sixteen-step bar, hand-set, as per-step intensity in
+//: the way Grids' pattern map holds it: the order the numbers sort into is the
+//: order a drummer adds hits as the density goes up. Kick: 1, 3, then the "and"
+//: of 3, then the other beats. Snare: both backbeats, then the ghost notes either
+//: side of them. Hat: quarters, 8ths, 16ths.
+static const float kKick16[16] = {
+	1.00f, 0.18f, 0.30f, 0.22f,  0.55f, 0.20f, 0.45f, 0.35f,
+	0.90f, 0.18f, 0.70f, 0.32f,  0.52f, 0.20f, 0.42f, 0.38f };
+static const float kSnare16[16] = {
+	0.05f, 0.20f, 0.12f, 0.34f,  1.00f, 0.12f, 0.30f, 0.50f,
+	0.08f, 0.40f, 0.26f, 0.28f,  0.95f, 0.14f, 0.32f, 0.48f };
+static const float kHat16[16] = {
+	1.00f, 0.25f, 0.55f, 0.28f,  0.92f, 0.26f, 0.52f, 0.30f,
+	0.96f, 0.25f, 0.55f, 0.28f,  0.90f, 0.26f, 0.50f, 0.32f };
+
+/** Metric weight of every step of an L-step cycle, 0..1, for any L.
+
+    A step's rank in the hierarchy is the number of groupings it takes to find
+    it: with sixteen as 2x2x2x2, step 0 is the whole bar, 8 the half, 4 and 12
+    the quarters, the even steps the 8ths, the odd ones the leaves -- Barlow's
+    indispensability, flattened to the ladder. The larger prime factors go
+    outermost, so twelve is three groups of four and fifteen five groups of
+    three. A prime length has no groupings to speak of, so it takes an 8th-note
+    split instead of leaving every step but the first level. */
+inline void meterWeights(int L, float* w) {
+	int f[8], m = 0, rem = L;
+	static const int primes[4] = { 7, 5, 3, 2 };
+	for (int i = 0; i < 4; i++)
+		while (rem % primes[i] == 0 && m < 8) { f[m++] = primes[i]; rem /= primes[i]; }
+	if (m == 0) { for (int s = 0; s < L; s++) w[s] = s == 0 ? 1.f : 0.2f; return; }
+	if (m == 1) {
+		for (int s = 0; s < L; s++) w[s] = s == 0 ? 1.f : ((s & 1) ? 0.2f : 0.38f);
+		return;
+	}
+	for (int s = 0; s < L; s++) {
+		int depth = m;
+		if (s == 0) depth = 0;
+		else {
+			int prod = 1;
+			for (int j = 0; j < m; j++) {
+				prod *= f[j];
+				if (s % (L / prod) == 0) { depth = j + 1; break; }
+			}
+		}
+		w[s] = 1.f - 0.8f * (float)depth / (float)m;
+	}
+}
+
+/** One voice's spine: how much each step of its L-step cycle is worth. At
+    sixteen steps the kick, snare and hat have their own hand-set profiles; at
+    any other length they are derived from the metric weights, the snare shifted
+    a quarter of the cycle so its strongest step is the backbeat. Toms are the
+    end of the bar, shifted a little apart so three of them do not roll in
+    unison. */
+inline void spineFor(int v, int L, float* out) {
+	if (L == kSteps && v <= V_HAT) {
+		const float* t = v == V_KICK ? kKick16 : (v == V_SNARE ? kSnare16 : kHat16);
+		for (int s = 0; s < L; s++) out[s] = t[s];
+		return;
+	}
+	float w[kSteps];
+	meterWeights(L, w);
+	if (v == V_KICK) { for (int s = 0; s < L; s++) out[s] = w[s]; return; }
+	if (v == V_SNARE) {
+		int q = (L + 2) / 4;
+		for (int s = 0; s < L; s++) {
+			float x = w[((s - q) % L + L) % L];
+			out[s] = s == 0 ? x * 0.4f : x;
+		}
+		return;
+	}
+	if (v == V_HAT) { for (int s = 0; s < L; s++) out[s] = std::pow(w[s], 0.4f); return; }
+	int shift = (v - V_TOM1) * 3 % L;
+	for (int s = 0; s < L; s++) {
+		float pos = (float)((s + shift) % L + 1) / (float)L;
+		out[s] = 0.1f + 0.9f * pos * pos * (0.7f + 0.3f * (1.f - w[s]));
+	}
+}
 
 /** Every ratio a voice can run at against the grid, as multipliers of the step
     rate. Symmetric about x1: index kUnity is 1, and the two halves mirror.
@@ -171,11 +257,27 @@ struct Payroll {
 	bool on[V_COUNT][kSteps] = {};
 	float amp[V_COUNT][kSteps] = {};
 	float offs[V_COUNT][kSteps] = {};   // microtiming, in fractions of a step
-	int onsets[V_COUNT] = {};           // the k of each voice's E(k,16)
-	int rotation[V_COUNT] = {};         // and how far it is turned
+	int onsets[V_COUNT] = {};           // the k each voice was asked for, before conditions
+	int rotation[V_COUNT] = {};         // how far its Euclidean necklace is turned
 	int builtSeed = -1;
 	int builtFill = -1;
 	int builtHuman = -1;
+	int builtShape = -1;
+	int builtEvolve = -1;
+	int builtLen[V_COUNT] = {};
+
+	// What the tables were last built from, kept so a voice can rebuild itself
+	// on its own cycle boundary (EVOLVE) without the module calling build again.
+	float curFill = 0.f, curHuman = 0.f, curShape = 0.5f, curEvolve = 0.f;
+
+	// --- polymeter ---------------------------------------------------------------
+	// Every voice has its own length and its own position in it. `step` is the
+	// grid (CLK OUT, swing, the bar line); `vstep[v]` is where voice v is in its
+	// own cycle, and `cycle[v]` how many times it has come round -- the bar
+	// counter EVOLVE's conditions and fills are counted in.
+	int len[V_COUNT] = { 16, 16, 16, 16, 16, 16 };
+	int vstep[V_COUNT] = {};
+	uint32_t cycle[V_COUNT] = {};
 
 	// --- what this sample should do -----------------------------------------
 	bool fired[V_COUNT] = {};
@@ -222,7 +324,8 @@ struct Payroll {
 		running = false; step = 0; phase = 0.0;
 		extPeriod = 0.f; sinceEdge = 0.f; extSeen = false;
 		pulseLeft = 0.f;
-		builtSeed = builtFill = builtHuman = -1;
+		builtSeed = builtFill = builtHuman = builtShape = builtEvolve = -1;
+		for (int v = 0; v < V_COUNT; v++) { len[v] = kSteps; vstep[v] = 0; cycle[v] = 0; builtLen[v] = -1; }
 		liveSeed = wantSeed = 0;
 		gridMode = false; burstMode = false; humanHeld = 0.f;
 		for (int v = 0; v < V_COUNT; v++) {
@@ -235,17 +338,19 @@ struct Payroll {
 		}
 	}
 
-	/** Rebuild the nine Euclidean patterns. Only runs when one of the three
-	    knobs that shape them has moved to a new quantised value, so it costs
-	    nothing while the module is playing.
+	/** Rebuild the six patterns. Only runs when one of the knobs that shape
+	    them has moved to a new quantised value, so it costs nothing while the
+	    module is playing.
 
-	    FILL sets every voice's k at once, through its role: a voice's k is
-	    monotone in FILL, so turning the knob up never takes an onset away, and
-	    each voice enters the kit at its own point on the sweep. SEED turns each
-	    voice's necklace by a different amount -- rotation is the other half of
-	    what makes E(k,n) a family rather than a single pattern, and rotating
-	    the voices against each other is what stops nine Euclidean rhythms from
-	    landing on the same grid points and sounding like one. */
+	    FILL sets every voice's hit count k at once, through its role; k is
+	    monotone in FILL. What changed from the first engine is *which* k steps:
+	    the voice takes the k best-ranked steps of its spine (see buildVoice), so
+	    the set at k is always inside the set at k + 1 -- turning FILL up only
+	    adds hits, and always the next most important one -- where the E(k,16)
+	    patterns it used to ask for were unrelated to each other from one k to
+	    the next. SHAPE brings the Euclidean necklace into the ranking, SEED
+	    picks which necklace and where it is turned, LEN sets each cycle's
+	    length, EVOLVE sets how much the pattern moves from one pass to the next. */
 	//: The seed the pattern playing right now was built from, and the one the
 	//: knob is asking for. They differ only between a turn of SEED and the bar
 	//: line that acts on it.
@@ -253,121 +358,214 @@ struct Payroll {
 	int wantSeed = 0;
 
 	/** What the module calls every sample. SEED is held back to the top of the
-	    bar; FILL and HUMAN are not.
+	    bar; FILL, SHAPE, EVOLVE and HUMAN are not.
 
-	    A new seed rotates every voice at once, so taking it mid-bar cuts the
-	    figure off wherever the knob happened to move and starts another one
+	    A new seed turns every voice's necklace at once, so taking it mid-bar cuts
+	    the figure off wherever the knob happened to move and starts another one
 	    out of phase with the bar -- which sounds like a mistake rather than a
 	    change. FILL only ever adds or removes onsets from the pattern already
-	    playing, and HUMAN is a spread applied at the moment a voice speaks, so
-	    both stay live: those are the two you want to hear yourself moving. */
-	void build(float fill, int seed, float human) {
+	    playing, SHAPE only re-ranks them, and HUMAN is a spread applied at the
+	    moment a voice speaks, so those stay live: they are the ones you want to
+	    hear yourself moving. */
+	void build(float fill, int seed, float human, float shape = 0.5f,
+	           float evolve = 0.f, const int* lens = nullptr) {
 		wantSeed = seed;
 		// Immediately if there is no bar to wait for: nothing has been built
 		// yet, or the clock is not running, in which case the next thing the
 		// listener hears is step 0 anyway.
 		if (!running || builtSeed < 0) liveSeed = seed;
-		rebuild(fill, liveSeed, human);
+		rebuild(fill, liveSeed, human, shape, evolve, lens);
 	}
 
 	/** Apply a seed the knob asked for while the bar was still running. */
 	void takeSeed() {
 		if (wantSeed == liveSeed) return;
 		liveSeed = wantSeed;
-		float fill = builtFill / 256.f;
-		float human = builtHuman / 64.f;
 		builtSeed = -1;                 // force the rebuild below
-		rebuild(fill, liveSeed, human);
+		int l[V_COUNT];
+		for (int v = 0; v < V_COUNT; v++) l[v] = len[v];
+		rebuild(curFill, liveSeed, curHuman, curShape, curEvolve, l);
 	}
 
-	void rebuild(float fill, int seed, float human) {
+	void rebuild(float fill, int seed, float human, float shape, float evolve,
+	             const int* lens) {
 		int qf = (int)(fill * 256.f);
 		int qh = (int)(human * 64.f);
-		if (qf == builtFill && seed == builtSeed && qh == builtHuman) return;
-		builtFill = qf; builtSeed = seed; builtHuman = qh;
-		humanHeld = human;
-
+		int qs = (int)(shape * 64.f);
+		int qe = (int)(evolve * 64.f);
+		int ql[V_COUNT];
+		bool same = true;
 		for (int v = 0; v < V_COUNT; v++) {
-			const Role& role = kRole[v];
-			float t = (fill - role.start) / role.span;
-			t = clampf(t, 0.f, 1.f);
-			// Round rather than truncate, so the first onset arrives as soon
-			// as the voice's share of the knob is half a hit wide.
-			int k = (int)(t * role.most + 0.5f);
-			onsets[v] = k;
+			int l = lens ? lens[v] : len[v];
+			ql[v] = l < 3 ? 3 : (l > kSteps ? kSteps : l);
+			if (ql[v] != builtLen[v]) same = false;
+		}
+		if (same && qf == builtFill && seed == builtSeed && qh == builtHuman
+		    && qs == builtShape && qe == builtEvolve) return;
+		builtFill = qf; builtSeed = seed; builtHuman = qh; builtShape = qs;
+		builtEvolve = qe;
+		curFill = fill; curHuman = human; curShape = shape; curEvolve = evolve;
+		for (int v = 0; v < V_COUNT; v++) {
+			builtLen[v] = len[v] = ql[v];
+			if (vstep[v] >= len[v]) vstep[v] %= len[v];
+		}
+		for (int v = 0; v < V_COUNT; v++) buildVoice(v);
+	}
 
-			bool raw[kSteps];
-			euclid(k, kSteps, raw);
+	/** One voice's table for its current pass through its cycle.
 
-			// gcd(k, 16), not just whether k divides 16, is what decides how
-			// interesting E(k,16) is: Morrill's Corollary 2 (following
-			// Bjorklund) says a Euclidean rhythm repeats its minimal period
-			// exactly gcd(k,n) times. Sixteen is 2^4, so gcd(k,16) is 1 only
-			// for odd k -- every even k is some short idea played on a loop
-			// rather than one shape using the whole bar: k=4 is a single gap
-			// four times over (four on the floor), but k=6 is no different in
-			// kind, just milder -- an 8-step idea (E(3,8), the tresillo)
-			// played twice. Odd k needs nothing done to it; it is already
-			// coprime to sixteen and already uses the whole necklace.
-			//
-			// At SEED 0 a degenerate pattern is left exactly as Euclid gives
-			// it, so E(4,16) unrotated really is four on the floor as
-			// advertised above -- but any other seed nudges one onset of it
-			// to the nearest free step in a seed-chosen direction, the same
-			// way it adds rotation below. That turns "the same short block
-			// repeated gcd(k,16) times" into "that block, plus one departure
-			// from it somewhere in the bar" -- one onset moved, not the
-			// pattern redrawn, and the same k onsets either way. The move
-			// searches outward for a free step rather than assuming a fixed
-			// stride, because only the k in {2,4,8} that divide 16 outright
-			// have onsets evenly spaced to begin with; k=6, 10, 12 and 14 do
-			// not, and still need exactly the same treatment.
-			if (seed > 0 && k > 1 && k < kSteps) {
-				int g = kSteps, kk = k;
-				while (kk) { int t = g % kk; g = kk; kk = t; }   // gcd(k, kSteps)
-				if (g > 1) {
-					int lit[kSteps], n = 0;
-					for (int s = 0; s < kSteps; s++)
-						if (raw[s]) lit[n++] = s;
-					uint32_t h = hash3((uint32_t)seed + 307u, (uint32_t)v, (uint32_t)k);
-					int pick = (int)(h % (uint32_t)n);
-					int dir = (h & 0x10000u) ? 1 : -1;
-					int from = lit[pick];
-					int to = from;
-					for (int step = 1; step < kSteps; step++) {
-						int cand = ((from + dir * step) % kSteps + kSteps) % kSteps;
-						if (!raw[cand]) { to = cand; break; }
-					}
-					raw[from] = false;
-					raw[to] = true;
+	    Every step of the cycle is scored:
+
+	        spine            what the step is worth to this voice: the kick's
+	                         downbeat, the snare's backbeat. Fixed.
+	      + SHAPE * 0.6      if the step is an onset of the voice's Euclidean
+	                         necklace E(kE, L), turned by its rotation.
+	      + a hair           of hash, so equal steps do not always fall to the
+	                         lowest index.
+	      + EVOLVE noise     seeded per pass, so each time round the cycle
+	                         reaches for slightly different in-between steps.
+
+	    and the voice plays the k best. The pinned steps get a bonus no setting
+	    can outweigh. Because the necklace is chosen by SEED and does not depend
+	    on k, the ranking does not depend on k either, which is what makes the
+	    patterns nested.
+
+	    Ghosts are the pattern's tail: a step whose spine is below a third of the
+	    downbeat's plays quietly and a few ticks late, and with EVOLVE up some of
+	    them are made conditional the way an Elektron trig is -- on every other
+	    pass, three in four, one in four, or half the time -- so the loop breathes
+	    rather than repeating. Every fourth pass is a fill when EVOLVE is up. */
+	void buildVoice(int v) {
+		const Role& role = kRole[v];
+		const int L = len[v];
+		const uint32_t seed = (uint32_t)(builtSeed < 0 ? 0 : builtSeed);
+		const uint32_t cy = cycle[v];
+
+		float spine[kSteps];
+		spineFor(v, L, spine);
+
+		// --- how many ---------------------------------------------------------
+		float fill = curFill;
+		if (v != V_KICK && curEvolve > 0.05f && (cy & 3u) == 3u)
+			fill = std::min(1.f, fill + 0.2f + 0.2f * curEvolve);     // the fill pass
+		float t = clampf((fill - role.start) / role.span, 0.f, 1.f);
+		// Round rather than truncate, so the first onset arrives as soon as the
+		// voice's share of the knob is half a hit wide.
+		int k = (int)(t * (float)role.most * (float)L / (float)kSteps + 0.5f);
+		// FILL above zero always leaves the kick its downbeat: the module's
+		// bottom stop is grid mode, so zero never reaches here as a "quiet" setting.
+		if (v == V_KICK && fill > 0.0005f && k < 1) k = 1;
+		if (k > L) k = L;
+		onsets[v] = k;
+
+		// --- the necklace -----------------------------------------------------
+		int kE = (role.kLo + role.kHi) / 2;
+		if (seed > 0) kE = role.kLo + (int)(hash3(seed, (uint32_t)v, 17u)
+		                                    % (uint32_t)(role.kHi - role.kLo + 1));
+		kE = (int)((float)kE * (float)L / (float)kSteps + 0.5f);
+		if (kE < 1) kE = 1;
+		if (kE > L) kE = L;
+		int rot = role.rot;
+		if (seed > 0) rot += (int)(hash3(seed, (uint32_t)v, 7u) % (uint32_t)L);
+		rot %= L;
+		rotation[v] = rot;
+		bool raw[kSteps];
+		euclid(kE, L, raw);
+
+		// --- pins: the voice's strongest steps --------------------------------
+		// Ranked among themselves too, strongest first, so a voice with k = 1
+		// always keeps its first anchor and never its second.
+		bool pinned[kSteps] = {};
+		float pinBonus[kSteps] = {};
+		for (int n = 0; n < kPins[v] && n < L; n++) {
+			int best = -1;
+			for (int s = 0; s < L; s++)
+				if (!pinned[s] && (best < 0 || spine[s] > spine[best])) best = s;
+			pinned[best] = true;
+			pinBonus[best] = 10.f * (float)(kPins[v] - n);
+		}
+
+		// --- rank -------------------------------------------------------------
+		float score[kSteps];
+		int order[kSteps];
+		for (int s = 0; s < L; s++) {
+			int src = ((s - rot) % L + L) % L;
+			float sc = spine[s] + curShape * 0.6f * (raw[src] ? 1.f : 0.f)
+			         + 0.03f * hash3f(seed + 13u, (uint32_t)v, (uint32_t)s);
+			if (curEvolve > 0.f && !pinned[s])
+				sc += curEvolve * 0.7f
+				    * (hash3f(seed + 977u + cy * 40503u, (uint32_t)v, (uint32_t)s) - 0.5f);
+			sc += pinBonus[s];
+			score[s] = sc;
+			int i = s;
+			while (i > 0 && score[order[i - 1]] < sc) { order[i] = order[i - 1]; i--; }
+			order[i] = s;
+		}
+
+		for (int s = 0; s < kSteps; s++) on[v][s] = false;
+		for (int i = 0; i < k; i++) on[v][order[i]] = true;
+
+		// --- conditions on the ghosts -------------------------------------------
+		// The fill pass is exempt: it is the one pass meant to be everything.
+		const bool fillPass = v != V_KICK && curEvolve > 0.05f && (cy & 3u) == 3u;
+		if (curEvolve > 0.001f && !fillPass) {
+			float share = clampf(curEvolve * 1.5f, 0.f, 1.f);
+			for (int s = 0; s < L; s++) {
+				if (!on[v][s] || pinned[s] || spine[s] >= 0.35f) continue;
+				if (hash3f(seed + 51u, (uint32_t)v, (uint32_t)s) >= share) continue;
+				bool play;
+				switch (hash3(seed + 77u, (uint32_t)v, (uint32_t)s) % 6u) {
+					case 0:  play = (cy & 1u) == 0u; break;   // 1:2
+					case 1:  play = (cy & 1u) == 1u; break;   // 2:2
+					case 2:  play = (cy & 3u) == 0u; break;   // 1:4
+					case 3:  play = (cy & 3u) == 2u; break;   // 3:4
+					case 4:  play = (cy & 3u) == 3u; break;   // the fill pass only
+					default: play = hash3f(seed + 91u + cy * 131u, (uint32_t)v,
+					                       (uint32_t)s) < 0.5f; break;   // 50%
 				}
-			}
-
-			// The rotation: the role's own, plus the seed's, per voice.
-			int rot = role.rot;
-			if (seed > 0) rot += (int)(hash3(seed, v, 7u) % (uint32_t)kSteps);
-			rot %= kSteps;
-			rotation[v] = rot;
-
-			for (int s = 0; s < kSteps; s++) {
-				int src = (s - rot) % kSteps;
-				if (src < 0) src += kSteps;
-				on[v][s] = raw[src];
-
-				// Velocity. A Euclidean onset that lands on a beat is an
-				// accent and one that lands between beats is a ghost -- that
-				// alone is most of what makes a generated pattern sit down.
-				float weight = (s % 4 == 0) ? 1.f : ((s % 2 == 0) ? 0.78f : 0.62f);
-				float spread = (hash3f(seed + 101u, v, s) - 0.5f) * human * 0.8f;
-				amp[v][s] = clampf(weight + spread, 0.14f, 1.f);
-
-				// Microtiming: up to a sixth of a step either way, and the
-				// downbeats move least, as a player's do.
-				float pull = (hash3f(seed + 211u, v, s) - 0.5f) * 2.f;
-				float anchor = (s % 4 == 0) ? 0.25f : 1.f;
-				offs[v][s] = pull * human * 0.16f * anchor;
+				if (!play) on[v][s] = false;
 			}
 		}
+
+		// --- velocity and feel --------------------------------------------------
+		const float human = curHuman;
+		for (int s = 0; s < kSteps; s++) {
+			if (s >= L) { amp[v][s] = 0.f; offs[v][s] = 0.f; continue; }
+			// Velocity follows the step's weight: an onset on a strong step is an
+			// accent and one in the tail is a ghost, which alone is most of what
+			// makes a generated pattern sit down.
+			float w = spine[s];
+			float spread = (hash3f(seed + 101u, (uint32_t)v, (uint32_t)s) - 0.5f) * human * 0.8f;
+			amp[v][s] = clampf(0.25f + 0.75f * std::pow(w, 0.9f) + spread, 0.14f, 1.f);
+
+			// Microtiming, quantised to 1/384 of a step as a sequencer's tick
+			// grid would be. The voice's own lay-back (the snare sits behind the
+			// beat, ghosts a little more) rides on HUMAN; the spread is up to a
+			// sixth of a step either way, with the downbeats moving least. Early
+			// offsets fire on the step -- a hit cannot be sent before it is armed.
+			float pull = (hash3f(seed + 211u, (uint32_t)v, (uint32_t)s) - 0.5f) * 2.f;
+			float anchor = (s % 4 == 0) ? 0.25f : 1.f;
+			float lay = role.bias * (w < 0.35f ? 1.6f : 1.f) * std::min(1.f, human * 2.f);
+			float o = lay + pull * human * 0.16f * anchor;
+			offs[v][s] = std::floor(o * 384.f + 0.5f) / 384.f;
+		}
+	}
+
+	/** Put every voice back at the top of its cycle, on its first pass. */
+	void restartVoices() {
+		for (int v = 0; v < V_COUNT; v++) {
+			bool moved = cycle[v] != 0;
+			vstep[v] = 0; cycle[v] = 0;
+			if (moved && curEvolve > 0.001f && builtSeed >= 0) buildVoice(v);
+		}
+	}
+
+	/** Move the grid to step `s`, taking every voice with it. */
+	void setStep(int s) {
+		int d = s - step;
+		step = s;
+		for (int v = 0; v < V_COUNT; v++)
+			vstep[v] = (((vstep[v] + d) % len[v]) + len[v]) % len[v];
 	}
 
 	/** Is a patched clock actually ticking? True from the first edge until
@@ -393,6 +591,7 @@ struct Payroll {
 
 		if (resetEdge) {
 			step = 0; phase = 0.0;
+			restartVoices();
 			for (int v = 0; v < V_COUNT; v++) { pending[v] = false; gridPhase[v] = 0.0; }
 		}
 
@@ -419,7 +618,7 @@ struct Payroll {
 				// divide, the phase lock alone keeps the grid on the clock and
 				// RST is what aligns the bar.
 				int pb = (int)perBeat;
-				if (pb > 0 && kSteps % pb == 0) step = (step / pb) * pb;
+				if (pb > 0 && kSteps % pb == 0) setStep((step / pb) * pb);
 				phase = 0.0;
 				// Before advanceInto, not after: it scales swing and
 				// microtiming by the step length, and the step length comes
@@ -444,6 +643,7 @@ struct Payroll {
 			if (!running) {
 				// Held at the top of the bar, so pressing RUN starts on 1.
 				step = 0; phase = 0.0;
+				restartVoices();
 				for (int v = 0; v < V_COUNT; v++) pending[v] = false;
 				return;
 			}
@@ -513,7 +713,7 @@ struct Payroll {
 
 				if (ratio >= 1.f) {
 					// Ratcheting inside the step, counted off the step's phase.
-					if (!on[v][step]) { burstSub[v] = -1; continue; }
+					if (!on[v][vstep[v]]) { burstSub[v] = -1; continue; }
 					// Past a quarter of the sample rate a trigger is not a
 					// rhythm any more; the same clamp grid mode uses.
 					double per = (double)ratio;
@@ -535,14 +735,14 @@ struct Payroll {
 					int guard = 0;
 					while (gridPhase[v] >= 1.0 && guard++ < 4) {
 						gridPhase[v] -= 1.0;
-						if (on[v][step]) speak = true;
+						if (on[v][vstep[v]]) speak = true;
 					}
 				}
 
 				if (!speak) continue;
 				float spread = (hash3f((uint32_t)(builtSeed + 101), (uint32_t)v,
 				                       gridCount[v] & 15u) - 0.5f) * humanHeld * 0.8f;
-				vel[v] = clampf(amp[v][step] + spread, 0.14f, 1.f);
+				vel[v] = clampf(amp[v][vstep[v]] + spread, 0.14f, 1.f);
 				gridCount[v]++;
 				if (!gate[v]) fired[v] = true;
 			}
@@ -565,6 +765,15 @@ struct Payroll {
 		while (phase >= 1.0) {
 			phase -= 1.0;
 			step = (step + 1) % kSteps;
+			// Each voice walks its own cycle. One that has come round starts a
+			// new pass, and with EVOLVE up a new pass is a new table.
+			for (int v = 0; v < V_COUNT; v++) {
+				if (++vstep[v] >= len[v]) {
+					vstep[v] = 0;
+					cycle[v]++;
+					if (curEvolve > 0.001f) buildVoice(v);
+				}
+			}
 			// The bar line, and the only place a new seed is allowed in. It
 			// runs before the step is armed, so step 0 of the new figure is
 			// the first thing the new pattern plays.
@@ -600,9 +809,10 @@ struct Payroll {
 		// the pulse on CLK OUT stays where a downbeat should be.
 		float sw = (s & 1) ? swing * 0.62f : 0.f;
 		for (int v = 0; v < V_COUNT; v++) {
-			if (!on[v][s]) continue;
-			vel[v] = amp[v][s];
-			float delay = (sw + offs[v][s]) * stepSec;
+			int vs = vstep[v];
+			if (!on[v][vs]) continue;
+			vel[v] = amp[v][vs];
+			float delay = (sw + offs[v][vs]) * stepSec;
 			if (delay <= 0.f) {
 				pending[v] = false;
 				if (!gate[v]) fired[v] = true;

@@ -5,8 +5,7 @@ Running this file regenerates the artwork, the shared hardware, src/PanelTheme.h
 and the previews. See ../../panelkit/README.md for the pipeline.
 
 Kickback is the Modular in a Week drum bank, rebuilt as a drum machine: six
-percussion voices from MiaW's Day 9 folder, its own clock, a Euclidean pattern
-engine that plays any voice whose TRIG jack is empty, and a grid mode where each
+percussion voices from MiaW's Day 9 folder, its own clock, a ranked-pattern engine (a metric spine plus Euclidean necklaces) that plays any voice whose TRIG jack is empty, and a grid mode where each
 voice runs at its own multiple or division of the clock instead.
 
 The face is nine columns. The two at the left are the payroll -- the clock that
@@ -70,7 +69,7 @@ P.sections = [
     # Box 1 of the 1099-NEC, and the only felt block on the face: six rows deep
     # is as much as 128.5 mm holds, and a second caption plus the gap between
     # two blocks is a row's worth of millimetres the panel does not have.
-    Section("NONEMPLOYEE COMPENSATION", groups=GROUPS, rows=[
+    Section("", groups=GROUPS, rows=[
         # One TRIG per voice, named for the voice and lit when it fires. RUN
         # starts the internal clock; LEVEL is how much of everything reaches
         # the MIX jack.
@@ -160,6 +159,19 @@ P.sections = [
              # put it in. `between` hangs it in that gap rather than opening a
              # column for it, so the switch costs the panel no width at all.
              Switch("burst", "BURST", between=(PAT, KICK)),
+             ]),
+
+        # What the ranked-pattern engine adds. SHAPE and EVOLVE are the two global
+        # ones; LENGTH is each voice's own cycle, 3 to 16 steps, so a hat on 12
+        # or 15 runs against a kick on 16.
+        Row(span=[(KICK, TOM3, "LENGTH")], items=[Trim("shape", "SHAPE", col=CLK),
+             Trim("evolve", "EVOLVE", col=PAT),
+             Trim("kick_len", "", col=KICK),
+             Trim("snare_len", "", col=SNARE),
+             Trim("hat_len", "", col=HAT),
+             Trim("tom1_len", "", col=TOM1),
+             Trim("tom2_len", "", col=TOM2),
+             Trim("tom3_len", "", col=TOM3),
              ]),
 
     ]),

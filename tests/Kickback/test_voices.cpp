@@ -52,14 +52,12 @@
 //    steps: E(3,8) is the tresillo and E(5,8) the cinquillo, and if those two
 //    are right the recursion is right.
 //
-// 8. The three k values that divide sixteen evenly (2, 4, 8) come back from
-//    euclid() with every gap the same size -- E(4,16) really is a plain
-//    four-on-the-floor kick, which is correct and stays correct at SEED 0.
-//    But rebuild() is supposed to break that degeneracy at any other seed by
-//    nudging one onset a step over, so the kit does not fall back on the same
-//    handful of perfectly regular beats every time FILL lands on one of those
-//    three counts. That has to hold without changing how many onsets the
-//    voice has.
+// 8. The patterns are *ranked*, not Euclid's raw answer for each k. The kick keeps
+//    its downbeat at any FILL above the bottom stop (the old E(k,16) kick at 40%
+//    was x....x....x.....), the pinned anchors survive every knob, the hits at
+//    one FILL are all there at any higher one, a voice's cycle can be any length
+//    from three to sixteen, EVOLVE moves the loop from pass to pass without
+//    touching the anchors, and the same (seed, pass) always gives the same table.
 
 #include "../../src/Kickback/Payroll.hpp"
 
@@ -887,138 +885,239 @@ static void patternTests() {
 
 
 // ---------------------------------------------------------------------------
-// 8: SEED breaks up the degenerate Euclidean rhythms
+// 8: the ranked patterns -- anchors, nesting, polymeter, evolution
 // ---------------------------------------------------------------------------
 
-//: gcd(k, kSteps): how many equal-length blocks Corollary 2 says a Euclidean
-//: rhythm's minimal period repeats into.
-static int gcdSteps(int k) {
-	int g = kSteps, kk = k;
-	while (kk) { int t = g % kk; g = kk; kk = t; }
-	return g;
+static int litCount(const Payroll& p, int v) {
+	int n = 0;
+	for (int s = 0; s < p.len[v]; s++) if (p.on[v][s]) n++;
+	return n;
 }
 
-//: True if on[kSteps] splits into g equal blocks that are all identical --
-//: the direct, Corollary-2 signature of "one short idea repeated," which is
-//: what an even k is guilty of even when its own gaps within one period are
-//: already uneven (k=6's period is a tresillo, not a flat run of equal
-//: gaps -- only k in {2,4,8}, where the period is a single step, look
-//: uniform gap-by-gap). g=1 (odd k) is trivially "repeating" a single block
-//: that is the whole pattern, which is not degeneracy at all, so the caller
-//: is expected to only ask this for g > 1.
-static bool blocksRepeat(const bool* on, int g) {
-	int blockLen = kSteps / g;
-	for (int b = 1; b < g; b++) {
-		for (int i = 0; i < blockLen; i++)
-			if (on[i] != on[b * blockLen + i]) return false;
-	}
-	return true;
-}
+static void rankedTests() {
+	const float shapes[] = { 0.f, 0.5f, 1.f };
+	const float evolves[] = { 0.f, 0.7f };
 
-//: Scans FILL for the value at which `voice`'s onset count first equals `k`.
-static float fillForK(Payroll& scan, int voice, int k) {
-	for (int i = 0; i <= 1000; i++) {
-		float fill = i / 1000.f;
-		scan.build(fill, 0, 0.f);
-		if (scan.onsets[voice] == k) return fill;
-	}
-	return -1.f;
-}
-
-static void degeneracyTests() {
-	Payroll scan;
-	scan.reset();
-
-	// SEED 0 has to leave every pattern exactly as Euclid gives it: KICK's
-	// own rotation is zero, so at k=4 this is the literal, documented
-	// "E(4,16) unrotated is four on the floor" -- the one case a listener
-	// should still be able to get on purpose.
-	float fillAtFour = fillForK(scan, V_KICK, 4);
-	checks++;
-	if (fillAtFour < 0.f) {
-		fail("degeneracy", "no FILL setting gives KICK exactly four onsets");
-	}
-	else {
-		bool wantRaw[kSteps];
-		euclid(4, kSteps, wantRaw);
-		Payroll seed0;
-		seed0.reset();
-		seed0.build(fillAtFour, 0, 0.f);
-		bool matches = true;
-		for (int s = 0; s < kSteps; s++) matches &= (seed0.on[V_KICK][s] == wantRaw[s]);
-		checks++;
-		if (!matches)
-			fail("degeneracy", "SEED 0 no longer gives the documented, literal four-on-the-floor kick");
-	}
-
-	// Every even k from 2 to 14 shares gcd(k,16) > 1 with the sixteen-step
-	// grid -- Morrill's Corollary 2 says that count is exactly how many times
-	// the rhythm repeats its minimal period, so all of them are some short
-	// idea on a loop, not just the three (2, 4, 8) that divide sixteen
-	// outright. k=6, for instance, is a tresillo-shaped eight-step idea
-	// (already unevenly spaced within itself) played twice -- blocksRepeat()
-	// is what actually catches that, not a check on individual gap sizes.
-	// HAT's role spans every k from 0 to 16, so it alone can stand in for
-	// "some voice landed on this k" for the whole even range.
-	for (int k = 2; k <= 14; k += 2) {
-		float fill = fillForK(scan, V_HAT, k);
-		checks++;
-		if (fill < 0.f) {
-			fail("degeneracy", "no FILL setting gives HAT that onset count");
-			continue;
-		}
-		int g = gcdSteps(k);
-
-		// At SEED 0, Euclid's own answer for an even k has to actually repeat
-		// its period g times -- otherwise the rest of this test is checking
-		// nothing.
-		bool raw[kSteps];
-		euclid(k, kSteps, raw);
-		checks++;
-		if (!blocksRepeat(raw, g))
-			fail("degeneracy", "euclid() did not repeat its minimal period -- test assumption wrong");
-
-		// FILL alone controls density: every seed must keep exactly k
-		// onsets. And at least one seed from 1 to 15 has to break the
-		// repeat -- the g blocks are no longer all identical.
-		bool sawVariety = false;
-		for (int seed = 1; seed <= 15; seed++) {
-			Payroll q;
-			q.reset();
-			q.build(fill, seed, 0.f);
-			checks++;
-			if (q.onsets[V_HAT] != k) {
-				fail("degeneracy", "a seed changed how many onsets a degenerate pattern has");
-				continue;
-			}
-			if (!blocksRepeat(q.on[V_HAT], g)) sawVariety = true;
+	// The anchors never vanish. This is the fault the redesign was for: with
+	// E(k,16) standing in for the pattern, FILL below 40% gave a kick of
+	// x....x....x..... -- on none of the beats after the first -- while the
+	// snare and hat were busier than it was. A pinned step outranks every knob,
+	// so the kick keeps its downbeat at any FILL above the bottom stop, the half
+	// bar from a quarter up, and the snare both backbeats from then on.
+	{
+		int bad = 0;
+		for (int sd = 0; sd < 16; sd++)
+		for (size_t sh = 0; sh < 3; sh++)
+		for (size_t ev = 0; ev < 2; ev++)
+		for (int cy = 0; cy < 8; cy++)
+		for (int i = 1; i <= 100; i++) {
+			float fill = i / 100.f;
+			Payroll p;
+			p.reset();
+			p.build(fill, sd, 0.f, shapes[sh], evolves[ev]);
+			for (int v = 0; v < V_COUNT; v++) { p.cycle[v] = (uint32_t)cy; p.buildVoice(v); }
+			if (!p.on[V_KICK][0]) bad++;
+			if (fill >= 0.25f && (!p.on[V_KICK][8] || !p.on[V_SNARE][4] || !p.on[V_SNARE][12])) bad++;
 		}
 		checks++;
-		if (!sawVariety) {
+		if (bad) {
+			char d[128];
+			snprintf(d, sizeof d, "%d (seed, shape, evolve, pass, fill) settings lost a pinned step", bad);
+			fail("anchors", d);
+		}
+	}
+
+	// ...and at a fifth of the knob the kick is exactly the downbeat and the
+	// half bar, whatever SEED and SHAPE say -- two hits, both on the beat.
+	{
+		bool ok = true;
+		for (int sd = 0; sd < 16; sd++)
+		for (size_t sh = 0; sh < 3; sh++) {
+			Payroll p; p.reset(); p.build(0.2f, sd, 0.f, shapes[sh]);
+			for (int s = 0; s < kSteps; s++)
+				ok &= (p.on[V_KICK][s] == (s == 0 || s == 8));
+		}
+		checks++;
+		if (!ok) fail("anchors", "the kick at 20% FILL was not the downbeat and the half bar");
+	}
+
+	// Below half the knob the kick is never outnumbered by the snare.
+	{
+		int bad = 0;
+		for (int i = 1; i < 50; i++) {
+			Payroll p; p.reset(); p.build(i / 100.f, 0, 0.f);
+			if (p.onsets[V_KICK] < p.onsets[V_SNARE]) bad++;
+		}
+		checks++;
+		if (bad) {
 			char d[96];
-			snprintf(d, sizeof d, "no seed from 1 to 15 broke k=%d's %d-times repeat", k, g);
-			fail("degeneracy", d);
+			snprintf(d, sizeof d, "the snare had more hits than the kick at %d FILL settings below 50%%", bad);
+			fail("kit balance", d);
 		}
 	}
 
-	// Odd k needs no help -- it is already coprime to sixteen -- but the fix
-	// must not go looking for something to nudge there and break it anyway.
-	for (int k = 3; k <= 15; k += 2) {
-		float fill = fillForK(scan, V_HAT, k);
-		checks++;
-		if (fill < 0.f) { fail("degeneracy", "no FILL setting gives HAT that (odd) onset count"); continue; }
-		for (int seed = 1; seed <= 15; seed++) {
-			Payroll q;
-			q.reset();
-			q.build(fill, seed, 0.f);
-			int lit = 0;
-			for (int s = 0; s < kSteps; s++) if (q.on[V_HAT][s]) lit++;
-			checks++;
-			if (lit != k) {
-				fail("degeneracy", "a seed changed how many onsets an already-odd k has");
-				break;
+	// Nesting: the hits at one FILL are all still there at any higher FILL, for
+	// every voice, seed and shape. This is what Euclid by itself cannot do --
+	// E(3,16) is not E(2,16) plus a hit -- and what lets one knob walk from a
+	// sparse backbone to a busy pattern by adding the next most important hit.
+	{
+		int bad = 0;
+		for (int sd = 0; sd < 16; sd++)
+		for (size_t sh = 0; sh < 3; sh++) {
+			bool prev[V_COUNT][kSteps] = {};
+			for (int i = 0; i <= 100; i++) {
+				Payroll p; p.reset(); p.build(i / 100.f, sd, 0.f, shapes[sh]);
+				for (int v = 0; v < V_COUNT; v++)
+					for (int s = 0; s < kSteps; s++) {
+						if (prev[v][s] && !p.on[v][s]) bad++;
+						prev[v][s] = p.on[v][s];
+					}
 			}
 		}
+		checks++;
+		if (bad) {
+			char d[96];
+			snprintf(d, sizeof d, "%d hits were dropped by turning FILL up", bad);
+			fail("nesting", d);
+		}
+	}
+
+	// SHAPE has to do something, and SEED has to do something.
+	{
+		bool shapeMoves = false, seedMoves = false;
+		Payroll a, b, c;
+		a.reset(); b.reset(); c.reset();
+		a.build(0.6f, 3, 0.f, 0.f);
+		b.build(0.6f, 3, 0.f, 1.f);
+		c.build(0.6f, 9, 0.f, 0.5f);
+		Payroll m; m.reset(); m.build(0.6f, 3, 0.f, 0.5f);
+		for (int v = 0; v < V_COUNT; v++)
+			for (int s = 0; s < kSteps; s++) {
+				shapeMoves |= (a.on[v][s] != b.on[v][s]);
+				seedMoves |= (m.on[v][s] != c.on[v][s]);
+			}
+		checks++;
+		if (!shapeMoves) fail("shape", "SHAPE 0 and SHAPE 1 gave the same patterns");
+		checks++;
+		if (!seedMoves) fail("seed", "two seeds gave the same patterns");
+	}
+
+	// Lengths: a shorter cycle only ever lights steps inside itself, keeps its
+	// anchors, and its table is a function of the length alone.
+	{
+		bool ok = true, anchors = true;
+		for (int L = 3; L <= kSteps; L++) {
+			int lens[V_COUNT];
+			for (int v = 0; v < V_COUNT; v++) lens[v] = L;
+			for (int i = 1; i <= 100; i += 3) {
+				Payroll p; p.reset(); p.build(i / 100.f, 0, 0.f, 0.5f, 0.f, lens);
+				for (int v = 0; v < V_COUNT; v++) {
+					for (int s = L; s < kSteps; s++) ok &= !p.on[v][s];
+					ok &= (p.len[v] == L);
+				}
+				anchors &= p.on[V_KICK][0];
+			}
+		}
+		checks++;
+		if (!ok) fail("length", "a pattern lit a step beyond its cycle length");
+		checks++;
+		if (!anchors) fail("length", "the kick lost its downbeat at a shorter cycle length");
+	}
+
+	// Polymeter: a 12-step hat against a 16-step kick comes back into step after
+	// 48 grid steps, and plays the same number of hits per pass of its own cycle.
+	{
+		const float fs = 48000.f;
+		Payroll p;
+		p.reset(); p.running = true;
+		int lens[V_COUNT];
+		for (int v = 0; v < V_COUNT; v++) lens[v] = 16;
+		lens[V_HAT] = 12;
+		p.build(0.6f, 0, 0.f, 0.5f, 0.f, lens);
+		bool none[V_COUNT] = {};
+		int hatHits = 0, lastStep = p.step, steps = 0, realign = -1;
+		int hatOn = litCount(p, V_HAT);
+		while (steps < 48) {
+			p.process(1.f / fs, false, false, false, 120.f, 3, 0.f, none);
+			if (p.fired[V_HAT]) hatHits++;
+			if (p.step != lastStep) {
+				lastStep = p.step; steps++;
+				if (p.vstep[V_KICK] == 0 && p.vstep[V_HAT] == 0 && realign < 0) realign = steps;
+			}
+		}
+		checks++;
+		if (realign != 48) {
+			char d[96];
+			snprintf(d, sizeof d, "16- and 12-step cycles realigned after %d steps, wanted 48", realign);
+			fail("polymeter", d);
+		}
+		// four hat passes of 12 steps fit in 48; the last boundary's hits are
+		// armed on the step edge, so allow one pass of slack at the end.
+		checks++;
+		if (hatHits < hatOn * 3 || hatHits > hatOn * 4) {
+			char d[96];
+			snprintf(d, sizeof d, "a %d-hit, 12-step hat played %d hits in 48 steps", hatOn, hatHits);
+			fail("polymeter", d);
+		}
+	}
+
+	// Evolution. With EVOLVE at zero every pass is the same pass; raised, the
+	// passes differ, but the pinned steps never do, the same (seed, pass) always
+	// gives the same table, and every fourth pass is a fill (busier non-kick).
+	{
+		bool still = true;
+		Payroll a; a.reset(); a.build(0.6f, 5, 0.f, 0.5f, 0.f);
+		bool first[V_COUNT][kSteps];
+		for (int v = 0; v < V_COUNT; v++) for (int s = 0; s < kSteps; s++) first[v][s] = a.on[v][s];
+		for (int cy = 1; cy < 8; cy++)
+			for (int v = 0; v < V_COUNT; v++) {
+				a.cycle[v] = (uint32_t)cy; a.buildVoice(v);
+				for (int s = 0; s < kSteps; s++) still &= (a.on[v][s] == first[v][s]);
+			}
+		checks++;
+		if (!still) fail("evolve", "with EVOLVE at zero a later pass differed from the first");
+
+		Payroll e, f;
+		e.reset(); e.build(0.6f, 5, 0.f, 0.5f, 0.8f);
+		f.reset(); f.build(0.6f, 5, 0.f, 0.5f, 0.8f);
+		bool differs = false, repeatable = true, fillBusier = false;
+		int counts[4] = {};
+		for (int cy = 0; cy < 8; cy++) {
+			for (int v = 0; v < V_COUNT; v++) {
+				e.cycle[v] = (uint32_t)cy; e.buildVoice(v);
+				f.cycle[v] = (uint32_t)cy; f.buildVoice(v);
+				for (int s = 0; s < kSteps; s++) {
+					if (e.on[v][s] != f.on[v][s]) repeatable = false;
+					if (e.on[v][s] != a.on[v][s] && cy > 0) differs = true;
+				}
+			}
+			counts[cy & 3] += litCount(e, V_HAT);
+		}
+		fillBusier = counts[3] > counts[0] && counts[3] > counts[1] && counts[3] > counts[2];
+		checks++;
+		if (!differs) fail("evolve", "EVOLVE up, and no pass ever differed from the first");
+		checks++;
+		if (!repeatable) fail("evolve", "the same seed and pass gave two different tables");
+		checks++;
+		if (!fillBusier) fail("evolve", "the fourth pass of four was not a fill");
+	}
+
+	// Feel: ghosts speak quieter than anchors, and the offsets sit on the 1/384
+	// tick grid and never go past a third of a step.
+	{
+		Payroll p; p.reset(); p.build(1.f, 0, 0.5f);
+		bool quiet = p.amp[V_SNARE][4] > p.amp[V_SNARE][7] + 0.2f;
+		bool grid = true;
+		for (int v = 0; v < V_COUNT; v++)
+			for (int s = 0; s < kSteps; s++) {
+				float o = p.offs[v][s] * 384.f;
+				if (std::fabs(o - std::floor(o + 0.5f)) > 1e-3f || std::fabs(p.offs[v][s]) > 0.34f)
+					grid = false;
+			}
+		checks++;
+		if (!quiet) fail("feel", "a ghost note was not quieter than the backbeat");
+		checks++;
+		if (!grid) fail("feel", "a microtiming offset was off the 1/384 grid or over a third of a step");
 	}
 }
 
@@ -1034,7 +1133,7 @@ int main() {
 	printf("  sample rates...\n");       sampleRates();
 	printf("  strikes end...\n");        decays();
 	printf("  patterns...\n");           patternTests();
-	printf("  degeneracy...\n");         degeneracyTests();
+	printf("  ranked patterns...\n");    rankedTests();
 
 	printf("%d checks, %d failures\n", checks, failures);
 	return failures ? 1 : 0;

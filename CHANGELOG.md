@@ -27,6 +27,23 @@ Hermod+ manual. 68 HP.
   step; a song of up to 32 entries, each a row and a number of passes; undo for the
   display's edits.
 
+### Changed: Kickback's pattern engine, ranked instead of Euclidean per k
+
+Below about 40% FILL the kick was E(3,16), `x....x....x.....`, on none of the beats after
+the first, while the snare and hat were busier than it; Euclid's pattern at k+1 has no
+relation to the one at k, so it is a poor density control. Each voice now scores every step
+(a hand-set metric spine, plus SHAPE times an Euclidean-necklace bonus, plus seeded noise) and
+plays its k best, with the voice's anchors pinned.
+
+* FILL is **nested**: every hit at one setting is still there at any higher one. The kick keeps
+  1 and 3 and the snare both backbeats from 25% up, at every SEED and SHAPE.
+* New **SHAPE** (ladder to Euclid), **EVOLVE** (ghost conditions, per-pass variation, a fill on
+  every fourth pass) and a per-voice **LENGTH** (3 to 16, polymeter). The three new parameters
+  are appended after the old ones; a saved patch loads, but sounds different.
+* Velocity follows the step's weight (accents and ghosts); microtiming is quantised to 1/384 of
+  a step with a per-voice lay-back.
+* The panel's section caption was dropped to make room for the LENGTH row (31 HP, unchanged).
+
 ### Changed: Depreciation, redesigned around what it was like to use
 
 * **The display no longer flickers.** The panel read the firmware's display RAM raw, and the
