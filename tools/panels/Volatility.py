@@ -40,6 +40,10 @@ P.sections = [
         Row([Jack("rate_cv_in", "RATE CV", col=0),
              Jack("clock_in", "CLOCK IN", col=1),
              Jack("bits_cv_in", "BITS CV", col=2)]),
+        # What the noise section makes: the raw register, the stepped DAC, the clock.
+        Row([Jack("noise_out", "NOISE", ink="MINT", col=0),
+             Jack("dac_out", "DAC", ink="MINT", col=1),
+             Jack("clock_out", "CLK", ink="MINT", col=2)]),
     ]),
 
     # SRC normals to the module's own white noise, TRIG to the shared clock --
@@ -60,13 +64,11 @@ P.sections = [
     ]),
 ]
 
-# Everything that leaves the module.
+# The rest of what leaves the module. The other three stand under the noise section that
+# makes them: six jacks in the footer made this a 14 HP panel whose sections need 10.
 P.footer = [
     Row([Jack("rnd_out", "RND", ink="MINT"),
-         Jack("dac_out", "DAC", ink="MINT"),
          Jack("sh_out", "S&H", ink="MINT"),
-         Jack("noise_out", "NOISE", ink="MINT"),
-         Jack("clock_out", "CLK", ink="MINT"),
          Jack("gate_out", "GATE", ink="MINT")], y=118.6),
 ]
 

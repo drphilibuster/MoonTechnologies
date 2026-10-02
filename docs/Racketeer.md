@@ -106,9 +106,12 @@ attenuverter (−100 % to +100 %).
 |---|---|
 | **IN** | Audio in, ±5 V nominal (a polyphonic cable is summed). Through DRIVE, into the loop. Nothing need be plugged in. |
 | **ENV** | The loop's envelope, 0–10 V. 5 ms attack, 100 ms release. |
-| **GATE** | 0/10 V, high while ENV is above THRESH. With a self-oscillating loop this is a chaotic gate. |
 | **DIRTY** | The loop's pre-filter tap: the memory's output after reconstruction and DC blocking, before the low-pass. ±5 V nominal. |
 | **OUT** | The filtered output, ±5 V nominal, clamped to ±12 V. |
+
+**GATE** is not on the footer: it stands in RACKET, beside the THRESH trim that sets the level
+it fires at. 0/10 V, high while ENV is above THRESH. With a self-oscillating loop this is a
+chaotic gate.
 
 Audio is ±5 V; ECHO at 150 % with BOOST will run into the clamp. Bypass routes
 IN to OUT.

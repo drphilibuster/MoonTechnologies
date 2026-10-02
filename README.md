@@ -56,7 +56,7 @@ spectrum and a warped field, driven by audio and CV.
 |---|---|---|---|
 | **[Patch Audit](docs/PatchAudit.md)** | **[Retroactive](docs/Retroactive.md)** | **[Uncertainty Policy](docs/UncertaintyPolicy.md)** | **[Dividend](docs/Dividend.md)** |
 
-| <img src="tools/previews/TaxBracket.png" width="101"> | <img src="tools/previews/Racketeer.png" width="151"> | <img src="tools/previews/Gross.png" width="168"> | <img src="tools/previews/Amortization.png" width="92"> |
+| <img src="tools/previews/TaxBracket.png" width="101"> | <img src="tools/previews/Racketeer.png" width="134"> | <img src="tools/previews/Gross.png" width="168"> | <img src="tools/previews/Amortization.png" width="92"> |
 |---|---|---|---|
 | **[Tax Bracket](docs/TaxBracket.md)** | **[Racketeer](docs/Racketeer.md)** | **[Gross](docs/Gross.md)** | **[Amortization](docs/Amortization.md)** |
 
@@ -80,17 +80,17 @@ spectrum and a warped field, driven by audio and CV.
 |---|---|---|---|
 | **[Garnishment](docs/Garnishment.md)** | **[Consolidation](docs/Consolidation.md)** | **[Bailout](docs/Bailout.md)** | **[Projection](docs/Projection.md)** |
 
-| <img src="tools/previews/Transmittal.png" width="84"> | <img src="tools/previews/Installment.png" width="134"> | <img src="tools/previews/Volatility.png" width="118"> | <img src="tools/previews/Deduction.png" width="101"> |
+| <img src="tools/previews/Transmittal.png" width="84"> | <img src="tools/previews/Installment.png" width="134"> | <img src="tools/previews/Volatility.png" width="84"> | <img src="tools/previews/Deduction.png" width="101"> |
 |---|---|---|---|
 | **[Transmittal](docs/Transmittal.md)** | **[Installment](docs/Installment.md)** | **[Volatility](docs/Volatility.md)** | **[Deduction](docs/Deduction.md)** |
 
-| <img src="tools/previews/AuditLogic.png" width="210"> | <img src="tools/previews/Kickback.png" width="260"> | <img src="tools/previews/PaymentSchedule.png" width="218"> |
-|---|---|---|
-| **[Audit Logic](docs/AuditLogic.md)** | **[Kickback](docs/Kickback.md)** | **[Payment Schedule](docs/PaymentSchedule.md)** |
-
-| <img src="tools/previews/SignHere.png" width="168"> | <img src="tools/previews/Diversified.png" width="176"> | <img src="tools/previews/Toll.png" width="92"> | <img src="tools/previews/ScheduleA.png" width="118"> |
+| <img src="tools/previews/AuditLogic.png" width="210"> | <img src="tools/previews/Kickback.png" width="260"> | <img src="tools/previews/PaymentSchedule.png" width="193"> | <img src="tools/previews/SignHere.png" width="168"> |
 |---|---|---|---|
-| **[Sign Here](docs/SignHere.md)** | **[Diversified](docs/Diversified.md)** | **[Toll](docs/Toll.md)** | **[Schedule A](docs/ScheduleA.md)** |
+| **[Audit Logic](docs/AuditLogic.md)** | **[Kickback](docs/Kickback.md)** | **[Payment Schedule](docs/PaymentSchedule.md)** | **[Sign Here](docs/SignHere.md)** |
+
+| <img src="tools/previews/Diversified.png" width="176"> | <img src="tools/previews/Toll.png" width="92"> | <img src="tools/previews/ScheduleA.png" width="118"> |
+|---|---|---|
+| **[Diversified](docs/Diversified.md)** | **[Toll](docs/Toll.md)** | **[Schedule A](docs/ScheduleA.md)** |
 
 ## Built for this plugin
 
@@ -118,7 +118,7 @@ Trains of pulsarets whose formant is set independently of the fundamental, a cho
 
 The R2R as a genuine resistor network. Every jack is an in/out pair on a passive 8-bit ladder, so it is a DAC, a weighted mixer, a programmable attenuator and a labile multiple at once; checked against the manual's attenuator table.
 
-### [Racketeer](docs/Racketeer.md) — 18 HP · *Noise, Delay, Synth voice*
+### [Racketeer](docs/Racketeer.md) — 16 HP · *Noise, Delay, Synth voice*
 
 *After Wolfgang Spahn's PB701 Electric Intonarumori.*
 
@@ -240,7 +240,7 @@ The ASMR four-channel mixer with normal and inverted sums, and two 1:3 buffered 
 
 Two function generators, each LFO, AR or AD with loop, range, bias and CV, plus the tape-motor PWM driver with duty CV riding on channel one.
 
-### [Volatility](docs/Volatility.md) — 14 HP · *Noise, Sample and hold, Random*
+### [Volatility](docs/Volatility.md) — 10 HP · *Noise, Sample and hold, Random*
 
 *Day 6, consolidated.*
 
@@ -264,7 +264,7 @@ Four logic gates with selectable functions and the 0 V / 12 V reference, gated a
 
 Started as the six drum voices of that folder and is now a drum machine. The voices are modal banks struck by a real contact pulse: the BaSnaHi kick with the SmurfDrum as its second model, a snare switching between XORbell, the percussive noise voice and Karplus–Strong, a hi-hat whose one knob sweeps metal to noise to the Tiny Dazzler, and all three TomTomTom rings at once as three differently-sized drums. **None of the rest is in the original:** its own clock, a ranked pattern engine (a metric spine plus Euclidean necklaces, with per-voice lengths and an EVOLVE that moves the loop pass to pass), per-voice clock ratios, a BURST mode that hands each voice's steps to its own ratio, velocity-scaled gate outputs, and a SEED that swaps patterns on the bar line. The physics is out of the literature rather than the schematic — Bilbao's contact force, Bessel-zero mode ratios, Karplus–Strong's drum recurrence.
 
-### [Payment Schedule](docs/PaymentSchedule.md) — 26 HP · *Sequencer, Switch, Quantizer*
+### [Payment Schedule](docs/PaymentSchedule.md) — 23 HP · *Sequencer, Switch, Quantizer*
 
 *Day 10, consolidated.*
 

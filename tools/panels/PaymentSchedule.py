@@ -18,11 +18,13 @@ STEPS is eight columns four rows deep -- what comes in on top, what goes out the
 knob and the gate switch riding between them, the GATE OUT row boxed so it reads as a bank of
 outputs rather than half of one grid of sixteen jacks. That grid is what sets the panel's
 width, and nothing else is allowed to be wider than it: the controls that are not per-step
-sit in two rows beneath it, and every other jack -- CLOCK, RESET, the switch's common pair,
-the quantizer's TRIG, the cycle counter's EOC, DIR CV, TAP IN, RUN, CYCLE and LOOP GATE --
-rides in the footer with the module's other primary I/O, inputs first and the mint-ringed
-outputs after them. (They used to be a row of jacks of their own inside OPERATIONS, which
-left the controls above them one row of fourteen: 33 HP for a grid that needs 22.)
+sit in two rows beneath it. DIR CV stands beside the DIR switch and TAP IN beside the TAP
+button, the two jacks that belong to a control on those rows; every other jack -- CLOCK,
+RESET, the switch's common pair, the quantizer's TRIG, the cycle counter's EOC, RUN, CYCLE
+and LOOP GATE -- rides in the footer with the module's other primary I/O, inputs first and
+the mint-ringed outputs after them. (They used to be a row of jacks of their own inside
+OPERATIONS, which left the controls above them one row of fourteen: 33 HP for a grid that
+needs 22. Now 23.)
 """
 
 import os
@@ -61,6 +63,7 @@ row1 = [
     Light("up_lit", "UP", ink="LIME"),
     Knob("steps", "STEPS", steps=8),
     Switch("dir", "DIR"),
+    Jack("dir_cv_in", "DIR CV", side="below"),
     Knob("scale", "SCALE", steps=5),
     Light("dn_lit", "DN", ink="LIME"),
     Knob("root", "ROOT", steps=12),
@@ -71,6 +74,7 @@ row2 = [
     Knob("atten", "ATTEN"),
     Knob("gate_len", "GATE LEN"),
     Bezel("tap", "TAP"),
+    Jack("tap_gate_in", "TAP IN", side="below"),
     Bezel("record", "REC"),
     Bezel("clear", "CLR"),
     Bezel("run", "RUN", primary=True),
@@ -98,8 +102,6 @@ P.footer = [
     Row([Jack("clock_in", "CLOCK", light="clock_lit"),
          Jack("reset_in", "RESET"),
          Jack("a_in", "SWITCH IN"),
-         Jack("dir_cv_in", "DIR CV"),
-         Jack("tap_gate_in", "TAP IN"),
          Jack("run_in", "RUN"),
          Jack("cycle_in", "CYCLE"),
          Jack("a_out", "CV OUT", ink="MINT"),

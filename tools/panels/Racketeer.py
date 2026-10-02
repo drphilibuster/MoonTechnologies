@@ -53,7 +53,9 @@ P.sections = [
              Trim("seed", "SEED"),
              Trim("rate", "RATE"),
              Trim("res", "RES"),
-             Trim("thresh", "THRESH")], own_grid=True),
+             Trim("thresh", "THRESH"),
+             # the GATE output stands beside the trim that sets the level it fires at
+             Jack("gate_out", "GATE", ink="MINT", side="below")], own_grid=True),
     ]),
 
     # The muscle. The three pushbuttons of the original (each also pressed by
@@ -97,14 +99,14 @@ P.sections = [
 # up there overran the face by a millimetre however wide the panel was made, and
 # nine jacks on one row up there cost four HP.
 #
-# Inputs left, outputs right, as everywhere else.
+# Inputs left, outputs right, as everywhere else -- except GATE, which stands in RACKET beside
+# the THRESH trim that sets its level.
 P.footer = [
     Row([Jack("in", "IN"),
          Jack("noise_in", "NOISE"),
          Jack("boost_in", "BOOST"),
          Jack("mute_in", "MUTE"),
          Jack("env_out", "ENV", ink="MINT"),
-         Jack("gate_out", "GATE", ink="MINT"),
          Jack("dirty_out", "DIRTY", ink="MINT"),
          Jack("out", "OUT", ink="MINT")], y=118.6),
 ]
