@@ -12,6 +12,7 @@
 
 #include <osdialog.h>
 
+#include <algorithm>
 #include <atomic>
 #include <fstream>
 #include <iterator>
@@ -126,18 +127,47 @@ struct Rebate : Module {
 		json_decref(root);
 	}
 
+	/** Standing quick-load folders: drop EPROM images in, pick them from the menu.
+	    MoonTechnologies/roms/midiverb/{cpu,dsp} in Rack's user folder. */
+	static std::string romDir(const char* kind) {
+		return asset::user("MoonTechnologies/roms/midiverb/") + kind;
+	}
+
+	/** Images in a quick-load folder, sorted; `cpu` picks the 8 KB CPU images,
+	    otherwise the 16/32 KB DSP images. */
+	static std::vector<std::string> romsIn(bool cpu) {
+		std::vector<std::string> out;
+		const std::string dir = romDir(cpu ? "cpu" : "dsp");
+		system::createDirectories(dir);
+		for (const std::string& f : system::getEntries(dir)) {
+			const int64_t size = system::getFileSize(f);
+			if (cpu ? size == 0x2000 : (size == 0x4000 || size == 0x8000)) out.push_back(f);
+		}
+		std::sort(out.begin(), out.end());
+		return out;
+	}
+
 	void onAdd(const AddEvent& e) override {
 		if (!cpuPath.empty() || handover.load()) return;
 		const std::string path = settingsPath();
 		json_t* root = system::isFile(path) ? json_load_file(path.c_str(), 0, NULL) : NULL;
-		if (!root) return;
-		json_t* c = json_object_get(root, "rebateCpu");
-		json_t* d = json_object_get(root, "rebateDsp");
-		if (c && d && json_is_string(c) && json_is_string(d)) {
-			cpuPath = json_string_value(c);
-			dspPath = json_string_value(d);
+		if (root) {
+			json_t* c = json_object_get(root, "rebateCpu");
+			json_t* d = json_object_get(root, "rebateDsp");
+			if (c && d && json_is_string(c) && json_is_string(d)) {
+				cpuPath = json_string_value(c);
+				dspPath = json_string_value(d);
+			}
+			json_decref(root);
 		}
-		json_decref(root);
+		// Nothing remembered: take the first images in the quick-load folders.
+		if (cpuPath.empty()) {
+			const std::vector<std::string> cpus = romsIn(true), dsps = romsIn(false);
+			if (!cpus.empty() && !dsps.empty()) {
+				cpuPath = cpus[0];
+				dspPath = dsps[0];
+			}
+		}
 		if (!cpuPath.empty()) boot();
 	}
 
@@ -374,6 +404,31 @@ struct RebateWidget : ModuleWidget {
 			if (!dsp.empty()) m->dspPath = dsp;
 			m->boot();
 		};
+		menu->addChild(createSubmenuItem("Quick load: CPU ROMs", "", [=](Menu* sub) {
+			const std::vector<std::string> roms = Rebate::romsIn(true);
+			for (const std::string& f : roms)
+				sub->addChild(createCheckMenuItem(system::getFilename(f), "", [=]() { return m->cpuPath == f; }, [=]() {
+					m->cpuPath = f;
+					m->boot();
+				}));
+			if (roms.empty()) sub->addChild(createMenuLabel("empty: drop 8 KB CPU images in the folder"));
+			sub->addChild(new MenuSeparator);
+			sub->addChild(createMenuItem("Open CPU folder", "", [=]() { system::openDirectory(Rebate::romDir("cpu")); }));
+		}));
+		menu->addChild(createSubmenuItem("Quick load: DSP ROMs", "", [=](Menu* sub) {
+			const std::vector<std::string> roms = Rebate::romsIn(false);
+			for (const std::string& f : roms) {
+				const std::string name = mv::romName(mv::crc32(readFile(f)));
+				sub->addChild(createCheckMenuItem(system::getFilename(f) + (name.empty() ? "" : "  [" + name + "]"), "",
+					[=]() { return m->dspPath == f; }, [=]() {
+						m->dspPath = f;
+						m->boot();
+					}));
+			}
+			if (roms.empty()) sub->addChild(createMenuLabel("empty: drop 16/32 KB MIDIverb or MIDIFEX images in the folder"));
+			sub->addChild(new MenuSeparator);
+			sub->addChild(createMenuItem("Open DSP folder", "", [=]() { system::openDirectory(Rebate::romDir("dsp")); }));
+		}));
 		menu->addChild(createMenuItem("Load EPROM folder as MIDIverb...", "", [=]() { folder(false); }));
 		menu->addChild(createMenuItem("Load EPROM folder as MIDIFEX...", "", [=]() { folder(true); }));
 		menu->addChild(createMenuItem("Load CPU EPROM (MVOP, 8 KB)...", "", [=]() {
