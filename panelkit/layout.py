@@ -983,7 +983,7 @@ def _place_rail(out, panel, m):
     if rail.caption:
         cx = (rail.x0 + rail.x1) / 2
         out.labels.append(dict(x=cx, y=y0 + m["CAP_BASE"], text=rail.caption, size=6.0,
-                               ink="MINT", align="center", tracking=0.6, ground="light"))
+                               ink="MINT", align="center", tracking=0.6, ground="dark"))
         top = max(top, y0 + m["CAP_BASE"] + desc_h(6.0, rail.caption) + TEXT_CLEAR)
     n = len(rail.items)
     r = max(_ink_r(it) for it in rail.items)
@@ -998,7 +998,7 @@ def _place_rail(out, panel, m):
         it.x = rail.x1 - RAIL_PAD - ink_hw(it)
         row = S.Row([it], y=first + i * pitch)
         row._pair_cols = set()
-        _place_row(out, panel, m, row, None)
+        _place_row(out, panel, m, row, None, ground="dark")
 
 
 def ground_at(sol, y):
@@ -1050,7 +1050,7 @@ def _ink_r(it):
     return r
 
 
-def _place_row(out, panel, m, row, inner, pinned=False):
+def _place_row(out, panel, m, row, inner, pinned=False, ground=None):
     """Place one row. Returns the lowest ink it puts on the panel (or, for a
     pinned footer row, the highest -- the band has to be drawn above it).
 
@@ -1185,7 +1185,7 @@ def _place_row(out, panel, m, row, inner, pinned=False):
                          else (x + hw + SIDE_GAP),
                        y=y + cap_h(size) / 2, text=text, size=size, ink=ink,
                        align="right" if this_side == "left" else "left",
-                       tracking=0.0, ground="dark" if pinned else "light")
+                       tracking=0.0, ground=ground or ("dark" if pinned else "light"))
             out.labels.append(lab)
             if it is not None and it.light:
                 _lit_label(out, lab, it.light, it.light_side)
@@ -1202,7 +1202,7 @@ def _place_row(out, panel, m, row, inner, pinned=False):
             lowest = max(lowest, base + foot)
         lab = dict(x=x, y=base, text=text, size=size, ink=ink,
                    align="center", tracking=0.0,
-                   ground="dark" if pinned else "light")
+                   ground=ground or ("dark" if pinned else "light"))
         out.labels.append(lab)
         if it is not None and it.light:
             _lit_label(out, lab, it.light, it.light_side)

@@ -13,16 +13,16 @@ CV OUT instead -- which is why CV OUT doubles as the sequencer's own V/oct
 output). A 4031 tap looper shares the same eight slots rather than a buffer of
 its own. A varimode quantizer sits on the CV path before it leaves the module.
 
-This is one of the widest panels in the family, and every millimetre of it goes
-on columns rather than rows -- the panel height is fixed regardless of HP, so
-the only way to fit a per-step grid this size is sideways. STEPS is eight
-columns four rows deep: what comes in on top, what goes out the bottom, the
-knob and the gate switch riding between them, the GATE OUT row boxed so it
-reads as a bank of outputs rather than half of one grid of sixteen jacks.
-Everything else that isn't per-step lives in one wide row of its own; CLOCK,
-RESET, the quantizer's TRIG and the cycle counter's EOC ride in the footer with
-the module's other primary I/O, since none of the four is specific to any one
-of the counter's three jobs.
+The panel's height is fixed regardless of HP, so a per-step grid this size goes sideways:
+STEPS is eight columns four rows deep -- what comes in on top, what goes out the bottom, the
+knob and the gate switch riding between them, the GATE OUT row boxed so it reads as a bank of
+outputs rather than half of one grid of sixteen jacks. That grid is what sets the panel's
+width, and nothing else is allowed to be wider than it: the controls that are not per-step
+sit in two rows beneath it, and every other jack -- CLOCK, RESET, the switch's common pair,
+the quantizer's TRIG, the cycle counter's EOC, DIR CV, TAP IN, RUN, CYCLE and LOOP GATE --
+rides in the footer with the module's other primary I/O, inputs first and the mint-ringed
+outputs after them. (They used to be a row of jacks of their own inside OPERATIONS, which
+left the controls above them one row of fourteen: 33 HP for a grid that needs 22.)
 """
 
 import os
@@ -51,16 +51,12 @@ step = [Knob("step%d" % (i + 1), str(i + 1)) for i in range(N)]
 gate = [Bezel("gate%d" % (i + 1)) for i in range(N)]
 gate_out = [Jack("b_out%d" % (i + 1), ink="MINT") for i in range(N)]
 
-# --- everything that isn't per-step: transport, the tap looper and the
-# quantizer, fused into one block. The panel's row budget is fixed by its
-# height, not by its HP, so this has to be wide rows rather than many of
-# them -- one row of knobs/switches/bezels (label below, the hand-clearance
-# rule) and one row of jacks (label above, the cable-clearance rule); mixing
-# the two label sides on one row is what the layout solver gets wrong, so
-# each row here is one side only. Big and small widgets alternate along the
-# row so no two full-width knobs land shoulder to shoulder. RUN carries the
-# panel's one primary ring -- whether the counter moves at all matters more
-# than any one step's value.
+# --- everything that isn't per-step: transport, the tap looper and the quantizer, in two rows
+# of controls -- label below, the hand-clearance rule. The first is the counter and the
+# quantizer's pitch side (which way it counts, how far, which scale and root); the second is
+# levels and the transport. Big and small widgets alternate along each row so no two
+# full-width knobs land shoulder to shoulder. RUN carries the panel's one primary ring --
+# whether the counter moves at all matters more than any one step's value.
 row1 = [
     Light("up_lit", "UP", ink="LIME"),
     Knob("steps", "STEPS", steps=8),
@@ -70,23 +66,14 @@ row1 = [
     Knob("root", "ROOT", steps=12),
     Switch("quant", "QUANT"),
     Switch("cv_range", "RANGE"),
+]
+row2 = [
     Knob("atten", "ATTEN"),
     Knob("gate_len", "GATE LEN"),
     Bezel("tap", "TAP"),
     Bezel("record", "REC"),
     Bezel("clear", "CLR"),
     Bezel("run", "RUN", primary=True),
-]
-
-# Inputs first, then the one output this row still carries -- LOOP GATE is the
-# tap loop's own read-out (10 V while the current slot holds a hit), boxed
-# like the per-step outputs above since it isn't in the footer.
-row2 = [
-    Jack("dir_cv_in", "DIR CV"),
-    Jack("tap_gate_in", "TAP IN"),
-    Jack("run_in", "RUN"),
-    Jack("cycle_in", "CYCLE"),
-    Jack("loop_gate_out", "", ink="MINT"),
 ]
 
 P.sections = [
@@ -99,22 +86,27 @@ P.sections = [
 
     Section("OPERATIONS", rows=[
         Row(row1, own_grid=True),
-        Row(row2, own_grid=True, span=[(4, 4, "LOOP GATE", 6.2, "MINT")]),
+        Row(row2, own_grid=True),
     ]),
 ]
 
-# CLOCK, RESET, the quantizer's TRIG and the counter's own EOC, alongside the
-# switch's common pair -- SWITCH IN normals to 10 V, and CV OUT doubles as the
-# quantized sequencer output, so the two wires the whole module turns on.
+# Every jack that is not per-step. Inputs, then outputs (no gutter: the mint rings already
+# say which). SWITCH IN normals to 10 V, and CV OUT doubles as the quantized sequencer
+# output, so those two wires are what the whole module turns on; LOOP GATE is the tap
+# loop's own read-out (10 V while the current slot holds a hit).
 P.footer = [
     Row([Jack("clock_in", "CLOCK", light="clock_lit"),
          Jack("reset_in", "RESET"),
          Jack("a_in", "SWITCH IN"),
+         Jack("dir_cv_in", "DIR CV"),
+         Jack("tap_gate_in", "TAP IN"),
+         Jack("run_in", "RUN"),
+         Jack("cycle_in", "CYCLE"),
          Jack("a_out", "CV OUT", ink="MINT"),
          Jack("trig_out", "TRIG", ink="MINT"),
-         Jack("eoc_out", "EOC", ink="MINT")], y=118.6),
+         Jack("eoc_out", "EOC", ink="MINT"),
+         Jack("loop_gate_out", "LOOP GATE", ink="MINT")], y=118.6),
 ]
-
 if __name__ == "__main__":
     raise SystemExit(build(P, root=os.path.abspath(
         os.path.join(os.path.dirname(__file__), "..", ".."))))

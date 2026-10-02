@@ -84,7 +84,7 @@ spectrum and a warped field, driven by audio and CV.
 |---|---|---|---|
 | **[Volatility](docs/Volatility.md)** | **[Deduction](docs/Deduction.md)** | **[Audit Logic](docs/AuditLogic.md)** | **[Kickback](docs/Kickback.md)** |
 
-| <img src="tools/previews/PaymentSchedule.png" width="277"> | <img src="tools/previews/SignHere.png" width="168"> | <img src="tools/previews/Diversified.png" width="176"> | <img src="tools/previews/Toll.png" width="92"> |
+| <img src="tools/previews/PaymentSchedule.png" width="218"> | <img src="tools/previews/SignHere.png" width="168"> | <img src="tools/previews/Diversified.png" width="176"> | <img src="tools/previews/Toll.png" width="92"> |
 |---|---|---|---|
 | **[Payment Schedule](docs/PaymentSchedule.md)** | **[Sign Here](docs/SignHere.md)** | **[Diversified](docs/Diversified.md)** | **[Toll](docs/Toll.md)** |
 
@@ -258,7 +258,7 @@ Four logic gates with selectable functions and the 0 V / 12 V reference, gated a
 
 Started as the six drum voices of that folder and is now a drum machine. The voices are modal banks struck by a real contact pulse: the BaSnaHi kick with the SmurfDrum as its second model, a snare switching between XORbell, the percussive noise voice and Karplus–Strong, a hi-hat whose one knob sweeps metal to noise to the Tiny Dazzler, and all three TomTomTom rings at once as three differently-sized drums. **None of the rest is in the original:** its own clock, a Euclidean pattern engine, per-voice clock ratios, a BURST mode that hands each voice's steps to its own ratio, velocity-scaled gate outputs, and a SEED that swaps patterns on the bar line. The physics is out of the literature rather than the schematic — Bilbao's contact force, Bessel-zero mode ratios, Karplus–Strong's drum recurrence.
 
-### [Payment Schedule](docs/PaymentSchedule.md) — 33 HP · *Sequencer, Switch, Quantizer*
+### [Payment Schedule](docs/PaymentSchedule.md) — 26 HP · *Sequencer, Switch, Quantizer*
 
 *Day 10, consolidated.*
 

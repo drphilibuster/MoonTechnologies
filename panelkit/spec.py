@@ -253,7 +253,8 @@ class Rail:
 
     Each jack's label stands to its left on the jack's own centre line (the
     family's side-label rule), so the rail pays for its names once, horizontally,
-    and its pitch is the jack's own. `items` are jacks; the solver spaces them
+    and its pitch is the jack's own. It is drawn as the footer band is -- dark, with the
+    band's mint tab -- because it is the band's own contents moved. `items` are jacks; the solver spaces them
     evenly down the block, below the caption. Their ink follows the footer's
     rule: outputs ring mint.
     """

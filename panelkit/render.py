@@ -159,8 +159,10 @@ def panel_svg(panel, sol, layers=False, art=None):
                 c if c.isalnum() else "_" for c in cap)))
         a('  <rect x="%.4f" y="%.4f" width="%.4f" height="%.4f" rx="%.2f" fill="%s" '
           'stroke="%s" stroke-width="%.2f"/>'
-          % (x0, y0, x1 - x0, y1 - y0, BLOCK_R, P.FELT, P.RULE, FRAME_W))
-        # the rail holds what leaves the module, so it wears the footer's mint tab
+          % (x0, y0, x1 - x0, y1 - y0, BLOCK_R, P.BAND if is_rail else P.FELT,
+             P.RULE, FRAME_W))
+        # a rail is a piece of the footer band stood on its end: the band's ground
+        # and its mint tab, because it holds what the band holds
         a('  <rect x="%.4f" y="%.4f" width="%.4f" height="%.4f" rx="0.25" fill="%s"/>'
           % (x0, y0, TAB_W, TAB_H, P.MINT if is_rail else P.INK))
         _scroll(a, x1, y0, -1, 1, scroll)     # top-right
