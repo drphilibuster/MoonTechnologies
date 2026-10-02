@@ -65,7 +65,7 @@ P.sections = [
         Row([Knob("cutoff", "FREQUENCY", primary=True), Knob("reso", "RESONANCE"), Knob("f_env", "ENV AMOUNT"),
              Knob("f_a", "ATTACK"), Knob("f_d", "DECAY"), Knob("f_s", "SUSTAIN"), Knob("f_r", "RELEASE"),
              Knob("a_a", "ATTACK"), Knob("a_d", "DECAY"), Knob("a_s", "SUSTAIN"), Knob("a_r", "RELEASE"),
-             Knob("gain", "GAIN"), Knob("porta", "PORTAMENTO"), Knob("volume", "MASTER VOL")]),
+             Knob("gain", "GAIN"), Knob("porta", "PORTA"), Knob("volume", "MASTER VOL")]),
         Row([Button("b_ftype", "TYPE")]
             + leds(["hp24", "lp24", "lp12"], ["HP 24", "LP 24", "LP 12"])
             + [Button("b_velo", "VELOCITY", light="velocity"), Button("b_fkbd", "KBD TRACK")]

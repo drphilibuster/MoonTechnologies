@@ -326,7 +326,7 @@ struct NordicBankingWidget : ModuleWidget {
 			panel::F_A_POS, panel::F_D_POS, panel::F_S_POS, panel::F_R_POS, panel::A_A_POS, panel::A_D_POS,
 			panel::A_S_POS, panel::A_R_POS, panel::GAIN_POS, panel::VOLUME_POS };
 		for (int i = 0; i < 26; i++)
-			addParam(createParamCentered<RoundSmallBlackKnob>(panel::mm(knobs[i].x, knobs[i].y), module, NordicBanking::KNOB_PARAM + i));
+			addParam(createParamCentered<RoundBlackKnob>(panel::mm(knobs[i].x, knobs[i].y), module, NordicBanking::KNOB_PARAM + i));
 
 		// In nb::BUTTONS order.
 		const Vec buttons[28] = { panel::B_OSC1_POS, panel::B_OSC2_POS, panel::B_KBD2_POS, panel::B_RINGSYNC_POS,

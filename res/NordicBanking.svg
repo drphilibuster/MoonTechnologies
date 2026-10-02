@@ -84,20 +84,20 @@
   <circle cx="256.6029" cy="45.0058" r="2.1500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="77.0945" cy="51.0958" r="1.7400" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="229.8670" cy="51.0958" r="1.7400" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="13.0475" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="33.0685" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="53.2016" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="71.9545" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="89.3745" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="106.7945" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="124.2145" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="141.5554" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="158.9754" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="176.3954" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="193.8154" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="211.1564" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="229.9093" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="251.0005" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="13.3977" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="33.4188" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="53.5518" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="72.9415" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="90.3615" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="107.7815" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="125.2015" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="143.1792" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="160.5992" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="178.0192" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="195.4392" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="213.4169" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="231.3947" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="250.6503" cy="69.3847" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="18.9066" cy="84.5904" r="3.7500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="29.8130" cy="84.5904" r="2.1500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="39.7158" cy="84.5904" r="2.1500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
@@ -148,8 +148,8 @@
   <circle cx="132.0800" cy="118.6000" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="146.3540" cy="118.6000" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="160.6280" cy="118.6000" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="13.0475" cy="69.3847" r="7.0000" fill="none" stroke="#7B9A6D" stroke-width="0.32"/>
-  <circle cx="13.0475" cy="69.3847" r="6.4000" fill="none" stroke="#7B9A6D" stroke-width="0.16"/>
+  <circle cx="13.3977" cy="69.3847" r="7.0000" fill="none" stroke="#7B9A6D" stroke-width="0.32"/>
+  <circle cx="13.3977" cy="69.3847" r="6.4000" fill="none" stroke="#7B9A6D" stroke-width="0.16"/>
 </g>
 <g inkscape:label="components" inkscape:groupmode="layer" id="components" style="display:none">
   <circle inkscape:label="lfo1_rate" cx="16.7830" cy="31.1000" r="1" fill="#ff0000"/>
@@ -196,20 +196,20 @@
   <circle inkscape:label="sync" cx="256.6029" cy="45.0058" r="1" fill="#ff00ff"/>
   <circle inkscape:label="arp" cx="77.0945" cy="51.0958" r="1" fill="#ff0000"/>
   <circle inkscape:label="osc2_kbd" cx="229.8670" cy="51.0958" r="1" fill="#ff0000"/>
-  <circle inkscape:label="cutoff" cx="13.0475" cy="69.3847" r="1" fill="#ff0000"/>
-  <circle inkscape:label="reso" cx="33.0685" cy="69.3847" r="1" fill="#ff0000"/>
-  <circle inkscape:label="f_env" cx="53.2016" cy="69.3847" r="1" fill="#ff0000"/>
-  <circle inkscape:label="f_a" cx="71.9545" cy="69.3847" r="1" fill="#ff0000"/>
-  <circle inkscape:label="f_d" cx="89.3745" cy="69.3847" r="1" fill="#ff0000"/>
-  <circle inkscape:label="f_s" cx="106.7945" cy="69.3847" r="1" fill="#ff0000"/>
-  <circle inkscape:label="f_r" cx="124.2145" cy="69.3847" r="1" fill="#ff0000"/>
-  <circle inkscape:label="a_a" cx="141.5554" cy="69.3847" r="1" fill="#ff0000"/>
-  <circle inkscape:label="a_d" cx="158.9754" cy="69.3847" r="1" fill="#ff0000"/>
-  <circle inkscape:label="a_s" cx="176.3954" cy="69.3847" r="1" fill="#ff0000"/>
-  <circle inkscape:label="a_r" cx="193.8154" cy="69.3847" r="1" fill="#ff0000"/>
-  <circle inkscape:label="gain" cx="211.1564" cy="69.3847" r="1" fill="#ff0000"/>
-  <circle inkscape:label="porta" cx="229.9093" cy="69.3847" r="1" fill="#ff0000"/>
-  <circle inkscape:label="volume" cx="251.0005" cy="69.3847" r="1" fill="#ff0000"/>
+  <circle inkscape:label="cutoff" cx="13.3977" cy="69.3847" r="1" fill="#ff0000"/>
+  <circle inkscape:label="reso" cx="33.4188" cy="69.3847" r="1" fill="#ff0000"/>
+  <circle inkscape:label="f_env" cx="53.5518" cy="69.3847" r="1" fill="#ff0000"/>
+  <circle inkscape:label="f_a" cx="72.9415" cy="69.3847" r="1" fill="#ff0000"/>
+  <circle inkscape:label="f_d" cx="90.3615" cy="69.3847" r="1" fill="#ff0000"/>
+  <circle inkscape:label="f_s" cx="107.7815" cy="69.3847" r="1" fill="#ff0000"/>
+  <circle inkscape:label="f_r" cx="125.2015" cy="69.3847" r="1" fill="#ff0000"/>
+  <circle inkscape:label="a_a" cx="143.1792" cy="69.3847" r="1" fill="#ff0000"/>
+  <circle inkscape:label="a_d" cx="160.5992" cy="69.3847" r="1" fill="#ff0000"/>
+  <circle inkscape:label="a_s" cx="178.0192" cy="69.3847" r="1" fill="#ff0000"/>
+  <circle inkscape:label="a_r" cx="195.4392" cy="69.3847" r="1" fill="#ff0000"/>
+  <circle inkscape:label="gain" cx="213.4169" cy="69.3847" r="1" fill="#ff0000"/>
+  <circle inkscape:label="porta" cx="231.3947" cy="69.3847" r="1" fill="#ff0000"/>
+  <circle inkscape:label="volume" cx="250.6503" cy="69.3847" r="1" fill="#ff0000"/>
   <circle inkscape:label="b_ftype" cx="18.9066" cy="84.5904" r="1" fill="#ff0000"/>
   <circle inkscape:label="hp24" cx="29.8130" cy="84.5904" r="1" fill="#ff00ff"/>
   <circle inkscape:label="lp24" cx="39.7158" cy="84.5904" r="1" fill="#ff00ff"/>

@@ -68,14 +68,16 @@ struct Presets {
 		return { uint8_t(0xB0 | ch), 32, uint8_t(bank & 7), uint8_t(0xC0 | ch), uint8_t(prog & 127) };
 	}
 
-	/** Which sound an LCD's first line is showing ("A0  AutoBendBC", "..C127 ..."): bank * 128 + program,
+	/** Which sound an LCD's first line is showing ("A0  AutoBendBC", "a0 ..." once edited, "..C127 ..."): bank * 128 + program,
 	    or -1 when it is not showing one. */
 	static int fromScreen(const uint8_t* line) {
 		for (int i = 0; i < 4; i++) {
-			if (line[i] < 'A' || line[i] > 'H') continue;
+			// The bank letter goes lowercase once the sound has been edited ("a0 ...").
+			const int letter = (line[i] >= 'a' && line[i] <= 'h') ? line[i] - 'a' + 'A' : line[i];
+			if (letter < 'A' || letter > 'H') continue;
 			int n = 0, d = 0, j = i + 1;
 			while (j < 16 && line[j] >= '0' && line[j] <= '9' && d < 3) { n = n * 10 + (line[j] - '0'); j++; d++; }
-			if (d > 0 && n < PER_BANK) return (line[i] - 'A') * PER_BANK + n;
+			if (d > 0 && n < PER_BANK) return (letter - 'A') * PER_BANK + n;
 		}
 		return -1;
 	}

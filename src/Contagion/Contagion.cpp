@@ -472,8 +472,9 @@ struct Contagion : Module {
 				}
 			}
 			// An EDIT lamp lit lately means a menu is up; the program screen is the one with a name on
-			// its first line and no menu, held still for half a second.
-			static const int EDIT_LEDS[8] = { 0, 10, 16, 20, 45, 46, 47, 50 };
+			// its first line and no menu, held still for half a second. FILTERS EDIT (50) is not here: the
+			// firmware leaves it lit on the program screen itself.
+			static const int EDIT_LEDS[7] = { 0, 10, 16, 20, 45, 46, 47 };
 			bool menu = false;
 			for (int e : EDIT_LEDS) if (lit(e) > 0.2f) menu = true;
 			editHold = menu ? 40 : std::max(0, editHold - 1);
@@ -490,9 +491,26 @@ struct Contagion : Module {
 				else if (cur >= 0) presetIndex = cur;
 				bool named = false;
 				for (int k = 2; k < 16; k++) if (snap.chars[k] != ' ' && snap.chars[k] != 0) named = true;
-				if (named && editHold == 0) {
+				if (named && cur >= 0 && editHold == 0) {
 					if (++presetStill >= 20) { std::memcpy(snap.preset, snap.chars, 32); snap.havePreset = true; }
 				} else presetStill = 0;
+				// In single mode the PRESET glass is composed from the edit buffer's own name and the sound's
+				// label, in the layout the unit writes ("A37 FuturwldSV"), so it does not hang on catching the
+				// program screen on the LCD.
+				if (lit(49) > 0.5f) {
+					uint8_t buf[vc::KnobSync::EDIT_BUFFER];
+					v.xram(0, buf, sizeof(buf));
+					const std::string label = vc::Presets::label(presetIndex / vc::Presets::PER_BANK, presetIndex % vc::Presets::PER_BANK);
+					const uint8_t* name = buf + vc::Presets::NAME_AT;
+					bool printable = false;
+					for (int k = 0; k < 10; k++) if (name[k] > 32 && name[k] < 127) printable = true;
+					if (printable) {
+						std::memset(snap.preset, ' ', 32);
+						for (size_t k = 0; k < label.size() && k < 4; k++) snap.preset[2 + k] = uint8_t(label[k]);
+						for (int k = 0; k < 10; k++) snap.preset[6 + k] = (name[k] >= 32 && name[k] < 127) ? name[k] : ' ';
+						snap.havePreset = true;
+					}
+				}
 				// 160 KB of battery RAM: copy it for the patch every few seconds.
 				if (--ramCountdown <= 0) { v.copyRam(globalRam, bankRam); ramCountdown = 120; }
 				snapMutex.unlock();
@@ -553,7 +571,7 @@ namespace {
 
 /** A knob that is also a button: a click that does not turn it presses the unit's key. Turning is the
     stock knob's own, so tooltips, snapping, scroll-wheel and double-click-to-reset all stay. */
-struct PushKnob : RoundSmallBlackKnob {
+struct PushKnob : RoundBlackKnob {
 	Contagion* module = nullptr;
 	int pushKey = -1;
 	void onAction(const ActionEvent& e) override {
@@ -771,7 +789,7 @@ struct ContagionWidget : ModuleWidget {
 			panel::F_DEC_POS, panel::F_SUS_POS, panel::F_REL_POS, panel::A_ATT_POS, panel::A_DEC_POS, panel::A_SUS_POS,
 			panel::A_REL_POS };
 		for (int i = 0; i < 32; i++)
-			addParam(createParamCentered<RoundSmallBlackKnob>(panel::mm(pots[i].x, pots[i].y), module, Contagion::POT_PARAM + i));
+			addParam(createParamCentered<RoundBlackKnob>(panel::mm(pots[i].x, pots[i].y), module, Contagion::POT_PARAM + i));
 
 		// The buttons the panel still has. The rest of the unit's 35 are the selector and endless
 		// knobs below, which press them.
@@ -804,7 +822,7 @@ struct ContagionWidget : ModuleWidget {
 		}
 		// Endless knobs: a detent is a press of the - or + key.
 		{
-			RoundSmallBlackKnob* tempo = createParamCentered<RoundSmallBlackKnob>(panel::mm(panel::TEMPO_POS.x, panel::TEMPO_POS.y), module, Contagion::TEMPO_PARAM);
+			RoundBlackKnob* tempo = createParamCentered<RoundBlackKnob>(panel::mm(panel::TEMPO_POS.x, panel::TEMPO_POS.y), module, Contagion::TEMPO_PARAM);
 			tempo->snap = true;
 			tempo->speed = 2.f;
 			addParam(tempo);
