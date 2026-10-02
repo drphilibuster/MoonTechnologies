@@ -23,6 +23,7 @@
 // Pure DSP, like the voices: no Rack types, no allocation, no I/O.
 // ---------------------------------------------------------------------------
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 
@@ -369,6 +370,15 @@ struct Payroll {
 		}
 	}
 
+	/** Is a patched clock actually ticking? True from the first edge until
+	    the edges stop arriving for a period and a half, so a cable into CLK IN
+	    with nothing running down it does not read as a running transport. */
+	bool extClockLive() const {
+		if (!extSeen) return false;
+		float timeout = extPeriod > 1e-4f ? std::max(1.5f * extPeriod, 0.03f) : 1.f;
+		return sinceEdge < timeout;
+	}
+
 	/** Advance one sample.
 
 	    `extEdge` is a rising edge on CLK IN this sample; `extConnected` says
@@ -420,9 +430,14 @@ struct Payroll {
 				advanceInto(step, swing);
 			}
 			stepHz = extPeriod > 1e-4f ? perBeat / extPeriod : 0.0;
-			// The engine runs whenever a clock is patched; RUN is the switch
-			// for the internal one only.
-			if (!extSeen) return;
+			// The engine runs while a patched clock is ticking; RUN is the
+			// switch for the internal one only. When the edges stop the grid
+			// holds where it is (resuming on the next edge) and any hit still
+			// waiting on its microtiming is dropped rather than fired late.
+			if (!extClockLive()) {
+				for (int v = 0; v < V_COUNT; v++) pending[v] = false;
+				return;
+			}
 		}
 		else {
 			stepHz = (double)bpm / 60.0 * perBeat;

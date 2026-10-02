@@ -348,7 +348,7 @@ struct Kickback : Module {
 				litSince[v] = false;
 				lights[VOICE_LIGHT + v].setBrightness(ledLevel[v]);
 			}
-			lights[RUN_LIGHT].setBrightness(payroll.running || extConnected ? 1.f : 0.f);
+			lights[RUN_LIGHT].setBrightness((extConnected ? payroll.extClockLive() : payroll.running) ? 1.f : 0.f);
 		}
 	}
 };
