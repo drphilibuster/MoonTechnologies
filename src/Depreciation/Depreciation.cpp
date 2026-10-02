@@ -75,7 +75,7 @@ struct Depreciation : Module {
 	static const int ROWS = 5, COLS = 9, LANES = 8;       // LANES: the retired CV lanes' ids, held so old patches' cables and knobs keep their meaning
 	enum ParamId {
 		SLOT_PARAM, COL_PARAM_RETIRED, REGMODE_PARAM, LOAD_PARAM, STORE_PARAM, BYPASS_PARAM, INPUT_PARAM, TRIM_PARAM, IN_PAD_PARAM, OUT_PAD_PARAM, CLK_DIV_PARAM,
-		LANE_PARAMS_RETIRED, CELL_PARAM = LANE_PARAMS_RETIRED + 2 * LANES, PARAMS_LEN = CELL_PARAM + ROWS * COLS
+		LANE_PARAMS_RETIRED, CELL_PARAM = LANE_PARAMS_RETIRED + 2 * LANES, OUT_LEVEL_PARAM = CELL_PARAM + ROWS * COLS, PARAMS_LEN
 	};
 	enum InputId {
 		IN_INPUT, IN_R_INPUT, CV_INPUTS_RETIRED, MOD_INPUT = CV_INPUTS_RETIRED + LANES, AT_INPUT, NOTE_INPUT, GATE_INPUT, SUSTAIN_INPUT, SOFT_INPUT, CLOCK_INPUT, RUN_INPUT, PGM_INPUT, BYPASS_CV_INPUT, INPUTS_LEN
@@ -123,6 +123,8 @@ struct Depreciation : Module {
 		configButton(BYPASS_PARAM, "Bypass (footswitch)");
 		configParam(INPUT_PARAM, 0.f, 1.f, 1.f, "Input level", "%", 0.f, 100.f);
 		configParam(TRIM_PARAM, 1.f, 10.f, 5.f, "Full scale (the converter's limit)", " V peak");
+		// make-up gain after the machine's output stage (OUT only; the WET jacks stay as the machine has them). Unity by default: the emulation is untouched
+		configParam(OUT_LEVEL_PARAM, 0.f, 4.f, 1.f, "Output level (OUT L / OUT R only)", " dB", -10.f, 20.f);
 		configSwitch(IN_PAD_PARAM, 0.f, 1.f, 0.f, "Input level", { "+4 dBu", "-20 dBV (15 dB less)" });
 		configSwitch(OUT_PAD_PARAM, 0.f, 1.f, 0.f, "Output level", { "+4 dBu", "-20 dBV (24.7 dB less)" });
 		configSwitch(CLK_DIV_PARAM, 0.f, 4.f, 4.f, "Clock edges per quarter note", { "1", "2", "4", "8", "24" });
@@ -404,7 +406,8 @@ struct Depreciation : Module {
 		float vin = 0.f; const bool a = inputs[IN_INPUT].isConnected(), b = inputs[IN_R_INPUT].isConnected();
 		if (a) vin += inputs[IN_INPUT].getVoltageSum(); if (b) vin += inputs[IN_R_INPUT].getVoltageSum();
 		double l, r; v.process(vin, l, r);
-		outputs[OUT_L_OUTPUT].setVoltage((float)l); outputs[OUT_R_OUTPUT].setVoltage((float)r);
+		const float og = params[OUT_LEVEL_PARAM].getValue();
+		outputs[OUT_L_OUTPUT].setVoltage((float)l * og); outputs[OUT_R_OUTPUT].setVoltage((float)r * og);
 		outputs[WET_L_OUTPUT].setVoltage((float)v.wetL); outputs[WET_R_OUTPUT].setVoltage((float)v.wetR);
 		// what the UI shows
 		if (--snapCount <= 0) {
@@ -543,6 +546,7 @@ struct DepreciationWidget : ModuleWidget {
 		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::TRIM_POS.x, panel::TRIM_POS.y), module, Depreciation::TRIM_PARAM));
 		addParam(createParamCentered<CKSS>(panel::mm(panel::IN_PAD_POS.x, panel::IN_PAD_POS.y), module, Depreciation::IN_PAD_PARAM));
 		addParam(createParamCentered<CKSS>(panel::mm(panel::OUT_PAD_POS.x, panel::OUT_PAD_POS.y), module, Depreciation::OUT_PAD_PARAM));
+		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::OUT_LEVEL_POS.x, panel::OUT_LEVEL_POS.y), module, Depreciation::OUT_LEVEL_PARAM));
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::CLK_DIV_POS.x, panel::CLK_DIV_POS.y), module, Depreciation::CLK_DIV_PARAM));
 
 		for (int r = 0; r < 5; r++) for (int c = 0; c < 9; c++)

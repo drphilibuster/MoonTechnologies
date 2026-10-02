@@ -48,7 +48,7 @@ LEFT = [
     [Knob("trim", "VOLT TRIM"), Switch("in_pad", "IN +4 -20")],
     [Switch("out_pad", "OUT +4 -20"), Trim("clk_div", "CLK /", steps=5)],
 ]
-# the dedicated inputs: a column of pairs down the right edge
+# the dedicated inputs: a column of pairs down the right edge, and the make-up gain under them
 def jk(name, label):
     return Jack(name, label, side="right")
 
@@ -57,7 +57,7 @@ DED = [
     [jk("note", "NOTE"), jk("gate", "GATE")],
     [jk("sustain", "SUST"), jk("soft", "SOFT")],
     [jk("clock", "CLOCK"), jk("run", "RUN")],
-    [],
+    [Knob("out_level", "OUT LEVEL")],
 ]
 
 rows = []

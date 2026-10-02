@@ -36,23 +36,24 @@ static const Label LABELS[] = {
 	{168.5200f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 4562"},
 	{ 86.3600f,  29.5000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PARAMETERS AND CONTROL"},
 	{ 11.6008f,  44.8069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PRESET"},
-	{ 30.3968f,  44.8069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FACTORY  USER"},
-	{143.8539f,  37.3559f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOD"},
+	{ 30.4170f,  44.8069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FACTORY  USER"},
+	{143.8337f,  37.3559f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOD"},
 	{162.4806f,  37.3559f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "AT"},
 	{ 11.6008f,  59.1318f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LOAD"},
-	{ 30.3968f,  59.1318f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "STORE"},
-	{143.8539f,  52.3259f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "NOTE"},
+	{ 30.4170f,  59.1318f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "STORE"},
+	{143.8337f,  52.3259f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "NOTE"},
 	{162.4806f,  52.3259f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "GATE"},
 	{ 11.6008f,  75.1969f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BYPASS"},
-	{ 30.3968f,  75.1969f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "INPUT"},
-	{143.8539f,  67.7459f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "SUST"},
+	{ 30.4170f,  75.1969f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "INPUT"},
+	{143.8337f,  67.7459f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "SUST"},
 	{162.4806f,  67.7459f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "SOFT"},
 	{ 11.6008f,  91.5879f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "VOLT TRIM"},
-	{ 30.3968f,  91.5879f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN +4 -20"},
-	{143.8539f,  84.1369f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "CLOCK"},
+	{ 30.4170f,  91.5879f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN +4 -20"},
+	{143.8337f,  84.1369f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "CLOCK"},
 	{162.4806f,  84.1369f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "RUN"},
-	{ 11.6008f, 104.2128f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT +4 -20"},
-	{ 30.3968f, 104.2128f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CLK /"},
+	{ 11.6008f, 107.0079f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT +4 -20"},
+	{ 30.4170f, 107.0079f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CLK /"},
+	{138.2437f, 107.0079f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT LEVEL"},
 	{ 36.4010f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN"},
 	{ 50.6750f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN R"},
 	{ 64.9490f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PGM"},
@@ -72,114 +73,115 @@ static inline void addLabels(app::ModuleWidget* mw) {
 // --- widget positions, by the names used in tools/panels/Depreciation.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
 static const Vec SLOT_POS = Vec(11.6008, 36.6000);
-static const Vec REGMODE_POS = Vec(30.3968, 36.6000);
-static const Vec P00_POS = Vec(44.7534, 36.6000);
-static const Vec P01_POS = Vec(54.8409, 36.6000);
-static const Vec P02_POS = Vec(64.9285, 36.6000);
-static const Vec P03_POS = Vec(75.0161, 36.6000);
-static const Vec P04_POS = Vec(85.1036, 36.6000);
-static const Vec P05_POS = Vec(95.1912, 36.6000);
-static const Vec P06_POS = Vec(105.2787, 36.6000);
-static const Vec P07_POS = Vec(115.3663, 36.6000);
-static const Vec P08_POS = Vec(125.4539, 36.6000);
-static const Vec MOD_POS = Vec(138.2639, 36.6000);
+static const Vec REGMODE_POS = Vec(30.4170, 36.6000);
+static const Vec P00_POS = Vec(44.7936, 36.6000);
+static const Vec P01_POS = Vec(54.9013, 36.6000);
+static const Vec P02_POS = Vec(65.0090, 36.6000);
+static const Vec P03_POS = Vec(75.1167, 36.6000);
+static const Vec P04_POS = Vec(85.2244, 36.6000);
+static const Vec P05_POS = Vec(95.3321, 36.6000);
+static const Vec P06_POS = Vec(105.4398, 36.6000);
+static const Vec P07_POS = Vec(115.5475, 36.6000);
+static const Vec P08_POS = Vec(125.6552, 36.6000);
+static const Vec MOD_POS = Vec(138.2437, 36.6000);
 static const Vec AT_POS = Vec(156.8906, 36.6000);
-static const Vec CAP00_POS = Vec(44.7534, 43.1700);
-static const Vec CAP01_POS = Vec(54.8409, 43.1700);
-static const Vec CAP02_POS = Vec(64.9285, 43.1700);
-static const Vec CAP03_POS = Vec(75.0161, 43.1700);
-static const Vec CAP04_POS = Vec(85.1036, 43.1700);
-static const Vec CAP05_POS = Vec(95.1912, 43.1700);
-static const Vec CAP06_POS = Vec(105.2787, 43.1700);
-static const Vec CAP07_POS = Vec(115.3663, 43.1700);
-static const Vec CAP08_POS = Vec(125.4539, 43.1700);
+static const Vec CAP00_POS = Vec(44.7936, 43.1700);
+static const Vec CAP01_POS = Vec(54.9013, 43.1700);
+static const Vec CAP02_POS = Vec(65.0090, 43.1700);
+static const Vec CAP03_POS = Vec(75.1167, 43.1700);
+static const Vec CAP04_POS = Vec(85.2244, 43.1700);
+static const Vec CAP05_POS = Vec(95.3321, 43.1700);
+static const Vec CAP06_POS = Vec(105.4398, 43.1700);
+static const Vec CAP07_POS = Vec(115.5475, 43.1700);
+static const Vec CAP08_POS = Vec(125.6552, 43.1700);
 static const Vec LOAD_POS = Vec(11.6008, 51.5700);
-static const Vec STORE_POS = Vec(30.3968, 51.5700);
-static const Vec P10_POS = Vec(44.7534, 51.5700);
-static const Vec P11_POS = Vec(54.8409, 51.5700);
-static const Vec P12_POS = Vec(64.9285, 51.5700);
-static const Vec P13_POS = Vec(75.0161, 51.5700);
-static const Vec P14_POS = Vec(85.1036, 51.5700);
-static const Vec P15_POS = Vec(95.1912, 51.5700);
-static const Vec P16_POS = Vec(105.2787, 51.5700);
-static const Vec P17_POS = Vec(115.3663, 51.5700);
-static const Vec P18_POS = Vec(125.4539, 51.5700);
-static const Vec NOTE_POS = Vec(138.2639, 51.5700);
+static const Vec STORE_POS = Vec(30.4170, 51.5700);
+static const Vec P10_POS = Vec(44.7936, 51.5700);
+static const Vec P11_POS = Vec(54.9013, 51.5700);
+static const Vec P12_POS = Vec(65.0090, 51.5700);
+static const Vec P13_POS = Vec(75.1167, 51.5700);
+static const Vec P14_POS = Vec(85.2244, 51.5700);
+static const Vec P15_POS = Vec(95.3321, 51.5700);
+static const Vec P16_POS = Vec(105.4398, 51.5700);
+static const Vec P17_POS = Vec(115.5475, 51.5700);
+static const Vec P18_POS = Vec(125.6552, 51.5700);
+static const Vec NOTE_POS = Vec(138.2437, 51.5700);
 static const Vec GATE_POS = Vec(156.8906, 51.5700);
-static const Vec CAP10_POS = Vec(44.7534, 58.1400);
-static const Vec CAP11_POS = Vec(54.8409, 58.1400);
-static const Vec CAP12_POS = Vec(64.9285, 58.1400);
-static const Vec CAP13_POS = Vec(75.0161, 58.1400);
-static const Vec CAP14_POS = Vec(85.1036, 58.1400);
-static const Vec CAP15_POS = Vec(95.1912, 58.1400);
-static const Vec CAP16_POS = Vec(105.2787, 58.1400);
-static const Vec CAP17_POS = Vec(115.3663, 58.1400);
-static const Vec CAP18_POS = Vec(125.4539, 58.1400);
+static const Vec CAP10_POS = Vec(44.7936, 58.1400);
+static const Vec CAP11_POS = Vec(54.9013, 58.1400);
+static const Vec CAP12_POS = Vec(65.0090, 58.1400);
+static const Vec CAP13_POS = Vec(75.1167, 58.1400);
+static const Vec CAP14_POS = Vec(85.2244, 58.1400);
+static const Vec CAP15_POS = Vec(95.3321, 58.1400);
+static const Vec CAP16_POS = Vec(105.4398, 58.1400);
+static const Vec CAP17_POS = Vec(115.5475, 58.1400);
+static const Vec CAP18_POS = Vec(125.6552, 58.1400);
 static const Vec BYPASS_POS = Vec(11.6008, 66.9900);
-static const Vec INPUT_POS = Vec(30.3968, 66.9900);
-static const Vec P20_POS = Vec(44.7534, 66.9900);
-static const Vec P21_POS = Vec(54.8409, 66.9900);
-static const Vec P22_POS = Vec(64.9285, 66.9900);
-static const Vec P23_POS = Vec(75.0161, 66.9900);
-static const Vec P24_POS = Vec(85.1036, 66.9900);
-static const Vec P25_POS = Vec(95.1912, 66.9900);
-static const Vec P26_POS = Vec(105.2787, 66.9900);
-static const Vec P27_POS = Vec(115.3663, 66.9900);
-static const Vec P28_POS = Vec(125.4539, 66.9900);
-static const Vec SUSTAIN_POS = Vec(138.2639, 66.9900);
+static const Vec INPUT_POS = Vec(30.4170, 66.9900);
+static const Vec P20_POS = Vec(44.7936, 66.9900);
+static const Vec P21_POS = Vec(54.9013, 66.9900);
+static const Vec P22_POS = Vec(65.0090, 66.9900);
+static const Vec P23_POS = Vec(75.1167, 66.9900);
+static const Vec P24_POS = Vec(85.2244, 66.9900);
+static const Vec P25_POS = Vec(95.3321, 66.9900);
+static const Vec P26_POS = Vec(105.4398, 66.9900);
+static const Vec P27_POS = Vec(115.5475, 66.9900);
+static const Vec P28_POS = Vec(125.6552, 66.9900);
+static const Vec SUSTAIN_POS = Vec(138.2437, 66.9900);
 static const Vec SOFT_POS = Vec(156.8906, 66.9900);
 static const Vec BYPASS_LED_POS = Vec(18.0203, 74.4410);
-static const Vec CAP20_POS = Vec(44.7534, 73.5600);
-static const Vec CAP21_POS = Vec(54.8409, 73.5600);
-static const Vec CAP22_POS = Vec(64.9285, 73.5600);
-static const Vec CAP23_POS = Vec(75.0161, 73.5600);
-static const Vec CAP24_POS = Vec(85.1036, 73.5600);
-static const Vec CAP25_POS = Vec(95.1912, 73.5600);
-static const Vec CAP26_POS = Vec(105.2787, 73.5600);
-static const Vec CAP27_POS = Vec(115.3663, 73.5600);
-static const Vec CAP28_POS = Vec(125.4539, 73.5600);
+static const Vec CAP20_POS = Vec(44.7936, 73.5600);
+static const Vec CAP21_POS = Vec(54.9013, 73.5600);
+static const Vec CAP22_POS = Vec(65.0090, 73.5600);
+static const Vec CAP23_POS = Vec(75.1167, 73.5600);
+static const Vec CAP24_POS = Vec(85.2244, 73.5600);
+static const Vec CAP25_POS = Vec(95.3321, 73.5600);
+static const Vec CAP26_POS = Vec(105.4398, 73.5600);
+static const Vec CAP27_POS = Vec(115.5475, 73.5600);
+static const Vec CAP28_POS = Vec(125.6552, 73.5600);
 static const Vec TRIM_POS = Vec(11.6008, 83.3810);
-static const Vec IN_PAD_POS = Vec(30.3968, 83.3810);
-static const Vec P30_POS = Vec(44.7534, 83.3810);
-static const Vec P31_POS = Vec(54.8409, 83.3810);
-static const Vec P32_POS = Vec(64.9285, 83.3810);
-static const Vec P33_POS = Vec(75.0161, 83.3810);
-static const Vec P34_POS = Vec(85.1036, 83.3810);
-static const Vec P35_POS = Vec(95.1912, 83.3810);
-static const Vec P36_POS = Vec(105.2787, 83.3810);
-static const Vec P37_POS = Vec(115.3663, 83.3810);
-static const Vec P38_POS = Vec(125.4539, 83.3810);
-static const Vec CLOCK_POS = Vec(138.2639, 83.3810);
+static const Vec IN_PAD_POS = Vec(30.4170, 83.3810);
+static const Vec P30_POS = Vec(44.7936, 83.3810);
+static const Vec P31_POS = Vec(54.9013, 83.3810);
+static const Vec P32_POS = Vec(65.0090, 83.3810);
+static const Vec P33_POS = Vec(75.1167, 83.3810);
+static const Vec P34_POS = Vec(85.2244, 83.3810);
+static const Vec P35_POS = Vec(95.3321, 83.3810);
+static const Vec P36_POS = Vec(105.4398, 83.3810);
+static const Vec P37_POS = Vec(115.5475, 83.3810);
+static const Vec P38_POS = Vec(125.6552, 83.3810);
+static const Vec CLOCK_POS = Vec(138.2437, 83.3810);
 static const Vec RUN_POS = Vec(156.8906, 83.3810);
-static const Vec CAP30_POS = Vec(44.7534, 89.9510);
-static const Vec CAP31_POS = Vec(54.8409, 89.9510);
-static const Vec CAP32_POS = Vec(64.9285, 89.9510);
-static const Vec CAP33_POS = Vec(75.0161, 89.9510);
-static const Vec CAP34_POS = Vec(85.1036, 89.9510);
-static const Vec CAP35_POS = Vec(95.1912, 89.9510);
-static const Vec CAP36_POS = Vec(105.2787, 89.9510);
-static const Vec CAP37_POS = Vec(115.3663, 89.9510);
-static const Vec CAP38_POS = Vec(125.4539, 89.9510);
-static const Vec OUT_PAD_POS = Vec(11.6008, 97.5010);
-static const Vec CLK_DIV_POS = Vec(30.3968, 97.5010);
-static const Vec P40_POS = Vec(44.7534, 97.5010);
-static const Vec P41_POS = Vec(54.8409, 97.5010);
-static const Vec P42_POS = Vec(64.9285, 97.5010);
-static const Vec P43_POS = Vec(75.0161, 97.5010);
-static const Vec P44_POS = Vec(85.1036, 97.5010);
-static const Vec P45_POS = Vec(95.1912, 97.5010);
-static const Vec P46_POS = Vec(105.2787, 97.5010);
-static const Vec P47_POS = Vec(115.3663, 97.5010);
-static const Vec P48_POS = Vec(125.4539, 97.5010);
-static const Vec CAP40_POS = Vec(44.7534, 104.0710);
-static const Vec CAP41_POS = Vec(54.8409, 104.0710);
-static const Vec CAP42_POS = Vec(64.9285, 104.0710);
-static const Vec CAP43_POS = Vec(75.0161, 104.0710);
-static const Vec CAP44_POS = Vec(85.1036, 104.0710);
-static const Vec CAP45_POS = Vec(95.1912, 104.0710);
-static const Vec CAP46_POS = Vec(105.2787, 104.0710);
-static const Vec CAP47_POS = Vec(115.3663, 104.0710);
-static const Vec CAP48_POS = Vec(125.4539, 104.0710);
+static const Vec CAP30_POS = Vec(44.7936, 89.9510);
+static const Vec CAP31_POS = Vec(54.9013, 89.9510);
+static const Vec CAP32_POS = Vec(65.0090, 89.9510);
+static const Vec CAP33_POS = Vec(75.1167, 89.9510);
+static const Vec CAP34_POS = Vec(85.2244, 89.9510);
+static const Vec CAP35_POS = Vec(95.3321, 89.9510);
+static const Vec CAP36_POS = Vec(105.4398, 89.9510);
+static const Vec CAP37_POS = Vec(115.5475, 89.9510);
+static const Vec CAP38_POS = Vec(125.6552, 89.9510);
+static const Vec OUT_PAD_POS = Vec(11.6008, 98.8010);
+static const Vec CLK_DIV_POS = Vec(30.4170, 98.8010);
+static const Vec P40_POS = Vec(44.7936, 98.8010);
+static const Vec P41_POS = Vec(54.9013, 98.8010);
+static const Vec P42_POS = Vec(65.0090, 98.8010);
+static const Vec P43_POS = Vec(75.1167, 98.8010);
+static const Vec P44_POS = Vec(85.2244, 98.8010);
+static const Vec P45_POS = Vec(95.3321, 98.8010);
+static const Vec P46_POS = Vec(105.4398, 98.8010);
+static const Vec P47_POS = Vec(115.5475, 98.8010);
+static const Vec P48_POS = Vec(125.6552, 98.8010);
+static const Vec OUT_LEVEL_POS = Vec(138.2437, 98.8010);
+static const Vec CAP40_POS = Vec(44.7936, 105.3710);
+static const Vec CAP41_POS = Vec(54.9013, 105.3710);
+static const Vec CAP42_POS = Vec(65.0090, 105.3710);
+static const Vec CAP43_POS = Vec(75.1167, 105.3710);
+static const Vec CAP44_POS = Vec(85.2244, 105.3710);
+static const Vec CAP45_POS = Vec(95.3321, 105.3710);
+static const Vec CAP46_POS = Vec(105.4398, 105.3710);
+static const Vec CAP47_POS = Vec(115.5475, 105.3710);
+static const Vec CAP48_POS = Vec(125.6552, 105.3710);
 static const Vec IN_POS = Vec(36.4010, 118.6000);
 static const Vec IN_R_POS = Vec(50.6750, 118.6000);
 static const Vec PGM_POS = Vec(64.9490, 118.6000);
