@@ -33,21 +33,21 @@ static const Label LABELS[] = {
 	{ 86.3000f,  29.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 6"},
 	{101.2000f,  29.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 7"},
 	{116.1000f,  29.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 8"},
-	{ 33.2500f,  41.9791f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MUTE"},
-	{ 93.7500f,  41.9791f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MUTE"},
-	{ 33.2500f,  45.9513f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LEVEL CV"},
-	{ 93.7500f,  45.9513f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LEVEL CV"},
-	{ 10.9000f,  59.7034f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 1"},
-	{ 25.8000f,  59.7034f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 2"},
-	{ 40.7000f,  59.7034f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 3"},
-	{ 55.6000f,  59.7034f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 4"},
-	{ 71.4000f,  59.7034f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 5"},
-	{ 86.3000f,  59.7034f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 6"},
-	{101.2000f,  59.7034f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 7"},
-	{116.1000f,  59.7034f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 8"},
-	{ 63.5000f,  78.1438f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MULTIPLES"},
-	{ 13.5410f,  81.2056f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MULT A"},
-	{ 13.5410f,  94.9578f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MULT B"},
+	{ 33.2500f,  42.1291f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MUTE"},
+	{ 93.7500f,  42.1291f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MUTE"},
+	{ 33.2500f,  46.2513f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LEVEL CV"},
+	{ 93.7500f,  46.2513f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LEVEL CV"},
+	{ 10.9000f,  60.1534f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 1"},
+	{ 25.8000f,  60.1534f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 2"},
+	{ 40.7000f,  60.1534f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 3"},
+	{ 55.6000f,  60.1534f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 4"},
+	{ 71.4000f,  60.1534f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 5"},
+	{ 86.3000f,  60.1534f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 6"},
+	{101.2000f,  60.1534f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 7"},
+	{116.1000f,  60.1534f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 8"},
+	{ 63.5000f,  78.7438f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MULTIPLES"},
+	{ 13.5410f,  81.8056f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MULT A"},
+	{ 13.5410f,  95.7078f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MULT B"},
 	{  7.6900f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "1"},
 	{ 18.8520f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "2"},
 	{ 30.0140f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "3"},
@@ -77,46 +77,46 @@ static const Vec LVL5_POS = Vec(71.4000, 21.1000);
 static const Vec LVL6_POS = Vec(86.3000, 21.1000);
 static const Vec LVL7_POS = Vec(101.2000, 21.1000);
 static const Vec LVL8_POS = Vec(116.1000, 21.1000);
-static const Vec MUTE1_POS = Vec(10.9000, 35.7173);
-static const Vec MUTE2_POS = Vec(25.8000, 35.7173);
-static const Vec MUTE3_POS = Vec(40.7000, 35.7173);
-static const Vec MUTE4_POS = Vec(55.6000, 35.7173);
-static const Vec MUTE5_POS = Vec(71.4000, 35.7173);
-static const Vec MUTE6_POS = Vec(86.3000, 35.7173);
-static const Vec MUTE7_POS = Vec(101.2000, 35.7173);
-static const Vec MUTE8_POS = Vec(116.1000, 35.7173);
-static const Vec CV1_POS = Vec(10.9000, 51.2413);
-static const Vec CV2_POS = Vec(25.8000, 51.2413);
-static const Vec CV3_POS = Vec(40.7000, 51.2413);
-static const Vec CV4_POS = Vec(55.6000, 51.2413);
-static const Vec CV5_POS = Vec(71.4000, 51.2413);
-static const Vec CV6_POS = Vec(86.3000, 51.2413);
-static const Vec CV7_POS = Vec(101.2000, 51.2413);
-static const Vec CV8_POS = Vec(116.1000, 51.2413);
-static const Vec IN1_POS = Vec(10.9000, 64.9934);
-static const Vec IN2_POS = Vec(25.8000, 64.9934);
-static const Vec IN3_POS = Vec(40.7000, 64.9934);
-static const Vec IN4_POS = Vec(55.6000, 64.9934);
-static const Vec IN5_POS = Vec(71.4000, 64.9934);
-static const Vec IN6_POS = Vec(86.3000, 64.9934);
-static const Vec IN7_POS = Vec(101.2000, 64.9934);
-static const Vec IN8_POS = Vec(116.1000, 64.9934);
-static const Vec MULT_A_IN_POS = Vec(13.5410, 86.4956);
-static const Vec MULT_A_OUT1_POS = Vec(27.8150, 86.4956);
-static const Vec MULT_A_OUT2_POS = Vec(42.0890, 86.4956);
-static const Vec MULT_A_OUT3_POS = Vec(56.3630, 86.4956);
-static const Vec MULT_A_OUT4_POS = Vec(70.6370, 86.4956);
-static const Vec MULT_A_OUT5_POS = Vec(84.9110, 86.4956);
-static const Vec MULT_A_OUT6_POS = Vec(99.1850, 86.4956);
-static const Vec MULT_A_OUT7_POS = Vec(113.4590, 86.4956);
-static const Vec MULT_B_IN_POS = Vec(13.5410, 100.2478);
-static const Vec MULT_B_OUT1_POS = Vec(27.8150, 100.2478);
-static const Vec MULT_B_OUT2_POS = Vec(42.0890, 100.2478);
-static const Vec MULT_B_OUT3_POS = Vec(56.3630, 100.2478);
-static const Vec MULT_B_OUT4_POS = Vec(70.6370, 100.2478);
-static const Vec MULT_B_OUT5_POS = Vec(84.9110, 100.2478);
-static const Vec MULT_B_OUT6_POS = Vec(99.1850, 100.2478);
-static const Vec MULT_B_OUT7_POS = Vec(113.4590, 100.2478);
+static const Vec MUTE1_POS = Vec(10.9000, 35.8673);
+static const Vec MUTE2_POS = Vec(25.8000, 35.8673);
+static const Vec MUTE3_POS = Vec(40.7000, 35.8673);
+static const Vec MUTE4_POS = Vec(55.6000, 35.8673);
+static const Vec MUTE5_POS = Vec(71.4000, 35.8673);
+static const Vec MUTE6_POS = Vec(86.3000, 35.8673);
+static const Vec MUTE7_POS = Vec(101.2000, 35.8673);
+static const Vec MUTE8_POS = Vec(116.1000, 35.8673);
+static const Vec CV1_POS = Vec(10.9000, 51.5413);
+static const Vec CV2_POS = Vec(25.8000, 51.5413);
+static const Vec CV3_POS = Vec(40.7000, 51.5413);
+static const Vec CV4_POS = Vec(55.6000, 51.5413);
+static const Vec CV5_POS = Vec(71.4000, 51.5413);
+static const Vec CV6_POS = Vec(86.3000, 51.5413);
+static const Vec CV7_POS = Vec(101.2000, 51.5413);
+static const Vec CV8_POS = Vec(116.1000, 51.5413);
+static const Vec IN1_POS = Vec(10.9000, 65.4434);
+static const Vec IN2_POS = Vec(25.8000, 65.4434);
+static const Vec IN3_POS = Vec(40.7000, 65.4434);
+static const Vec IN4_POS = Vec(55.6000, 65.4434);
+static const Vec IN5_POS = Vec(71.4000, 65.4434);
+static const Vec IN6_POS = Vec(86.3000, 65.4434);
+static const Vec IN7_POS = Vec(101.2000, 65.4434);
+static const Vec IN8_POS = Vec(116.1000, 65.4434);
+static const Vec MULT_A_IN_POS = Vec(13.5410, 87.0956);
+static const Vec MULT_A_OUT1_POS = Vec(27.8150, 87.0956);
+static const Vec MULT_A_OUT2_POS = Vec(42.0890, 87.0956);
+static const Vec MULT_A_OUT3_POS = Vec(56.3630, 87.0956);
+static const Vec MULT_A_OUT4_POS = Vec(70.6370, 87.0956);
+static const Vec MULT_A_OUT5_POS = Vec(84.9110, 87.0956);
+static const Vec MULT_A_OUT6_POS = Vec(99.1850, 87.0956);
+static const Vec MULT_A_OUT7_POS = Vec(113.4590, 87.0956);
+static const Vec MULT_B_IN_POS = Vec(13.5410, 100.9978);
+static const Vec MULT_B_OUT1_POS = Vec(27.8150, 100.9978);
+static const Vec MULT_B_OUT2_POS = Vec(42.0890, 100.9978);
+static const Vec MULT_B_OUT3_POS = Vec(56.3630, 100.9978);
+static const Vec MULT_B_OUT4_POS = Vec(70.6370, 100.9978);
+static const Vec MULT_B_OUT5_POS = Vec(84.9110, 100.9978);
+static const Vec MULT_B_OUT6_POS = Vec(99.1850, 100.9978);
+static const Vec MULT_B_OUT7_POS = Vec(113.4590, 100.9978);
 static const Vec OUT1_POS = Vec(7.6900, 118.6000);
 static const Vec OUT2_POS = Vec(18.8520, 118.6000);
 static const Vec OUT3_POS = Vec(30.0140, 118.6000);

@@ -40,13 +40,13 @@ static const Label LABELS[] = {
 	{ 43.4300f,  38.0069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "-"},
 	{ 57.9800f,  38.0069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "STEPS"},
 	{ 72.5300f,  38.0069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "+"},
-	{ 40.6400f,  44.3360f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LINES"},
-	{  8.7200f,  47.3978f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MULT"},
-	{ 19.9500f,  47.3978f,  6.20f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RATIO"},
-	{ 31.8000f,  47.3978f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV"},
-	{ 43.6500f,  47.3978f,  6.20f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DUE IN"},
-	{ 55.5000f,  47.3978f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRIG"},
-	{ 71.9900f,  47.3978f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
+	{ 40.6400f,  44.4077f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LINES"},
+	{  8.7200f,  47.4695f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MULT"},
+	{ 19.9500f,  47.4695f,  6.20f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RATIO"},
+	{ 31.8000f,  47.4695f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV"},
+	{ 43.6500f,  47.4695f,  6.20f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DUE IN"},
+	{ 55.5000f,  47.4695f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRIG"},
+	{ 71.9900f,  47.4695f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
 	{ 13.5400f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CLOCK"},
 	{ 27.0900f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "START"},
 	{ 40.6400f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "STOP"},
@@ -69,48 +69,48 @@ static const Vec N_DN_POS = Vec(43.4300, 28.6000);
 static const Vec N_POS = Vec(57.9800, 28.6000);
 static const Vec N_UP_POS = Vec(72.5300, 28.6000);
 static const Vec RUN_LED_POS = Vec(14.5396, 37.2510);
-static const Vec MULT1_POS = Vec(8.7200, 52.5878);
-static const Vec MULT1_NAME_POS = Vec(19.9500, 52.5878);
-static const Vec CV1_POS = Vec(31.8000, 52.5878);
-static const Vec COUNT1_POS = Vec(43.6500, 52.5878);
-static const Vec TRIG1_POS = Vec(55.5000, 52.5878);
-static const Vec FIRE1_LED_POS = Vec(63.7450, 52.5878);
-static const Vec GATE1_POS = Vec(71.9900, 52.5878);
-static const Vec MULT2_POS = Vec(8.7200, 62.7629);
-static const Vec MULT2_NAME_POS = Vec(19.9500, 62.7629);
-static const Vec CV2_POS = Vec(31.8000, 62.7629);
-static const Vec COUNT2_POS = Vec(43.6500, 62.7629);
-static const Vec TRIG2_POS = Vec(55.5000, 62.7629);
-static const Vec FIRE2_LED_POS = Vec(63.7450, 62.7629);
-static const Vec GATE2_POS = Vec(71.9900, 62.7629);
-static const Vec MULT3_POS = Vec(8.7200, 72.9380);
-static const Vec MULT3_NAME_POS = Vec(19.9500, 72.9380);
-static const Vec CV3_POS = Vec(31.8000, 72.9380);
-static const Vec COUNT3_POS = Vec(43.6500, 72.9380);
-static const Vec TRIG3_POS = Vec(55.5000, 72.9380);
-static const Vec FIRE3_LED_POS = Vec(63.7450, 72.9380);
-static const Vec GATE3_POS = Vec(71.9900, 72.9380);
-static const Vec MULT4_POS = Vec(8.7200, 83.1130);
-static const Vec MULT4_NAME_POS = Vec(19.9500, 83.1130);
-static const Vec CV4_POS = Vec(31.8000, 83.1130);
-static const Vec COUNT4_POS = Vec(43.6500, 83.1130);
-static const Vec TRIG4_POS = Vec(55.5000, 83.1130);
-static const Vec FIRE4_LED_POS = Vec(63.7450, 83.1130);
-static const Vec GATE4_POS = Vec(71.9900, 83.1130);
-static const Vec MULT5_POS = Vec(8.7200, 93.2881);
-static const Vec MULT5_NAME_POS = Vec(19.9500, 93.2881);
-static const Vec CV5_POS = Vec(31.8000, 93.2881);
-static const Vec COUNT5_POS = Vec(43.6500, 93.2881);
-static const Vec TRIG5_POS = Vec(55.5000, 93.2881);
-static const Vec FIRE5_LED_POS = Vec(63.7450, 93.2881);
-static const Vec GATE5_POS = Vec(71.9900, 93.2881);
-static const Vec MULT6_POS = Vec(8.7200, 103.4631);
-static const Vec MULT6_NAME_POS = Vec(19.9500, 103.4631);
-static const Vec CV6_POS = Vec(31.8000, 103.4631);
-static const Vec COUNT6_POS = Vec(43.6500, 103.4631);
-static const Vec TRIG6_POS = Vec(55.5000, 103.4631);
-static const Vec FIRE6_LED_POS = Vec(63.7450, 103.4631);
-static const Vec GATE6_POS = Vec(71.9900, 103.4631);
+static const Vec MULT1_POS = Vec(8.7200, 52.6595);
+static const Vec MULT1_NAME_POS = Vec(19.9500, 52.6595);
+static const Vec CV1_POS = Vec(31.8000, 52.6595);
+static const Vec COUNT1_POS = Vec(43.6500, 52.6595);
+static const Vec TRIG1_POS = Vec(55.5000, 52.6595);
+static const Vec FIRE1_LED_POS = Vec(63.7450, 52.6595);
+static const Vec GATE1_POS = Vec(71.9900, 52.6595);
+static const Vec MULT2_POS = Vec(8.7200, 62.9063);
+static const Vec MULT2_NAME_POS = Vec(19.9500, 62.9063);
+static const Vec CV2_POS = Vec(31.8000, 62.9063);
+static const Vec COUNT2_POS = Vec(43.6500, 62.9063);
+static const Vec TRIG2_POS = Vec(55.5000, 62.9063);
+static const Vec FIRE2_LED_POS = Vec(63.7450, 62.9063);
+static const Vec GATE2_POS = Vec(71.9900, 62.9063);
+static const Vec MULT3_POS = Vec(8.7200, 73.1530);
+static const Vec MULT3_NAME_POS = Vec(19.9500, 73.1530);
+static const Vec CV3_POS = Vec(31.8000, 73.1530);
+static const Vec COUNT3_POS = Vec(43.6500, 73.1530);
+static const Vec TRIG3_POS = Vec(55.5000, 73.1530);
+static const Vec FIRE3_LED_POS = Vec(63.7450, 73.1530);
+static const Vec GATE3_POS = Vec(71.9900, 73.1530);
+static const Vec MULT4_POS = Vec(8.7200, 83.3998);
+static const Vec MULT4_NAME_POS = Vec(19.9500, 83.3998);
+static const Vec CV4_POS = Vec(31.8000, 83.3998);
+static const Vec COUNT4_POS = Vec(43.6500, 83.3998);
+static const Vec TRIG4_POS = Vec(55.5000, 83.3998);
+static const Vec FIRE4_LED_POS = Vec(63.7450, 83.3998);
+static const Vec GATE4_POS = Vec(71.9900, 83.3998);
+static const Vec MULT5_POS = Vec(8.7200, 93.6465);
+static const Vec MULT5_NAME_POS = Vec(19.9500, 93.6465);
+static const Vec CV5_POS = Vec(31.8000, 93.6465);
+static const Vec COUNT5_POS = Vec(43.6500, 93.6465);
+static const Vec TRIG5_POS = Vec(55.5000, 93.6465);
+static const Vec FIRE5_LED_POS = Vec(63.7450, 93.6465);
+static const Vec GATE5_POS = Vec(71.9900, 93.6465);
+static const Vec MULT6_POS = Vec(8.7200, 103.8933);
+static const Vec MULT6_NAME_POS = Vec(19.9500, 103.8933);
+static const Vec CV6_POS = Vec(31.8000, 103.8933);
+static const Vec COUNT6_POS = Vec(43.6500, 103.8933);
+static const Vec TRIG6_POS = Vec(55.5000, 103.8933);
+static const Vec FIRE6_LED_POS = Vec(63.7450, 103.8933);
+static const Vec GATE6_POS = Vec(71.9900, 103.8933);
 static const Vec CLOCK_POS = Vec(13.5400, 118.6000);
 static const Vec START_POS = Vec(27.0900, 118.6000);
 static const Vec STOP_POS = Vec(40.6400, 118.6000);

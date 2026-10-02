@@ -233,6 +233,27 @@ row against the footer's natural span first. Where a section is already wider th
 footer (most panels), a rail adds a column of width and costs more than it saves. Contagion
 is the case it exists for: 77 HP with its six outputs in the footer, 64 HP with them on a rail.
 
+### One edge for every footer
+
+The band's top edge is a family constant, `BAND_TOP` in `layout.py` (111.1 mm), not something
+each panel works out from its own labels -- so the band, its mint tab and the row of jack
+names on it line up from one module to the next. It used to be derived, and landed anywhere
+from 108.9 to 111.2 mm depending on density, on whether a label carried a light and on whether
+the last block was at capacity. Three rules keep it constant:
+
+* a **lit jack label** hangs its light from the label's cap height, in a seat drawn close round
+  it (`BAND_LIGHT_SEAT`), instead of centring a full-size seat on the letters -- centred, the
+  seat stood a millimetre above the names and lifted the whole row;
+* in **capitals** `/`, `&` and `Q` count as sitting on the baseline, so `V/OCT`, `S&H` and
+  `SQU1` do not lift the row for a descender they do not have;
+* a panel at capacity may crowd the edge by `BAND_TOL` (0.05 mm) before it is over capacity.
+
+A footer whose ink genuinely reaches higher than one row of jacks -- Gross's attenuator trims
+sit over their jacks -- cannot start the band that low without cutting its own ink, and takes the
+highest edge it allows. PatchAudit places its band by hand (`band_footer=`), because its action
+buttons are plates on a hand-laid face. Those two are the only panels whose band is not at
+`BAND_TOP`.
+
 ## Columns, and things that are not columns
 
 A row's items land in columns, and the solver spaces each gap to the two columns

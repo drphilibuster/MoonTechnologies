@@ -37,19 +37,19 @@ static const Label LABELS[] = {
 	{ 20.3500f,  40.6154f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TIME"},
 	{ 38.1000f,  28.1585f,  5.40f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OVERDRAFT"},
 	{ 55.8500f,  40.6154f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CLK DIV"},
-	{ 20.3500f,  56.4316f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODE"},
-	{ 38.1000f,  56.4316f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SUBDIV"},
-	{ 55.8500f,  56.4316f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FADE"},
-	{ 20.3500f,  74.0479f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MIX"},
-	{ 38.1000f,  74.0479f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CHAR"},
-	{ 55.8500f,  74.0479f,  6.60f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FREEZE"},
-	{ 38.1000f,  80.0073f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "WITHHOLDING"},
-	{  9.2900f,  96.1494f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TIME"},
-	{ 20.8140f,  96.1494f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODE"},
-	{ 32.3380f,  96.1494f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SUB"},
-	{ 43.8620f,  96.1494f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MIX"},
-	{ 55.3860f,  83.4276f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CLOCK"},
-	{ 66.9100f,  83.4276f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RESET"},
+	{ 20.3500f,  56.5320f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODE"},
+	{ 38.1000f,  56.5320f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SUBDIV"},
+	{ 55.8500f,  56.5320f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FADE"},
+	{ 20.3500f,  74.2486f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MIX"},
+	{ 38.1000f,  74.2486f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CHAR"},
+	{ 55.8500f,  74.2486f,  6.60f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FREEZE"},
+	{ 38.1000f,  80.3084f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "WITHHOLDING"},
+	{  9.2900f,  96.4505f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TIME"},
+	{ 20.8140f,  96.4505f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODE"},
+	{ 32.3380f,  96.4505f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SUB"},
+	{ 43.8620f,  96.4505f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MIX"},
+	{ 55.3860f,  83.7287f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CLOCK"},
+	{ 66.9100f,  83.7287f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RESET"},
 	{ 11.0000f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FREEZE"},
 	{ 24.5500f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN L"},
 	{ 38.1000f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN R"},
@@ -69,23 +69,23 @@ static const Vec WINDOW_POS = Vec(47.8520, 21.5685);
 static const Vec TIME_POS = Vec(20.3500, 31.2085);
 static const Vec OVERDRAFT_POS = Vec(38.1000, 31.2085);
 static const Vec DIV_POS = Vec(55.8500, 31.2085);
-static const Vec MODE_POS = Vec(20.3500, 48.3248);
-static const Vec SUBDIV_POS = Vec(38.1000, 48.3248);
-static const Vec FADE_POS = Vec(55.8500, 48.3248);
-static const Vec MIX_POS = Vec(20.3500, 65.9410);
-static const Vec CHAR_POS = Vec(38.1000, 65.9410);
-static const Vec FREEZE_POS = Vec(55.8500, 65.9410);
-static const Vec CLOCK_LED_POS = Vec(48.5632, 79.2758);
-static const Vec TIME_CV_POS = Vec(9.2900, 88.6176);
-static const Vec MODE_CV_POS = Vec(20.8140, 88.6176);
-static const Vec SUBDIV_CV_POS = Vec(32.3380, 88.6176);
-static const Vec MIX_CV_POS = Vec(43.8620, 88.6176);
-static const Vec CLOCK_IN_POS = Vec(55.3860, 88.6176);
-static const Vec RESET_IN_POS = Vec(66.9100, 88.6176);
-static const Vec TIME_IN_POS = Vec(9.2900, 102.6488);
-static const Vec MODE_IN_POS = Vec(20.8140, 102.6488);
-static const Vec SUBDIV_IN_POS = Vec(32.3380, 102.6488);
-static const Vec MIX_IN_POS = Vec(43.8620, 102.6488);
+static const Vec MODE_POS = Vec(20.3500, 48.4251);
+static const Vec SUBDIV_POS = Vec(38.1000, 48.4251);
+static const Vec FADE_POS = Vec(55.8500, 48.4251);
+static const Vec MIX_POS = Vec(20.3500, 66.1418);
+static const Vec CHAR_POS = Vec(38.1000, 66.1418);
+static const Vec FREEZE_POS = Vec(55.8500, 66.1418);
+static const Vec CLOCK_LED_POS = Vec(48.5632, 79.5769);
+static const Vec TIME_CV_POS = Vec(9.2900, 88.9187);
+static const Vec MODE_CV_POS = Vec(20.8140, 88.9187);
+static const Vec SUBDIV_CV_POS = Vec(32.3380, 88.9187);
+static const Vec MIX_CV_POS = Vec(43.8620, 88.9187);
+static const Vec CLOCK_IN_POS = Vec(55.3860, 88.9187);
+static const Vec RESET_IN_POS = Vec(66.9100, 88.9187);
+static const Vec TIME_IN_POS = Vec(9.2900, 103.0502);
+static const Vec MODE_IN_POS = Vec(20.8140, 103.0502);
+static const Vec SUBDIV_IN_POS = Vec(32.3380, 103.0502);
+static const Vec MIX_IN_POS = Vec(43.8620, 103.0502);
 static const Vec FREEZE_IN_POS = Vec(11.0000, 118.6000);
 static const Vec IN_L_POS = Vec(24.5500, 118.6000);
 static const Vec IN_R_POS = Vec(38.1000, 118.6000);

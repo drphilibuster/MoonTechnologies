@@ -59,12 +59,12 @@ P = Panel(
 # of the rack sees. The columns are solved, not typed: every row declares which
 # of the nine it stands in, and the solver makes each as wide as the widest
 # thing any row puts there.
-CLK, PAT, KICK, SNARE, HAT, TOM1, TOM2, TOM3, GATE = range(9)
+CLK, PAT, KICK, SNARE, HAT, TOM1, TOM2, TOM3 = range(8)
 
 #: Three runs, so the solver puts a gutter on each side of the voices rather
 #: than spacing all nine evenly. Without them the payroll reads as two more
 #: drums and the gate column as a seventh.
-GROUPS = (2, 6, 1)
+GROUPS = (2, 6)
 
 P.sections = [
     # Box 1 of the 1099-NEC, and the only felt block on the face: six rows deep
@@ -82,7 +82,7 @@ P.sections = [
              Jack("tom1_trig", "TOM I", ink="PAPER", light="tom1_led", col=TOM1),
              Jack("tom2_trig", "TOM II", ink="PAPER", light="tom2_led", col=TOM2),
              Jack("tom3_trig", "TOM III", ink="PAPER", light="tom3_led", col=TOM3),
-             Jack("kick_gate", "KICK", ink="MINT", side="left", col=GATE)]),
+             ]),
 
         # Each voice's fundamental, and the clock's own rate.
         #
@@ -101,7 +101,7 @@ P.sections = [
              Knob("tom1_tune", "TUNE", col=TOM1),
              Knob("tom2_tune", "TUNE", col=TOM2),
              Knob("tom3_tune", "TUNE", col=TOM3),
-             Jack("snare_gate", "SNARE", ink="MINT", side="left", col=GATE)]),
+             ]),
 
         # The one thing each circuit is for. Two of them are model selectors --
         # KICK picks its oscillator, SNARE picks which of three circuits is
@@ -117,7 +117,7 @@ P.sections = [
              Trim("tom1_strike", "STRIKE", col=TOM1),
              Trim("tom2_strike", "STRIKE", col=TOM2),
              Trim("tom3_strike", "STRIKE", col=TOM3),
-             Jack("hat_gate", "HAT", ink="MINT", side="left", col=GATE)]),
+             ]),
         # Every decay on one line. The three rows below the knobs are trimpots:
         # nine columns of five controls do not fit on a 3U face at knob pitch,
         # and the honest place to spend the millimetres is the one control per
@@ -130,7 +130,7 @@ P.sections = [
              Trim("tom1_decay", "", col=TOM1),
              Trim("tom2_decay", "", col=TOM2),
              Trim("tom3_decay", "", col=TOM3),
-             Jack("tom1_gate", "TOM I", ink="MINT", side="left", col=GATE)]),
+             ]),
 
         # And every bend: how far the pitch falls as the strike's energy leaves
         # the head.
@@ -142,7 +142,7 @@ P.sections = [
              Trim("tom1_bend", "", col=TOM1),
              Trim("tom2_bend", "", col=TOM2),
              Trim("tom3_bend", "", col=TOM3),
-             Jack("tom2_gate", "TOM II", ink="MINT", side="left", col=GATE)]),
+             ]),
 
         # RATIO: what this voice runs at against the clock in grid mode, from
         # /256 to x256 in thirty-nine detented steps of 2, 3, 5 and 7. Grid mode
@@ -159,8 +159,8 @@ P.sections = [
              # worth of empty face between the ratio row and the gate outs to
              # put it in. `between` hangs it in that gap rather than opening a
              # column for it, so the switch costs the panel no width at all.
-             Switch("burst", "BURST", between=(TOM3, GATE)),
-             Jack("tom3_gate", "TOM III", ink="MINT", side="left", col=GATE)]),
+             Switch("burst", "BURST", between=(PAT, KICK)),
+             ]),
 
     ]),
 ]
@@ -217,8 +217,15 @@ P.footer = [
          Jack("tom1_out", "OUT", ink="MINT", col=TOM1),
          Jack("tom2_out", "OUT", ink="MINT", col=TOM2),
          Jack("tom3_out", "OUT", ink="MINT", col=TOM3),
-         Jack("acc_in", "ACC", col=GATE)], y=118.6),
+         Jack("acc_in", "ACC", col="rail")], y=118.6),
 ]
+
+# The six gates -- what the rest of the rack sees -- stand down the right-hand edge, in the
+# footer band's own ground.
+P.rail = Rail([Jack(n, t, ink="MINT") for n, t in
+               [("kick_gate", "KICK"), ("snare_gate", "SNARE"), ("hat_gate", "HAT"),
+                ("tom1_gate", "TOM I"), ("tom2_gate", "TOM II"), ("tom3_gate", "TOM III")]],
+              caption="GATE")
 
 if __name__ == "__main__":
     raise SystemExit(build(P, root=os.path.abspath(

@@ -50,13 +50,13 @@ static const Label LABELS[] = {
 	{ 41.4850f,  83.8656f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "WINDOW"},
 	{ 55.0350f,  83.8656f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BIAS"},
 	{ 68.5850f,  83.8656f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DEGREE"},
-	{  7.2900f, 112.9259f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN"},
-	{ 20.0318f, 112.9259f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ROOT"},
-	{ 32.7736f, 112.9259f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RESET"},
-	{ 45.5154f, 112.9259f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
-	{ 58.2571f, 112.9259f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRIG"},
-	{ 73.2486f, 112.9259f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PURITY"},
-	{ 85.9904f, 112.9259f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DRIFT"},
+	{  7.2900f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN"},
+	{ 20.0318f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ROOT"},
+	{ 32.7736f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RESET"},
+	{ 45.5154f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
+	{ 58.2571f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRIG"},
+	{ 73.2486f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PURITY"},
+	{ 85.9904f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DRIFT"},
 };
 
 /** Draws this panel's silkscreen. `static` so each module keeps its own,
@@ -92,7 +92,7 @@ static const Vec PITCH_OUT_POS = Vec(45.5154, 118.6000);
 static const Vec TRIG_OUT_POS = Vec(58.2571, 118.6000);
 static const Vec PURITY_OUT_POS = Vec(73.2486, 118.6000);
 static const Vec DRIFT_OUT_POS = Vec(85.9904, 118.6000);
-static const Vec TRIG_LED_POS = Vec(63.4168, 112.1700);
-static const Vec DRIFT_LED_POS = Vec(91.7800, 112.1700);
+static const Vec TRIG_LED_POS = Vec(62.6768, 113.0982);
+static const Vec DRIFT_LED_POS = Vec(91.0400, 113.0982);
 
 } // namespace panel

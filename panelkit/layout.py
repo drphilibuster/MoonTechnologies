@@ -49,7 +49,6 @@ SCALE = {
         ROW_CLEAR=1.3,     # one row's lowest ink to the next row's well top
         BOT_CLEAR=2.5,     # lowest ink to the block's bottom edge
         BLOCK_GAP=1.8,     # between felt blocks
-        BAND_PAD=1.6,      # footer band top above its highest label
         JUSTIFY_MAX=3.6,   # most a single gap may grow to fill the face
     ),
     # Tuned against Retroactive, the densest panel in the family: seven rows of
@@ -64,7 +63,6 @@ SCALE = {
         ROW_CLEAR=0.85,
         BOT_CLEAR=1.2,
         BLOCK_GAP=1.1,
-        BAND_PAD=1.3,
         JUSTIFY_MAX=2.4,
     ),
 }
@@ -154,6 +152,26 @@ GLASS_GAP = 1.0         # read-out well to the first block
 #: Below this the foot ribbon runs between the bottom screws; nothing may enter it.
 FOOT_Y = 124.3
 
+#: Where the footer band starts, on every panel whose footer is one row of jacks. A
+#: constant rather than a derivation, so the band's edge, its mint tab and the row of
+#: jack names on it line up from one module to the next -- it used to be worked out from
+#: each panel's own highest label, which put it anywhere between 108.9 and 111.2 mm.
+#:
+#: It is as low as the family allows: the plain jack label of a regular-density panel
+#: ends 0.7 mm (TEXT_CLEAR) below this, and nothing may be higher than that. A panel
+#: whose footer reaches higher than a single row of jacks -- Gross's attenuator trims sit
+#: over their jacks -- cannot start the band this low without cutting its own ink, and
+#: takes the highest edge its ink allows instead.
+BAND_TOP = 111.1
+#: How far a last block may crowd BAND_TOP before the panel is over capacity: the
+#: tightest panel (compact, at capacity) clears it by this much less than the half a
+#: block gap it asks for, which is not a difference anyone can see.
+BAND_TOL = 0.05
+#: The seat round a light that hangs from a footer label, as drawn: the light's own
+#: radius, near enough, so that with the ring round it the whole figure is 2.4 mm tall --
+#: the room between the top of a footer name and the jack's well box. See _lit_label.
+BAND_LIGHT_SEAT = 1.0
+
 
 def cap_h(size_px):
     """Height of a capital above the baseline, in mm, for a Rack-px font size."""
@@ -167,6 +185,10 @@ def cap_h(size_px):
 DESC_GLYPHS = frozenset("gjpqy Q,;()[]{}/@$&_".replace(" ", ""))
 
 
+#: Of those, the ones that sit on the baseline when the word is in capitals.
+CAPS_FLAT = frozenset("/&Q")
+
+
 def desc_h(size_px, text=None):
     """Room below a label's baseline.
 
@@ -175,8 +197,17 @@ def desc_h(size_px, text=None):
     labelled row half a millimetre it never used. Pass the text and the room is
     reserved only when a glyph actually claims it -- captions in sentence case
     ("Explanation of Items") still get theirs."""
-    if text is not None and not (DESC_GLYPHS & set(text)):
-        return 0.0
+    if text is not None:
+        glyphs = set(text)
+        # In capitals a slash, an ampersand or a Q stands on the baseline like the
+        # letters round it (a Q's tail is a fifth of a millimetre), so V/OCT, S&H and
+        # SQU1 are not words that descend. Counting them as such
+        # raised a whole row of labels half a millimetre, and with it the footer band's
+        # edge on the panels that carried one.
+        if text == text.upper():
+            glyphs -= CAPS_FLAT
+        if not (DESC_GLYPHS & glyphs):
+            return 0.0
     return size_px * S.MM_PER_PX * DESC_FRAC
 
 
@@ -313,10 +344,12 @@ def _cols_of(row):
     """Column index for each item in a row; None for an interstitial one.
 
     Implicit indices skip the interstitial items, so a light dropped between
-    two jacks does not push every column after it along by one."""
+    two jacks does not push every column after it along by one. So does an item
+    that stands under the panel's rail (`col="rail"`): it owns no column of the
+    section's grid, only the rail's own x."""
     out, nxt = [], 0
     for it in row.items:
-        if getattr(it, "between", None):
+        if getattr(it, "between", None) or it.col == "rail":
             out.append(None)
             continue
         c = nxt if it.col is None else it.col
@@ -334,6 +367,17 @@ def _reach(row, it, side):
         return hw
     ll, rr = label_ext(it)
     return max(hw, ll if side == "L" else rr)
+
+
+def _box_pad(row, c, side):
+    """How far the box round a named run stands off its outermost column, on the
+    side something in the gap would meet it: GROUP_PAD on the left of a run's
+    first column and the right of its last, nothing elsewhere. A switch hung in
+    the gap beside a boxed run has to clear the box's frame, not just the ink."""
+    for entry in getattr(row, "span", ()):
+        if (side == "L" and entry[0] == c) or (side == "R" and entry[1] == c):
+            return GROUP_PAD
+    return 0.0
 
 
 def _inter(rowset):
@@ -358,8 +402,8 @@ def _inter(rowset):
                 ll, rr = label_ext(it)
                 hw = max(hw, ll, rr)
             a0, b0 = min(b), max(b)
-            ra = _reach(row, by_col.get(a0), "R")
-            rb = _reach(row, by_col.get(b0), "L")
+            ra = _reach(row, by_col.get(a0), "R") + _box_pad(row, a0, "R")
+            rb = _reach(row, by_col.get(b0), "L") + _box_pad(row, b0, "L")
             phw, pra, prb = out.get((a0, b0), (0.0, 0.0, 0.0))
             out[(a0, b0)] = (max(phw, hw), max(pra, ra), max(prb, rb))
     return out
@@ -582,6 +626,17 @@ def rail_w(panel):
     return need
 
 
+def rail_jack_x(panel, it):
+    """Where the rail's jacks stand, so something on the footer band can stand
+    under them. The rail's own x, from the same arithmetic _place_rail uses."""
+    from .render import BLOCK_INSET
+    rail = panel.rail
+    if not rail or not rail.items:
+        raise ValueError("%s: %s asks for col=\"rail\" but the panel has no rail"
+                         % (panel.slug, it.name))
+    return panel.w - BLOCK_INSET - RAIL_PAD - max(ink_hw(r) for r in rail.items)
+
+
 def block_x(panel):
     """The horizontal extent of a section's felt block: the face, less the rail
     and the gutter beside it."""
@@ -646,11 +701,14 @@ def solve_x(panel):
                     # naming itself to its left, say) owns ground well past its
                     # own centre, and splitting centre to centre drops the
                     # widget straight onto that text.
+                    if it.col == "rail":
+                        it.x = rail_jack_x(panel, it)
+                        continue
                     a, b = it.between
                     at = _cols_of(row)
                     by_col = {k: o for k, o in zip(at, row.items) if k is not None}
-                    lo = centres[a] + _reach(row, by_col.get(a), "R")
-                    hi = centres[b] - _reach(row, by_col.get(b), "L")
+                    lo = centres[a] + _reach(row, by_col.get(a), "R") + _box_pad(row, a, "R")
+                    hi = centres[b] - _reach(row, by_col.get(b), "L") - _box_pad(row, b, "L")
                     it.x = (lo + hi) / 2.0
                 else:
                     it.x = centres[c]
@@ -853,25 +911,23 @@ def _solve(panel, m):
         for row in panel.footer:
             top, _ = _place_row(out, panel, m, row, None, pinned=True)
             highest = min(highest, top)
-        # The band wants to sit BAND_PAD above its own highest ink, but if that
-        # would crowd the last block it drops as low as it can while still
-        # containing that ink -- so the gap between block and band stays visible
-        # on a full panel instead of closing to a hairline.
+        # The band starts at BAND_TOP, the family's one edge -- unless the last block
+        # would crowd it, in which case it drops, or the footer's own ink reaches
+        # higher than that, in which case it rises just clear of it.
         last = cursor - m["BLOCK_GAP"] if panel.sections else HEADER_H
         ceiling = highest - TEXT_CLEAR
-        ideal = highest - m["BAND_PAD"]
         # The band and the last block must not close up into one dark edge. Half
         # a block gap is the least that still reads as two things, and taking it
         # from the scale keeps it in step with every other gap on the panel.
         clear = m["BLOCK_GAP"] * 0.5
-        out.band_footer = min(ceiling, max(ideal, last + m["BLOCK_GAP"] * 0.7))
-        if out.band_footer < last + clear:
+        out.band_footer = min(ceiling, max(BAND_TOP, last + clear - BAND_TOL))
+        if out.band_footer < last + clear - BAND_TOL:
             out.overflow.append(
                 "the panel is %.2f mm over capacity: the footer band cannot start "
                 "below %.2f without cutting its own labels, but the last block "
                 "runs to %.2f" % (last + clear - out.band_footer, ceiling, last))
         if panel.sections:
-            slack = ideal - (last + m["BLOCK_GAP"])
+            slack = out.band_footer - (last + m["BLOCK_GAP"])
     else:
         out.band_footer = panel.band_footer
         # A panel with no footer band still has a bottom edge: the foot ribbon
@@ -1061,9 +1117,12 @@ def _place_row(out, panel, m, row, inner, pinned=False, ground=None):
     light_hh = well_extent("light_small")[1]
 
     def above_parts(it, size, text=None):
-        """(well-to-baseline, baseline-to-top) for a label above `it`."""
+        """(well-to-baseline, baseline-to-top) for a label above `it`. On the band the
+        light does not lift the label: it hangs from the label's cap height instead
+        (see _lit_label), so a lit name stands where an unlit one does and the row of
+        names -- and the band's edge above them -- is the same on every panel."""
         cap, desc = cap_h(size), desc_h(size, text)
-        lit = it is not None and bool(it.light)
+        lit = it is not None and bool(it.light) and not pinned
         off = max(max(m["ABOVE_GAP"], TEXT_CLEAR) + desc,
                   light_hh - cap / 2 if lit else 0.0)
         head = max(cap, cap / 2 + light_hh if lit else 0.0)
@@ -1188,7 +1247,7 @@ def _place_row(out, panel, m, row, inner, pinned=False, ground=None):
                        tracking=0.0, ground=ground or ("dark" if pinned else "light"))
             out.labels.append(lab)
             if it is not None and it.light:
-                _lit_label(out, lab, it.light, it.light_side)
+                _lit_label(out, lab, it.light, it.light_side, hang=pinned)
             continue
         if this_side == "above":
             base = y - lift
@@ -1205,7 +1264,7 @@ def _place_row(out, panel, m, row, inner, pinned=False, ground=None):
                    ground=ground or ("dark" if pinned else "light"))
         out.labels.append(lab)
         if it is not None and it.light:
-            _lit_label(out, lab, it.light, it.light_side)
+            _lit_label(out, lab, it.light, it.light_side, hang=pinned)
 
     # Readouts: a plate that names its own control, placed where that control's
     # label would go. Sharing one baseline across the row, like labels, so a row
@@ -1243,16 +1302,26 @@ def _place_row(out, panel, m, row, inner, pinned=False, ground=None):
     return (highest, high_text) if pinned else (lowest, low_text)
 
 
-def _lit_label(out, lab, name, side="right"):
+def _lit_label(out, lab, name, side="right", hang=False):
     """The lit-label idiom: a small light sitting just past a label's last letter
     (or, for a control in the last column, just before its first), on the
     label's own optical centre. Saves every panel a hand-placed coordinate.
-    Returns the bottom edge of the light's well."""
+    Returns the bottom edge of the light's well.
+
+    `hang` (the footer band): the light's top is level with the letters' cap
+    height and its seat is drawn close round the light (BAND_LIGHT_SEAT) rather
+    than at the pale face's full padding. On the band the seat is dark on dark, so
+    the extra millimetre bought nothing but height: centred, the full seat stood
+    1 mm above the letters and lifted the whole row of names -- and the band's edge
+    with it -- on every panel that carried a lit jack."""
     b = label_box(lab)
     r = S.RADIUS["light_small"]
     hw, hh = well_extent("light_small")
+    if hang:
+        hw = hh = BAND_LIGHT_SEAT + WELL_RING
     x = (b[0] - TEXT_CLEAR - hw) if side == "left" else (b[2] + TEXT_CLEAR + hw)
-    y = lab["y"] - cap_h(lab["size"]) / 2
+    y = (lab["y"] - cap_h(lab["size"]) + hh) if hang \
+        else lab["y"] - cap_h(lab["size"]) / 2
     out.widgets.append((name, x, y, "light_small"))
     out.wells.append((x, y, hw - WELL_RING, hh - WELL_RING, name))
     return y + hh

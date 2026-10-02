@@ -28,18 +28,18 @@ static const Label LABELS[] = {
 	{ 13.5000f,  18.2459f,  6.20f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRIG"},
 	{ 30.5400f,  18.2459f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "V/OCT"},
 	{ 44.9800f,  18.2459f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "VEL"},
-	{ 13.5000f,  51.6947f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TUNE"},
-	{ 30.5400f,  51.6947f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SET"},
-	{ 44.9800f,  51.6947f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BUZZ"},
-	{ 13.5000f,  69.6386f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
-	{ 30.5400f,  69.6386f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DAMP"},
-	{ 44.9800f,  69.6386f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BEND"},
-	{ 13.5000f,  87.5824f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "STRIKE"},
-	{ 30.5400f,  87.5824f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "HARD"},
-	{ 44.9800f,  87.5824f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SPREAD"},
-	{ 13.5000f,  93.1312f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SPRD"},
-	{ 30.5400f,  93.1312f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BEND"},
-	{ 44.9800f,  93.1312f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CHOKE"},
+	{ 13.5000f,  51.7620f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TUNE"},
+	{ 30.5400f,  51.7620f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SET"},
+	{ 44.9800f,  51.7620f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BUZZ"},
+	{ 13.5000f,  69.9141f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
+	{ 30.5400f,  69.9141f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DAMP"},
+	{ 44.9800f,  69.9141f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BEND"},
+	{ 13.5000f,  88.0661f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "STRIKE"},
+	{ 30.5400f,  88.0661f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "HARD"},
+	{ 44.9800f,  88.0661f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SPREAD"},
+	{ 13.5000f,  93.8230f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SPRD"},
+	{ 30.5400f,  93.8230f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BEND"},
+	{ 44.9800f,  93.8230f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CHOKE"},
 	{ 13.6660f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "STRK"},
 	{ 27.9400f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
 	{ 42.2140f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
@@ -53,22 +53,22 @@ static inline void addLabels(app::ModuleWidget* mw) {
 
 // --- widget positions, by the names used in tools/panels/Toll.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
-static const Vec TRIG_POS = Vec(13.5000, 24.0608);
-static const Vec VOCT_POS = Vec(30.5400, 24.0608);
-static const Vec VEL_POS = Vec(44.9800, 24.0608);
+static const Vec TRIG_POS = Vec(13.5000, 23.9200);
+static const Vec VOCT_POS = Vec(30.5400, 23.9200);
+static const Vec VEL_POS = Vec(44.9800, 23.9200);
 static const Vec HIT_LED_POS = Vec(18.6597, 17.4900);
-static const Vec TUNE_POS = Vec(13.5000, 40.8878);
-static const Vec SET_POS = Vec(30.5400, 40.8878);
-static const Vec BUZZ_POS = Vec(44.9800, 40.8878);
-static const Vec DECAY_POS = Vec(13.5000, 61.4317);
-static const Vec DAMP_POS = Vec(30.5400, 61.4317);
-static const Vec BEND_POS = Vec(44.9800, 61.4317);
-static const Vec STRIKE_POS = Vec(13.5000, 79.3755);
-static const Vec HARD_POS = Vec(30.5400, 79.3755);
-static const Vec SPREAD_POS = Vec(44.9800, 79.3755);
-static const Vec SPREAD_CV_POS = Vec(13.5000, 98.4212);
-static const Vec BEND_CV_POS = Vec(30.5400, 98.4212);
-static const Vec CHOKE_POS = Vec(44.9800, 98.4212);
+static const Vec TUNE_POS = Vec(13.5000, 40.9551);
+static const Vec SET_POS = Vec(30.5400, 40.9551);
+static const Vec BUZZ_POS = Vec(44.9800, 40.9551);
+static const Vec DECAY_POS = Vec(13.5000, 61.7072);
+static const Vec DAMP_POS = Vec(30.5400, 61.7072);
+static const Vec BEND_POS = Vec(44.9800, 61.7072);
+static const Vec STRIKE_POS = Vec(13.5000, 79.8592);
+static const Vec HARD_POS = Vec(30.5400, 79.8592);
+static const Vec SPREAD_POS = Vec(44.9800, 79.8592);
+static const Vec SPREAD_CV_POS = Vec(13.5000, 99.1130);
+static const Vec BEND_CV_POS = Vec(30.5400, 99.1130);
+static const Vec CHOKE_POS = Vec(44.9800, 99.1130);
 static const Vec STRIKE_CV_POS = Vec(13.6660, 118.6000);
 static const Vec DECAY_CV_POS = Vec(27.9400, 118.6000);
 static const Vec OUT_POS = Vec(42.2140, 118.6000);
