@@ -639,9 +639,10 @@ def panel_header(panel, sol):
         a("// A display used to be positioned by hand in the module's C++, in the same")
         a("// millimetres the spec had already chosen -- two copies of one number, and")
         a("// they drifted. The widget takes them from here now.")
-        a("static const float GLASS_X = 4.2000f;")
+        gx0, gx1 = sol.glass_x
+        a("static const float GLASS_X = %.4ff;" % gx0)
         a("static const float GLASS_Y = %.4ff;" % gy)
-        a("static const float GLASS_W = %.4ff;" % (panel.w - 8.4))
+        a("static const float GLASS_W = %.4ff;" % (gx1 - gx0))
         a("static const float GLASS_H = %.4ff;" % gh)
         a("")
     if panel.metrics:

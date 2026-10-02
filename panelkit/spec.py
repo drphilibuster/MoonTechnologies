@@ -241,25 +241,56 @@ class Section:
 
 
 @dataclass
+class RailPair:
+    """A jack and the control that scales it, side by side in a rail with the one label
+    that names both standing over them: the jack on the outer side, where the cable
+    comes in, and the trimpot after it, in signal order.
+
+    The family's own pair idiom stacks the trim over its jack, and a rail would take that
+    literally at the cost of the height the rail does not have -- four stacked pairs are
+    twice as tall as four side by side, and a panel's height is the one thing it cannot
+    grow. Side by side costs one trimpot's width instead."""
+    trim: "Widget"
+    jack: "Widget"
+    label: str = ""
+    size: float = 6.2
+    ink: str = "SAGE"
+
+
+@dataclass
 class Rail:
-    """A column of jacks standing down the right-hand edge of the face, in a felt
-    block of its own, beside the sections rather than under them.
+    """A column of jacks standing down one edge of the face, in a felt block of its own
+    beside the sections rather than under them.
 
-    For a panel whose footer band is what sets its width: a footer holds its
-    jacks side by side, so thirty-four of them cost thirty-four columns however
-    narrow the controls above are. Moving the outputs to a rail trades a few
-    millimetres of width for the one dimension a panel never runs short of --
-    the panel's height is fixed, and the sections already span it.
+    For a panel whose footer band is what sets its width -- a footer holds its jacks
+    side by side, so thirty-four of them cost thirty-four columns however narrow the
+    controls above are -- or whose footer is taller than one row of jacks. Moving them
+    to a rail trades a few millimetres of width for the one dimension a panel never runs
+    short of: the panel's height is fixed, and the sections already span it.
 
-    Each jack's label stands to its left on the jack's own centre line (the
-    family's side-label rule), so the rail pays for its names once, horizontally,
-    and its pitch is the jack's own. It is drawn as the footer band is -- dark, with the
-    band's mint tab -- because it is the band's own contents moved. `items` are jacks; the solver spaces them
-    evenly down the block, below the caption. Their ink follows the footer's
-    rule: outputs ring mint.
+    It is drawn as the footer band is -- dark, with the band's mint tab -- because it
+    is the band's own contents moved. Convention: outputs on the right, inputs on the
+    left (`side`).
+
+    `items` are jacks, whose labels stand to their left on the jack's own centre line
+    (the family's side-label rule), or `RailPair`s, whose one label stands between the
+    trim and the jack. The solver spaces them evenly down the block, below the caption.
     """
     items: list
     caption: str = ""
+    side: str = "right"             # "right" for outputs, "left" for inputs
+    ink: str = "MINT"               # the caption's role
+    #: Stand from the top of the read-out well instead of from the top of the first
+    #: section, beside the display as well as beside the sections, and take its width
+    #: out of the display's. For a panel whose display is tall (Ledger's is 53 mm), the
+    #: sections beside a rail are too short to hold more than three or four jacks; the
+    #: whole height of the face holds seven.
+    tall: bool = False
+    #: Where a jack's label goes: "left" stands it on the jack's own centre line, which
+    #: costs no height and the label's width; "above" is the family's rule for a jack
+    #: and costs a line of text per jack instead, which is the cheaper currency in a
+    #: tall rail and the dearer in a short one.
+    labels: str = "left"
     #: Solved:
     x0: float = 0.0
     x1: float = 0.0

@@ -29,7 +29,7 @@ P = Panel(
     form="SCHEDULE L",
     density="compact",
     glass=Glass(h=52.9),
-    footer_groups=(6, 4, 16, 5),        # transport and reseed in; CV A-D; eight voices; the rest out
+    footer_groups=(6, 4, 14),           # transport and reseed in; CV A-D; seven voices' pairs
 )
 
 P.sections = [
@@ -62,21 +62,29 @@ P.sections = [
     ]),
 ]
 
+# Thirty-one jacks in one row made this a 68 HP panel whose controls need 50. The last seven
+# -- the eighth voice's pair and the buses that carry every track -- stand down the right-hand
+# edge beside the display instead, a rail the whole height of the face; the footer keeps the
+# rest, in the order it had.
+_voices = [j for t in range(1, 9)
+           for j in (Jack("pitch%d" % t, "PITCH %d" % t, ink="MINT"),
+                     Jack("gate%d" % t, "GATE %d" % t, ink="MINT"))]
+_buses = [Jack("vel", "VEL", ink="MINT"), Jack("mod", "MOD", ink="MINT"),
+          Jack("current", "CURRENT", ink="MINT"), Jack("eos", "EOS", ink="MINT"),
+          Jack("clk_out", "CLOCK", ink="MINT")]
+
 P.footer = [
     Row([Jack("clk_in", "CLOCK"), Jack("rst_in", "RESET"), Jack("run_in", "RUN"),
          Jack("reseed_in", "RESEED"), Jack("freeze_in", "FREEZE"), Jack("seed_in", "SEED")]
         # four free CV inputs, routed to any track's knobs by its mod matrix
         + [Jack("cv_%s" % c, "CV %s" % c.upper()) for c in "abcd"]
-        + [j for t in range(1, 9)
-           for j in (Jack("pitch%d" % t, "PITCH %d" % t, ink="MINT"),
-                     Jack("gate%d" % t, "GATE %d" % t, ink="MINT"))]
-        # Currents and EOS are one 8-channel cable each: channel n is track n.
-        # VEL and MOD are 8-channel too: channel n is track n's last velocity and MOD 1 lane
-        + [Jack("vel", "VEL", ink="MINT"), Jack("mod", "MOD", ink="MINT"),
-           Jack("current", "CURRENT", ink="MINT"), Jack("eos", "EOS", ink="MINT"),
-           Jack("clk_out", "CLOCK", ink="MINT")],
+        + _voices[:-2],
         y=118.6),
 ]
+
+# Currents and EOS are one 8-channel cable each: channel n is track n. VEL and MOD are
+# 8-channel too: channel n is track n's last velocity and MOD 1 lane.
+P.rail = Rail(_voices[-2:] + _buses, caption="OUT", tall=True, labels="above")
 
 if __name__ == "__main__":
     raise SystemExit(build(P, root=os.path.abspath(

@@ -30,7 +30,7 @@ Usage inside tools/panels/<Module>.py:
 import os
 import sys
 
-from .spec import (BRAND, Panel, Section, Row, Widget, Glass, Rail, Trace, FreeLabel, Plate,
+from .spec import (BRAND, Panel, Section, Row, Widget, Glass, Rail, RailPair, Trace, FreeLabel, Plate,
                    RADIUS, LABEL_SIDE, PX_PER_MM, MM_PER_PX, HP_MM, PANEL_H)
 from . import palette
 from .palette import (INK, FELT, BAND, GLASS as GLASS_COLOUR, RULE, LIME, MINT,
@@ -38,7 +38,7 @@ from .palette import (INK, FELT, BAND, GLASS as GLASS_COLOUR, RULE, LIME, MINT,
 from .layout import solve, SCALE, required_hp, GROUP_PAD, INTER_GAP
 from . import render, emit, preview, lint, rack, art
 
-__all__ = ["BRAND", "Panel", "Section", "Row", "Widget", "Glass", "Rail", "Trace", "FreeLabel",
+__all__ = ["BRAND", "Panel", "Section", "Row", "Widget", "Glass", "Rail", "RailPair", "Trace", "FreeLabel",
            "Plate",
            "Knob", "BigKnob", "Trim", "Button", "Bezel", "Jack", "Light",
            "Switch", "Switch3",

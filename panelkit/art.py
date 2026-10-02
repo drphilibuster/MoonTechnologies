@@ -59,6 +59,7 @@ def signature(panel, sol):
     parts += [tuple(r(v) for v in g) for g in sol.groups]
     parts += [tuple(r(v) for v in rg) for rg in sol.rings]
     parts += [sol.glass and tuple(r(v) for v in sol.glass)]
+    parts += [sol.glass_x and tuple(r(v) for v in sol.glass_x)]
     parts += [(l["text"], r(l["x"]), r(l["y"])) for l in sol.labels]
     return hashlib.sha1(repr(parts).encode()).hexdigest()[:12]
 

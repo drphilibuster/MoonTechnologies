@@ -72,21 +72,21 @@ spectrum and a warped field, driven by audio and CV.
 |---|---|---|---|
 | **[Repossession](docs/Repossession.md)** | **[Collusion](docs/Collusion.md)** | **[Reconciliation](docs/Reconciliation.md)** | **[Dependents](docs/Dependents.md)** |
 
-| <img src="tools/previews/Calculation.png" width="134"> | <img src="tools/previews/Ledger.png" width="571"> |
-|---|---|
-| **[Calculation](docs/Calculation.md)** | **[Ledger](docs/Ledger.md)** |
+| <img src="tools/previews/Calculation.png" width="134"> | <img src="tools/previews/Ledger.png" width="454"> | <img src="tools/previews/SixFigures.png" width="210"> |
+|---|---|---|
+| **[Calculation](docs/Calculation.md)** | **[Ledger](docs/Ledger.md)** | **[Six Figures](docs/SixFigures.md)** |
 
-| <img src="tools/previews/SixFigures.png" width="210"> | <img src="tools/previews/Garnishment.png" width="151"> | <img src="tools/previews/Consolidation.png" width="118"> | <img src="tools/previews/Bailout.png" width="210"> |
+| <img src="tools/previews/Garnishment.png" width="151"> | <img src="tools/previews/Consolidation.png" width="118"> | <img src="tools/previews/Bailout.png" width="210"> | <img src="tools/previews/Projection.png" width="101"> |
 |---|---|---|---|
-| **[Six Figures](docs/SixFigures.md)** | **[Garnishment](docs/Garnishment.md)** | **[Consolidation](docs/Consolidation.md)** | **[Bailout](docs/Bailout.md)** |
+| **[Garnishment](docs/Garnishment.md)** | **[Consolidation](docs/Consolidation.md)** | **[Bailout](docs/Bailout.md)** | **[Projection](docs/Projection.md)** |
 
-| <img src="tools/previews/Projection.png" width="101"> | <img src="tools/previews/Transmittal.png" width="84"> | <img src="tools/previews/Installment.png" width="134"> | <img src="tools/previews/Volatility.png" width="118"> |
+| <img src="tools/previews/Transmittal.png" width="84"> | <img src="tools/previews/Installment.png" width="134"> | <img src="tools/previews/Volatility.png" width="118"> | <img src="tools/previews/Deduction.png" width="101"> |
 |---|---|---|---|
-| **[Projection](docs/Projection.md)** | **[Transmittal](docs/Transmittal.md)** | **[Installment](docs/Installment.md)** | **[Volatility](docs/Volatility.md)** |
+| **[Transmittal](docs/Transmittal.md)** | **[Installment](docs/Installment.md)** | **[Volatility](docs/Volatility.md)** | **[Deduction](docs/Deduction.md)** |
 
-| <img src="tools/previews/Deduction.png" width="101"> | <img src="tools/previews/AuditLogic.png" width="210"> | <img src="tools/previews/Kickback.png" width="260"> | <img src="tools/previews/PaymentSchedule.png" width="218"> |
-|---|---|---|---|
-| **[Deduction](docs/Deduction.md)** | **[Audit Logic](docs/AuditLogic.md)** | **[Kickback](docs/Kickback.md)** | **[Payment Schedule](docs/PaymentSchedule.md)** |
+| <img src="tools/previews/AuditLogic.png" width="210"> | <img src="tools/previews/Kickback.png" width="260"> | <img src="tools/previews/PaymentSchedule.png" width="218"> |
+|---|---|---|
+| **[Audit Logic](docs/AuditLogic.md)** | **[Kickback](docs/Kickback.md)** | **[Payment Schedule](docs/PaymentSchedule.md)** |
 
 | <img src="tools/previews/SignHere.png" width="168"> | <img src="tools/previews/Diversified.png" width="176"> | <img src="tools/previews/Toll.png" width="92"> | <img src="tools/previews/ScheduleA.png" width="118"> |
 |---|---|---|---|
@@ -164,7 +164,7 @@ A chord made by distorting one sine you cannot hear. Chebyshev polynomials of th
 
 A phrase counter for arranging a patch. One base length N and six lines that each fall due at N times their own ratio, from ÷8 to ×32, with a trigger, a gate and a counter apiece. It does the work of a chain of countdown timers in one module. Every line counts from the same downbeat, and a START that arrives a cable's delay after its clock still claims that clock, so chained sections stay on the beat without setting anything to N−1. Lines can repeat instead of firing once, and a Countdown-compatible start mode is in the menu.
 
-### [Ledger](docs/Ledger.md) — 68 HP · *Sequencer, Random, Polyphonic, Clock generator*
+### [Ledger](docs/Ledger.md) — 54 HP · *Sequencer, Random, Polyphonic, Clock generator*
 
 *After Ormer Modular's Shoal (MIT) and Squarp's Hermod+.*
 
@@ -262,7 +262,7 @@ Four logic gates with selectable functions and the 0 V / 12 V reference, gated a
 
 *Day 9 — and a long way past it.*
 
-Started as the six drum voices of that folder and is now a drum machine. The voices are modal banks struck by a real contact pulse: the BaSnaHi kick with the SmurfDrum as its second model, a snare switching between XORbell, the percussive noise voice and Karplus–Strong, a hi-hat whose one knob sweeps metal to noise to the Tiny Dazzler, and all three TomTomTom rings at once as three differently-sized drums. **None of the rest is in the original:** its own clock, a Euclidean pattern engine, per-voice clock ratios, a BURST mode that hands each voice's steps to its own ratio, velocity-scaled gate outputs, and a SEED that swaps patterns on the bar line. The physics is out of the literature rather than the schematic — Bilbao's contact force, Bessel-zero mode ratios, Karplus–Strong's drum recurrence.
+Started as the six drum voices of that folder and is now a drum machine. The voices are modal banks struck by a real contact pulse: the BaSnaHi kick with the SmurfDrum as its second model, a snare switching between XORbell, the percussive noise voice and Karplus–Strong, a hi-hat whose one knob sweeps metal to noise to the Tiny Dazzler, and all three TomTomTom rings at once as three differently-sized drums. **None of the rest is in the original:** its own clock, a ranked pattern engine (a metric spine plus Euclidean necklaces, with per-voice lengths and an EVOLVE that moves the loop pass to pass), per-voice clock ratios, a BURST mode that hands each voice's steps to its own ratio, velocity-scaled gate outputs, and a SEED that swaps patterns on the bar line. The physics is out of the literature rather than the schematic — Bilbao's contact force, Bessel-zero mode ratios, Karplus–Strong's drum recurrence.
 
 ### [Payment Schedule](docs/PaymentSchedule.md) — 26 HP · *Sequencer, Switch, Quantizer*
 

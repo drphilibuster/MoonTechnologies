@@ -76,23 +76,24 @@ P.sections = [
     ]),
 ]
 
-# The band: four CV pairs (trim over jack, the label they share between them),
-# the envelope out, and the stereo I/O. The audio row sits as low as the bottom
-# screws allow -- RACK_GRID_HEIGHT - RACK_GRID_WIDTH puts their top edge at
-# 123.61 mm, so a jack collar centred below 118.6 would run under one. The trim
-# row is pinned just clear of the jack wells beneath it.
+# The four CV pairs -- an attenuator over the jack it scales, the one label between them --
+# stand down the left-hand edge in a rail of their own: they are what comes in, and a trim
+# over its jack is two rows tall, which on the footer made the band a second row taller than
+# every other panel's. On the rail it costs height the sections already have, and the band
+# can start where it does everywhere else.
+P.rail = Rail([RailPair(Trim("drive_cv", ""), Jack("drive_in"), "DRIVE"),
+               RailPair(Trim("bias_cv", ""), Jack("bias_in"), "BIAS"),
+               RailPair(Trim("wet_cv", ""), Jack("wet_in"), "WET"),
+               RailPair(Trim("tone_cv", ""), Jack("tone_in"), "TONE")],
+              caption="CV", side="left", ink="SAGE")
+
+# The band: the stereo I/O and the envelope out. The audio row sits as low as the bottom
+# screws allow -- RACK_GRID_HEIGHT - RACK_GRID_WIDTH puts their top edge at 123.61 mm, so a
+# jack collar centred below 118.6 would run under one. Signal in at the left edge, signal out
+# at the right: the family reads left to right, and audio that entered two thirds of the way
+# along -- next to the outputs it was about to become -- read as just another modulation jack.
 P.footer = [
-    # Signal in at the left edge, signal out at the right, with the CV that
-    # shapes it in between: the family reads left to right, and audio that
-    # entered two thirds of the way along -- next to the outputs it was about
-    # to become -- read as just another modulation jack.
-    Row([Trim("drive_cv", "DRIVE", col=2),
-         Trim("bias_cv", "BIAS", col=3),
-         Trim("wet_cv", "WET", col=4),
-         Trim("tone_cv", "TONE", col=5)], pair=True),
     Row([Jack("in_l", "IN L"), Jack("in_r", "IN R"),
-         Jack("drive_in"), Jack("bias_in"),
-         Jack("wet_in"), Jack("tone_in"),
          Jack("env_out", "ENV", ink="MINT"),
          Jack("out_l", "OUT L", ink="MINT"),
          Jack("out_r", "OUT R", ink="MINT")], y=118.6),

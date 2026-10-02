@@ -132,6 +132,19 @@ regenerate every panel. Do not open-code it in one. `build()` prints every
 place in `src/` that still calls the raw nanovg text API — advisory, never
 fatal, because the gap it is pointing at might be a real one.
 
+## Knob sizes: three
+
+| size | spec kind | Rack widget | diameter | for |
+|---|---|---|---|---|
+| large | `BigKnob` (`knob_large`) | `RoundLargeBlackKnob` | 12.2 mm | the one headline control of a panel |
+| standard | `Knob` (`knob`) | `RoundBlackKnob` | 9.6 mm | everything you play with |
+| small | `Trim` (`trim`) | `Trimpot` | 6.0 mm | attenuators, secondary parameters, and any panel too dense for the standard knob |
+
+There is no fourth. The spec sizes a knob's seat, its label clearance and its pitch floor from
+its kind, so the C++ has to build the widget the spec said: a panel drawn for a standard knob
+and built with Rack's 7.7 mm `RoundSmallBlackKnob` had seats a millimetre too big all round.
+`check_sources` warns on any use of a knob class outside the three.
+
 ## Density
 
 Two metric scales, in `layout.py`. Same rules, same idioms — only the gaps change.
@@ -228,7 +241,23 @@ width where the footer charged one column each. The block wears the footer's **m
 index tab, labels stand to the left of their jacks (the side-label rule), and the solver
 spaces the jacks down the block's height and reports a shortfall if they do not fit.
 
-Use it only where the footer is what sets the panel's width -- compare the widest section
+`Rail(side="left")` is the same block against the left edge, for inputs, and its items may be
+`RailPair(trim, jack, label)` -- a jack and the trimpot that scales it, side by side in signal
+order with the one label over both. (The family's own pair idiom stacks the trim over the jack,
+but four stacked pairs are twice as tall as four side by side, and a panel's height is the one
+thing it cannot grow.) Gross keeps its four CV attenuators there, which took its footer down to
+one row and its band onto `BAND_TOP`.
+
+`Rail(tall=True)` stands from the top of the read-out well rather than the first section, beside
+the display as well as the sections, and narrows the display's glass to make room (the module's
+display widget takes its size from `GLASS_X`/`GLASS_W`, so it only has to scale). For a panel with
+a tall display -- Ledger's is 53 mm, which left 47 mm of section to hold a rail, three or four
+jacks -- the whole face holds seven. `Rail(labels="above")` puts each jack's name over it, the
+family's rule for a jack, instead of beside it: a line of text per jack in place of the label's
+width, the cheaper currency in a tall rail. Ledger's last seven outputs moved to one, and its
+footer from 31 jacks to 24: 68 HP to 54.
+
+Use it only where the footer is what sets the panel's width or height -- compare the widest section
 row against the footer's natural span first. Where a section is already wider than the
 footer (most panels), a rail adds a column of width and costs more than it saves. Contagion
 is the case it exists for: 77 HP with its six outputs in the footer, 64 HP with them on a rail.
@@ -248,11 +277,11 @@ the last block was at capacity. Three rules keep it constant:
   `SQU1` do not lift the row for a descender they do not have;
 * a panel at capacity may crowd the edge by `BAND_TOL` (0.05 mm) before it is over capacity.
 
-A footer whose ink genuinely reaches higher than one row of jacks -- Gross's attenuator trims
-sit over their jacks -- cannot start the band that low without cutting its own ink, and takes the
-highest edge it allows. PatchAudit places its band by hand (`band_footer=`), because its action
-buttons are plates on a hand-laid face. Those two are the only panels whose band is not at
-`BAND_TOP`.
+A footer whose ink genuinely reaches higher than one row of jacks cannot start the band that low
+without cutting its own ink, and would take the highest edge it allows -- which is why Gross's four
+attenuator-over-jack pairs live on a rail (`RailPair`, below) rather than on the band. PatchAudit
+places its band by hand (`band_footer=`), because its action buttons are plates on a hand-laid
+face, and ScheduleA has no band. Those two are the only panels whose band is not at `BAND_TOP`.
 
 ## Columns, and things that are not columns
 

@@ -141,9 +141,11 @@ def panel_svg(panel, sol, layers=False, art=None):
     # --- read-out well
     if sol.glass:
         gy, gh = sol.glass
-        a('  <rect x="4.2" y="%.4f" width="%.4f" height="%.4f" rx="%.2f" fill="%s" '
+        gx0, gx1 = sol.glass_x
+        a('  <rect x="%s" y="%.4f" width="%.4f" height="%.4f" rx="%.2f" fill="%s" '
           'stroke="%s" stroke-width="0.3"/>'
-          % (gy, w - 8.4, gh, WELL_R, P.GLASS, P.RULE))
+          % (("%.4f" % gx0).rstrip("0").rstrip("."), gy, gx1 - gx0, gh, WELL_R,
+             P.GLASS, P.RULE))
 
     # --- section blocks: pale plates framed in sage, a scroll curled into each
     # free corner and the thumb-index tab where a scroll would be

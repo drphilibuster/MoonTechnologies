@@ -241,6 +241,18 @@ RAW_TEXT_CALLS = (
 )
 
 
+#: Knob widgets the family does not use. There are three knob sizes -- large, standard
+#: and the Trimpot as the small one -- and a fourth widget in the C++ is a knob the spec
+#: cannot size: its seat, its label clearance and its pitch floor are all worked out for
+#: one of the three, so a panel drawn for a standard knob and built with the 7.7 mm
+#: RoundSmallBlackKnob has seats a millimetre too big on every side.
+BANNED_WIDGETS = {
+    "RoundSmallBlackKnob": "use Trimpot (small), RoundBlackKnob (standard) or "
+                           "RoundLargeBlackKnob (large)",
+    "RoundHugeBlackKnob": "use RoundLargeBlackKnob",
+}
+
+
 def check_sources(root):
     """Warns about raw nanovg text calls in a plugin's src/, outside the
     generated header. Advisory: it never blocks a build, because a panel can
@@ -266,6 +278,10 @@ def check_sources(root):
                 continue
             for i, line in enumerate(lines, 1):
                 code = line.split("//", 1)[0]
+                for widget, fix in BANNED_WIDGETS.items():
+                    if widget in code:
+                        out.append("%s:%d uses %s, which is not one of the family's three "
+                                   "knob sizes; %s" % (rel, i, widget, fix))
                 for call in RAW_TEXT_CALLS:
                     if call in code:
                         out.append("%s:%d draws text through %s directly; "

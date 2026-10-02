@@ -288,6 +288,8 @@ GROUP_PAD = 0.9
 #: the sections beside it.
 RAIL_PAD = 2.6
 RAIL_GAP = 1.6
+#: Between the two seats of a pair standing side by side in a rail.
+PAIR_GAP = 0.8
 
 #: How far the pair rule holds off the label ink it breaks around.
 TIE_PAD = 0.7
@@ -609,6 +611,18 @@ def _rowsets(panel):
     return sets
 
 
+def _is_pair(e):
+    return isinstance(e, S.RailPair)
+
+
+def _rail_widgets(rail):
+    """Every widget a rail holds, pairs unpacked."""
+    out = []
+    for e in rail.items:
+        out.extend([e.trim, e.jack] if _is_pair(e) else [e])
+    return out
+
+
 def rail_w(panel):
     """Width of the rail's felt block, in mm: its padding, the widest jack, the
     gap to its label and the widest label -- or its caption, if that is wider.
@@ -616,25 +630,58 @@ def rail_w(panel):
     rail = panel.rail
     if not rail or not rail.items:
         return 0.0
-    for it in rail.items:
-        it.side = "left"
-    need = max(2 * RAIL_PAD + ink_hw(it) * 2 + (SIDE_GAP + text_w(it.label, it.size)
-                                                if it.label else 0.0)
-               for it in rail.items)
+    need = 0.0
+    for e in rail.items:
+        if _is_pair(e):
+            need = max(need, 2 * RAIL_PAD + 2 * ink_hw(e.jack) + PAIR_GAP + 2 * ink_hw(e.trim),
+                       2 * RAIL_PAD + text_w(e.label, e.size))
+        elif rail.labels == "above":
+            e.side = "above"
+            need = max(need, 2 * RAIL_PAD + ink_hw(e) * 2,
+                       2 * RAIL_PAD + text_w(e.label, e.size))
+        else:
+            e.side = "left"
+            need = max(need, 2 * RAIL_PAD + ink_hw(e) * 2 +
+                       (SIDE_GAP + text_w(e.label, e.size) if e.label else 0.0))
     if rail.caption:
         need = max(need, 2 * RAIL_PAD + text_w(rail.caption, 6.0, 0.6))
     return need
 
 
+def rail_extent(panel):
+    """The rail block's (x0, x1): against the right-hand edge for outputs, the
+    left for inputs."""
+    from .render import BLOCK_INSET
+    rw = rail_w(panel)
+    if panel.rail.side == "left":
+        return BLOCK_INSET, BLOCK_INSET + rw
+    return panel.w - BLOCK_INSET - rw, panel.w - BLOCK_INSET
+
+
+def glass_x(panel):
+    """The read-out well's (x0, x1): the whole face between the screws, less the
+    width of a rail that stands beside it."""
+    x0, x1 = 4.2, panel.w - 4.2
+    if panel.rail and panel.rail.items and panel.rail.tall:
+        r0, r1 = rail_extent(panel)
+        if panel.rail.side == "left":
+            x0 = r1 + RAIL_GAP
+        else:
+            x1 = r0 - RAIL_GAP
+    return x0, x1
+
+
 def rail_jack_x(panel, it):
     """Where the rail's jacks stand, so something on the footer band can stand
     under them. The rail's own x, from the same arithmetic _place_rail uses."""
-    from .render import BLOCK_INSET
     rail = panel.rail
     if not rail or not rail.items:
         raise ValueError("%s: %s asks for col=\"rail\" but the panel has no rail"
                          % (panel.slug, it.name))
-    return panel.w - BLOCK_INSET - RAIL_PAD - max(ink_hw(r) for r in rail.items)
+    x0, x1 = rail_extent(panel)
+    if any(_is_pair(e) for e in rail.items):
+        return (x0 + x1) / 2        # a footer jack stands under the middle of the rail
+    return x1 - RAIL_PAD - max(ink_hw(r) for r in rail.items)
 
 
 def block_x(panel):
@@ -642,7 +689,11 @@ def block_x(panel):
     and the gutter beside it."""
     from .render import BLOCK_INSET
     rw = rail_w(panel)
-    return BLOCK_INSET, panel.w - BLOCK_INSET - (rw + RAIL_GAP if rw else 0.0)
+    if not rw:
+        return BLOCK_INSET, panel.w - BLOCK_INSET
+    if panel.rail.side == "left":
+        return BLOCK_INSET + rw + RAIL_GAP, panel.w - BLOCK_INSET
+    return BLOCK_INSET, panel.w - BLOCK_INSET - rw - RAIL_GAP
 
 
 def _bounds(panel, kind, hm):
@@ -764,6 +815,7 @@ class Solved:
         self.block_x = []   # (x0, x1) of each block above, index for index
         self.rules = []     # (y, x0, x1) divider rules inside blocks
         self.glass = None   # (y0, h)
+        self.glass_x = None  # (x0, x1) of the read-out well
         self.band_footer = None
         self.overflow = []  # complaints for the linter
         self.steps = []     # (x, y, r, n) detent rings round stepped knobs
@@ -810,6 +862,7 @@ def _solve(panel, m):
     if panel.glass:
         panel.glass.y = GLASS_Y
         out.glass = (GLASS_Y, panel.glass.h)
+        out.glass_x = glass_x(panel)
         cursor = GLASS_Y + panel.glass.h + GLASS_GAP
     else:
         cursor = HEADER_H + 1.8
@@ -1023,38 +1076,76 @@ BLOCK_INSET_X = 3.0     # mirrors render.BLOCK_INSET, for blocks that span the f
 
 
 def _place_rail(out, panel, m):
-    """The rail's block, spanning the sections' own height, and its jacks spaced
-    evenly down it below the caption. Every jack goes through the same row
-    placer as any other widget, so its well, its side label and its lint come out
-    exactly as they would in a section."""
+    """The rail's block, spanning the sections' own height, and its entries spaced
+    evenly down it below the caption. Every widget goes through the same row
+    placer as any other, so its well, its side label and its lint come out exactly
+    as they would in a section."""
     rail = panel.rail
-    rw = rail_w(panel)
-    rail.x1 = panel.w - BLOCK_INSET_X
-    rail.x0 = rail.x1 - rw
+    rail.x0, rail.x1 = rail_extent(panel)
+    cx = (rail.x0 + rail.x1) / 2
     y0, y1 = panel.sections[0].y0, panel.sections[-1].y1
+    if rail.tall and panel.glass:
+        y0 = GLASS_Y
     out.blocks.append((y0, y1))
     out.block_x.append((rail.x0, rail.x1))
 
     top = y0 + m["CAP_CLEAR"]
     if rail.caption:
-        cx = (rail.x0 + rail.x1) / 2
         out.labels.append(dict(x=cx, y=y0 + m["CAP_BASE"], text=rail.caption, size=6.0,
-                               ink="MINT", align="center", tracking=0.6, ground="dark"))
-        top = max(top, y0 + m["CAP_BASE"] + desc_h(6.0, rail.caption) + TEXT_CLEAR)
+                               ink=rail.ink, align="center", tracking=0.6, ground="dark"))
+        # two runs of text want TEXT_TEXT between them, a well only TEXT_CLEAR
+        first = rail.items[0]
+        labelled = first.label and (_is_pair(first) or first.side == "above")
+        gap0 = TEXT_TEXT if labelled else TEXT_CLEAR
+        top = max(top, y0 + m["CAP_BASE"] + desc_h(6.0, rail.caption) + gap0)
+
+    # A pair's geometry, top to bottom: the label, a gap, then the jack and its trim on one
+    # centre line.
+    gap = max(m["ABOVE_GAP"], TEXT_CLEAR)
+
+    def height(e):
+        if not _is_pair(e):
+            if e.side == "above" and e.label:
+                return cap_h(e.size) + desc_h(e.size, e.label) + gap + 2 * _ink_r(e)
+            return 2 * _ink_r(e)
+        return (cap_h(e.size) + desc_h(e.size, e.label) + gap
+                + 2 * max(_ink_r(e.trim), _ink_r(e.jack)))
+
     n = len(rail.items)
-    r = max(_ink_r(it) for it in rail.items)
-    first, last = top + r, y1 - m["BOT_CLEAR"] - r
-    pitch = (last - first) / (n - 1) if n > 1 else 0.0
-    if n > 1 and pitch < 2 * r + 0.4:
+    heights = [height(e) for e in rail.items]
+    free = (y1 - m["BOT_CLEAR"]) - top - sum(heights)
+    between = free / (n - 1) if n > 1 else 0.0
+    if n > 1 and between < 0.4:
         out.overflow.append(
-            "the rail is %.2f mm short: %d jacks need %.2f mm apiece and the "
-            "sections give it %.2f" % ((2 * r + 0.4 - pitch) * (n - 1), n,
-                                       2 * r + 0.4, pitch))
-    for i, it in enumerate(rail.items):
-        it.x = rail.x1 - RAIL_PAD - ink_hw(it)
-        row = S.Row([it], y=first + i * pitch)
+            "the rail is %.2f mm short: its %d entries need %.2f mm and the "
+            "sections give it %.2f" % ((0.4 - between) * (n - 1), n,
+                                      sum(heights) + 0.4 * (n - 1),
+                                      y1 - m["BOT_CLEAR"] - top))
+
+    def put(w, x, y, silent=False):
+        w.x = x
+        row = S.Row([w], y=y, silent=silent)
         row._pair_cols = set()
         _place_row(out, panel, m, row, None, ground="dark")
+
+    cur = top
+    for e, h in zip(rail.items, heights):
+        if not _is_pair(e):
+            if e.side == "above" and e.label:
+                put(e, cx, cur + h - _ink_r(e))
+            else:
+                put(e, rail.x1 - RAIL_PAD - ink_hw(e), cur + h / 2)
+        else:
+            hj, ht = ink_hw(e.jack), ink_hw(e.trim)
+            left = cx - (2 * hj + PAIR_GAP + 2 * ht) / 2
+            yc = cur + h - max(_ink_r(e.trim), _ink_r(e.jack))
+            put(e.jack, left + hj, yc, silent=True)
+            put(e.trim, left + 2 * hj + PAIR_GAP + ht, yc, silent=True)
+            if e.label:
+                out.labels.append(dict(x=cx, y=cur + cap_h(e.size), text=e.label,
+                                       size=e.size, ink=e.ink, align="center",
+                                       tracking=0.0, ground="dark"))
+        cur += h + between
 
 
 def ground_at(sol, y):
