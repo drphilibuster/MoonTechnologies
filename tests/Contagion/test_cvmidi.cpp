@@ -1,5 +1,5 @@
 // CvMidi: cables to MIDI bytes, with synthetic voltages and no Rack.
-#include "../../src/Contagion/CvMidi.hpp"
+#include "../../src/CvMidi.hpp"
 
 #include <cstdio>
 #include <string>

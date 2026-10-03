@@ -26,6 +26,7 @@ P = Panel(
     subtitle="NORD LEAD 2X",
     form="FORM 8938",
     glass=Glass(h=12.5),
+    footer_groups=(3, 4),               # a keyboard's worth of cables, then the four outputs
 )
 
 # The display is one piece of glass: the unit's three seven-segment digits, and the lamps the
@@ -67,7 +68,7 @@ P.sections = [
 ]
 
 P.footer = [
-    Row([Jack("pedal", "PEDAL"),
+    Row([Jack("voct", "V/OCT"), Jack("gate", "GATE"), Jack("sustain", "SUSTAIN"),
          Jack("out_a", "OUT A", ink="MINT"), Jack("out_b", "OUT B", ink="MINT"),
          Jack("out_c", "OUT C", ink="MINT"), Jack("out_d", "OUT D", ink="MINT")],
         y=118.6),

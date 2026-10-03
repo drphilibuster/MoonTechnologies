@@ -5,6 +5,16 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Added: Nordic Banking takes V/OCT, GATE and SUSTAIN
+
+The pedal jack is gone (there is no foot pedal in Rack); in its place **V/OCT** and **GATE**, both
+polyphonic, and **SUSTAIN**, a gate that is the pedal (MIDI controller 64, which the unit holds notes
+on, checked against the firmware). Cables become MIDI through `src/CvMidi.hpp`, which Contagion's cable
+inputs already used and which now lives at `src/` for both; the context menu gets a MIDI channel, the
+polyphonic-channel-to-MIDI-channel option and a minimum note length, as Contagion has. The output
+make-up gain now defaults to +12 dB (was +24): measured across all 120 factory programs, +24 would push
+the loudest to about 35 V.
+
 ### Fixed: Nordic Banking
 
 * **The knobs did the wrong things.** gearmulator's names for the unit's A/D channels are wrong for this
@@ -18,7 +28,7 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
   says NO PROGRAMS LOADED, and **Load program banks from folder...** sends a whole folder of `.syx` files
   (the factory library) with a progress readout.
 * **Output level.** The DSP's output peaks near 0.04 of full scale, 28 dB under a Rack audio source; the
-  output now has +24 dB of make-up gain, with an **Output level** choice in the context menu.
+  output now has make-up gain, with an **Output level** choice in the context menu.
 * **A flash that will not boot** no longer hangs the module for ever: boot gives up after ten seconds of
   machine time, the stored flash is kept in `nordic-banking-flash-unbootable.bin` and the unit starts erased.
 

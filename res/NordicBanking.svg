@@ -106,11 +106,13 @@
   <circle cx="116.0613" cy="105.1138" r="1.7400" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="136.9498" cy="105.1138" r="1.7400" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="157.8384" cy="105.1138" r="1.7400" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="78.1320" cy="118.6000" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="92.4060" cy="118.6000" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="106.6800" cy="118.6000" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="120.9540" cy="118.6000" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="135.2280" cy="118.6000" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="36.7740" cy="118.6000" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="51.0480" cy="118.6000" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="65.3220" cy="118.6000" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="133.7640" cy="118.6000" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="148.0380" cy="118.6000" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="162.3120" cy="118.6000" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="176.5860" cy="118.6000" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="10.4000" cy="70.9869" r="7.0000" fill="none" stroke="#7B9A6D" stroke-width="0.32"/>
   <circle cx="10.4000" cy="70.9869" r="6.4000" fill="none" stroke="#7B9A6D" stroke-width="0.16"/>
 </g>
@@ -181,10 +183,12 @@
   <circle inkscape:label="slot_d" cx="116.0613" cy="105.1138" r="1" fill="#ff0000"/>
   <circle inkscape:label="velmorph" cx="136.9498" cy="105.1138" r="1" fill="#ff0000"/>
   <circle inkscape:label="kbdsplit" cx="157.8384" cy="105.1138" r="1" fill="#ff0000"/>
-  <circle inkscape:label="pedal" cx="78.1320" cy="118.6000" r="1" fill="#00ff00"/>
-  <circle inkscape:label="out_a" cx="92.4060" cy="118.6000" r="1" fill="#00ff00"/>
-  <circle inkscape:label="out_b" cx="106.6800" cy="118.6000" r="1" fill="#00ff00"/>
-  <circle inkscape:label="out_c" cx="120.9540" cy="118.6000" r="1" fill="#00ff00"/>
-  <circle inkscape:label="out_d" cx="135.2280" cy="118.6000" r="1" fill="#00ff00"/>
+  <circle inkscape:label="voct" cx="36.7740" cy="118.6000" r="1" fill="#00ff00"/>
+  <circle inkscape:label="gate" cx="51.0480" cy="118.6000" r="1" fill="#00ff00"/>
+  <circle inkscape:label="sustain" cx="65.3220" cy="118.6000" r="1" fill="#00ff00"/>
+  <circle inkscape:label="out_a" cx="133.7640" cy="118.6000" r="1" fill="#00ff00"/>
+  <circle inkscape:label="out_b" cx="148.0380" cy="118.6000" r="1" fill="#00ff00"/>
+  <circle inkscape:label="out_c" cx="162.3120" cy="118.6000" r="1" fill="#00ff00"/>
+  <circle inkscape:label="out_d" cx="176.5860" cy="118.6000" r="1" fill="#00ff00"/>
 </g>
 </svg>

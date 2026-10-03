@@ -8,6 +8,7 @@
 #include "Panel.hpp"
 #include "PanelMap.hpp"
 #include "KnobSync.hpp"
+#include "../CvMidi.hpp"
 #include "Nord2x.hpp"
 
 #include <osdialog.h>
@@ -38,7 +39,7 @@ struct Snapshot {
 
 struct NordicBanking : Module {
 	enum ParamId { KNOB_PARAM, BUTTON_PARAM = KNOB_PARAM + 26, PARAMS_LEN = BUTTON_PARAM + 28 };
-	enum InputId { PEDAL_INPUT, INPUTS_LEN };
+	enum InputId { V_OCT_INPUT, GATE_INPUT, SUSTAIN_INPUT, INPUTS_LEN };
 	enum OutputId { OUT_A_OUTPUT, OUT_B_OUTPUT, OUT_C_OUTPUT, OUT_D_OUTPUT, OUTPUTS_LEN };
 	enum LightId { LED_LIGHT, LIGHTS_LEN = LED_LIGHT + nb::NUM_LEDS };
 
@@ -46,7 +47,9 @@ struct NordicBanking : Module {
 	// 0.04, which is 0.2 V at 5 V full scale -- 28 dB under a Rack audio source. The make-up gain is a menu
 	// choice (0 dB = the DSP's full scale at 5 V) and the default brings a typical note to a few volts.
 	static constexpr float VOLTS = 5.f;
-	int outGainDb = 24, outGainCachedDb = -1;
+	// 12 dB: a held middle C across the 120 factory programs peaks at 0.09 of full scale (median) to 0.44 (loudest),
+	// which at 5 V full scale is 0.4 to 2.2 V; +12 dB puts the loudest near 9 V and the median near 2 V.
+	int outGainDb = 12, outGainCachedDb = -1;
 	float outGain = 1.f;
 
 	std::unique_ptr<nb::Nord2x> unit;           // audio thread only
@@ -65,7 +68,9 @@ struct NordicBanking : Module {
 
 	midi::InputQueue midiInput;
 	bool buttonDown[28] = {};
-	uint8_t knobSent[26], pedalSent = 0xff;
+	uint8_t knobSent[26];
+	vc::CvMidi cvMidi;                          // audio thread; its settings are saved in the patch
+	float minNoteMs = 0.f;                      // settings for cvMidi's minimum note length
 	int knobHold[26] = {};                      // housekeeping ticks a knob the hand just moved is left alone
 	int housekeeping = 0, flashCountdown = 0;
 
@@ -77,7 +82,9 @@ struct NordicBanking : Module {
 		for (int i = 0; i < 26; i++)
 			configParam(KNOB_PARAM + i, 0.f, 1.f, nb::KNOBS[i].initial / 255.f, nb::KNOBS[i].name, "%", 0.f, 100.f);
 		for (int i = 0; i < 28; i++) configButton(BUTTON_PARAM + i, nb::BUTTONS[i].name);
-		configInput(PEDAL_INPUT, "Expression pedal (0-10 V)");
+		configInput(V_OCT_INPUT, "V/Oct (polyphonic)");
+		configInput(GATE_INPUT, "Gate (polyphonic)");
+		configInput(SUSTAIN_INPUT, "Sustain (gate: the pedal, held while high)");
 		configOutput(OUT_A_OUTPUT, "Out A");
 		configOutput(OUT_B_OUTPUT, "Out B");
 		configOutput(OUT_C_OUTPUT, "Out C");
@@ -213,7 +220,7 @@ struct NordicBanking : Module {
 			// is a knob someone turned, and it would rewrite the program it just loaded. The knobs are moved to the
 			// sound instead (KnobSync.hpp), and only what the hand turns is sent.
 			for (int i = 0; i < 26; i++) { knobSent[i] = knobCode(i); knobHold[i] = 0; }
-			pedalSent = inputs[PEDAL_INPUT].isConnected() ? 0xff : 0;
+			cvMidi.reset();
 			for (bool& b : buttonDown) b = false;
 		}
 		midi::Message msg;
@@ -224,7 +231,7 @@ struct NordicBanking : Module {
 		}
 		nb::Nord2x& n = *unit;
 
-		// The front panel: knobs into the ADC, buttons onto the key lines, the pedal input.
+		// The front panel: knobs into the ADC and buttons onto the key lines.
 		for (int i = 0; i < 26; i++) {
 			const uint8_t c = knobCode(i);
 			if (c != knobSent[i]) { n.setKnob(nb::KNOBS[i].channel, c); knobSent[i] = c; knobHold[i] = 12; }
@@ -233,9 +240,25 @@ struct NordicBanking : Module {
 			const bool down = params[BUTTON_PARAM + i].getValue() > 0.5f;
 			if (down != buttonDown[i]) { n.setButton(nb::BUTTONS[i].id, down); buttonDown[i] = down; }
 		}
-		const uint8_t pedal = inputs[PEDAL_INPUT].isConnected()
-			? uint8_t(clamp(inputs[PEDAL_INPUT].getVoltage() / 10.f, 0.f, 1.f) * 255.f + 0.5f) : 0;
-		if (pedal != pedalSent) { n.setKnob(nb::PEDAL_CHANNEL, pedal); pedalSent = pedal; }
+		// The cables become MIDI, the one thing the firmware understands: a rising gate is a note-on at the pitch read
+		// then, a falling gate its note-off, and SUSTAIN is the pedal (controller 64).
+		{
+			vc::CvMidi::In in;
+			Input& nv = inputs[V_OCT_INPUT];
+			in.voices = nv.isConnected() && inputs[GATE_INPUT].isConnected()
+				? std::min(int(vc::CvMidi::VOICES), std::max(1, nv.getChannels())) : 0;
+			for (int c = 0; c < in.voices; c++) {
+				in.pitch[c] = nv.getPolyVoltage(c);
+				in.gate[c] = inputs[GATE_INPUT].getPolyVoltage(c);
+			}
+			in.susConnected = inputs[SUSTAIN_INPUT].isConnected();
+			in.sus = inputs[SUSTAIN_INPUT].getVoltage();
+			cvMidi.minSamples = int(minNoteMs * 0.001f * args.sampleRate);
+			cvMidi.process(in, [&](int a, int b, int c, int len) {
+				const uint8_t m[3] = { uint8_t(a), uint8_t(b), uint8_t(c) };
+				n.midi(m, size_t(len));
+			});
+		}
 		while (midiInput.tryPop(&msg, args.frame))
 			if (msg.getSize() > 0) n.midi(msg.bytes.data(), size_t(msg.getSize()));
 
@@ -318,7 +341,10 @@ struct NordicBanking : Module {
 		std::lock_guard<std::mutex> lock(snapMutex);
 		if (!flash.empty()) json_object_set_new(root, "flash", json_string(string::toBase64(flash).c_str()));
 		json_object_set_new(root, "midi", midiInput.toJson());
-		json_object_set_new(root, "outGainDb", json_integer(outGainDb));
+		json_object_set_new(root, "outLevelDb", json_integer(outGainDb));
+		json_object_set_new(root, "cvMidiChannel", json_integer(cvMidi.channel));
+		json_object_set_new(root, "cvPolyToChannels", json_boolean(cvMidi.polyToChannels));
+		json_object_set_new(root, "cvMinNoteMs", json_real(minNoteMs));
 		return root;
 	}
 
@@ -330,7 +356,10 @@ struct NordicBanking : Module {
 			if (json_t* j = json_object_get(root, "flash")) flash = string::fromBase64(json_string_value(j));
 		}
 		if (json_t* j = json_object_get(root, "midi")) midiInput.fromJson(j);
-		if (json_t* j = json_object_get(root, "outGainDb")) outGainDb = clamp(int(json_integer_value(j)), 0, 48);
+		if (json_t* j = json_object_get(root, "outLevelDb")) outGainDb = clamp(int(json_integer_value(j)), 0, 48);
+		if (json_t* j = json_object_get(root, "cvMidiChannel")) cvMidi.channel = clamp(int(json_integer_value(j)), 0, 15);
+		if (json_t* j = json_object_get(root, "cvPolyToChannels")) cvMidi.polyToChannels = json_is_true(j);
+		if (json_t* j = json_object_get(root, "cvMinNoteMs")) minNoteMs = clamp(float(json_number_value(j)), 0.f, 4000.f);
 		boot();
 	}
 };
@@ -488,7 +517,9 @@ struct NordicBankingWidget : ModuleWidget {
 		for (const Lamp& l : lamps)
 			addChild(createLightCentered<SmallLight<panel::ClayLight> >(panel::mm(l.pos.x, l.pos.y), module, NordicBanking::LED_LIGHT + l.led));
 
-		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::PEDAL_POS.x, panel::PEDAL_POS.y), module, NordicBanking::PEDAL_INPUT));
+		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::VOCT_POS.x, panel::VOCT_POS.y), module, NordicBanking::V_OCT_INPUT));
+		addInput(createInputCentered<panel::PortTrigIn>(panel::mm(panel::GATE_POS.x, panel::GATE_POS.y), module, NordicBanking::GATE_INPUT));
+		addInput(createInputCentered<panel::PortTrigIn>(panel::mm(panel::SUSTAIN_POS.x, panel::SUSTAIN_POS.y), module, NordicBanking::SUSTAIN_INPUT));
 		const Vec outs[4] = { panel::OUT_A_POS, panel::OUT_B_POS, panel::OUT_C_POS, panel::OUT_D_POS };
 		for (int i = 0; i < 4; i++)
 			addOutput(createOutputCentered<panel::PortOutMain>(panel::mm(outs[i].x, outs[i].y), module, NordicBanking::OUT_A_OUTPUT + i));
@@ -523,13 +554,28 @@ struct NordicBankingWidget : ModuleWidget {
 		}));
 		menu->addChild(new MenuSeparator);
 		{
-			static const int dbs[7] = { 0, 12, 18, 24, 30, 36, 42 };
+			static const int dbs[7] = { 0, 6, 12, 18, 24, 30, 36 };
 			std::vector<std::string> names;
-			for (int d : dbs) names.push_back("+" + std::to_string(d) + " dB" + (d == 24 ? " (default)" : ""));
+			for (int d : dbs) names.push_back("+" + std::to_string(d) + " dB" + (d == 12 ? " (default)" : ""));
 			menu->addChild(createIndexSubmenuItem("Output level", names,
 				[=]() { int best = 0; for (int i = 0; i < 7; i++) if (std::abs(dbs[i] - m->outGainDb) < std::abs(dbs[best] - m->outGainDb)) best = i; return best; },
 				[=](int i) { m->outGainDb = dbs[i]; }));
 		}
+		menu->addChild(new MenuSeparator);
+		menu->addChild(createMenuLabel("V/OCT, GATE and SUSTAIN jacks"));
+		menu->addChild(createSubmenuItem("MIDI channel", std::to_string(m->cvMidi.channel + 1), [=](Menu* sub) {
+			for (int c = 0; c < 16; c++)
+				sub->addChild(createCheckMenuItem(std::to_string(c + 1), "", [=]() { return m->cvMidi.channel == c; },
+					[=]() { m->cvMidi.channel = c; }));
+		}));
+		menu->addChild(createCheckMenuItem("Polyphonic cable channel n plays MIDI channel n", "", [=]() { return m->cvMidi.polyToChannels; },
+			[=]() { m->cvMidi.polyToChannels = !m->cvMidi.polyToChannels; }));
+		static const float MIN_MS[8] = { 0.f, 25.f, 50.f, 100.f, 250.f, 500.f, 1000.f, 2000.f };
+		int minIndex = 0;
+		for (int i = 0; i < 8; i++) if (MIN_MS[i] <= m->minNoteMs + 0.5f) minIndex = i;
+		menu->addChild(createIndexSubmenuItem("Minimum note length (triggers)",
+			{ "Off: the gate's own length", "25 ms", "50 ms", "100 ms", "250 ms", "500 ms", "1 s", "2 s" },
+			[=]() { return minIndex; }, [=](int i) { m->minNoteMs = MIN_MS[i]; }));
 		menu->addChild(new MenuSeparator);
 		menu->addChild(createMenuLabel("MIDI in"));
 		appendMidiMenu(menu, &m->midiInput);

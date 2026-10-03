@@ -35,7 +35,7 @@ test_controls: test_controls.cpp ../../src/Contagion/Controls.hpp ../../src/Cont
 	$(CXX) -std=c++11 -O2 -Wall -Wextra -g -fsanitize=address,undefined -o $@ test_controls.cpp
 
 # Cable-level MIDI: self-contained, no ROM and no DSP objects.
-test_cvmidi: test_cvmidi.cpp ../../src/Contagion/CvMidi.hpp
+test_cvmidi: test_cvmidi.cpp ../../src/CvMidi.hpp
 	$(CXX) -std=c++11 -O2 -Wall -Wextra -g -fsanitize=address,undefined -o $@ test_cvmidi.cpp
 
 obj/%.o: $(V)/%.cpp

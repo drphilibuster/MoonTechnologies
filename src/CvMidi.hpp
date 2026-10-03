@@ -1,6 +1,6 @@
-// Contagion's cable-level MIDI: V/Oct, gate and the rest of a keyboard's controllers, turned into
-// the MIDI bytes the Virus's 80C515 reads on its serial port. Self-contained (no Rack) so
-// tests/Contagion can drive it with synthetic voltages.
+// Cable-level MIDI for the hardware emulations (Contagion's Virus C, Nordic Banking's Nord Lead 2X): V/Oct,
+// gate and the rest of a keyboard's controllers, turned into the MIDI bytes the firmware reads. Self-contained
+// (no Rack) so tests/Contagion can drive it with synthetic voltages.
 //
 // The unit only understands MIDI, so a patch cable has to become MIDI before the firmware sees
 // it: a rising gate is a note-on at the pitch and velocity read then, a falling gate its

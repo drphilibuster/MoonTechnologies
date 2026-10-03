@@ -49,9 +49,29 @@ memory** clears it again.
 
 Choose a **MIDI input** in the context menu: the 2X is played over MIDI, as the rack unit
 is. Notes, controllers, program changes and SysEx go into the 68331's serial port, and the
-firmware handles them; bend and the mod wheel arrive that way too. **PEDAL** is the
-expression pedal input (0–10 V). **OUT A–D** are the four outputs; the program's output
-mode decides what goes where (normally A and B, a stereo pair).
+firmware handles them; bend and the mod wheel arrive that way too. **OUT A–D** are the four outputs;
+the program's output mode decides what goes where (normally A and B, a stereo pair).
+
+Another module's MIDI reaches it through Rack's own **Loopback** driver, not a jack: Rack has no MIDI cable,
+but any module that can send MIDI to a port (Ledger's *Books > MIDI > Out A / Out B* is one) can send to
+*Loopback 1* (choose the **Loopback** driver and that device in its menu), and Nordic Banking's **MIDI in**
+menu takes the same driver and device. The unit's slots listen on the MIDI channels set in the performance,
+so send on the channel the program or slot expects (channel 1 for a fresh unit).
+
+The cables play it too. **V/OCT** and **GATE** are polyphonic: each channel of the pair is a voice, a rising
+gate is a note-on at the pitch read then (0 V is middle C), a falling gate its note-off, and a pitch change
+under a held gate is a legato note. **SUSTAIN** is the pedal -- there is no foot pedal in a Rack patch, so it is
+a gate, sent to the unit as controller 64: while it is high, notes whose gates have fallen keep sounding.
+They all go out on one MIDI channel (the context menu's **MIDI channel**; the unit's slots listen on their own),
+or with *Polyphonic cable channel n plays MIDI channel n* each cable channel is its own channel, to play the
+slots of a performance from one cable. **Minimum note length** lets a sequencer's millisecond trigger sound long
+enough for an envelope to open. The notes are MIDI, so the unit's velocity is the default 100: there is no
+velocity jack.
+
+**Output level** (context menu) is make-up gain on the four outputs, +12 dB by default. The DSP's
+full scale is 1 and the unit never gets near it: a held middle C across the 120 factory programs peaks at
+0.09 of full scale (median) to 0.44 (loudest), which is 0.4 to 2.2 V at a 5 V full scale. +12 dB puts the
+median near 2 V and the loudest near 9 V; a patch that sustains at full level is louder still.
 
 ## The panel
 

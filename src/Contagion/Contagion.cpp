@@ -9,7 +9,7 @@
 #include "PanelMap.hpp"
 #include "VirusC.hpp"
 #include "Controls.hpp"
-#include "CvMidi.hpp"
+#include "../CvMidi.hpp"
 #include "KnobSync.hpp"
 #include "Presets.hpp"
 

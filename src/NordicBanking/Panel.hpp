@@ -90,11 +90,13 @@ static const Label LABELS[] = {
 	{149.5291f, 105.8697f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PERF MODE"},
 	{168.6984f, 105.8697f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OCT -"},
 	{181.5684f, 105.8697f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OCT +"},
-	{ 78.1320f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PEDAL"},
-	{ 92.4060f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT A"},
-	{106.6800f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT B"},
-	{120.9540f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT C"},
-	{135.2280f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT D"},
+	{ 36.7740f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "V/OCT"},
+	{ 51.0480f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
+	{ 65.3220f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SUSTAIN"},
+	{133.7640f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT A"},
+	{148.0380f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT B"},
+	{162.3120f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT C"},
+	{176.5860f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT D"},
 };
 
 /** Draws this panel's silkscreen. `static` so each module keeps its own,
@@ -171,10 +173,12 @@ static const Vec SLOT_C_POS = Vec(101.9314, 105.1138);
 static const Vec SLOT_D_POS = Vec(116.0613, 105.1138);
 static const Vec VELMORPH_POS = Vec(136.9498, 105.1138);
 static const Vec KBDSPLIT_POS = Vec(157.8384, 105.1138);
-static const Vec PEDAL_POS = Vec(78.1320, 118.6000);
-static const Vec OUT_A_POS = Vec(92.4060, 118.6000);
-static const Vec OUT_B_POS = Vec(106.6800, 118.6000);
-static const Vec OUT_C_POS = Vec(120.9540, 118.6000);
-static const Vec OUT_D_POS = Vec(135.2280, 118.6000);
+static const Vec VOCT_POS = Vec(36.7740, 118.6000);
+static const Vec GATE_POS = Vec(51.0480, 118.6000);
+static const Vec SUSTAIN_POS = Vec(65.3220, 118.6000);
+static const Vec OUT_A_POS = Vec(133.7640, 118.6000);
+static const Vec OUT_B_POS = Vec(148.0380, 118.6000);
+static const Vec OUT_C_POS = Vec(162.3120, 118.6000);
+static const Vec OUT_D_POS = Vec(176.5860, 118.6000);
 
 } // namespace panel

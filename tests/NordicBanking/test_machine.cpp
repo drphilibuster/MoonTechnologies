@@ -208,6 +208,23 @@ int main() {
 		std::printf("   knobs follow the sound: %d knobs that cannot reach their program's value, %d that would be moved twice\n", unsynced, moved);
 		CHECK(unsynced == 0, "every knob can be put where the program has its parameter");
 		CHECK(moved == 0, "a knob put there is left alone");
+
+		// SUSTAIN is MIDI controller 64: with the pedal down a released note keeps sounding, and it lets go when the
+		// pedal does. A flat amp envelope (full sustain, nothing else) makes the difference plain.
+		{
+			const int env[4] = { 4, 4, 250, 4 };   // attack, decay, sustain, release as A/D codes (0 is not a change)
+			for (int i = 0; i < 4; i++) n3.setKnob(nb::KNOBS[20 + i].channel, uint8_t(env[i]));
+			r3.seconds(0.8);
+			const uint8_t pedalDown[3] = { 0xB0, 64, 127 }, pedalUp[3] = { 0xB0, 64, 0 };
+			double held = 0, tailWithout = 0, tailWith = 0, afterUp = 0;
+			n3.midi(on, 3); r3.seconds(1.0); held = r3.rms(); n3.midi(off, 3); r3.seconds(1.0); tailWithout = r3.rms();
+			n3.midi(pedalDown, 3); n3.midi(on, 3); r3.seconds(1.0); n3.midi(off, 3); r3.seconds(1.0); tailWith = r3.rms();
+			n3.midi(pedalUp, 3); r3.seconds(1.0); afterUp = r3.rms();
+			std::printf("10. sustain: held %.3f, after note-off %.3f without the pedal, %.3f with it, %.3f once it is up\n", held, tailWithout, tailWith, afterUp);
+			CHECK(tailWithout < held * 0.2, "a released note stops without the pedal");
+			CHECK(tailWith > held * 0.5, "the pedal holds a released note");
+			CHECK(afterUp < held * 0.2, "the note lets go when the pedal does");
+		}
 	} else {
 		std::printf("8. factory bank: SKIP (set NL2X_SYSEX to the factory bank's SysEx directory)\n");
 	}

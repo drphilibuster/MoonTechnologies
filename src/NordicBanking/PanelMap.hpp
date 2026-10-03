@@ -27,8 +27,8 @@ static const Knob KNOBS[26] = {
 	{ 0x5C, 0x00, 12, "Amp attack" }, { 0x59, 0x00, 13, "Amp decay" }, { 0x6E, 0x7F, 14, "Amp sustain" }, { 0x6B, 0x90, 15, "Amp release" },
 	{ 0x69, 0xFF, 17, "Amp gain" }, { 0x3C, 0xFF, -1, "Master volume" },
 };
-// The expression pedal input: the same converter, channel $72. The mod wheel and pitch bend come over MIDI.
-static const uint8_t PEDAL_CHANNEL = 0x72;
+// There is no pedal: SUSTAIN is a gate, sent to the firmware as MIDI controller 64. The mod wheel and pitch bend
+// come over MIDI too.
 // Where the firmware keeps the program being edited: 66 bytes in the 68331's RAM (offset from $100000),
 // laid out as the manual's "Patch Dump Format". Found by searching the RAM for a program sent as SysEx.
 static const uint32_t EDIT_BUFFER = 0x16626;
