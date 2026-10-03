@@ -54,7 +54,7 @@ static const double kC0 = 0.015e-6;                                     // C41 =
 static const double kR164 = 47e3, kR169 = 47e3, kVR6 = 500e3, kC43 = 33e-6;   // feedback buffer
 static const double kR171 = 220.0, kR172 = 10e3, kVR5 = 10e3, kC45 = 0.1e-6;  // tone
 static const double kStockHz = 49.8;                                   // stock Fc, Reff 45.4 k
-static const double kVenv = 15.0;                                      // B2 rail
+static const double kVenv = 12.3;       // the envelope generator's plateau (Werner, thesis Fig. 4.10)
 // Q43's collector current against Vcomm (the paper's eq. 8, fit to SPICE).
 static const double kAlpha = 14.3150, kV0 = -0.5560, kM = 1.4765e-5;
 
@@ -114,13 +114,16 @@ struct Bridge808 {
 	double envLeft = 0;             // seconds of envelope-generator high left
 	double envTarget = 0, env = 0;  // the envelope's output, smoothed (0..1)
 	double envLen = 0.006;
-	double envG = 0;                // smoothing coefficient
+	double envGr = 0, envGf = 0;    // rise and fall smoothing: ~0.5 ms up, ~0.08 ms down
 	// Cached
 	double lastLam = -1, lastK = -1;
 
 	void setRate(double fs_) {
 		fs = fs_;
-		envG = 1.0 - std::exp(-1.0 / (0.0003 * fs));
+		// Fig. 4.10 of the thesis: the envelope is ~85% of the way up after the 1 ms trigger,
+		// plateaus at 12.3 V, and drops in a few hundred microseconds at ~5.4 ms.
+		envGr = 1.0 - std::exp(-1.0 / (0.0005 * fs));
+		envGf = 1.0 - std::exp(-1.0 / (0.00008 * fs));
 		retrig.set(kR161 * kC39, 0.0, kR161 * kC39, 1.0, fs);
 		// Tone: fixed. Req = R171 + R172 VR5 l / (R172 + VR5 l), a low-pass R C45.
 		const double l = 0.05;
@@ -161,7 +164,7 @@ struct Bridge808 {
 
 		// Envelope generator: high for envLen, with a short RC edge either way
 		if (envLeft > 0) { envLeft -= 1.0 / fs; envTarget = 1.0; } else envTarget = 0.0;
-		env += (envTarget - env) * envG;
+		env += (envTarget - env) * (envTarget > env ? envGr : envGf);
 		double vrp = -diodeClip(-retrig.process(kVenv * env));   // D52 clips the *positive* side
 
 		// Q43 and the shunt leg. Gshunt is the conductance Vcomm sees through R166 + R165

@@ -78,7 +78,8 @@ repository.
   thrown up by more than an octave for the first ~6 ms (BEND sets how long). It replaces BaSnaHi's
   one-transistor twin-T stage, which was struck as an eight-mode membrane and read as a tom, so
   **a saved patch with MODEL at position 0 sounds different**. BaSnaHi's hat is unchanged.
-  The paper's slow pitch "sigh" is weaker here; `docs/Kickback.md` lists what is assumed.
+  The paper's pitch "sigh" depends on amplitude, as Roland's service notes say it does, so it is
+  only audible on very loud hits; `docs/Kickback.md` lists the sources and what is assumed.
 * **SWEEP**, a third model: a phase-locked sine under a two-stage pitch envelope (a ~3 ms spike,
   then a dive on BEND) through a velocity-driven waveshaper. MODEL is now a three-way toggle;
   position 1 (SMURF) is unchanged.

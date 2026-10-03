@@ -148,15 +148,34 @@ stock 49.8 Hz, so a DECAY shorter than that is finished by a gate on the tail. A
 the trigger voltage, and since the bridged-T is linear the level follows it; DRIVE then
 pushes the output stage.
 
-*Approximations and assumptions.* The paper's sigh (58 Hz settling to 49.5 over ~100 ms)
-is weaker here: it settles in ~20 ms. Vcomm swings only about ±0.5 V in this model, barely
-into Q43's conduction region (below about −0.56 V), and what the paper's SPICE does differently
-is not established; the paper itself calls its Q43 and envelope-generator interaction
-"oversimplified". Assumed because the paper gives no value:
-the envelope generator's output swing (15 V), D52's orientation (it clips the positive
-side, so the envelope's falling edge leaves a long negative tail, which fits the 33 ms
-retriggering time constant), and the tone control's position (fixed at a 2.3 kHz corner,
-since the module has no tone control). The op-amps are ideal apart from a ±13 V clip.
+*Sources and what is assumed.* The circuit is the paper's Fig. 1, checked against Roland's own
+TR-808 Service Notes (June 1981; sheet 9). The service notes give the parts: Q43 is a 2SC945 (P),
+the diodes are 1S2473 silicon, the op-amps µPC4558C. Werner's later dissertation (*Virtual Analog
+Modeling of Audio Circuitry Using Wave Digital Filters*, Stanford, 2016, ch. 4) simulates the same
+resonator and envelope generator against SPICE and supplies what the paper lacked: the 2SC945 as a
+2N3904 (Is 10 fA, βF 300, βR 4), the envelope generator's output (a plateau at 12.3 V, about 85%
+reached after the 1 ms trigger, falling at about 5.4 ms; Fig. 4.10) and the decay-knob sweep that
+this model's DECAY table was checked against (Fig. 4.15). Roland's own text puts the Q43 window at
+"4 ms" and the paper at 5-6 ms; BEND covers both. The dissertation's Table 4.2 lists R164 as
+4.7 kΩ, but Roland's schematic says 47 kΩ and a model with 4.7 kΩ rings up instead of down, so 47 kΩ
+is used. Checked against the service notes' own figures: a 4 V trigger gives 3.4 Vpp against
+Roland's 3.5 Vpp "normal", and 14 V gives about 12 Vpp against its 10 Vpp "accent"; DECAY at its
+ends lands within about 20% of Roland's 50 / 300 ms (to −20 dB) at short and mid, and rings about
+50% longer than its 800 ms at full. The tone control's position is assumed (fixed, a 2.3 kHz
+corner, since the module has no tone control); the op-amps are ideal apart from a ±13 V clip, which
+the µPC4558 datasheet supports (bias current 60 nA typical gives about 5 mV at the node that
+matters, far short of the ~−0.56 V where Q43 starts to conduct).
+
+*The pitch "sigh" is amplitude-dependent, as Roland says it is.* The service notes describe the
+tom circuits' pitch falling "as the resonance is damped ... by the effect of increasing diodes'
+internal resistance", and add that the bass drum behaves the same way. Here Q43's collector-base
+junction does that: it only conducts when Vcomm swings below about −0.56 V, and Vcomm is only
+about a fifth of the output swing, so at Roland's own levels it barely conducts and the sigh is
+under half a hertz (4 V trigger: none; 14 V accent: 50.3 Hz against 49.8 at rest). Driven as the
+dissertation drives it, with an output of ±10 V and more, it appears as it does in the paper:
+the half-cycles where Vcomm goes negative run at 57-58 Hz against 49 for the others. The paper's
+Fig. 11 (58 Hz settling to 49.5 over ~100 ms) is therefore a loud note, and the module reproduces
+that behaviour only on a loud one. The module's maximum ACCENT reaches only the start of it.
 
 *Smurf* is the "Smurf Drum" half of `SmurfDrum_BassDrumish.jpg`: a
 two-transistor astable (the 1M PITCH pot, 10 k/22 k cross-feedback, 0.01 µF cap)
