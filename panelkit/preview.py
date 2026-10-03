@@ -90,6 +90,14 @@ def html(panel, sol, svg, labels):
                         P.ink(l["ink"], l.get("ground", "light"))[1],
                         flip[ANCHOR[l["align"]]], _esc(l["text"])))
             continue
+        if l.get("turn") in ("up", "down"):
+            o.append('<text transform="translate(%.2f,%.2f) rotate(%d)" x="0" y="0" '
+                     'font-family="Nunito" font-size="%.2f" fill="%s" text-anchor="%s" '
+                     'letter-spacing="%.2f">%s</text>'
+                     % (l["x"] * K, l["y"] * K, -90 if l["turn"] == "up" else 90, l["size"],
+                        P.ink(l["ink"], l.get("ground", "light"))[1],
+                        ANCHOR[l["align"]], l["tracking"], _esc(l["text"])))
+            continue
         o.append('<text x="%.2f" y="%.2f" font-family="Nunito" font-size="%.2f" '
                  'fill="%s" text-anchor="%s" letter-spacing="%.2f">%s</text>'
                  % (l["x"] * K, l["y"] * K, l["size"],

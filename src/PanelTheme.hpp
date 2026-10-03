@@ -530,6 +530,329 @@ struct StepPair : app::ParamWidget {
 	}
 };
 
+/** The pointer a screen field asks for while it is under the mouse: up/down arrows over a
+ *  value you hold and drag, a hand over a thing you click. Rack never sets a cursor shape of
+ *  its own, so the one set here stays until a field puts the default back. */
+struct ScreenCursor {
+	static GLFWcursor* shape(int which) {
+		static GLFWcursor* arrows = NULL;
+		static GLFWcursor* hand = NULL;
+		GLFWcursor*& c = which == GLFW_HAND_CURSOR ? hand : arrows;
+		if (!c) c = glfwCreateStandardCursor(which);
+		return c;
+	}
+	static void set(int which) {
+		if (APP && APP->window && APP->window->win)
+			glfwSetCursor(APP->window->win, which ? shape(which) : NULL);
+	}
+};
+
+/** Something on a screen you can take hold of.
+ *
+ *  A display that prints a value is the obvious place to change it, so a value printed on a
+ *  screen is a control: the field is a ParamWidget whose box is a cell of the glass (FIELD_<NAME>
+ *  in Panel.hpp), bound to the same param a knob would be. That keeps everything a param is
+ *  owed for free -- the tooltip, the right-click menu with typed entry, MIDI-Map learn, undo,
+ *  double-click to reset. The field draws no value of its own; the module's display draws it in
+ *  the same rectangle, and this only says, under the pointer, that it can be taken hold of. */
+struct ScreenField : app::ParamWidget {
+	bool hovered = false;
+	bool dragging = false;
+
+	virtual int cursorShape() { return GLFW_VRESIZE_CURSOR; }
+
+	void onEnter(const EnterEvent& e) override {
+		hovered = true;
+		ScreenCursor::set(cursorShape());
+		ParamWidget::onEnter(e);
+	}
+	void onLeave(const LeaveEvent& e) override {
+		hovered = false;
+		if (!dragging) ScreenCursor::set(0);
+		ParamWidget::onLeave(e);
+	}
+	void endDrag() {
+		dragging = false;
+		if (!hovered) ScreenCursor::set(0);
+	}
+	~ScreenField() {
+		if (hovered || dragging) ScreenCursor::set(0);
+	}
+
+	/** Drawn on the light layer so it shows at any room brightness, like the display it sits on. */
+	void drawLayer(const DrawArgs& args, int layer) override {
+		ParamWidget::drawLayer(args, layer);
+		if (layer != 1 || !(hovered || dragging)) return;
+		NVGcontext* vg = args.vg;
+		nvgBeginPath(vg);
+		nvgRoundedRect(vg, 0.5f, 0.5f, box.size.x - 1.f, box.size.y - 1.f, 1.6f);
+		nvgFillColor(vg, alpha(LIME, dragging ? 0.10f : 0.06f));
+		nvgFill(vg);
+		nvgStrokeColor(vg, alpha(LIME, dragging ? 0.75f : 0.45f));
+		nvgStrokeWidth(vg, 0.7f);
+		nvgStroke(vg);
+	}
+};
+
+/** A value: hold it and drag up or down. The pointer is up/down arrows the whole time, so the
+ *  hand reads as moving the number rather than turning something. Ctrl drags fine, Shift
+ *  coarse, the same modifiers as a knob; the wheel nudges when Rack's own knob-scroll setting is
+ *  on (it is off by default because it would steal the scroll that moves the rack). */
+struct ScreenKnob : ScreenField {
+	//: Multiplies the drag rate. 1 crosses the whole range in about as far as a knob does.
+	float speed = 1.f;
+	float oldValue = NAN;
+	float snapDelta = 0.f;
+	float dragged = 0.f;
+
+	static float modSpeed() {
+		int mods = APP->window->getMods() & RACK_MOD_MASK;
+		if (mods == RACK_MOD_CTRL) return 1 / 10.f;
+		if (mods == GLFW_MOD_SHIFT) return 4.f;
+		if (mods == (RACK_MOD_CTRL | GLFW_MOD_SHIFT)) return 1 / 100.f;
+		return 1.f;
+	}
+
+	/** How far one pixel of travel moves the value. Matched to Rack's linear knob mode
+	 *  (sensitivity over a 300-degree sweep), so a field and a knob feel like one hand. */
+	virtual float perPixel(engine::ParamQuantity* pq) {
+		const float range = pq->isBounded() ? pq->getRange() : 1.f;
+		return settings::knobLinearSensitivity * speed * range / (300.f / 360.f);
+	}
+
+	/** A click that did not become a drag. A value has nothing to do; a choice opens. */
+	virtual void click() {}
+
+	void onDragStart(const DragStartEvent& e) override {
+		if (e.button != GLFW_MOUSE_BUTTON_LEFT) return;
+		if (engine::ParamQuantity* pq = getParamQuantity()) oldValue = pq->getValue();
+		snapDelta = 0.f;
+		dragged = 0.f;
+		dragging = true;
+		ParamWidget::onDragStart(e);
+	}
+
+	void onDragMove(const DragMoveEvent& e) override {
+		if (e.button != GLFW_MOUSE_BUTTON_LEFT) return;
+		engine::ParamQuantity* pq = getParamQuantity();
+		if (!pq) return;
+		dragged += std::fabs(e.mouseDelta.y) + std::fabs(e.mouseDelta.x);
+		float delta = -e.mouseDelta.y * perPixel(pq) * modSpeed();
+		if (pq->snapEnabled) {
+			snapDelta += delta;
+			delta = std::trunc(snapDelta);
+			snapDelta -= delta;
+		}
+		pq->setValue(pq->getValue() + delta);
+		ParamWidget::onDragMove(e);
+	}
+
+	void onDragEnd(const DragEndEvent& e) override {
+		if (e.button != GLFW_MOUSE_BUTTON_LEFT) return;
+		pushHistory("move");
+		endDrag();
+		if (dragged < 4.f) click();
+		ParamWidget::onDragEnd(e);
+	}
+
+	void pushHistory(const char* what) {
+		engine::ParamQuantity* pq = getParamQuantity();
+		if (pq && module && !std::isnan(oldValue) && pq->getValue() != oldValue) {
+			history::ParamChange* h = new history::ParamChange;
+			h->name = std::string(what) + " " + pq->getLabel();
+			h->moduleId = module->id;
+			h->paramId = paramId;
+			h->oldValue = oldValue;
+			h->newValue = pq->getValue();
+			APP->history->push(h);
+		}
+		oldValue = NAN;
+	}
+
+	void onHoverScroll(const HoverScrollEvent& e) override {
+		engine::ParamQuantity* pq = getParamQuantity();
+		if (!settings::knobScroll || !pq) { ParamWidget::onHoverScroll(e); return; }
+		float d = e.scrollDelta.y;
+		if (d == 0.f) return;
+		oldValue = pq->getValue();
+		if (pq->snapEnabled)
+			pq->setValue(pq->getValue() + (d > 0.f ? 1.f : -1.f));
+		else
+			pq->setValue(pq->getValue() + d * settings::knobScrollSensitivity * speed * modSpeed()
+			             * (pq->isBounded() ? pq->getRange() : 1.f));
+		pushHistory("scroll");
+		e.consume(this);
+	}
+};
+
+/** One of a set of named options. Hold and drag scrolls through them, a step every
+ *  `pxPerStep` pixels, whatever the range; a click lists them, to pick one directly. The names
+ *  come from the param's own SwitchQuantity labels, or from `nameOf` when the module computes
+ *  them (a program list, say), or else the numbers. */
+struct ScreenSelect : ScreenKnob {
+	float pxPerStep = 14.f;
+	//: Wrap from the last option to the first while dragging, for a ring with no end.
+	bool wrap = false;
+	std::function<std::string(int)> nameOf;
+
+	float perPixel(engine::ParamQuantity*) override { return 1.f / pxPerStep; }
+
+	void onDragMove(const DragMoveEvent& e) override {
+		engine::ParamQuantity* pq = getParamQuantity();
+		if (!wrap || !pq || e.button != GLFW_MOUSE_BUTTON_LEFT || !pq->isBounded()) {
+			ScreenKnob::onDragMove(e);
+			return;
+		}
+		dragged += std::fabs(e.mouseDelta.y) + std::fabs(e.mouseDelta.x);
+		snapDelta += -e.mouseDelta.y * perPixel(pq) * modSpeed();
+		float delta = std::trunc(snapDelta);
+		snapDelta -= delta;
+		if (delta == 0.f) return;
+		const float lo = pq->getMinValue(), n = pq->getMaxValue() - lo + 1.f;
+		pq->setValue(lo + math::eucMod(std::round(pq->getValue() - lo + delta), n));
+	}
+
+	std::string optionName(engine::ParamQuantity* pq, int i) {
+		if (nameOf) return nameOf(i);
+		if (auto* sq = dynamic_cast<engine::SwitchQuantity*>(pq))
+			if (i >= 0 && i < (int) sq->labels.size()) return sq->labels[i];
+		return string::f("%d", (int) (pq->getMinValue() + i));
+	}
+
+	void click() override {
+		engine::ParamQuantity* pq = getParamQuantity();
+		if (!pq || !pq->isBounded()) return;
+		const float lo = pq->getMinValue();
+		const int n = (int) std::round(pq->getMaxValue() - lo) + 1;
+		const int cur = (int) std::round(pq->getValue() - lo);
+		ui::Menu* menu = createMenu();
+		menu->addChild(createMenuLabel(pq->getLabel()));
+		const int id = paramId;
+		const int64_t moduleId = module ? module->id : -1;
+		for (int i = 0; i < n; i++) {
+			menu->addChild(createCheckMenuItem(optionName(pq, i), "",
+				[=]() { return i == cur; },
+				[=]() {
+					engine::Module* m = APP->engine->getModule(moduleId);
+					if (!m) return;
+					engine::ParamQuantity* q = m->paramQuantities[id];
+					float before = q->getValue();
+					q->setValue(lo + i);
+					if (q->getValue() == before) return;
+					history::ParamChange* h = new history::ParamChange;
+					h->name = std::string("select ") + q->getLabel();
+					h->moduleId = moduleId;
+					h->paramId = id;
+					h->oldValue = before;
+					h->newValue = q->getValue();
+					APP->history->push(h);
+				}));
+		}
+	}
+};
+
+/** A switch on the screen: a click steps it to its next position (Ctrl-click the previous
+ *  one), wrapping, like Rack's own switch. `momentary` makes it a button that holds its
+ *  maximum while the mouse is down. The pointer is a hand -- this is pressed, not dragged. */
+struct ScreenSwitch : ScreenField {
+	bool momentary = false;
+
+	int cursorShape() override { return GLFW_HAND_CURSOR; }
+
+	void onDoubleClick(const DoubleClickEvent& e) override {
+		// A double click is two presses here, not a reset.
+		widget::OpaqueWidget::onDoubleClick(e);
+	}
+
+	void onDragStart(const DragStartEvent& e) override {
+		ParamWidget::onDragStart(e);
+		if (e.button != GLFW_MOUSE_BUTTON_LEFT) return;
+		dragging = true;
+		engine::ParamQuantity* pq = getParamQuantity();
+		if (!pq) return;
+		if (momentary) {
+			pq->setMax();
+			return;
+		}
+		const float before = pq->getValue();
+		if ((APP->window->getMods() & RACK_MOD_MASK) == RACK_MOD_CTRL)
+			pq->isMin() ? pq->setMax() : pq->setValue(std::round(before) - 1.f);
+		else
+			pq->isMax() ? pq->setMin() : pq->setValue(std::round(before) + 1.f);
+		if (module && pq->getValue() != before) {
+			history::ParamChange* h = new history::ParamChange;
+			h->name = std::string("switch ") + pq->getLabel();
+			h->moduleId = module->id;
+			h->paramId = paramId;
+			h->oldValue = before;
+			h->newValue = pq->getValue();
+			APP->history->push(h);
+		}
+	}
+
+	void onDragEnd(const DragEndEvent& e) override {
+		ParamWidget::onDragEnd(e);
+		if (e.button != GLFW_MOUSE_BUTTON_LEFT) return;
+		endDrag();
+		if (momentary)
+			if (engine::ParamQuantity* pq = getParamQuantity()) pq->setMin();
+	}
+};
+
+/** A button on the screen: held while the mouse is down, like a VCVButton. */
+struct ScreenButton : ScreenSwitch {
+	ScreenButton() { momentary = true; }
+};
+
+/** A word on the screen that opens a menu: for an action rather than a value --
+ *  a preset to load, a file to choose -- which has no param to bind to. The
+ *  module fills the menu; the field only gives it the family's pointer and
+ *  hover, so it reads as one of the screen's controls. */
+struct ScreenMenu : widget::OpaqueWidget {
+	std::function<void(ui::Menu*)> fill;
+	bool hovered = false;
+
+	void onEnter(const EnterEvent& e) override { hovered = true; ScreenCursor::set(GLFW_HAND_CURSOR); }
+	void onLeave(const LeaveEvent& e) override { hovered = false; ScreenCursor::set(0); }
+	~ScreenMenu() { if (hovered) ScreenCursor::set(0); }
+
+	void onButton(const ButtonEvent& e) override {
+		if (e.action == GLFW_PRESS && (e.button == GLFW_MOUSE_BUTTON_LEFT || e.button == GLFW_MOUSE_BUTTON_RIGHT)) {
+			e.consume(this);
+			if (fill) fill(createMenu());
+		}
+	}
+
+	void drawLayer(const DrawArgs& args, int layer) override {
+		OpaqueWidget::drawLayer(args, layer);
+		if (layer != 1 || !hovered) return;
+		nvgBeginPath(args.vg);
+		nvgRoundedRect(args.vg, 0.5f, 0.5f, box.size.x - 1.f, box.size.y - 1.f, 1.6f);
+		nvgFillColor(args.vg, alpha(LIME, 0.06f));
+		nvgFill(args.vg);
+		nvgStrokeColor(args.vg, alpha(LIME, 0.45f));
+		nvgStrokeWidth(args.vg, 0.7f);
+		nvgStroke(args.vg);
+	}
+};
+
+inline ScreenMenu* createMenuField(const Rect& cell, std::function<void(ui::Menu*)> fill) {
+	ScreenMenu* o = new ScreenMenu;
+	o->box.pos = mm(cell.pos.x, cell.pos.y);
+	o->box.size = mm(cell.size.x, cell.size.y);
+	o->fill = fill;
+	return o;
+}
+
+/** Place a field over its cell of the glass. `cell` is the FIELD_<NAME> rectangle from
+ *  Panel.hpp, in panel millimetres. */
+template <class TField>
+TField* createField(const Rect& cell, engine::Module* module, int paramId) {
+	TField* o = createParam<TField>(mm(cell.pos.x, cell.pos.y), module, paramId);
+	o->box.size = mm(cell.size.x, cell.size.y);
+	return o;
+}
+
 /** Every stock light derives from GrayModuleLightWidget, which hard-codes a
     #333333 socket that reads as a grey hole punched in a green panel. These
     restyle the socket as well as the emitter. */
@@ -600,7 +923,7 @@ struct Label {
 	float x, y, size, tracking;
 	NVGcolor ink;
 	int align;
-	bool mirror;
+	int turn;          // 0 upright, 1 mirrored (the maker's mark), 2 reads up, 3 reads down
 	const char* text;
 };
 
@@ -621,8 +944,15 @@ struct Labels : widget::Widget {
 		for (size_t i = 0; i < count; i++) {
 			const Label& l = labels[i];
 			Vec p = mm(l.x, l.y);
-			if (l.mirror)
+			if (l.turn == 1)
 				textMirrored(args.vg, labelStyle(l), p.x, p.y, l.text);
+			else if (l.turn >= 2) {
+				nvgSave(args.vg);
+				nvgTranslate(args.vg, p.x, p.y);
+				nvgRotate(args.vg, (l.turn == 2 ? -M_PI : M_PI) / 2.f);
+				text(args.vg, labelStyle(l), 0.f, 0.f, l.text);
+				nvgRestore(args.vg);
+			}
 			else
 				text(args.vg, labelStyle(l), p.x, p.y, l.text);
 		}

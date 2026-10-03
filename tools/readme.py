@@ -26,7 +26,8 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, 'tools'))
-from sync_hp import widths, words, PX_PER_HP, SPACED  # noqa: E402
+from sync_hp import widths, whats, prose, words, PX_PER_HP, SPACED  # noqa: E402
+WHAT = {}
 
 SRC = os.path.join(ROOT, 'tools', 'readme')
 
@@ -83,14 +84,18 @@ def gallery(mods, hp):
     for r in rows:
         img = ' | '.join('<img src="tools/previews/%s.png" width="%d">'
                          % (m['slug'], int(round(hp[m['slug']] * PX_PER_HP))) for m in r)
-        cap = ' | '.join('**[%s](docs/%s.md)**' % (m['name'], m['slug']) for m in r)
+        cap = ' | '.join('**[%s](docs/%s.md)**%s' % (
+            m['name'], m['slug'],
+            ('<br>%s' % prose(WHAT[m['slug']])) if m['slug'] in WHAT else '') for m in r)
         out.append('| %s |\n|%s\n| %s |' % (img, '---|' * len(r), cap))
     return '\n\n'.join(out)
 
 
 def entry(m, hp):
-    head = '### [%s](docs/%s.md) — %d HP · *%s*' % (m['name'], m['slug'], hp[m['slug']],
-                                                  ', '.join(m['tags']))
+    what = WHAT.get(m['slug'])
+    head = '### [%s](docs/%s.md) — %s%d HP · *%s*' % (
+        m['name'], m['slug'], ('**%s** · ' % prose(what)) if what else '',
+        hp[m['slug']], ', '.join(m['tags']))
     parts = [head]
     if m.get('credit'):
         parts.append(m['credit'])
@@ -102,6 +107,7 @@ def build():
     manifest = json.load(open(os.path.join(ROOT, 'plugin.json')))['modules']
     entries = parse_entries(open(os.path.join(SRC, 'modules.md')).read())
     hp = widths()
+    WHAT.update(whats())
 
     slugs = [m['slug'] for m in manifest]
     problems = ['plugin.json has %s but tools/readme/modules.md has no block for it' % s

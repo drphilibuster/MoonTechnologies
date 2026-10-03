@@ -26,7 +26,7 @@ import math
 from . import spec as S
 from . import palette as P
 from . import art as ART
-from .layout import cap_h, desc_h, label_box, HEADER_H, SCALE, FOOT_Y
+from .layout import cap_h, desc_h, label_box, text_w, HEADER_H, SCALE, FOOT_Y
 
 TAB_W = 7.0             # the index tab on every block: a form's thumb index
 TAB_H = 0.5
@@ -135,8 +135,22 @@ def panel_svg(panel, sol, layers=False, art=None):
     bot = (sol.band_footer if sol.band_footer is not None else 123.0) - 1.4
     if bot - top > 12.0:
         for x in (RIBBON_X, w - RIBBON_X):
-            _ribbon(a, top, bot, x, horizontal=False, amp=0.5, period=6.0,
-                    ink=P.RULE, opacity=0.55)
+            spans = [(top, bot)]
+            # text turned into a margin breaks its strand: the wordmark up the
+            # left, the form number down the right
+            from .emit import STUB_SIZE
+            left = x == RIBBON_X
+            word = panel.brand if left else panel.form
+            turned = bool(panel.what) or (left and getattr(panel, "masthead_mode", "wide") == "narrow")
+            if word and turned:
+                from .emit import margin_y
+                half = text_w(word, STUB_SIZE, 0.4) / 2 + 1.2
+                mid = margin_y(panel, sol, word, "left" if left else "right")
+                spans = [(top, mid - half), (mid + half, bot)]
+            for lo, hi in spans:
+                if hi - lo > 3.0:
+                    _ribbon(a, lo, hi, x, horizontal=False, amp=0.5, period=6.0,
+                            ink=P.RULE, opacity=0.55)
 
     stage("05_Readout_glass")
     # --- read-out well
@@ -214,6 +228,9 @@ def panel_svg(panel, sol, layers=False, art=None):
     for x, y0, y1 in sol.ties:
         a('  <rect x="%.4f" y="%.4f" width="0.26" height="%.4f" fill="%s" '
           'fill-opacity="0.8"/>' % (x - 0.13, y0, y1 - y0, P.RULE))
+    # A rail pair's bracket: one label over two widgets, joined to each.
+    for pts in sol.brackets:
+        _path(a, pts, P.RULE, 0.26, opacity=0.8)
 
     stage("11_Wells")
     # --- recessed seats behind every widget: a dark seal ringed in sage

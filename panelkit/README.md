@@ -291,6 +291,60 @@ attenuator-over-jack pairs live on a rail (`RailPair`, below) rather than on the
 places its band by hand (`band_footer=`), because its action buttons are plates on a hand-laid
 face, and ScheduleA has no band. Those two are the only panels whose band is not at `BAND_TOP`.
 
+## The masthead: what the module is
+
+`Panel(what="MULTIMODE FILTER")` puts what the module *is* on the line under the
+title, in lime, where you read it while patching -- the names are puns on tax
+forms and say nothing about the circuit. That line sits below the top screws, so
+it has the whole face; to give it the line, the maker's wordmark turns on its
+side and runs up the left margin, and the form number runs down the right. Both
+margins are 2.4 mm strips nothing else uses, so this costs no width and no
+height, and the braid breaks round the text. Turned text centres on the margin
+unless something reaches into it there, in which case it takes the free run
+nearest the middle (`emit.margin_y`).
+
+The descriptor is the one source for what a module is: it is emitted as `WHAT`
+into `Panel.hpp`, and `tools/readme.py` and `tools/sync_hp.py` read it from there
+for the README headings and every manual's `# Name — what it is` title.
+
+A panel without `what` keeps the note-header masthead (brand bottom-left, form
+bottom-right). If that line is what sets the panel's width, the solver drops the
+wordmark to the left margin instead (`layout.masthead_mode`), so a wordmark is
+never what costs a panel an HP.
+
+## Controls on the screen: `Field`
+
+Anything a display shows, a display can take. A value printed on the glass is a
+control: `Glass(grid=(rows, cols), fields=[Field(name, cell=(r, c), span=(1, n),
+kind=...)])` cuts the glass into a grid and gives each field a cell. The solver
+emits `FIELD_<NAME>` rectangles into `Panel.hpp`; the display draws the value in
+`inGlass(FIELD_X)` and the module places `createField<panel::ScreenKnob>(FIELD_X,
+module, PARAM)` over the same rectangle, so what you see and what you grab are
+one number.
+
+| `kind` | widget | under the mouse |
+|---|---|---|
+| `value` | `ScreenKnob` | up/down-arrow pointer; hold and drag; Ctrl fine, Shift coarse; wheel when Rack's knob-scroll is on |
+| `select` | `ScreenSelect` | click lists the options to pick one; hold and drag scrolls through them |
+| `toggle` | `ScreenSwitch` | hand pointer; click steps (Ctrl-click back), wrapping |
+| `button` | `ScreenButton` | held while the mouse is down |
+| `menu` | `ScreenMenu` | click opens a menu the module fills (`createMenuField(FIELD_X, fill)`), for an action with no param -- a preset list |
+
+They are `ParamWidget`s bound to the param the knob used to be, so the tooltip,
+typed entry, MIDI-Map, undo and double-click reset all still work, and the param
+ids do not move -- old patches load unchanged. A control that keeps a knob as
+well (the one you play) can have both, bound to one param.
+
+## Rail matrices and labels space decides
+
+`Rail(cols=N)` stands the rail's entries in N columns; `cols="auto"` takes the
+fewest that fit the height. `Rail(labels="auto")` lets the solver choose between
+a label over each entry (narrower) and beside it (no height). A pair's label
+goes over the pair with a bracket joining it to both widgets, or -- under
+"auto", when height is short -- beside it on its centre line. `solve()` tries
+every arrangement the spec allows, narrowest first, and keeps the first whose
+rail fits: width is spent last, because HP is what the rack runs out of.
+
 ## Columns, and things that are not columns
 
 A row's items land in columns, and the solver spaces each gap to the two columns

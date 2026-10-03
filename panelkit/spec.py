@@ -295,11 +295,60 @@ class Rail:
     #: Where a jack's label goes: "left" stands it on the jack's own centre line, which
     #: costs no height and the label's width; "above" is the family's rule for a jack
     #: and costs a line of text per jack instead, which is the cheaper currency in a
-    #: tall rail and the dearer in a short one.
+    #: tall rail and the dearer in a short one. "auto" lets space decide: the solver
+    #: takes the narrowest arrangement that still fits the rail's height. A pair's
+    #: label is the same choice -- over the pair, joined to both by a bracket, or
+    #: beside it on its centre line.
     labels: str = "left"
+    #: How many columns the rail's entries stand in: a matrix of jacks down the edge
+    #: rather than a single file. "auto" takes the fewest that fit the height --
+    #: every column is a jack's width off every row beside the rail, so the solver
+    #: only adds one when a single file would run off the bottom.
+    cols: object = 1
     #: Solved:
     x0: float = 0.0
     x1: float = 0.0
+
+
+@dataclass
+class Field:
+    """A control that lives on the glass instead of on the face.
+
+    Anything a display shows, a display can take: a value printed on the screen
+    is the obvious place to change it, and the knob that used to stand below it
+    was the same number twice and the panel's width spent on the duplicate. A
+    field is that knob moved into the read-out -- bound to the same param, so a
+    patch, a CV map, MIDI-Map, undo and the right-click menu are unchanged, and
+    only its widget is different.
+
+    The glass is cut into a grid (`Glass.grid`, rows x cols) and a field takes a
+    `cell` of it, or a `span` of cells. The solver turns that into a rectangle
+    and the emitter writes it into Panel.hpp as `FIELD_<NAME>`, which is where
+    the display draws the value *and* where the hit region sits -- one number, so
+    what you see and what you grab cannot drift apart.
+
+    `kind` says how it behaves under the mouse, and picks the C++ widget:
+      "value"   hold and drag up/down (the pointer turns into up/down arrows);
+                the wheel nudges; double-click resets.         panel::ScreenKnob
+      "select"  a choice among named options: click lists them to pick from,
+                hold and drag scrolls through them.            panel::ScreenSelect
+      "toggle"  click flips it (or steps a 3-way).             panel::ScreenSwitch
+      "button"  momentary: held while the mouse is down.       panel::ScreenButton
+      "menu"    click opens a menu the module fills -- for an
+                action that is not a param (load a preset).    panel::ScreenMenu
+    """
+    name: str
+    cell: tuple = (0, 0)            # (row, col) in the glass grid
+    span: tuple = (1, 1)            # (rows, cols)
+    kind: str = "value"
+    #: On a glass laid out in plates (see Plate), the plate whose own `grid` the
+    #: cell is counted in, instead of the glass's.
+    plate: str = ""
+
+
+#: The kinds a Field may be, and the C++ widget each one is.
+FIELD_KINDS = {"value": "ScreenKnob", "select": "ScreenSelect",
+               "toggle": "ScreenSwitch", "button": "ScreenButton", "menu": "ScreenMenu"}
 
 
 @dataclass
@@ -308,6 +357,14 @@ class Glass:
     h: float = 9.2
     name: str = "display"
     y: float = 0.0                  # solved
+    #: The grid the glass is cut into for its fields, as (rows, cols). The
+    #: display draws in the same cells, so its text lines are the grid's rows.
+    grid: tuple = (1, 1)
+    #: Controls that live on the screen. See Field.
+    fields: list = field(default_factory=list)
+    #: Margin inside the well before the first cell, and the gap between cells, mm.
+    inset: float = 0.8
+    gap: float = 0.5
 
 
 @dataclass
@@ -354,6 +411,8 @@ class Plate:
     r: float = 1.2
     tab: str = ""           # "LIME" / "MINT" to give the plate an index tab
     stroke: bool = True
+    #: Cut into (rows, cols) for the Fields that name this plate.
+    grid: tuple = (1, 1)
 
 
 @dataclass
@@ -370,6 +429,12 @@ class Panel:
     #: "regular" or "compact". Same rules, tighter scale -- for panels at capacity.
     density: str = "regular"
     subtitle: str = ""              # optional masthead right-hand gloss
+    #: What the module *is*, in plain words -- "MULTIMODE FILTER" -- on the line
+    #: under the title, where you read it while patching. The names are puns on
+    #: tax forms and say nothing about the circuit; this says what it does. With
+    #: it set, the line is the descriptor's alone: the maker's wordmark runs up the
+    #: left margin and the form number down the right.
+    what: str = ""
     brand: str = BRAND              # the mark at the masthead's bottom-left
     glass: Glass = None
     sections: list = field(default_factory=list)

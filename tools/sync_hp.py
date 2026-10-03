@@ -36,6 +36,64 @@ def widths():
     return out
 
 
+def whats():
+    """slug -> what the module is, from the generated headers (the spec's `what=`)."""
+    out = {}
+    for f in sorted(glob.glob(os.path.join(ROOT, 'src', '*', 'Panel.hpp'))):
+        slug = os.path.basename(os.path.dirname(f))
+        m = re.search(r'static const char\* const WHAT = "([^"]*)";', open(f).read())
+        if m:
+            out[slug] = m.group(1)
+    return out
+
+
+#: Words the masthead sets in capitals that are names or acronyms in prose.
+_KEEP = {'LFO': 'LFO', 'VCO': 'VCO', 'VCA': 'VCA', 'DAC': 'DAC', 'S&H': 'S&H', 'R2R': 'R2R',
+         'PCM': 'PCM', 'DP/4': 'DP/4', 'PT2399': 'PT2399', 'TRIPLE-PT2399': 'triple-PT2399',
+         'VIRUS': 'Virus', 'C': 'C', 'NORD': 'Nord', 'LEAD': 'Lead', '2X': '2X',
+         'MIDIVERB': 'MIDIverb', '8-CHANNEL': '8-channel', '8-STEP': '8-step', 'REPOSSESSION': 'Repossession'}
+
+
+def prose(what):
+    """The masthead's descriptor as running text: 'MULTIMODE FILTER' -> 'multimode
+    filter', keeping the names and acronyms it carries."""
+    return ' '.join(_KEEP.get(w, w.lower()) for w in what.split())
+
+
+def fix_own(text, slug, hp):
+    """A manual states its own module's width near the top ('... 12 HP.'). Only
+    the first few lines are its header; later 'HP' is HP IN, or another module."""
+    if slug not in hp:
+        return text, []
+    lines = text.split('\n')
+    changed = []
+    for i in range(min(8, len(lines))):
+        def repl(m):
+            n = int(m.group(1))
+            if n != hp[slug]:
+                changed.append((slug, n, hp[slug]))
+            return '%d HP' % hp[slug]
+        lines[i] = re.sub(r'\b(\d+) HP\b', repl, lines[i])
+    return '\n'.join(lines), changed
+
+
+def fix_titles(text, slug, what):
+    """A module manual's H1 says what the module is: '# Toll — struck-metal voice'.
+    Anything already after the name (a form number) is kept, after it."""
+    if not what:
+        return text, None
+    lines = text.split('\n', 1)
+    h1 = lines[0]
+    if not h1.startswith('# '):
+        return text, None
+    want = prose(what)
+    if want in h1:
+        return text, None
+    name, _, rest = h1[2:].partition(' — ')
+    new = '# %s — %s' % (name.strip(), want) + (' · %s' % rest.strip() if rest.strip() else '')
+    return '\n'.join([new] + lines[1:]), (h1, new)
+
+
 _ONES = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
          'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen',
          'eighteen', 'nineteen']
@@ -140,8 +198,16 @@ def main():
         for was, now in cchanged:
             print('  %-22s module count: %s -> %s' % (os.path.relpath(f, ROOT), was, now))
         out, changed = fix(out, hp)
+        own_slug = os.path.basename(f)[:-3]
+        out, own = fix_own(out, own_slug, hp) if f.startswith(os.path.join(ROOT, 'docs')) else (out, [])
+        changed = list(changed) + own
         for slug, was, now in changed:
             print('  %-22s %s: %d -> %d HP' % (os.path.relpath(f, ROOT), slug, was, now))
+        slug = os.path.basename(f)[:-3]
+        out, tchanged = fix_titles(out, slug, whats().get(slug))
+        if tchanged:
+            print('  %-22s title: %s -> %s' % (os.path.relpath(f, ROOT), tchanged[0], tchanged[1]))
+            cchanged = list(cchanged) + [tchanged]
         out, wchanged = fix_widths(out, hp)
         for slug, was, now in wchanged:
             print('  %-22s %s: gallery image %d -> %d px' %

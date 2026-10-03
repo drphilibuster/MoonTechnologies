@@ -221,6 +221,19 @@ def text_w(text, size_px, tracking=0.0):
 def label_box(l):
     """(x0, y0, x1, y1) of a label's ink, in mm."""
     w = text_w(l["text"], l["size"], l["tracking"])
+    if l.get("turn") == "down":
+        # A quarter clockwise, reading top to bottom: caps toward +x.
+        c = {"center": w / 2, "left": 0.0, "right": w}[l["align"]]
+        y0 = l["y"] - c
+        return (l["x"] - desc_h(l["size"], l["text"]), y0,
+                l["x"] + cap_h(l["size"]), y0 + w)
+    if l.get("turn") == "up":
+        # Turned a quarter anticlockwise to read bottom to top: the run lies
+        # along y, its cap height reaches toward -x and its descenders toward +x.
+        c = {"center": w / 2, "right": 0.0, "left": w}[l["align"]]
+        y1 = l["y"] + c
+        return (l["x"] - cap_h(l["size"]), y1 - w,
+                l["x"] + desc_h(l["size"], l["text"]), y1)
     # A mirrored label is drawn through a scale(-1, 1), which swaps which end of
     # the text its anchor pins. Measure it the way it lands, not the way it reads.
     align = l["align"]
@@ -625,26 +638,72 @@ def _rail_widgets(rail):
     return out
 
 
+#: Between two columns of a rail matrix.
+RAIL_COL_GAP = 1.2
+
+
+def rail_choice(panel):
+    """(cols, labels) the rail is being laid out with: the spec's, or for "auto" the
+    candidate solve() is trying (rail._choice)."""
+    rail = panel.rail
+    got = getattr(rail, "_choice", None)
+    if got:
+        return got
+    cols = rail.cols if isinstance(rail.cols, int) else 1
+    labels = rail.labels if rail.labels != "auto" else "above"
+    return cols, labels
+
+
+def rail_candidates(panel):
+    """Every (cols, labels) arrangement the spec allows, narrowest first."""
+    rail = panel.rail
+    colset = [rail.cols] if isinstance(rail.cols, int) else [1, 2, 3, 4]
+    labset = [rail.labels] if rail.labels != "auto" else ["above", "left"]
+    out = []
+    for c in colset:
+        for l in labset:
+            rail._choice = (c, l)
+            out.append((rail_w(panel), c, l))
+    rail._choice = None
+    out.sort()
+    return [(c, l) for _, c, l in out]
+
+
+def _pair_side(rail, labels):
+    """Whether a pair's label stands beside it. "left" in a spec means a *jack's*
+    label goes beside it; a pair's only goes beside when space chose it ("auto")."""
+    return labels == "left" and rail.labels == "auto"
+
+
+def _rail_cell_w(e, labels, rail=None):
+    """Width one entry takes in its rail column."""
+    if _is_pair(e):
+        pair = 2 * ink_hw(e.jack) + PAIR_GAP + 2 * ink_hw(e.trim)
+        if rail is not None and _pair_side(rail, labels) and e.label:
+            return text_w(e.label, e.size) + SIDE_GAP + pair
+        return max(pair, text_w(e.label, e.size))
+    # A lit label's lamp goes at the end of the word away from the jack: after it
+    # when the label stands over the jack, before it when it stands beside.
+    lamp = (2 * S.RADIUS["light_small"] + 1.0) if (e.light and e.label) else 0.0
+    if labels == "above":
+        e.side = "above"
+        e.light_side = "right"
+        return max(ink_hw(e) * 2, text_w(e.label, e.size) + 2 * lamp)
+    e.side = "left"
+    e.light_side = "left"
+    return ink_hw(e) * 2 + (SIDE_GAP + text_w(e.label, e.size) + lamp if e.label else 0.0)
+
+
 def rail_w(panel):
-    """Width of the rail's felt block, in mm: its padding, the widest jack, the
-    gap to its label and the widest label -- or its caption, if that is wider.
-    Zero when the panel has no rail."""
+    """Width of the rail's felt block, in mm: its padding and its columns, each as
+    wide as its widest entry -- or its caption, if that is wider. Zero when the panel
+    has no rail."""
     rail = panel.rail
     if not rail or not rail.items:
         return 0.0
-    need = 0.0
-    for e in rail.items:
-        if _is_pair(e):
-            need = max(need, 2 * RAIL_PAD + 2 * ink_hw(e.jack) + PAIR_GAP + 2 * ink_hw(e.trim),
-                       2 * RAIL_PAD + text_w(e.label, e.size))
-        elif rail.labels == "above":
-            e.side = "above"
-            need = max(need, 2 * RAIL_PAD + ink_hw(e) * 2,
-                       2 * RAIL_PAD + text_w(e.label, e.size))
-        else:
-            e.side = "left"
-            need = max(need, 2 * RAIL_PAD + ink_hw(e) * 2 +
-                       (SIDE_GAP + text_w(e.label, e.size) if e.label else 0.0))
+    cols, labels = rail_choice(panel)
+    cell = max(_rail_cell_w(e, labels, rail) for e in rail.items)
+    need = 2 * RAIL_PAD + cols * cell + (cols - 1) * RAIL_COL_GAP
     if rail.caption:
         need = max(need, 2 * RAIL_PAD + text_w(rail.caption, 6.0, 0.6))
     return need
@@ -770,6 +829,52 @@ def solve_x(panel):
     return short
 
 
+def glass_fields(glass, gx, overflow, plates=()):
+    """Cut the glass into its grid and give every Field its rectangle, in mm.
+
+    Cells are equal: the grid is the display's own layout (its text lines are the
+    rows), so a field is wherever the value it edits is printed. A span takes the
+    cells it covers and the gaps between them."""
+    by_plate = {p.name: p for p in plates}
+    out, taken = [], {}
+    for f in glass.fields:
+        if f.plate:
+            pl = by_plate.get(f.plate)
+            if pl is None:
+                overflow.append("field %s: there is no plate named %r" % (f.name, f.plate))
+                continue
+            rows, cols = pl.grid
+            x0, x1, y0, h = pl.x, pl.x + pl.w, pl.y, pl.h
+        else:
+            rows, cols = glass.grid
+            x0, x1 = gx
+            y0, h = glass.y, glass.h
+        pad, gap = glass.inset, glass.gap
+        cw = (x1 - x0 - 2 * pad - (cols - 1) * gap) / cols
+        ch = (h - 2 * pad - (rows - 1) * gap) / rows
+        if f.kind not in S.FIELD_KINDS:
+            overflow.append("field %s: kind %r is not one of %s"
+                            % (f.name, f.kind, ", ".join(S.FIELD_KINDS)))
+            continue
+        r, c = f.cell
+        rs, cs = f.span
+        if r < 0 or c < 0 or r + rs > rows or c + cs > cols:
+            overflow.append("field %s: cell %s span %s is outside the %dx%d glass grid"
+                            % (f.name, f.cell, f.span, rows, cols))
+            continue
+        for rr in range(r, r + rs):
+            for cc in range(c, c + cs):
+                key = (f.plate, rr, cc)
+                if key in taken:
+                    overflow.append("field %s overlaps field %s at cell (%d, %d)"
+                                    % (f.name, taken[key], rr, cc))
+                taken[key] = f.name
+        out.append((f.name,
+                    x0 + pad + c * (cw + gap), y0 + pad + r * (ch + gap),
+                    cs * cw + (cs - 1) * gap, rs * ch + (rs - 1) * gap, f.kind))
+    return out
+
+
 def required_hp(panel, floor=4):
     """The narrowest panel these rows fit on, in HP. A spec passes hp="auto" and
     gets this; a spec that pins its HP is checked against it."""
@@ -783,27 +888,50 @@ def required_hp(panel, floor=4):
             pad += rail_w(panel) + RAIL_GAP
         need = max(need, natural_span(cols, hm, groups, _inter(rows)) + pad)
     # The masthead has to hold the title between the two top screws at its
-    # smallest legible size, or the panel is too narrow to be named -- and it
-    # has to hold the line *under* the title too. The brand sits bottom-left and
-    # the form stub bottom-right on the same baseline, so a panel narrow enough
-    # for them to meet is as unbuildable as one too narrow for its own name; it
-    # just fails later, in the linter, as an overlap that looks like a spec
-    # error rather than a width one.
-    from .emit import (SCREW_CLEAR, TITLE_MIN, TITLE_TRACK, STUB_SIZE,
-                       LOGO_W, LOGO_GAP)
-
-    need = max(need, 2 * SCREW_CLEAR
-               + len(panel.title) * (0.60 * TITLE_MIN + TITLE_TRACK) * S.MM_PER_PX)
-    stub = 0.0
-    if panel.brand:
-        stub += SCREW_CLEAR + 0.4 + LOGO_W + LOGO_GAP + text_w(panel.brand, STUB_SIZE, 0.4)
-    if panel.form:
-        stub += text_w(panel.form, STUB_SIZE, 0.4) + 4.2
-    if panel.brand and panel.form:
-        stub += 3.0          # they must not merely miss, they must read apart
-    need = max(need, stub)
+    # smallest legible size, or the panel is too narrow to be named.
+    title, wide, narrow = masthead_needs(panel)
+    need = max(need, title)
+    # And it has to hold the line *under* the title too: the brand bottom-left
+    # and the form stub bottom-right, which must read apart. On a panel whose
+    # rows are narrower than that line, the line is what sets the width -- ten
+    # panels sat on a 10 HP floor for no reason but the wordmark. So the line has
+    # a narrow arrangement (masthead_mode): the logo alone stays up top beside the
+    # stub, and the wordmark moves into the foot ribbon between the bottom screws.
+    # Whichever is narrower wins; the choice is made from the width, never typed.
     import math
-    return max(floor, int(math.ceil(need / S.HP_MM - 1e-6)))
+    hp_wide = max(floor, int(math.ceil(max(need, wide) / S.HP_MM - 1e-6)))
+    hp_narrow = max(floor, int(math.ceil(max(need, narrow) / S.HP_MM - 1e-6)))
+    return min(hp_wide, hp_narrow)
+
+
+def masthead_needs(panel):
+    """Width, in mm, of (the title, the wide masthead line, the narrow one)."""
+    from .emit import (SCREW_CLEAR, TITLE_MIN, TITLE_TRACK, STUB_SIZE,
+                       LOGO_W, LOGO_GAP, WHAT_SIZE)
+    title = 2 * SCREW_CLEAR + len(panel.title) * (0.60 * TITLE_MIN + TITLE_TRACK) * S.MM_PER_PX
+    if panel.what:
+        # The descriptor's line sits below the screws, so it has the whole face:
+        # the logo at one end and the same room left free at the other.
+        line = 2 * (1.4 + LOGO_W + 1.0) + text_w(panel.what, WHAT_SIZE, 0.4)
+        return title, line, line
+    form = text_w(panel.form, STUB_SIZE, 0.4) + 4.2 if panel.form else 0.0
+    wide = form
+    narrow = form
+    if panel.brand:
+        mark = SCREW_CLEAR + 0.4 + LOGO_W
+        wide += mark + LOGO_GAP + text_w(panel.brand, STUB_SIZE, 0.4)
+        narrow += mark
+        if panel.form:
+            wide += 3.0          # they must not merely miss, they must read apart
+            narrow += 3.0
+    return title, wide, narrow
+
+
+def masthead_mode(panel):
+    """'wide' when the brand and the form stub fit on the line under the title,
+    'narrow' when the wordmark has to run up the left margin instead."""
+    _, wide, _ = masthead_needs(panel)
+    return "wide" if wide <= panel.w + 1e-6 else "narrow"
 
 
 class Solved:
@@ -820,11 +948,13 @@ class Solved:
         self.rules = []     # (y, x0, x1) divider rules inside blocks
         self.glass = None   # (y0, h)
         self.glass_x = None  # (x0, x1) of the read-out well
+        self.fields = []    # (name, x, y, w, h, kind) controls on the glass, mm
         self.band_footer = None
         self.overflow = []  # complaints for the linter
         self.steps = []     # (x, y, r, n) detent rings round stepped knobs
         self.groups = []    # (x0, y0, x1, y1) the box round a run named once
         self.ties = []      # (x, y0, y1) hairline joining a control to its pair
+        self.brackets = []  # polylines joining a rail pair's label to both its widgets
         self.justified = 0.0   # how much every gap grew to fill the face
 
     # -- convenience views ---------------------------------------------------
@@ -833,10 +963,38 @@ class Solved:
 
 
 def solve(panel):
+    """Solve the panel. A rail whose columns or labels are "auto" is solved once per
+    arrangement, narrowest first, and the first that fits its height is kept: space
+    decides how the rail is laid out, never the spec."""
+    if not (panel.rail and panel.rail.items) or (
+            isinstance(panel.rail.cols, int) and panel.rail.labels != "auto"):
+        return _solve_panel(panel)
+    hp0 = panel.hp
+    # A solve writes every widget's x; the next arrangement must start from the
+    # spec's own, or the last attempt's columns read as pins.
+    every = [w for sec in panel.sections for r in sec.rows for w in r.items]
+    every += [w for r in panel.footer for w in r.items] + _rail_widgets(panel.rail)
+    xs = [(w, w.x, w.side, w.light_side) for w in every]
+    traces = list(panel.traces)
+    out = None
+    for choice in rail_candidates(panel):
+        for w, x, side, ls in xs:
+            w.x, w.side, w.light_side = x, side, ls
+        panel.traces = list(traces)
+        panel.rail._choice = choice
+        panel.hp = hp0
+        out = _solve_panel(panel)
+        if not any(o.startswith("the rail is") for o in out.overflow):
+            break
+    return out
+
+
+def _solve_panel(panel):
     """Solve once at the panel's metric; if the rows leave slack above the
     footer band, solve again with the gaps grown to share it out."""
     if panel.hp in (None, "auto"):
         panel.hp = required_hp(panel)
+    panel.masthead_mode = masthead_mode(panel)
     panel.shortfall = solve_x(panel)
     base = SCALE[panel.density]
     traces = list(panel.traces)
@@ -850,6 +1008,7 @@ def solve(panel):
             panel.traces = traces
             out, _, _ = _solve(panel, m)
             out.justified = extra
+    panel.band_top = out.band_footer
     return out
 
 
@@ -867,6 +1026,7 @@ def _solve(panel, m):
         panel.glass.y = GLASS_Y
         out.glass = (GLASS_Y, panel.glass.h)
         out.glass_x = glass_x(panel)
+        out.fields = glass_fields(panel.glass, out.glass_x, out.overflow, panel.plates)
         cursor = GLASS_Y + panel.glass.h + GLASS_GAP
     else:
         cursor = HEADER_H + 1.8
@@ -1080,11 +1240,12 @@ BLOCK_INSET_X = 2.4     # mirrors render.BLOCK_INSET, for blocks that span the f
 
 
 def _place_rail(out, panel, m):
-    """The rail's block, spanning the sections' own height, and its entries spaced
-    evenly down it below the caption. Every widget goes through the same row
-    placer as any other, so its well, its side label and its lint come out exactly
-    as they would in a section."""
+    """The rail's block, spanning the sections' own height, and its entries in a
+    grid of `cols` columns, rows spaced evenly down it below the caption. Every
+    widget goes through the same row placer as any other, so its well, its side
+    label and its lint come out exactly as they would in a section."""
     rail = panel.rail
+    cols, labels = rail_choice(panel)
     rail.x0, rail.x1 = rail_extent(panel)
     cx = (rail.x0 + rail.x1) / 2
     y0, y1 = panel.sections[0].y0, panel.sections[-1].y1
@@ -1093,37 +1254,45 @@ def _place_rail(out, panel, m):
     out.blocks.append((y0, y1))
     out.block_x.append((rail.x0, rail.x1))
 
+    cell = max(_rail_cell_w(e, labels, rail) for e in rail.items)
+    span = cols * cell + (cols - 1) * RAIL_COL_GAP
+    left0 = cx - span / 2
+
+    def labelled(e):
+        return bool(e.label) and ((_is_pair(e) and not _pair_side(rail, labels)) or
+                                  (not _is_pair(e) and e.side == "above"))
+
     top = y0 + m["CAP_CLEAR"]
     if rail.caption:
         out.labels.append(dict(x=cx, y=y0 + m["CAP_BASE"], text=rail.caption, size=6.0,
                                ink=rail.ink, align="center", tracking=0.6, ground="dark"))
         # two runs of text want TEXT_TEXT between them, a well only TEXT_CLEAR
-        first = rail.items[0]
-        labelled = first.label and (_is_pair(first) or first.side == "above")
-        gap0 = TEXT_TEXT if labelled else TEXT_CLEAR
+        gap0 = TEXT_TEXT if labelled(rail.items[0]) else TEXT_CLEAR
         top = max(top, y0 + m["CAP_BASE"] + desc_h(6.0, rail.caption) + gap0)
 
-    # A pair's geometry, top to bottom: the label, a gap, then the jack and its trim on one
-    # centre line.
+    # An entry's geometry, top to bottom: its label (if it stands over it), a gap,
+    # then the widget -- or a pair's jack and trim, on one centre line.
     gap = max(m["ABOVE_GAP"], TEXT_CLEAR)
 
+    def ink(e):
+        return 2 * (max(_ink_r(e.trim), _ink_r(e.jack)) if _is_pair(e) else _ink_r(e))
+
     def height(e):
-        if not _is_pair(e):
-            if e.side == "above" and e.label:
-                return cap_h(e.size) + desc_h(e.size, e.label) + gap + 2 * _ink_r(e)
-            return 2 * _ink_r(e)
-        return (cap_h(e.size) + desc_h(e.size, e.label) + gap
-                + 2 * max(_ink_r(e.trim), _ink_r(e.jack)))
+        if labelled(e):
+            return cap_h(e.size) + desc_h(e.size, e.label) + gap + ink(e)
+        return ink(e)
 
     n = len(rail.items)
-    heights = [height(e) for e in rail.items]
+    grid = [rail.items[i:i + cols] for i in range(0, n, cols)]
+    heights = [max(height(e) for e in row) for row in grid]
+    nrows = len(grid)
     free = (y1 - m["BOT_CLEAR"]) - top - sum(heights)
-    between = free / (n - 1) if n > 1 else 0.0
-    if n > 1 and between < 0.4:
+    between = free / (nrows - 1) if nrows > 1 else 0.0
+    if nrows > 1 and between < 0.4:
         out.overflow.append(
-            "the rail is %.2f mm short: its %d entries need %.2f mm and the "
-            "sections give it %.2f" % ((0.4 - between) * (n - 1), n,
-                                      sum(heights) + 0.4 * (n - 1),
+            "the rail is %.2f mm short: its %d rows need %.2f mm and the "
+            "sections give it %.2f" % ((0.4 - between) * (nrows - 1), nrows,
+                                      sum(heights) + 0.4 * (nrows - 1),
                                       y1 - m["BOT_CLEAR"] - top))
 
     def put(w, x, y, silent=False):
@@ -1133,22 +1302,44 @@ def _place_rail(out, panel, m):
         _place_row(out, panel, m, row, None, ground="dark")
 
     cur = top
-    for e, h in zip(rail.items, heights):
-        if not _is_pair(e):
-            if e.side == "above" and e.label:
-                put(e, cx, cur + h - _ink_r(e))
-            else:
-                put(e, rail.x1 - RAIL_PAD - ink_hw(e), cur + h / 2)
-        else:
+    for row, h in zip(grid, heights):
+        for j, e in enumerate(row):
+            c0 = left0 + j * (cell + RAIL_COL_GAP)
+            c1 = c0 + cell
+            ccx = (c0 + c1) / 2
+            yc = cur + h - ink(e) / 2         # every widget in a row shares a centre line
+            if not _is_pair(e):
+                if e.side == "above" and e.label:
+                    put(e, ccx, yc)
+                else:
+                    put(e, c1 - ink_hw(e), yc)
+                continue
             hj, ht = ink_hw(e.jack), ink_hw(e.trim)
-            left = cx - (2 * hj + PAIR_GAP + 2 * ht) / 2
-            yc = cur + h - max(_ink_r(e.trim), _ink_r(e.jack))
-            put(e.jack, left + hj, yc, silent=True)
-            put(e.trim, left + 2 * hj + PAIR_GAP + ht, yc, silent=True)
-            if e.label:
-                out.labels.append(dict(x=cx, y=cur + cap_h(e.size), text=e.label,
-                                       size=e.size, ink=e.ink, align="center",
-                                       tracking=0.0, ground="dark"))
+            pw = 2 * hj + PAIR_GAP + 2 * ht
+            side = _pair_side(rail, labels)
+            px0 = c1 - pw if side else ccx - pw / 2
+            jx, tx = px0 + hj, px0 + 2 * hj + PAIR_GAP + ht
+            put(e.jack, jx, yc, silent=True)
+            put(e.trim, tx, yc, silent=True)
+            if not e.label:
+                continue
+            if side:
+                out.labels.append(dict(x=px0 - SIDE_GAP, y=yc + cap_h(e.size) / 2,
+                                       text=e.label, size=e.size, ink=e.ink,
+                                       align="right", tracking=0.0, ground="dark"))
+                continue
+            ly = yc - ink(e) / 2 - gap - desc_h(e.size, e.label)
+            out.labels.append(dict(x=ccx, y=ly, text=e.label, size=e.size, ink=e.ink,
+                                   align="center", tracking=0.0, ground="dark"))
+            # The bracket: from over the jack, up beside the label, and down over
+            # the trim -- the one label visibly belongs to both. It runs in the
+            # gap the label already costs, so it costs nothing.
+            tw = text_w(e.label, e.size) / 2 + 0.7
+            mid = ly - cap_h(e.size) / 2
+            drop = yc - ink(e) / 2 - 0.35
+            if ccx - tw > jx + 0.3:
+                out.brackets.append([(jx, drop), (jx, mid), (ccx - tw, mid)])
+                out.brackets.append([(ccx + tw, mid), (tx, mid), (tx, drop)])
         cur += h + between
 
 
