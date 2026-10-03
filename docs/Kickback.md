@@ -20,7 +20,8 @@ modelled on their donor hardware rather than transistor-level.
 
 | voice | source | designer |
 |---|---|---|
-| KICK (BRIDGE), HAT, BELL | `BaSnaHi.pdf` | kristian.borgstedt (EFM DBop) |
+| HAT | `BaSnaHi.pdf` | kristian.borgstedt (EFM DBop) |
+| KICK (BRIDGE) | Roland TR-808 bass drum, as analysed in Werner, Abel & Smith, *A Physically-Informed, Circuit-Bendable, Digital Model of the Roland TR-808 Bass Drum Circuit* (DAFx-14) | Roland |
 | KICK (SMURF) | `SmurfDrum_BassDrumish.jpg`, "Smurf Drum" half | Tiny Dazzler Electronics |
 | TOM I / II / III | `TomTomTom.pdf` | Kristian Blåsol / SourceryStudios, gate-to-trigger by Ken Stone (CGS24) |
 | SNARE — XOR mode | `XORbell.pdf` | Kristian Blåsol / SourceryStudios, design and idea from Elliot Williams' *Logic Noise* series |
@@ -118,19 +119,63 @@ that is the control those two circuits have. Where that happens the voice's own
 character rides on BEND, and the panel says so: a column with detents engraved
 in its bottom well is a column whose BEND does double duty.
 
-### KICK — two models, one set of controls
+### KICK — three models, one set of controls
 
-**MODEL** switches between them. *Bridge* is BaSnaHi's bassdrum stage (Q1,
-R1–R8, C1–C5): a diode-coupled trig charges the base network and shocks the
-transistor's RC feedback pair into ringing, modelled as a mode bank struck dead
-centre. *Smurf* is the "Smurf Drum" half of `SmurfDrum_BassDrumish.jpg`: a
+**MODEL** switches between them. *Bridge* is the Roland TR-808 bass drum. It used to be
+BaSnaHi's one-transistor twin-T stage, struck as an eight-mode membrane; that was a tom
+rather than a kick, and the stage is gone (BaSnaHi's hat stays). The 808 is what the
+bridged-T name always pointed at: a bridged-T band-pass in the feedback of an op-amp,
+rung by a 1 ms pulse. It is modelled from Werner, Abel & Smith's analysis of the service
+notes, and what they find is that the 808 is not a pitch sweep but three things:
+
+* **The pulse shaper** (a shelf and a diode) means *both* edges of the 1 ms trigger kick
+  the resonator, the falling one clipped to about −0.7 V.
+* **For the first ~6 ms the envelope generator switches Q43 on**, which takes the
+  bridged-T's shunt leg from R165+R166 down to R166 alone: the centre frequency jumps by
+  more than an octave (49.8 Hz to about 130 Hz in the stock circuit; here ×2.6 whatever
+  TUNE is) with a higher Q. Too brief to hear as a pitch; it is the crack and the punch.
+  **BEND** is how long Q43 is held on, 1.5–9.5 ms (the paper's "pitch envelope timing"
+  mod; stock is about 6).
+* **A retriggering pulse and Q43's own nonlinearity** act afterwards. Nothing is reset on
+  a strike, so a retrigger while the last hit still rings does not sound like the last
+  one started again — the paper's "no machine-gun effect".
+
+**DECAY** is VR6, the amount of the resonance fed back round the bridged-T through a high
+shelf; a longer ring is more regeneration. The ring is proportional to the capacitors, so
+TUNE (which scales C41 and C42) scales it too, and the module inverts a measured table to
+give the t60 DECAY asks for. The circuit cannot ring for less than about 0.18 s at the
+stock 49.8 Hz, so a DECAY shorter than that is finished by a gate on the tail. Accent is
+the trigger voltage, and since the bridged-T is linear the level follows it; DRIVE then
+pushes the output stage.
+
+*Approximations and assumptions.* The paper's sigh (58 Hz settling to 49.5 over ~100 ms)
+is weaker here: it settles in ~20 ms. Vcomm swings only about ±0.5 V in this model, barely
+into Q43's conduction region (below about −0.56 V), and what the paper's SPICE does differently
+is not established; the paper itself calls its Q43 and envelope-generator interaction
+"oversimplified". Assumed because the paper gives no value:
+the envelope generator's output swing (15 V), D52's orientation (it clips the positive
+side, so the envelope's falling edge leaves a long negative tail, which fits the 33 ms
+retriggering time constant), and the tone control's position (fixed at a 2.3 kHz corner,
+since the module has no tone control). The op-amps are ideal apart from a ±13 V clip.
+
+*Smurf* is the "Smurf Drum" half of `SmurfDrum_BassDrumish.jpg`: a
 two-transistor astable (the 1M PITCH pot, 10 k/22 k cross-feedback, 0.01 µF cap)
 running off the trigger's own decaying envelope rather than a rail, so loudness
-and pitch sag together — the "zippy splat" its notes describe.
+and pitch sag together — the "zippy splat" its notes describe. *Sweep* is not a
+circuit from the folder but the archetype the other two are not: a sine
+oscillator that restarts on the same phase at every strike, under a pitch
+envelope in two stages — a spike of about six times the tuned pitch lasting three
+milliseconds, which is the beater, then a dive of up to three times it over
+25–80 ms, which is the thump — through a waveshaper ahead of the volume envelope,
+so the tail keeps its harmonics as it falls. The shaper's drive rises with
+velocity, so a hard hit is a different timbre rather than only a louder one. It is
+the shape of a Befaco Kickall, in the sense that a stable VCO, a pitch envelope, a
+volume envelope and an aggressive shaper is that module's description; no part of
+its design is copied.
 
-They share controls because they answer the same question two ways: a ringing
-filter and a starved oscillator both make a bass drum, and which one a patch
-wants is a switch, not two columns of panel. **TUNE** 32–190 Hz. **BEND** is the
+They share controls because they answer the same question three ways: a ringing
+filter, a starved oscillator and a swept one all make a bass drum, and which one a
+patch wants is a switch, not three columns of panel. **TUNE** 32–190 Hz. **BEND** is the
 pitch dive, and on the Smurf model it is the sheet's own switched cap on the
 upper half of the circuit; it also sets how hard the transistor stage is driven,
 since MODEL has taken the character knob.
@@ -236,12 +281,15 @@ tension-modulation dive.
 The two columns to the left of the gutter are the module's own transport, so
 Kickback plays without anything else in the rack.
 
-**The normalling rule is the whole design.** A voice whose TRIG jack is empty is
-played by the pattern engine; a voice with something patched into its TRIG is
-played by that and nothing else. An unpatched Kickback runs a kit, patching one
-TRIG takes that one voice over, and patching all six leaves the engine driving
-only the clock and gate outputs. Nothing has to be switched to move between
-those.
+**A patched TRIG adds to the pattern; it does not replace it.** A voice whose TRIG
+jack is empty is the pattern engine's alone. A voice with a gate patched into its
+TRIG plays the engine's pattern *and* every gate you send it, summed in time. The
+gate is the louder: its hit plays at its own level (with the ACC accent on top), the
+engine's pattern at 60% of its step velocity, and where both land on the same
+sample the louder is the one heard. So a kick pattern can run underneath while you
+play accents over it. A stopped transport — RUN off, or an external clock that has
+stopped — mutes the patched gate inputs as well as the pattern. Nothing has to be
+switched to move between any of this.
 
 | control | what it does |
 |---|---|
@@ -255,7 +303,7 @@ those.
 | **SHAPE** | From the grouped spine alone (0) to two layered Euclidean necklaces deciding which steps come next (100%). Only each voice's single strongest step is pinned. |
 | **EVOLVE** | How far the loop moves from one pass to the next: re-ranking, pass conditions, ratchets, shifted micro-timing, necklaces that change, and a fill every fourth pass. At zero every pass is the same pass. Default 50%. |
 | **LENGTH** (one per voice) | That voice's cycle, 3 to 16 steps. A hat on 12 against a kick on 16 comes back into step every 48 steps; on 15, every 240. RST puts every voice back at the top. |
-| **SEED** (16 detents) | Picks each voice's Euclidean necklace and where it is turned. Same density, different beat. **Takes effect at the top of the next bar**, not under your hand — see below. |
+| **SEED** (16 detents) | **0 turns the pattern engine OFF** — Kickback is then a plain drum module: voices struck by their TRIGs and nothing else, with the clock, CLK OUT and RST still running. 1 to 15 pick a pattern: each voice's Euclidean necklaces and groupings. Knob 1 is the preset kit (the default). Same density, different beat. **Takes effect at the top of the next bar**, not under your hand — see below. |
 | **HUMAN** | Velocity spread and microtiming, together. Downbeats move least, as a player's do. Works in both modes. |
 | **GATE** | How long the gate outputs stay high: 5 to 100 ms. |
 | **RST** (input) | Resets the grid, and every voice's grid-mode phase, to the top. |
@@ -275,7 +323,7 @@ voice's cycle is scored:
   rather than the way a drummer counts in four. The first step of each group is
   strong, the middle of a long group middling, the rest weak, and each voice's
   grouping is turned to start on a different step, so the kit is a polyrhythm in
-  one bar. SEED 0 uses those groupings; any other seed composes new ones, per
+  one bar. SEED knob 1 uses those groupings; knobs 2 to 15 compose new ones, per
   voice and per length;
 * plus **SHAPE** times a bonus from **two** Euclidean necklaces of different k,
   each turned by its own rotation. Where they agree a step is strong; where only
@@ -422,7 +470,7 @@ not fit on a 3U face at knob pitch, and the honest place to spend the
 millimetres is the one control per column you reach for while playing — which is
 TUNE.
 
-KICK's **MODEL** and SNARE's **MODE** are real toggles, because a control whose
+KICK's **MODEL** and SNARE's **MODE** are real three-way toggles, because a control whose
 whole job is to say which of two or three circuits is running should look like
 the switch it is, and you should be able to see where it is standing.
 

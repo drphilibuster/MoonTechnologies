@@ -5,6 +5,19 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Changed: Kickback's KICK is the TR-808, and has a third model, SWEEP
+
+* **BRIDGE is the Roland TR-808 bass drum** (Werner, Abel & Smith, DAFx-14; `src/Kickback/Bridge808.hpp`):
+  a bridged-T band-pass in an op-amp's feedback, rung by a shaped 1 ms pulse, its centre frequency
+  thrown up by more than an octave for the first ~6 ms (BEND sets how long). It replaces BaSnaHi's
+  one-transistor twin-T stage, which was struck as an eight-mode membrane and read as a tom, so
+  **a saved patch with MODEL at position 0 sounds different**. BaSnaHi's hat is unchanged.
+  The paper's slow pitch "sigh" is weaker here; `docs/Kickback.md` lists what is assumed.
+* **SWEEP**, a third model: a phase-locked sine under a two-stage pitch envelope (a ~3 ms spike,
+  then a dive on BEND) through a velocity-driven waveshaper. MODEL is now a three-way toggle;
+  position 1 (SMURF) is unchanged.
+* `tests/Kickback/render_kick` renders each model to WAV and prints its pitch track and levels.
+
 ### Added: Ledger, an eight-track sequencer after Shoal and Hermod+
 
 Every track is either a seeded generator or a written pattern, sixteen slots each. The
@@ -44,7 +57,8 @@ the kick on 1 and 3 and the snare on 2 and 4) then sounded like a polka. Now:
 * new **SHAPE**, **EVOLVE** and per-voice **LENGTH** (3 to 16, polymeter). The new parameters are
   appended after the old ones; a saved patch loads, but sounds different.
 * defaults: HUMAN 0, SWING 50%, EVOLVE 50%.
-* the panel's section caption was dropped to make room for the LENGTH row (31 HP, unchanged).
+* **SEED 0 turns the pattern engine off** (a plain drum module: gates only; the clock keeps running); SEED 1 to 15 are the patterns, 1 being the preset kit and the default. A patched TRIG now *adds* to the pattern (gate louder) and RUN off mutes patched gate inputs.
+* the panel's section caption was dropped to make room for the LENGTH row (31 HP when it landed; 30 after the margins tightened).
 
 ### Changed: Depreciation, redesigned around what it was like to use
 

@@ -10,7 +10,7 @@ CXX ?= c++
 CXXFLAGS := -std=c++11 -O2 -Wall -Wextra -g
 SAN := -fsanitize=address,undefined -fno-omit-frame-pointer
 
-CORE := ../../src/Drum.hpp ../../src/Kickback/Voices.hpp \
+CORE := ../../src/Drum.hpp ../../src/Kickback/Voices.hpp ../../src/Kickback/Bridge808.hpp \
         ../../src/Kickback/Payroll.hpp ../../src/DspCache.hpp \
         ../../src/Kickback/AvalancheNoise.hpp ../../src/Mna.hpp
 
@@ -27,6 +27,11 @@ test_avalanche: test_avalanche.cpp ../../src/Kickback/AvalancheNoise.hpp ../../s
 	$(CXX) $(CXXFLAGS) $(SAN) -o $@ test_avalanche.cpp
 
 clean:
-	rm -rf test_voices test_avalanche *.dSYM
+	rm -rf test_voices test_avalanche render_kick *.dSYM
 
 .PHONY: all test clean
+
+# Audition/measurement tool (not a test): renders each kick model to WAV and prints its
+# pitch track. No sanitizers, so it is quick. `make render_kick && ./render_kick out`.
+render_kick: render_kick.cpp $(CORE) ../Retroactive/wav.hpp
+	$(CXX) -std=c++11 -O2 -Wall -Wextra -o $@ render_kick.cpp

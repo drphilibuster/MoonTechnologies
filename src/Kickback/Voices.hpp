@@ -28,7 +28,7 @@
 // Drum.hpp carries the full citations. docs/Kickback.md has the per-voice notes
 // on what was kept and what was approximated.
 //
-//   BaSnaHi.pdf                 kristian.borgstedt       -> KICK, HAT
+//   BaSnaHi.pdf                 kristian.borgstedt       -> HAT
 //   SmurfDrum_BassDrumish.jpg   Tiny Dazzler Electronics -> KICK's SMURF model
 //   TomTomTom.pdf               Kristian Blasol          -> TOM I/II/III
 //   XORbell.pdf                 Kristian Blasol / Elliot Williams -> SNARE's XOR mode
@@ -36,6 +36,7 @@
 //   Tiny Dazzler Schematic.png  Tiny Dazzler Electronics -> SNARE's DAZZLE mode, HAT's top end
 
 #include "../Drum.hpp"
+#include "Bridge808.hpp"
 #include "AvalancheNoise.hpp"
 
 namespace kickback {
@@ -60,27 +61,46 @@ inline float transpose(float hz, float volts) {
 
 
 // ---------------------------------------------------------------------------
-// KICK -- two models, one set of controls.
+// KICK -- three models, one set of controls.
 //
-// BRIDGE is BaSnaHi's bassdrum stage (Q1, R1-R8, C1-C5): a diode-coupled trig
-// charges the base network and shocks the transistor's RC feedback pair into
-// ringing. SMURF is the "Smurf Drum" half of SmurfDrum_BassDrumish.jpg: a
+// BRIDGE is the Roland TR-808 bass drum, after Werner, Abel & Smith (DAFx-14): a
+// bridged-T band-pass in an op-amp's feedback, rung by a shaped 1 ms pulse, with its
+// centre frequency thrown up by more than an octave for the first ~6 ms (see
+// Bridge808.hpp). It replaced BaSnaHi's one-transistor twin-T stage, which was struck
+// as a membrane and read as a tom. SMURF is the "Smurf Drum" half of SmurfDrum_BassDrumish.jpg: a
 // two-transistor astable (the 1M PITCH pot, 10k/22k cross-feedback, .01uF cap)
 // running off the trigger's own decaying envelope rather than a rail, so
 // loudness and pitch sag together -- the "zippy splat" its notes describe.
 //
-// They are the same controls because they answer the same question in two
-// ways: a ringing filter and a starved oscillator both make a bass drum, and
-// which one a patch wants is a switch, not two columns of panel.
+// SWEEP is the third answer, and the one the other two are not: a phase-locked
+// sine oscillator under a pitch envelope in two stages -- a few milliseconds of
+// spike that is the beater, then a dive that is the thump -- through a
+// waveshaper, in the way of Befaco's Kickall (a stable VCO, a pitch envelope, a
+// volume envelope and an aggressive shaper). It is the archetype of a modern
+// electronic kick, where BRIDGE and SMURF are two particular circuits.
+//
+// They are the same controls because they answer the same question in three
+// ways: a ringing filter, a starved oscillator and a swept one all make a bass
+// drum, and which one a patch wants is a switch, not three columns of panel.
 // ---------------------------------------------------------------------------
 struct Kick {
-	// BRIDGE
-	ModalBank body;
-	Tension tension;
+	// BRIDGE: the TR-808 bass drum circuit (Bridge808.hpp)
+	bd808::Bridge808 b808;
+	double bdGate = 1.0, bdGateR = 1.0;   // extra decay, only if DECAY asks for less than the circuit can ring
 	// SMURF
 	SquareOsc osc;
 	OnePole lp, lp2;
 	Decay smurfEnv;
+	// SWEEP. The pitch is f0 + A1*e1 + A2*e2, two exponentials in hertz (an RC
+	// discharge is exponential in volts, and a VCO's pitch is linear in them), so
+	// the spike and the dive are separate decays rather than one curve.
+	float swPhase = 0.f;
+	float swE1 = 0.f, swE2 = 0.f;       // the two pitch decays, 1 -> 0
+	float swA1 = 0.f, swA2 = 0.f;       // their sizes in hertz, fixed at the strike
+	float swR1 = 1.f, swR2 = 1.f;       // their per-sample decay
+	float swRamp = 1.f, swRampInc = 0.f;
+	float swAmp = 0.f;
+	Decay swEnv;
 	// shared
 	StrikePulse strike;
 	Attack attack;
@@ -92,15 +112,15 @@ struct Kick {
 	Kick() : attack(0x1CE7A11u) {}
 
 	void setRate(float fs_) {
-		fs = fs_; dc.setRate(fs_); body.setRate(fs_); attack.setRate(fs_);
+		fs = fs_; dc.setRate(fs_); b808.setRate(fs_); attack.setRate(fs_);
 	}
 	void reset() {
-		body.reset(); tension.reset(); osc.reset(); lp.reset(); lp2.reset();
+		b808.reset(); bdGate = 1.0; osc.reset(); lp.reset(); lp2.reset();
 		smurfEnv.reset(); strike.reset(); attack.reset(); dc.reset();
 		freqC.clear(); t60C.clear();
 	}
 
-	/** `mode` 0 = BRIDGE, 1 = SMURF. `colour` is DRIVE for both. */
+	/** `mode` 0 = BRIDGE, 1 = SMURF, 2 = SWEEP. `colour` is DRIVE for all three. */
 	inline float process(bool hit, float vel, int mode, float tune, float volts,
 	                     float decay, float bend, float colour) {
 		float f0 = transpose(freqC.get(tune, [](float k) { return expMap(k, 32.f, 190.f); }), volts);
@@ -109,21 +129,55 @@ struct Kick {
 		if (hit) {
 			// A kick beater is soft; DRIVE hardens it, which is what the
 			// original's overdriven transistor does to the leading edge.
-			strike.trigger(vel, 0.18f + 0.42f * colour, fs);
+			// SWEEP's spike is already a click, so its beater is the hard one.
+			strike.trigger(vel, (mode == 2 ? 0.45f : 0.18f) + 0.42f * colour, fs);
 			attack.strike(vel * (0.5f + 0.4f * colour));
 			smurfEnv.strike(vel);
+			if (mode == 0) {
+				// Accent is the trigger voltage: 4-14 V on the machine, and here the module's
+				// velocity, 0..2, spread over 0..14. BEND is how long the envelope generator
+				// holds Q43 on -- the paper's "pitch envelope timing" mod -- 6 ms stock.
+				double trigV = 14.0 * std::fmin((double)vel * 0.5, 1.0);
+				b808.trigger(trigV, 0.0015 + 0.008 * (double)bend);
+				bdGate = 1.0;
+			}
+			if (mode == 2) {
+				// The oscillator restarts at the top of the cycle, every time: a
+				// kick that begins on a different phase each hit is a different
+				// kick each hit, and the first millisecond is most of its punch.
+				float v = std::fmin(vel, 1.5f);
+				swPhase = 0.25f;
+				swE1 = swE2 = 1.f;
+				swA1 = f0 * (2.5f + 3.5f * v);              // the beater: ~6x at full velocity
+				swA2 = f0 * (0.8f + 2.2f * bend);           // the thump
+				swR1 = std::exp(-1.f / (0.003f * fs));
+				swR2 = std::exp(-1.f / ((0.025f + 0.055f * bend) * fs));
+				swRamp = 0.f;
+				swRampInc = 1.f / (0.0012f * fs);           // a defined edge, not a step
+				swEnv.strike(1.f);
+				swAmp = vel;
+			}
 		}
 		float x = strike.next();
 
 		float y;
 		if (mode == 0) {
-			// A bass drum is struck dead centre; the rim modes belong to toms.
-			body.setPosition(0.10f + 0.16f * colour);
-			float b = tension.process(body.fundamental(), bend, fs);
-			body.setTuning(f0, t60, 0.62f, b);
-			y = body.process(x) * 0.9f;
+			// Capacitors scaled so the resting centre frequency is f0, and VR6 set for
+			// the ring DECAY asks for. The ring is proportional to the capacitors, and
+			// the circuit cannot ring for less than ~0.18 s at stock tuning, so a
+			// DECAY shorter than that is finished by a gate rather than refused.
+			double lam = bd808::kStockHz / (double)f0;
+			double tNeed = (double)t60 / lam;
+			double k = bd808::kForT60(tNeed);
+			if (hit) {
+				double tCirc = bd808::kFloorT60 * lam;
+				bdGateR = (double)t60 < tCirc && tNeed < bd808::kFloorT60
+					? std::exp(-6.9077553 * (1.0 / (double)t60 - 1.0 / tCirc) / fs) : 1.0;
+			}
+			bdGate *= bdGateR;
+			y = (float)(b808.process(lam, k) * bdGate) * 0.30f;
 		}
-		else {
+		else if (mode == 1) {
 			float env = smurfEnv.process(t60, fs);
 			// The astable's supply *is* the envelope, so the pitch sags with
 			// it -- BEND is how much of that sag is let through, which is the
@@ -141,17 +195,34 @@ struct Kick {
 			// The strike pulse still lands, so SMURF has an edge too.
 			y += x * 0.5f;
 		}
+		else {
+			float f = f0 + swA1 * swE1 + swA2 * swE2;
+			swE1 *= swR1; swE2 *= swR2;
+			swPhase += std::fmin(f, fs * 0.2f) / fs;
+			if (swPhase >= 1.f) swPhase -= 1.f;
+			float env = swEnv.process(t60, fs);
+			swRamp = std::fmin(1.f, swRamp + swRampInc);
+			float ramp = swRamp * swRamp * (3.f - 2.f * swRamp);
+			// The shaper sits before the volume envelope, so the tail keeps its
+			// harmonics as the level falls; its drive eases off with the note, and
+			// rises with velocity, so a hard hit is a different timbre and not only
+			// a louder one.
+			float drive = (0.8f + colour * 5.f) * (0.55f + 0.45f * std::fmin(vel, 1.2f))
+			            * (0.6f + 0.4f * env);
+			y = transistorClip(std::sin(kTwoPi * swPhase) * drive) * ramp * env * swAmp;
+		}
 
-		y = transistorClip(y * (0.7f + colour * 2.6f)) * (0.9f + colour * 0.7f);
+		if (mode != 2)
+			y = transistorClip(y * (0.7f + colour * 2.6f)) * (0.9f + colour * 0.7f);
 		// The beater, heard directly. A kick's click is the one everybody
 		// reaches for the moment it is missing -- it is what says the head was
 		// hit rather than that an oscillator was switched on.
-		y += strike.click() * (1.4f + 2.0f * colour);
-		y += attack.process(0.15f + 0.5f * colour, 1.8f + 1.8f * colour);
+		if (mode != 0) y += strike.click() * (1.4f + 2.0f * colour) * (mode == 2 ? 0.5f : 1.f);
+		if (mode != 0) y += attack.process(0.15f + 0.5f * colour, 1.8f + 1.8f * colour) * (mode == 2 ? 0.6f : 1.f);
 		// Trimmed per model: a starved astable runs a good deal hotter than a
-		// ringing filter, and one number for both would make the switch a
+		// ringing filter, and one number for all would make the switch a
 		// volume control.
-		return dc.process(y * (mode ? 0.310f : 0.484f)) * 5.f;
+		return dc.process(y * (mode == 2 ? 0.850f : mode ? 0.310f : 0.484f)) * 5.f;
 	}
 };
 

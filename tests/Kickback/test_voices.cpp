@@ -110,15 +110,16 @@ struct Bank {
 			case 5: return hat.process(hit, vel, a, volts, b, c, d);
 			case 6: return tomLo.process(hit, vel, a, volts, b, c, d);
 			case 7: return tomMid.process(hit, vel, a, volts, b, c, d);
-			default: return tomHi.process(hit, vel, a, volts, b, c, d);
+			case 8: return tomHi.process(hit, vel, a, volts, b, c, d);
+			default: return kick.process(hit, vel, 2, a, volts, b, c, d);
 		}
 	}
 };
 
-static const int kVoices = 9;
+static const int kVoices = 10;
 static const char* kName[kVoices] = {
 	"KICK bridge", "KICK smurf", "SNARE xor", "SNARE vactrol", "SNARE dazzle",
-	"HAT", "TOM I", "TOM II", "TOM III"
+	"HAT", "TOM I", "TOM II", "TOM III", "KICK sweep"
 };
 
 /** One strike, rendered. Strikes on sample 0 and runs `n` samples. */
@@ -861,25 +862,73 @@ static void patternTests() {
 		}
 	}
 
-	// A voice with its TRIG patched is the patch's, not the engine's.
+	// A voice with its TRIG patched is the engine's *and* the patch's: the two add,
+	// the gate is the louder, and a stopped transport mutes the gate input too.
+	{
+		bool hit; float vel;
+		// unpatched: the engine alone, accent on top
+		strike(true, false, true, 1.f, true, 0.5f, 1.5f, hit, vel);
+		checks++;
+		if (!hit || std::fabs(vel - 0.75f) > 1e-5f) fail("strike", "an unpatched voice was not the engine's alone");
+		strike(true, false, true, 1.f, false, 0.5f, 1.f, hit, vel);
+		checks++;
+		if (hit) fail("strike", "an unpatched voice played its (unread) gate");
+		// patched, running: a gate alone, an engine hit alone, both at once
+		strike(true, true, true, 1.2f, false, 0.9f, 1.f, hit, vel);
+		checks++;
+		if (!hit || vel != 1.2f) fail("strike", "a gate alone did not play at its own level");
+		strike(true, true, false, 1.2f, true, 0.9f, 1.f, hit, vel);
+		checks++;
+		if (!hit || std::fabs(vel - 0.9f * kEngineUnderGate) > 1e-5f)
+			fail("strike", "the engine's pattern was overridden by a patched gate");
+		strike(true, true, true, 1.f, true, 1.f, 1.f, hit, vel);
+		checks++;
+		if (!hit || vel != 1.f) fail("strike", "on a coincident hit the gate was not the louder");
+		// the gate is always at least the engine, so the engine is the lower
+		checks++;
+		if (kEngineUnderGate >= 1.f) fail("strike", "the engine is not quieter than the gate");
+		// stopped: a patched voice is silent, gate or engine
+		strike(false, true, true, 1.f, true, 1.f, 1.f, hit, vel);
+		checks++;
+		if (hit) fail("strike", "RUN off did not mute a patched gate input");
+	}
+
+	// SEED detent 0 is the engine OFF; the others are the patterns, shifted down by one.
+	{
+		checks++;
+		if (engineOn(0)) fail("engine off", "SEED 0 left the pattern engine on");
+		bool allOn = true, shifted = engineSeed(1) == 0 && engineSeed(2) == 1 && engineSeed(15) == 14;
+		for (int k = 1; k <= 15; k++) allOn &= engineOn(k);
+		checks++;
+		if (!allOn) fail("engine off", "a non-zero SEED turned the engine off");
+		checks++;
+		if (!shifted) fail("engine off", "SEED knob 1 is not the engine's seed 0");
+		bool hit; float vel;
+		// off: an unpatched voice is silent, a patched one is just its gate
+		strike(true, false, false, 1.f, false, 0.8f, 1.f, hit, vel);
+		checks++;
+		if (hit) fail("engine off", "an unpatched voice played with the engine off");
+		strike(true, true, true, 1.f, false, 0.8f, 1.f, hit, vel);
+		checks++;
+		if (!hit || vel != 1.f) fail("engine off", "a patched gate did not play at full level with the engine off");
+	}
+
+	// Through the engine itself: with nothing marked as patched, every voice plays.
 	{
 		Payroll q;
 		q.reset();
 		q.running = true;
 		q.build(1.f, 0, 0.f);
-		bool gate[V_COUNT] = {};
-		gate[V_KICK] = true;
+		bool none[V_COUNT] = {};
 		const float fs = 48000.f;
 		int kicks = 0, snares = 0;
 		for (int i = 0; i < (int)(fs * 4.f); i++) {
-			q.process(1.f / fs, false, false, false, 160.f, 3, 0.f, gate);
+			q.process(1.f / fs, false, false, false, 160.f, 3, 0.f, none);
 			if (q.fired[V_KICK]) kicks++;
 			if (q.fired[V_SNARE]) snares++;
 		}
 		checks++;
-		if (kicks != 0) fail("normalling", "the engine played a voice whose TRIG is patched");
-		checks++;
-		if (snares == 0) fail("normalling", "the engine played nothing at all");
+		if (kicks == 0 || snares == 0) fail("engine", "the engine did not play every voice");
 	}
 }
 
@@ -1206,6 +1255,192 @@ static void rankedTests() {
 }
 
 
+// ---------------------------------------------------------------------------
+// 9: SWEEP's two defining properties
+//
+// A swept-oscillator kick is a pitch envelope in two stages, and it is the same
+// kick every time. So: (a) the first few milliseconds sit well above the tuned
+// pitch and the tail settles onto it, and (b) a second strike, arriving while the
+// first is still ringing, begins on the same phase -- the opening of the two hits
+// agree, because the oscillator restarts rather than carrying on from wherever
+// it happened to be.
+// ---------------------------------------------------------------------------
+static void sweepKick() {
+	const float fs = 48000.f;
+	const float tune = 0.40f, decay = 0.5f, bend = 0.6f;
+	const float f0 = expMap(tune, 32.f, 190.f);
+	float colour = 0.25f + 0.5f * bend;
+
+	// Mean frequency over a window, from upward zero crossings of a lowpassed copy.
+	auto meanHz = [&](const std::vector<float>& y, float t0ms, float t1ms) {
+		OnePole p1, p2;
+		float G = poleG(900.f, fs);
+		int a = (int)(t0ms * 0.001f * fs), b = (int)(t1ms * 0.001f * fs);
+		int up = 0; float prev = 0.f; float first = -1.f, last = -1.f;
+		for (int i = 0; i < b; i++) {
+			float l = p2.lp(p1.lp(y[i], G), G);
+			if (i >= a && prev < 0.f && l >= 0.f) {
+				float pos = (i - 1) + (-prev) / (l - prev);
+				if (first < 0.f) first = pos;
+				last = pos; up++;
+			}
+			prev = l;
+		}
+		return up >= 2 ? (float)(up - 1) * fs / (last - first) : 0.f;
+	};
+
+	std::vector<float> y((size_t)(0.5f * fs));
+	Kick k; k.setRate(fs); k.reset();
+	for (size_t i = 0; i < y.size(); i++) y[i] = k.process(i == 0, 1.f, 2, tune, 0.f, decay, bend, colour);
+	float early = meanHz(y, 0.f, 9.f), late = meanHz(y, 150.f, 250.f);
+	char d[200];
+	if (early < 4.f * f0) {
+		snprintf(d, sizeof d, "first 9 ms averaged %.0f Hz against a tuned %.0f Hz -- no spike", early, f0);
+		fail("sweep spike", d);
+	}
+	if (late < 0.85f * f0 || late > 1.25f * f0) {
+		snprintf(d, sizeof d, "the tail sat at %.0f Hz against a tuned %.0f Hz", late, f0);
+		fail("sweep settle", d);
+	}
+	checks += 2;
+
+	// Phase lock: strike, let it ring 137 ms (an arbitrary, non-multiple delay),
+	// strike again, and compare the opening 3 ms of the two hits. The attack
+	// layer's noise differs from hit to hit by design, so compare with the noise
+	// out of the picture by correlating the lowpassed signals.
+	std::vector<float> z((size_t)(0.5f * fs));
+	size_t again = (size_t)(0.137f * fs);
+	Kick k2; k2.setRate(fs); k2.reset();
+	for (size_t i = 0; i < z.size(); i++)
+		z[i] = k2.process(i == 0 || i == again, 1.f, 2, tune, 0.f, decay, bend, colour);
+	OnePole a1, a2, b1, b2; float G = poleG(500.f, fs);
+	double sab = 0, saa = 0, sbb = 0;
+	int n3 = (int)(0.003f * fs);
+	std::vector<float> la(n3), lb(n3);
+	for (int i = 0; i < n3; i++) {
+		la[i] = a2.lp(a1.lp(y[i], G), G);
+		lb[i] = b2.lp(b1.lp(z[again + i], G), G);
+	}
+	for (int i = 0; i < n3; i++) { sab += la[i] * lb[i]; saa += la[i] * la[i]; sbb += lb[i] * lb[i]; }
+	double corr = sab / (std::sqrt(saa * sbb) + 1e-30);
+	if (corr < 0.95) {
+		snprintf(d, sizeof d, "the opening of a retrigger correlated %.3f with the opening of the first hit", corr);
+		fail("sweep phase lock", d);
+	}
+	checks++;
+}
+
+
+// ---------------------------------------------------------------------------
+// 10: BRIDGE is the 808, and the 808 has three properties a ringing filter does not
+//
+// (a) For the first ~6 ms the envelope generator holds Q43 on and the bridged-T's centre
+//     frequency is thrown up by more than an octave, so the first completed half-cycle is
+//     much shorter than half a period of the tuned pitch.
+// (b) The ring settles on the tuned pitch: the capacitors are scaled with TUNE and
+//     nothing else moves it.
+// (c) Nothing is zeroed on a strike. A hit that arrives while the last still rings is not
+//     the same waveform as a hit on silence -- the paper's "no machine-gun effect".
+// (d) DECAY lands near the t60 it names, by inverting the measured VR6 table.
+// ---------------------------------------------------------------------------
+static void bridgeKick() {
+	const float fs = 48000.f;
+	char d[240];
+
+	const float tunes[] = { 0.1f, 0.4f, 0.9f };
+	for (int ti = 0; ti < 3; ti++) {
+		float tune = tunes[ti], f0 = expMap(tune, 32.f, 190.f), bend = 0.6f;
+		std::vector<float> y((size_t)(0.3f * fs));
+		Kick k; k.setRate(fs); k.reset();
+		for (size_t i = 0; i < y.size(); i++)
+			y[i] = k.process(i == 0, 1.f, 0, tune, 0.f, 0.5f, bend, 0.25f + 0.5f * bend);
+
+		// Sign changes more than 0.3 ms apart (the edge's own ringing is not a half-cycle).
+		float cross[4]; int nc = 0; float lastT = -1.f;
+		for (size_t i = 1; i < y.size() && nc < 2; i++)
+			if ((y[i - 1] < 0.f) != (y[i] < 0.f)) {
+				float t = ((float)(i - 1) + y[i - 1] / (y[i - 1] - y[i])) / fs;
+				if (t - lastT > 0.0003f) { cross[nc++] = t; lastT = t; }
+			}
+		checks++;
+		if (nc < 2) { fail("808 attack", "fewer than two zero crossings in 300 ms"); continue; }
+		float half = cross[1] - cross[0];                  // the first completed half-cycle
+		float hz = 0.5f / half;
+		if (hz < 1.5f * f0) {
+			snprintf(d, sizeof d, "tune %.1f Hz: the first half-cycle ran at %.0f Hz (%.2fx) -- no Fc jump",
+			         f0, hz, hz / f0);
+			fail("808 attack", d);
+		}
+
+		// Mean upward-crossing frequency over 150-250 ms.
+		OnePole p1, p2; float G = poleG(900.f, fs);
+		int a = (int)(0.15f * fs), b = (int)(0.25f * fs), up = 0; float prev = 0.f, first = -1.f, last = -1.f;
+		std::vector<float> yy((size_t)(0.26f * fs));
+		Kick k2; k2.setRate(fs); k2.reset();
+		for (size_t i = 0; i < yy.size(); i++)
+			yy[i] = k2.process(i == 0, 1.f, 0, tune, 0.f, 0.5f, bend, 0.25f + 0.5f * bend);
+		for (int i = 0; i < b; i++) {
+			float l = p2.lp(p1.lp(yy[i], G), G);
+			if (i >= a && prev < 0.f && l >= 0.f) {
+				float pos = (float)(i - 1) + (-prev) / (l - prev);
+				if (first < 0.f) first = pos;
+				last = pos; up++;
+			}
+			prev = l;
+		}
+		float late = up >= 2 ? (float)(up - 1) * fs / (last - first) : 0.f;
+		checks++;
+		if (late < 0.9f * f0 || late > 1.1f * f0) {
+			snprintf(d, sizeof d, "tuned %.1f Hz but the ring settled at %.1f Hz", f0, late);
+			fail("808 pitch", d);
+		}
+	}
+
+	// (c) a retrigger over a ringing tail against a hit on silence
+	{
+		const float tune = 0.4f, bend = 0.6f;
+		int n = (int)(0.5f * fs), again = (int)(0.137f * fs);
+		std::vector<float> a(n), b(n);
+		Kick k; k.setRate(fs); k.reset();
+		for (int i = 0; i < n; i++) a[i] = k.process(i == 0, 1.f, 0, tune, 0.f, 0.5f, bend, 0.55f);
+		Kick k2; k2.setRate(fs); k2.reset();
+		for (int i = 0; i < n; i++) b[i] = k2.process(i == 0 || i == again, 1.f, 0, tune, 0.f, 0.5f, bend, 0.55f);
+		double dd = 0, e = 0; int m = (int)(0.05f * fs);
+		for (int i = 0; i < m; i++) { double x = a[i], y2 = b[again + i]; dd += (x - y2) * (x - y2); e += x * x; }
+		double rel = std::sqrt(dd / (e + 1e-30));
+		checks++;
+		if (rel < 0.005) {
+			snprintf(d, sizeof d, "a retrigger over a tail matched a fresh hit to %.4f rms -- the state was reset", rel);
+			fail("808 retrigger", d);
+		}
+	}
+
+	// (d) DECAY. Time for the 20 ms peak envelope to fall 40 dB from its fourth window, x1.5.
+	{
+		const float decays[] = { 0.5f, 0.8f };
+		for (int di = 0; di < 2; di++) {
+			float dec = decays[di], want = expMap(dec, 0.05f, 1.8f);
+			Kick k; k.setRate(fs); k.reset();
+			int n = (int)(6.f * fs), w = (int)(0.02f * fs);
+			std::vector<float> pk;
+			float cur = 0.f; int c = 0;
+			for (int i = 0; i < n; i++) {
+				cur = std::fmax(cur, std::fabs(k.process(i == 0, 1.f, 0, 0.4f, 0.f, dec, 0.6f, 0.55f)));
+				if (++c == w) { pk.push_back(cur); cur = 0.f; c = 0; }
+			}
+			size_t i0 = 3, i1 = i0;
+			while (i1 < pk.size() && pk[i1] > pk[i0] * 0.01f) i1++;
+			float t60 = (float)(i1 - i0) * 0.02f * 1.5f;
+			checks++;
+			if (t60 < 0.7f * want || t60 > 1.3f * want) {
+				snprintf(d, sizeof d, "DECAY %.1f asked for t60 %.2f s and rang for %.2f s", dec, want, t60);
+				fail("808 decay", d);
+			}
+		}
+	}
+}
+
+
 int main() {
 	printf("Kickback voices\n");
 
@@ -1218,6 +1453,8 @@ int main() {
 	printf("  strikes end...\n");        decays();
 	printf("  patterns...\n");           patternTests();
 	printf("  ranked patterns...\n");    rankedTests();
+	printf("  sweep kick...\n");         sweepKick();
+	printf("  808 kick...\n");           bridgeKick();
 
 	printf("%d checks, %d failures\n", checks, failures);
 	return failures ? 1 : 0;

@@ -96,7 +96,7 @@ struct Kickback : Module {
 		configSwitch(BURST_PARAM, 0.f, 1.f, 0.f, "Ratios drive the steps",
 			{"Off -- one hit per step", "Burst -- each step runs at its voice's ratio"});
 		configParam(SWING_PARAM, 0.f, 1.f, 0.5f, "Swing", "%", 0.f, 100.f);
-		configParam(SEED_PARAM, 0.f, 15.f, 0.f, "Pattern seed");
+		configParam(SEED_PARAM, 0.f, 15.f, 1.f, "Pattern seed (0 = pattern engine OFF)");
 		paramQuantities[SEED_PARAM]->snapEnabled = true;
 		// SHAPE: how far the Euclidean necklaces pull on the ranking. At zero the
 		// kit is the metric ladder alone -- kick on the beat, backbeat snare, hat
@@ -162,8 +162,8 @@ struct Kickback : Module {
 		// The two voices whose fourth control selects a model rather than
 		// shaping one get configured as switches, so the tooltip names the
 		// model and the knob snaps to its detents.
-		configSwitch(COLOUR_PARAM + V_KICK, 0.f, 1.f, 0.f, "Kick model",
-			{"Bridge (BaSnaHi)", "Smurf (astable)"});
+		configSwitch(COLOUR_PARAM + V_KICK, 0.f, 2.f, 0.f, "Kick model",
+			{"Bridge (TR-808 bridged-T)", "Smurf (astable)", "Sweep (swept oscillator)"});
 		configSwitch(COLOUR_PARAM + V_SNARE, 0.f, 2.f, 0.f, "Snare mode",
 			{"XOR (XORbell)", "Vactrol (noise voice)", "Dazzle (Karplus-Strong)"});
 		for (int v = 0; v < V_COUNT; v++) {
@@ -242,7 +242,9 @@ struct Kickback : Module {
 		int lens[V_COUNT];
 		for (int v = 0; v < V_COUNT; v++)
 			lens[v] = (int)clamp(std::round(params[LEN_PARAM + v].getValue()), 3.f, (float)kSteps);
-		payroll.build(fill, (int)std::round(params[SEED_PARAM].getValue()),
+		const int seedKnob = (int)std::round(params[SEED_PARAM].getValue());
+		const bool engine = engineOn(seedKnob);
+		payroll.build(fill, engineSeed(seedKnob),
 		              params[HUMAN_PARAM].getValue(), params[SHAPE_PARAM].getValue(),
 		              params[EVOLVE_PARAM].getValue(), lens);
 
@@ -255,14 +257,19 @@ struct Kickback : Module {
 		bool extEdge = clkTrig.process(inputs[CLK_INPUT].getVoltage(), 0.1f, 1.f);
 		bool rstEdge = rstTrig.process(inputs[RST_INPUT].getVoltage(), 0.1f, 1.f);
 
-		// The normalling rule: a voice with something in its TRIG is played by
-		// that and nothing else; a voice with an empty TRIG is played by the
-		// engine. Nothing has to be switched to move between the two.
+		// A voice with something in its TRIG is played by that *and* by the engine:
+		// the two add (see strike() in Payroll.hpp), the gate louder than the
+		// pattern. A voice with an empty TRIG is the engine's alone. So the engine
+		// is asked to play every voice, and strike() decides what is heard.
 		bool patched[V_COUNT];
 		for (int v = 0; v < V_COUNT; v++) patched[v] = inputs[TRIG_INPUT + v].isConnected();
+		static const bool engineAll[V_COUNT] = {};
 
 		payroll.process(args.sampleTime, extConnected, extEdge, rstEdge,
-		                bpm, div, params[SWING_PARAM].getValue(), patched);
+		                bpm, div, params[SWING_PARAM].getValue(), engineAll);
+		// The transport: RUN for the internal clock, a live edge stream for an
+		// external one. Stopped, a patched voice's gate input is muted as well.
+		bool transportOn = extConnected ? payroll.extClockLive() : payroll.running;
 
 		// --- who is struck this sample ---------------------------------------
 		// ACCENT: the knob is how much the CV can raise a strike above unity,
@@ -274,15 +281,12 @@ struct Kickback : Module {
 		bool hit[V_COUNT];
 		float vel[V_COUNT];
 		for (int v = 0; v < V_COUNT; v++) {
-			if (patched[v]) {
-				hit[v] = trig[v].process(inputs[TRIG_INPUT + v].getVoltage(), 0.1f, 1.f);
-				vel[v] = accent;
-			}
-			else {
-				hit[v] = payroll.fired[v];
-				// The engine's own per-step velocity, then the accent CV on top.
-				vel[v] = clamp(payroll.vel[v] * accent, 0.f, 2.f);
-			}
+			// Always run the Schmitt trigger, so a gate that goes high while the
+			// transport is stopped does not read as a fresh edge when it starts.
+			bool gateHit = patched[v]
+			               && trig[v].process(inputs[TRIG_INPUT + v].getVoltage(), 0.1f, 1.f);
+			strike(transportOn, patched[v], gateHit, accent, engine && payroll.fired[v],
+			       payroll.vel[v], accent, hit[v], vel[v]);
 			if (hit[v]) litSince[v] = true;
 		}
 
@@ -294,7 +298,7 @@ struct Kickback : Module {
 		#define VOCT(v) (0.f)
 
 		out[V_KICK] = kick.process(hit[V_KICK], vel[V_KICK],
-			KNOB(COLOUR, V_KICK) > 0.5f ? 1 : 0,
+			(int)clamp(std::round(KNOB(COLOUR, V_KICK)), 0.f, 2.f),
 			KNOB(TUNE, V_KICK), VOCT(V_KICK), KNOB(DECAY, V_KICK), KNOB(BEND, V_KICK),
 			// The model switch has taken the colour knob, so DRIVE follows BEND:
 			// a kick wound up for a long dive wants the stage pushed harder.
@@ -452,11 +456,7 @@ struct KickbackWidget : ModuleWidget {
 			// and you cannot flick it -- and a control whose whole job is to
 			// say which of two or three circuits is running should look like
 			// the switch it is.
-			if (v == V_KICK) {
-				addParam(createParamCentered<CKSS>(
-					panel::mm(colourPos[v]->x, colourPos[v]->y), module, Kickback::COLOUR_PARAM + v));
-			}
-			else if (v == V_SNARE) {
+			if (v == V_KICK || v == V_SNARE) {
 				addParam(createParamCentered<CKSSThree>(
 					panel::mm(colourPos[v]->x, colourPos[v]->y), module, Kickback::COLOUR_PARAM + v));
 			}

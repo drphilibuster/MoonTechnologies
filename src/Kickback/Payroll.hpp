@@ -237,6 +237,45 @@ static const float kClockRatio[kRatioCount] = {
 static const int kDivCount = 6;
 static const float kDivPerBeat[kDivCount] = { 1.f, 2.f, 3.f, 4.f, 6.f, 8.f };
 
+/** The SEED knob has sixteen detents. Detent 0 turns the pattern engine OFF, so
+    Kickback is a plain drum module -- voices struck by their TRIGs and nothing
+    else. Detents 1 to 15 are the fifteen patterns: knob 1 is what the engine's own
+    seed 0 is (the preset groupings), knob 2 its seed 1, and so on. The clock, CLK
+    OUT and RST keep running with the engine off. */
+inline bool engineOn(int seedKnob) { return seedKnob > 0; }
+inline int engineSeed(int seedKnob) { return seedKnob > 0 ? seedKnob - 1 : 0; }
+
+//: How loud the engine plays a voice that also has a gate patched into its TRIG,
+//: against that gate's own hits.
+static const float kEngineUnderGate = 0.6f;
+
+/** What a voice does this sample, given its engine hit and its TRIG input.
+
+    An unpatched voice is the engine's, at the engine's velocity with the accent on
+    top. A patched voice is both: the engine's pattern keeps playing, and each gate
+    adds a hit of its own -- the two are summed in time rather than one replacing
+    the other. The gate is the louder: its hit plays at its own level (the accent),
+    the engine's at kEngineUnderGate of its step velocity, and where both land on
+    the same sample the louder of the two is the one heard. And a stopped
+    transport silences a patched voice too: RUN off mutes the gate inputs as well
+    as the pattern. */
+inline void strike(bool transportOn, bool patched, bool gateHit, float gateVel,
+                   bool engHit, float engVel, float accent, bool& hit, float& vel) {
+	hit = false; vel = 0.f;
+	if (!patched) {
+		hit = engHit;
+		vel = clampf(engVel * accent, 0.f, 2.f);
+		return;
+	}
+	if (!transportOn) return;
+	if (gateHit) { hit = true; vel = gateVel; }
+	if (engHit) {
+		float e = engVel * kEngineUnderGate;
+		if (!hit || e > vel) vel = e;
+		hit = true;
+	}
+}
+
 /** The engine. One instance per module; `process` is called once a sample and
     reports, through `fired`/`vel`, which voices the engine wants struck now. */
 struct Payroll {

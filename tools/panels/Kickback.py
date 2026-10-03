@@ -110,7 +110,7 @@ P.sections = [
         # BEND does double duty; see docs/Kickback.md.
         Row([Jack("clk_in", "CLK", col=CLK),
              Jack("rst_in", "RST", col=PAT),
-             Switch("kick_model", "MODEL", col=KICK),
+             Switch3("kick_model", "MODEL", col=KICK),
              Switch3("snare_mode", "MODE", col=SNARE),
              Trim("hat_rattle", "RATTLE", col=HAT),
              Trim("tom1_strike", "STRIKE", col=TOM1),
