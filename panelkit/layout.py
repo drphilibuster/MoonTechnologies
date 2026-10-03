@@ -111,6 +111,8 @@ GROUP_RATIO = 0.72
 #: family idiom and looks right; a knob beside a switch does not.
 CLASS = {
     "knob_large": "knob", "knob": "knob", "trim": "knob", "slider": "knob",
+    # A stepper stands in for a knob in a row of them, so it keeps their even spacing.
+    "stepper": "knob",
     "switch": "switch", "switch3": "switch",
     "jack": "jack",
     "button": "button", "bezel": "button",

@@ -42,7 +42,7 @@ def cell(r, c):
     return Trim("p%d%d" % (r, c), "", readout="cap%d%d" % (r, c))
 
 LEFT = [
-    [Knob("slot", "PRESET"), Switch("regmode", "FACTORY  USER")],
+    [Stepper("slot", "PRESET"), Switch("regmode", "FACTORY  USER")],
     [Button("load", "LOAD", primary=True), Button("store", "STORE")],
     [Button("bypass", "BYPASS", light="bypass_led"), Knob("input", "INPUT")],
     [Knob("trim", "VOLT TRIM"), Switch("in_pad", "IN +4 -20")],

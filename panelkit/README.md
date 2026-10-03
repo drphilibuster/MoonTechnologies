@@ -181,12 +181,20 @@ wells are all derived, so a block always hugs its contents, a knob is never near
 its own frame on one panel than on another, and a label is never nearer its
 control. The only number you should ever type is a row the bottom screws pin.
 
-Shorthands: `BigKnob Knob Trim Slider Button Bezel Jack Light Switch Switch3`,
+Shorthands: `BigKnob Knob Trim Slider Button Bezel Jack Light Switch Switch3 Stepper`,
 plus `Widget(...)` for anything else. `Switch` is the two-position `CKSS`,
 `Switch3` the three-position `CKSSThree` — which is half again as tall, so a
 row carrying one is taller than a row of knobs and the solver will tell you if
 that no longer fits. Each takes a name and a label; a second positional *number*
 pins an x, for the rare control an outside constraint fixes.
+
+`Stepper` is a pair of buttons stacked a hair apart -- UP over DOWN -- the control for a selector
+that is a count rather than an angle: a preset, a program, a slot. It is a standard knob's
+height (9.6 mm), so it stands where a knob did and costs the row nothing. In C++ it is
+`panel::StepPair`, a `ParamWidget` bound to the same param the knob was, so patches, CV maps and
+tooltips are unchanged: the top button adds one, the bottom subtracts one, clamped to the param's
+range (`wrap = true` to go round instead; ignored on an unbounded param), and holding repeats.
+Use it for every preset selector rather than a detented `Knob(steps=N)`.
 
 Useful keywords:
 

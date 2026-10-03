@@ -41,6 +41,7 @@ RADIUS = {
     "switch": 3.50,                 # CKSS         14 x 20.64 px -- half its height
     "switch3": 4.80,                # CKSSThree 13.457 x 28.35 px -- ditto
     "readout": 2.20,                # a little lit plate that names its control
+    "stepper": 4.80,                # two buttons stacked: a knob's height, so it replaces one
 }
 
 #: Half-extents in mm for the widgets that are not round. Everything else takes
@@ -56,6 +57,11 @@ EXTENT = {
     # labels is going to be using: the plate never widens the column it stands
     # in, and a name too long for it shortens rather than the panel growing.
     "readout": (4.30, 1.35),
+    # A preset selector is a count, not an angle: UP and DOWN, one above the other
+    # with a hair between, step it by one. Two buttons of 6.8 x 4.5 mm and a 0.6 mm
+    # gap come to 9.6 mm, a standard knob's height, so it stands where a knob did
+    # and costs a row nothing.
+    "stepper": (3.40, 4.80),
     "switch": (2.37, 3.50),
     "switch3": (2.28, 4.80),
     "slider": (2.37, 4.80),
@@ -75,7 +81,7 @@ LABEL_SIDE = {
     "slider": "below", "button": "below", "bezel": "below",
     "jack": "above", "light": "below", "light_small": "below",
     "switch": "below", "switch3": "below",
-    "readout": "below",
+    "readout": "below", "stepper": "below",
 }
 
 
@@ -172,7 +178,7 @@ class Widget:
         """Detents to engrave. A switch is already legibly a switch, so asking
         for them there is a no-op rather than an error: the spec may say what a
         control is without having to know how the kit draws it."""
-        if self.kind in ("switch", "switch3"):
+        if self.kind in ("switch", "switch3", "stepper"):
             return 0
         return int(self.steps or 0)
 

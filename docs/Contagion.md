@@ -120,7 +120,7 @@ Clicking a selector without turning it presses the section's **EDIT**: LFO, OSC 
 have one, and its lamp is next to the knob's name. The delay/reverb, arpeggiator, filter and
 program EDITs are buttons.
 
-**PRESET** steps through all 1024 sounds, a detent at a time, wrapping from bank H back to A. It
+**PRESET** is a pair of buttons, one over the other: the top one steps to the next sound, the bottom one to the previous, and holding either repeats. It steps through all 1024 sounds, wrapping from bank H back to A. It
 sends MIDI (bank select, then program change, on the MIDI channel set in the context menu), so it
 works from any screen and starts from whatever the display shows. Choosing a sound is also in
 the context menu: **Presets**, then the bank, then sixteen sounds at a time, each named as the
@@ -128,10 +128,9 @@ unit's display names it. Banks A and B are the unit's battery RAM, so a sound yo
 under its own name; C and D are the factory copies of A and B, and E to H are the OS image's other
 banks. The names are read from your own OS image and battery RAM when the menu opens.
 
-**Endless knobs** replace a minus/plus pair: **PART** (PART -/+; both together is the demo),
+**Step buttons** (up over down) replace a minus/plus pair: **PART** (PART -/+; both together is the demo),
 **PARAMETER** (PARAM </>: in play mode, bank), **VALUE** (VALUE -/+: in play mode, program) and
-**TRANSPOSE** (TRANS -/+, with the five octave lamps beside them). Sixteen detents is a turn and
-each one is a press, at about eleven a second.
+**TRANSPOSE** (TRANS -/+, with the five octave lamps beside them). Each click is one press of the unit's key; hold a button to repeat, at about eleven a second.
 
 **BPM** sets the sound's clock tempo, 63 to 190. The unit keeps it in a menu (EDIT, then CLOCK) and
 has no knob for it; the module sets it with a SysEx parameter change to the edit buffer, the form the

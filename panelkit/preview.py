@@ -34,6 +34,7 @@ FACE = {
     "light_small": (P.PAPER, 0.0, 0.0),
     "switch": ("#d8d4c6", 0.0, 0.0),
     "switch3": ("#d8d4c6", 0.0, 0.0),
+    "stepper": ("#2a2a2a", 0.0, 0.0),
     # A readout is a lit plate, not a component: dark glass in the browser
     # preview, the way it reads on the panel with nothing written into it yet.
     "readout": (P.GLASS, 0.0, 0.0),

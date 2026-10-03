@@ -316,6 +316,121 @@ ALIGN = {"center": "NVG_ALIGN_CENTER", "left": "NVG_ALIGN_LEFT",
 # failure mode you want -- loud, and impossible to ship.
 
 
+#: A pair of buttons, one over the other, that step a selector by one. Emitted as C++ into
+#: PanelTheme.hpp (one definition for the whole plugin) so every preset selector is the same
+#: object, with the same repeat rate and the same tooltip, and none of them is open-coded.
+STEP_PAIR = r"""/** UP over DOWN, a hair apart: the control for a selector that is a count and not an angle.
+ *
+ *  A preset knob is the wrong shape for what it does. Nobody turns to the three hundred and
+ *  seventeenth sound; they press once for the next one, and a knob makes that a drag you have
+ *  to land. This is bound to the same param the knob was, so a patch, a CV map and the param's
+ *  own tooltip are all unchanged -- it only moves the value by one, the top button up and the
+ *  bottom down, clamped to the param's own range (or wrapped, for a ring of sounds that has no
+ *  end). Hold either to repeat, after a beat.
+ *
+ *  The pair is a knob's height (9.6 mm) and the spec reserves exactly that, so it stands
+ *  where the knob stood. Colour comes from the palette and nothing else: the buttons are
+ *  SAGE on the dark well, and light to LIME while pressed. */
+struct StepPair : app::ParamWidget {
+	//: Wrap from the last value to the first (and back) instead of stopping. Ignored
+	//: when the param's range is unbounded, which is how an endless encoder is configured.
+	bool wrap = false;
+	float stepSize = 1.f;
+
+	int held = 0;               // +1 the top button is down, -1 the bottom one, 0 neither
+	int hover = 0;              // which half the pointer is over
+	double nextAt = 0.0;
+	float oldValue = NAN;       // the value when the press began: one undo step per hold
+
+	static constexpr float BTN = 4.5f / 9.6f;       // each button's share of the pair's height
+
+	/** No SVG gives this a size, so it takes the spec's: EXTENT["stepper"] in panelkit/spec.py. */
+	StepPair() { box.size = mm(@W@f, @H@f); }
+
+	/** The half (+1 top, -1 bottom) a point inside the widget is over. */
+	int halfAt(float y) const { return y < box.size.y / 2.f ? +1 : -1; }
+
+	void nudge(int dir) {
+		engine::ParamQuantity* pq = getParamQuantity();
+		if (!pq) return;
+		const float lo = pq->getMinValue(), hi = pq->getMaxValue(), v = pq->getValue();
+		float n = v + dir * stepSize;
+		if (wrap && std::isfinite(lo) && std::isfinite(hi))
+			n = n > hi ? lo : n < lo ? hi : n;
+		pq->setValue(n);        // clamps, and snaps a snapping param
+	}
+
+	void onButton(const ButtonEvent& e) override {
+		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS && (e.mods & RACK_MOD_MASK) == 0) {
+			if (engine::ParamQuantity* pq = getParamQuantity()) {
+				e.consume(this);
+				oldValue = pq->getValue();
+				held = halfAt(e.pos.y);
+				nudge(held);
+				nextAt = system::getTime() + 0.45;
+			}
+			return;
+		}
+		ParamWidget::onButton(e);   // the right-click menu
+	}
+
+	void onDragEnd(const DragEndEvent& e) override {
+		held = 0;
+		engine::ParamQuantity* pq = getParamQuantity();
+		if (pq && module && !std::isnan(oldValue) && pq->getValue() != oldValue) {
+			history::ParamChange* h = new history::ParamChange;
+			h->name = "change preset";
+			h->moduleId = module->id;
+			h->paramId = paramId;
+			h->oldValue = oldValue;
+			h->newValue = pq->getValue();
+			APP->history->push(h);
+		}
+		oldValue = NAN;
+		ParamWidget::onDragEnd(e);
+	}
+
+	void onHover(const HoverEvent& e) override {
+		hover = halfAt(e.pos.y);
+		ParamWidget::onHover(e);
+	}
+	void onLeave(const LeaveEvent& e) override { hover = 0; ParamWidget::onLeave(e); }
+
+	void step() override {
+		ParamWidget::step();
+		if (held && system::getTime() >= nextAt) {
+			nudge(held);
+			nextAt += 0.07;
+		}
+	}
+
+	void draw(const DrawArgs& args) override {
+		NVGcontext* vg = args.vg;
+		const float w = box.size.x, bh = box.size.y * BTN;
+		for (int dir = +1; dir >= -1; dir -= 2) {
+			const float y = dir > 0 ? 0.f : box.size.y - bh;
+			const bool down = held == dir;
+			nvgBeginPath(vg);
+			nvgRoundedRect(vg, 0.5f, y + 0.5f, w - 1.f, bh - 1.f, 2.2f);
+			nvgFillColor(vg, down ? LIME : alpha(SAGE, hover == dir ? 0.46f : 0.30f));
+			nvgFill(vg);
+			nvgStrokeColor(vg, alpha(RULE, 0.9f));
+			nvgStrokeWidth(vg, 0.6f);
+			nvgStroke(vg);
+			// the arrow: a triangle pointing the way the button steps
+			const float cx = w / 2.f, cy = y + bh / 2.f, a = bh * 0.22f, b = bh * 0.17f;
+			nvgBeginPath(vg);
+			nvgMoveTo(vg, cx, cy - dir * a);
+			nvgLineTo(vg, cx + a * 1.35f, cy + dir * b);
+			nvgLineTo(vg, cx - a * 1.35f, cy + dir * b);
+			nvgClosePath(vg);
+			nvgFillColor(vg, down ? INK : PAPER);
+			nvgFill(vg);
+		}
+		ParamWidget::draw(args);
+	}
+};"""
+
 def common():
     """src/PanelTheme.hpp -- the half that is the same for every panel."""
     o = []
@@ -508,6 +623,10 @@ def common():
     a("\t\tnvgStroke(args.vg);")
     a("\t}")
     a("};")
+    a("")
+    _sw, _sh = S.EXTENT["stepper"]
+    for _ln in STEP_PAIR.replace("@W@", "%.4f" % (2 * _sw)).replace("@H@", "%.4f" % (2 * _sh)).splitlines():
+        a(_ln)
     a("")
     a("/** Every stock light derives from GrayModuleLightWidget, which hard-codes a")
     a("    #333333 socket that reads as a grey hole punched in a green panel. These")

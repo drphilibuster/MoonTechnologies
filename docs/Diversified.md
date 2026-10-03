@@ -1,6 +1,6 @@
 # Diversified — FORM 1099-B
 
-**One hundred and six effects behind one knob.** The ninety-nine programs of the
+**One hundred and six effects behind one pair of buttons.** The ninety-nine programs of the
 DSP99 board, then the seven dedicated Modular in a Week effect circuits, in one
 stereo multi-effect with eight macro knobs whose meaning changes with the
 program. 15 HP, stereo in, stereo out, plus an effects loop.
@@ -94,7 +94,7 @@ were eight knobs those five extra parameters were simply unavailable.
 
 The plates are attached to their knobs rather than laid out as a row of their
 own. On the grid every plate in a row has to clear the tallest widget in that
-row, so PROGRAM — a big knob at the left — pushed the whole top row of plates a
+row, so PROGRAM — once a big knob at the left, now a pair of step buttons — pushed the whole top row of plates a
 centimetre below the controls they name. Attached, they sit where a label would,
 0.7 mm under their own knob, both rows alike.
 

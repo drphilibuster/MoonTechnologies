@@ -518,7 +518,6 @@ std::string MacroQuantity::getLabel() {
 // tools/panels/Diversified.py -- see ../../panelkit/README.md. Nothing about the
 // look is decided here.
 
-typedef RoundLargeBlackKnob ProgramKnob;
 typedef RoundBlackKnob      PanelKnob;
 
 
@@ -584,7 +583,10 @@ struct DiversifiedWidget : ModuleWidget {
 		display->box.size = panel::mm(panel::GLASS_W, panel::GLASS_H);
 		addChild(display);
 
-		addParam(createParamCentered<ProgramKnob>(panel::mm(panel::PROGRAM_POS.x, panel::PROGRAM_POS.y), module, Diversified::PROGRAM_PARAM));
+		// The hundred and six programs are a ring: past the last one is the first.
+		panel::StepPair* program = createParamCentered<panel::StepPair>(panel::mm(panel::PROGRAM_POS.x, panel::PROGRAM_POS.y), module, Diversified::PROGRAM_PARAM);
+		program->wrap = true;
+		addParam(program);
 		// Six macro knobs, each wearing its own little display: what a macro
 		// means changes with the program, so the panel does not engrave it.
 		static const Vec* macPos[divfx::kMacros] = {

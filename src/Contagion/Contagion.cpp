@@ -66,14 +66,14 @@ const SelDef SELECTORS[6] = {
 	{ "Filter 2 mode", 30, nullptr, 55, 4, false, -1, { "Lowpass", "Highpass", "Bandpass", "Bandstop" } },
 };
 
-/** The endless knobs: the key a turn counterclockwise presses, and clockwise (the fifth, PRESET, presses no
+/** The step buttons: the key DOWN presses (a detent counterclockwise), and clockwise (the fifth, PRESET, presses no
     key: it sends MIDI). Order = ENC_PARAM. */
 const char* const ENC_NAME[5] = { "Part", "Parameter", "Value / program", "Transpose", "Preset" };
 const int ENC_KEYS[4][2] = { { 22, 23 }, { 24, 25 }, { 26, 27 }, { 33, 34 } };
 
-/** A knob that has no end: its tooltip says what turning it does rather than a number of turns. */
+/** A control that has no end: its tooltip says what the buttons do rather than a number of detents. */
 struct EncoderQuantity : ParamQuantity {
-	std::string getDisplayValueString() override { return "turn: - / +"; }
+	std::string getDisplayValueString() override { return "down / up: - / +"; }
 	std::string getUnit() override { return ""; }
 };
 
@@ -579,30 +579,6 @@ struct PushKnob : RoundBlackKnob {
 	}
 };
 
-/** The endless knobs: a click each. The value counts detents (a whole number, so the stock knob's own
-    snapping rounds a drag to the nearest), the pointer steps 22.5 degrees a detent instead of sliding,
-    and a detent takes about a dozen pixels of drag whatever Rack's knob mode is. */
-struct EncoderKnob : PushKnob {
-	EncoderKnob() {
-		snap = true;
-		smooth = false;
-		forceLinear = true;
-		speed = 80.f;                                    // 1000 / 80: twelve and a half pixels a detent
-	}
-	void onChange(const ChangeEvent& e) override {
-		float angle = 0.f;
-		if (engine::ParamQuantity* pq = getParamQuantity())
-			angle = std::fmod(pq->getValue() * float(2.0 * M_PI / vc::Encoder::DETENTS), float(2.0 * M_PI));
-		tw->identity();
-		math::Vec c = sw->box.getCenter();
-		tw->translate(c);
-		tw->rotate(angle);
-		tw->translate(c.neg());
-		fb->dirty = true;
-		app::Knob::onChange(e);                          // not SvgKnob's, which would turn it a revolution a unit
-	}
-};
-
 /** One 2 x 16 LCD screen, dot by dot: the unit's character ROM for the fixed glyphs and the
     controller's CGRAM for the eight the firmware defines. x, y, w, h are in pixels. */
 void drawLcd(NVGcontext* vg, const uint8_t chars[32], const uint8_t cgram[64], float x, float y, float w, float h) {
@@ -828,11 +804,11 @@ struct ContagionWidget : ModuleWidget {
 			addParam(tempo);
 		}
 		const Vec encs[5] = { panel::PART_POS, panel::PARAM_POS, panel::VALUE_POS, panel::TRANS_POS, panel::PRESET_POS };
-		for (int i = 0; i < 5; i++) {
-			EncoderKnob* k = createParamCentered<EncoderKnob>(panel::mm(encs[i].x, encs[i].y), module, Contagion::ENC_PARAM + i);
-			k->module = module;
-			addParam(k);
-		}
+		// Each is a pair of buttons now: UP is one detent clockwise, DOWN one counterclockwise, and the
+		// param still counts detents, so the firmware side (vc::Encoder) is untouched.
+		for (int i = 0; i < 4; i++)
+			addParam(createParamCentered<panel::StepPair>(panel::mm(encs[i].x, encs[i].y), module, Contagion::ENC_PARAM + i));
+		addParam(createParamCentered<panel::StepPair>(panel::mm(encs[4].x, encs[4].y), module, Contagion::PRESET_PARAM));
 
 		// The lamps that stay lamps. The unit's other LEDs are drawn on the display.
 		struct Lamp { int led; Vec pos; };

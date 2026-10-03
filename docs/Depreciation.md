@@ -102,7 +102,7 @@ is:
 
 * **FACTORY** — the machine's own programs, the effects: Chorus, Concert Hall,
   Gated Room … Ten to a row, slot = 10 × row + column, so slot 13 is the
-  firmware's `1.3`. The selector stops at the last program the firmware has
+  firmware's `1.3`. PRESET is a pair of step buttons (up for the next slot, down for the previous, hold to repeat). It stops at the last program the firmware has
   (both versions have rows 0 to 6, with fewer than ten in most), and the
   names come from the machine itself: a few seconds after power-up a scratch
   machine reads every slot's name, off the audio thread, so the well can say what

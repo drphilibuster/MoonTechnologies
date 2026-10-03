@@ -536,7 +536,7 @@ struct DepreciationWidget : ModuleWidget {
 		well->box.size = panel::mm(panel::GLASS_W, panel::GLASS_H);
 		addChild(well);
 
-		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::SLOT_POS.x, panel::SLOT_POS.y), module, Depreciation::SLOT_PARAM));
+		addParam(createParamCentered<panel::StepPair>(panel::mm(panel::SLOT_POS.x, panel::SLOT_POS.y), module, Depreciation::SLOT_PARAM));
 		addParam(createParamCentered<CKSS>(panel::mm(panel::REGMODE_POS.x, panel::REGMODE_POS.y), module, Depreciation::REGMODE_PARAM));
 		addParam(createParamCentered<VCVButton>(panel::mm(panel::LOAD_POS.x, panel::LOAD_POS.y), module, Depreciation::LOAD_PARAM));
 		addParam(createParamCentered<VCVButton>(panel::mm(panel::STORE_POS.x, panel::STORE_POS.y), module, Depreciation::STORE_PARAM));

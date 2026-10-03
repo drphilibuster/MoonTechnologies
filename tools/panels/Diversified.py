@@ -40,7 +40,7 @@ P.sections = [
     # name for that knob into it -- or "--" where that program has nothing for
     # the knob to do, which is the honest thing for a panel to say.
     Section("PORTFOLIO", caption_light="active", rows=[
-        Row([BigKnob("program", "PROGRAM", primary=True, side="left"),
+        Row([Stepper("program", "PROGRAM", primary=True, side="left"),
              ] + [Knob("p%d" % n, "", readout="p%d_name" % n) for n in range(1, 5)]),
         Row([Knob("p%d" % n, "", readout="p%d_name" % n, col=n - 4)
              for n in range(5, 9)]),

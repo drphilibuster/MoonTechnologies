@@ -34,24 +34,24 @@ static const Label LABELS[] = {
 	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
 	{102.4800f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 1099-B"},
 	{ 53.3400f,  18.9000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PORTFOLIO"},
-	{ 16.9784f,  29.9619f,  7.00f, 0.00f, INK      , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "PROGRAM"},
-	{ 53.3400f,  61.4116f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ALLOCATION"},
-	{  7.8900f,  73.7634f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PROG"},
-	{ 19.2525f,  73.7634f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "1"},
-	{ 30.6150f,  73.7634f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "2"},
-	{ 41.9775f,  73.7634f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "3"},
-	{ 53.3400f,  73.7634f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "4"},
-	{ 64.7025f,  73.7634f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "5"},
-	{ 76.0650f,  73.7634f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "6"},
-	{ 87.4275f,  73.7634f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "7"},
-	{ 98.7900f,  73.7634f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "8"},
-	{ 53.3400f,  90.0200f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "HOLDINGS"},
-	{ 18.3264f, 108.0469f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MIX"},
-	{ 31.9239f, 108.0469f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV AMT"},
-	{ 44.3114f,  94.2659f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV IN"},
-	{ 57.6289f,  94.2659f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "AUX"},
-	{ 70.9464f,  94.2659f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CLOCK"},
-	{ 88.3535f, 108.0469f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DIV"},
+	{ 18.2784f,  28.6619f,  7.00f, 0.00f, INK      , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "PROGRAM"},
+	{ 53.3400f,  60.6316f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ALLOCATION"},
+	{  7.8900f,  72.9834f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PROG"},
+	{ 19.2525f,  72.9834f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "1"},
+	{ 30.6150f,  72.9834f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "2"},
+	{ 41.9775f,  72.9834f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "3"},
+	{ 53.3400f,  72.9834f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "4"},
+	{ 64.7025f,  72.9834f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "5"},
+	{ 76.0650f,  72.9834f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "6"},
+	{ 87.4275f,  72.9834f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "7"},
+	{ 98.7900f,  72.9834f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "8"},
+	{ 53.3400f,  89.5000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "HOLDINGS"},
+	{ 18.3264f, 107.5269f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MIX"},
+	{ 31.9239f, 107.5269f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV AMT"},
+	{ 44.3114f,  93.7459f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV IN"},
+	{ 57.6289f,  93.7459f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "AUX"},
+	{ 70.9464f,  93.7459f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CLOCK"},
+	{ 88.3535f, 107.5269f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DIV"},
 	{ 19.4650f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN L"},
 	{ 33.0150f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN R"},
 	{ 46.5650f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SEND"},
@@ -69,48 +69,48 @@ static inline void addLabels(app::ModuleWidget* mw) {
 // --- widget positions, by the names used in tools/panels/Diversified.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
 static const Vec ACTIVE_POS = Vec(62.3808, 18.1685);
-static const Vec PROGRAM_POS = Vec(26.3784, 29.1085);
-static const Vec P1_POS = Vec(45.1334, 29.1085);
-static const Vec P2_POS = Vec(61.4084, 29.1085);
-static const Vec P3_POS = Vec(77.6834, 29.1085);
-static const Vec P4_POS = Vec(93.9584, 29.1085);
-static const Vec P1_NAME_POS = Vec(45.1334, 37.3585);
-static const Vec P2_NAME_POS = Vec(61.4084, 37.3585);
-static const Vec P3_NAME_POS = Vec(77.6834, 37.3585);
-static const Vec P4_NAME_POS = Vec(93.9584, 37.3585);
-static const Vec P5_POS = Vec(45.1334, 46.1350);
-static const Vec P6_POS = Vec(61.4084, 46.1350);
-static const Vec P7_POS = Vec(77.6834, 46.1350);
-static const Vec P8_POS = Vec(93.9584, 46.1350);
-static const Vec P5_NAME_POS = Vec(45.1334, 54.3850);
-static const Vec P6_NAME_POS = Vec(61.4084, 54.3850);
-static const Vec P7_NAME_POS = Vec(77.6834, 54.3850);
-static const Vec P8_NAME_POS = Vec(93.9584, 54.3850);
-static const Vec PROGRAM_CV_POS = Vec(7.8900, 66.2316);
-static const Vec P1_CV_POS = Vec(19.2525, 66.2316);
-static const Vec P2_CV_POS = Vec(30.6150, 66.2316);
-static const Vec P3_CV_POS = Vec(41.9775, 66.2316);
-static const Vec P4_CV_POS = Vec(53.3400, 66.2316);
-static const Vec P5_CV_POS = Vec(64.7025, 66.2316);
-static const Vec P6_CV_POS = Vec(76.0650, 66.2316);
-static const Vec P7_CV_POS = Vec(87.4275, 66.2316);
-static const Vec P8_CV_POS = Vec(98.7900, 66.2316);
-static const Vec PROGRAM_IN_POS = Vec(7.8900, 80.3534);
-static const Vec P1_IN_POS = Vec(19.2525, 80.3534);
-static const Vec P2_IN_POS = Vec(30.6150, 80.3534);
-static const Vec P3_IN_POS = Vec(41.9775, 80.3534);
-static const Vec P4_IN_POS = Vec(53.3400, 80.3534);
-static const Vec P5_IN_POS = Vec(64.7025, 80.3534);
-static const Vec P6_IN_POS = Vec(76.0650, 80.3534);
-static const Vec P7_IN_POS = Vec(87.4275, 80.3534);
-static const Vec P8_IN_POS = Vec(98.7900, 80.3534);
-static const Vec MIX_POS = Vec(18.3264, 99.9400);
-static const Vec MIX_CV_POS = Vec(31.9239, 99.9400);
-static const Vec MIX_IN_POS = Vec(44.3114, 99.9400);
-static const Vec AUX_IN_POS = Vec(57.6289, 99.9400);
-static const Vec TAP_IN_POS = Vec(70.9464, 99.9400);
-static const Vec CLOCK_DIV_POS = Vec(88.3535, 99.9400);
-static const Vec TAP_LED_POS = Vec(76.7360, 93.5100);
+static const Vec PROGRAM_POS = Vec(26.3784, 27.8085);
+static const Vec P1_POS = Vec(43.8334, 27.8085);
+static const Vec P2_POS = Vec(60.1084, 27.8085);
+static const Vec P3_POS = Vec(76.3834, 27.8085);
+static const Vec P4_POS = Vec(92.6584, 27.8085);
+static const Vec P1_NAME_POS = Vec(43.8334, 36.0585);
+static const Vec P2_NAME_POS = Vec(60.1084, 36.0585);
+static const Vec P3_NAME_POS = Vec(76.3834, 36.0585);
+static const Vec P4_NAME_POS = Vec(92.6584, 36.0585);
+static const Vec P5_POS = Vec(43.8334, 45.0950);
+static const Vec P6_POS = Vec(60.1084, 45.0950);
+static const Vec P7_POS = Vec(76.3834, 45.0950);
+static const Vec P8_POS = Vec(92.6584, 45.0950);
+static const Vec P5_NAME_POS = Vec(43.8334, 53.3450);
+static const Vec P6_NAME_POS = Vec(60.1084, 53.3450);
+static const Vec P7_NAME_POS = Vec(76.3834, 53.3450);
+static const Vec P8_NAME_POS = Vec(92.6584, 53.3450);
+static const Vec PROGRAM_CV_POS = Vec(7.8900, 65.4516);
+static const Vec P1_CV_POS = Vec(19.2525, 65.4516);
+static const Vec P2_CV_POS = Vec(30.6150, 65.4516);
+static const Vec P3_CV_POS = Vec(41.9775, 65.4516);
+static const Vec P4_CV_POS = Vec(53.3400, 65.4516);
+static const Vec P5_CV_POS = Vec(64.7025, 65.4516);
+static const Vec P6_CV_POS = Vec(76.0650, 65.4516);
+static const Vec P7_CV_POS = Vec(87.4275, 65.4516);
+static const Vec P8_CV_POS = Vec(98.7900, 65.4516);
+static const Vec PROGRAM_IN_POS = Vec(7.8900, 79.5734);
+static const Vec P1_IN_POS = Vec(19.2525, 79.5734);
+static const Vec P2_IN_POS = Vec(30.6150, 79.5734);
+static const Vec P3_IN_POS = Vec(41.9775, 79.5734);
+static const Vec P4_IN_POS = Vec(53.3400, 79.5734);
+static const Vec P5_IN_POS = Vec(64.7025, 79.5734);
+static const Vec P6_IN_POS = Vec(76.0650, 79.5734);
+static const Vec P7_IN_POS = Vec(87.4275, 79.5734);
+static const Vec P8_IN_POS = Vec(98.7900, 79.5734);
+static const Vec MIX_POS = Vec(18.3264, 99.4200);
+static const Vec MIX_CV_POS = Vec(31.9239, 99.4200);
+static const Vec MIX_IN_POS = Vec(44.3114, 99.4200);
+static const Vec AUX_IN_POS = Vec(57.6289, 99.4200);
+static const Vec TAP_IN_POS = Vec(70.9464, 99.4200);
+static const Vec CLOCK_DIV_POS = Vec(88.3535, 99.4200);
+static const Vec TAP_LED_POS = Vec(76.7360, 92.9900);
 static const Vec IN_L_POS = Vec(19.4650, 118.6000);
 static const Vec IN_R_POS = Vec(33.0150, 118.6000);
 static const Vec SEND_POS = Vec(46.5650, 118.6000);

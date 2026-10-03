@@ -41,7 +41,7 @@ from . import render, emit, preview, lint, rack, art
 __all__ = ["BRAND", "Panel", "Section", "Row", "Widget", "Glass", "Rail", "RailPair", "Trace", "FreeLabel",
            "Plate",
            "Knob", "BigKnob", "Trim", "Button", "Bezel", "Jack", "Light",
-           "Switch", "Switch3",
+           "Switch", "Switch3", "Stepper",
            "Slider", "Readout", "RADIUS", "build", "palette", "INK", "FELT", "BAND",
            "GLASS_COLOUR", "RULE", "LIME", "MINT", "CLAY", "PAPER", "SAGE",
            "PX_PER_MM", "MM_PER_PX", "HP_MM", "PANEL_H", "required_hp",
@@ -84,6 +84,9 @@ Readout = _mk("readout", 6.2, "LIME")
 # on the panel, which is a trap worth closing rather than documenting.
 Switch = _mk("switch", 6.2, "SAGE")
 Switch3 = _mk("switch3", 6.2, "SAGE")
+#: A pair of buttons, one over the other, that step a selector up and down: a preset
+#: is a count, and a knob is the wrong way to say so.
+Stepper = _mk("stepper", 7.0, "PAPER")
 
 
 def plugin_slug(root):

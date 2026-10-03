@@ -71,22 +71,22 @@ static const Label LABELS[] = {
 	{283.7770f,  63.0003f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RANDOM"},
 	{149.6902f,  71.6844f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FILTERS · ENVELOPES · PROGRAM"},
 	{ 10.4000f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CUTOFF"},
-	{ 28.0127f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CUTOFF 2"},
-	{ 44.3253f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RESO"},
-	{ 60.6380f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ENV AMT"},
-	{ 76.9507f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FLT BAL"},
-	{ 92.7507f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ATTACK"},
-	{109.0633f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
-	{125.3760f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SUSTAIN"},
-	{141.6886f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RELEASE"},
-	{157.4886f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ATTACK"},
-	{173.8013f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
-	{190.1140f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SUSTAIN"},
-	{206.4266f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RELEASE"},
-	{222.2266f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PRESET"},
-	{238.5393f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PART"},
-	{255.5528f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PARAMETER"},
-	{272.5662f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "VALUE"},
+	{ 28.6929f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CUTOFF 2"},
+	{ 45.6859f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RESO"},
+	{ 62.6788f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ENV AMT"},
+	{ 79.6717f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FLT BAL"},
+	{ 95.4717f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ATTACK"},
+	{112.4646f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
+	{129.4576f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SUSTAIN"},
+	{146.4505f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RELEASE"},
+	{162.2505f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ATTACK"},
+	{179.2434f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DECAY"},
+	{196.2364f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SUSTAIN"},
+	{213.2293f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RELEASE"},
+	{227.6293f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PRESET"},
+	{241.7213f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PART"},
+	{257.6741f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PARAMETER"},
+	{273.6269f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "VALUE"},
 	{289.5797f,  89.5913f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRANSPOSE"},
 	{ 59.1144f, 105.2847f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EDIT"},
 	{ 75.9241f, 105.2847f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FILT 1"},
@@ -190,22 +190,22 @@ static const Vec ARP_EDIT_LED_POS = Vec(238.1424, 62.2444);
 static const Vec EDIT_LED_POS = Vec(254.6539, 62.2444);
 static const Vec GLOBAL_LED_POS = Vec(272.4252, 62.2444);
 static const Vec CUTOFF_POS = Vec(10.4000, 80.0844);
-static const Vec CUTOFF2_POS = Vec(28.0127, 80.0844);
-static const Vec RESO_POS = Vec(44.3253, 80.0844);
-static const Vec ENV_AMT_POS = Vec(60.6380, 80.0844);
-static const Vec FLT_BAL_POS = Vec(76.9507, 80.0844);
-static const Vec F_ATT_POS = Vec(92.7507, 80.0844);
-static const Vec F_DEC_POS = Vec(109.0633, 80.0844);
-static const Vec F_SUS_POS = Vec(125.3760, 80.0844);
-static const Vec F_REL_POS = Vec(141.6886, 80.0844);
-static const Vec A_ATT_POS = Vec(157.4886, 80.0844);
-static const Vec A_DEC_POS = Vec(173.8013, 80.0844);
-static const Vec A_SUS_POS = Vec(190.1140, 80.0844);
-static const Vec A_REL_POS = Vec(206.4266, 80.0844);
-static const Vec PRESET_POS = Vec(222.2266, 80.0844);
-static const Vec PART_POS = Vec(238.5393, 80.0844);
-static const Vec PARAM_POS = Vec(255.5528, 80.0844);
-static const Vec VALUE_POS = Vec(272.5662, 80.0844);
+static const Vec CUTOFF2_POS = Vec(28.6929, 80.0844);
+static const Vec RESO_POS = Vec(45.6859, 80.0844);
+static const Vec ENV_AMT_POS = Vec(62.6788, 80.0844);
+static const Vec FLT_BAL_POS = Vec(79.6717, 80.0844);
+static const Vec F_ATT_POS = Vec(95.4717, 80.0844);
+static const Vec F_DEC_POS = Vec(112.4646, 80.0844);
+static const Vec F_SUS_POS = Vec(129.4576, 80.0844);
+static const Vec F_REL_POS = Vec(146.4505, 80.0844);
+static const Vec A_ATT_POS = Vec(162.2505, 80.0844);
+static const Vec A_DEC_POS = Vec(179.2434, 80.0844);
+static const Vec A_SUS_POS = Vec(196.2364, 80.0844);
+static const Vec A_REL_POS = Vec(213.2293, 80.0844);
+static const Vec PRESET_POS = Vec(227.6293, 80.0844);
+static const Vec PART_POS = Vec(241.7213, 80.0844);
+static const Vec PARAM_POS = Vec(257.6741, 80.0844);
+static const Vec VALUE_POS = Vec(273.6269, 80.0844);
 static const Vec TRANS_POS = Vec(289.5797, 80.0844);
 static const Vec FLT_EDIT_POS = Vec(59.1144, 96.5913);
 static const Vec FLT1_MODE_POS = Vec(75.9241, 96.5913);
