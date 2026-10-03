@@ -78,6 +78,22 @@ inline void euclid(int k, int n, bool* out) {
 		for (int j = blen - 1; j >= 0 && at < n; j--) out[at++] = (bpat >> j) & 1u;
 }
 
+/** One deterministic 32-bit hash. The pattern has to be the same every time a
+    patch is opened and the same on every machine, so it is derived from
+    (seed, voice, step) rather than drawn from a running generator. */
+inline uint32_t hash3(uint32_t a, uint32_t b, uint32_t c) {
+	uint32_t x = a * 0x9E3779B1u ^ b * 0x85EBCA77u ^ c * 0xC2B2AE3Du;
+	x ^= x >> 15; x *= 0x2C1B3C6Du;
+	x ^= x >> 12; x *= 0x297A2D39u;
+	x ^= x >> 15;
+	return x;
+}
+
+inline float hash3f(uint32_t a, uint32_t b, uint32_t c) {
+	return (float)(hash3(a, b, c) >> 8) * (1.f / 16777216.f);   // 0..1
+}
+
+
 /** Each voice's place in the queue and its Euclidean character.
 
     FILL decides how many hits a voice has, `k`; *which* steps they are is
@@ -104,88 +120,87 @@ static const Role kRole[V_COUNT] = {
 	{ 0.36f, 0.62f,  4, 11, 3, 5, 0.02f },   // TOM III    default FILL all three speak
 };
 
-//: How many onsets of a voice are pinned: the steps that *are* the voice. The
-//: kick keeps its downbeat and the half bar, the snare both backbeats, and the
-//: rest their single strongest step. A pinned step outranks everything FILL,
-//: SHAPE, SEED and EVOLVE can do, so no setting takes the kick off the one.
-static const int kPins[V_COUNT] = { 2, 2, 1, 1, 1, 1 };
+//: How many onsets of a voice are pinned: its one strongest step. A voice with any
+//: hits at all always has that one, so the kick is always the kick; nothing else is
+//: promised, because anything else promised is a rhythm everyone has heard.
+static const int kPins[V_COUNT] = { 1, 1, 1, 1, 1, 1 };
 
-//: The role profiles for a sixteen-step bar, hand-set, as per-step intensity in
-//: the way Grids' pattern map holds it: the order the numbers sort into is the
-//: order a drummer adds hits as the density goes up. Kick: 1, 3, then the "and"
-//: of 3, then the other beats. Snare: both backbeats, then the ghost notes either
-//: side of them. Hat: quarters, 8ths, 16ths.
-static const float kKick16[16] = {
-	1.00f, 0.18f, 0.30f, 0.22f,  0.55f, 0.20f, 0.45f, 0.35f,
-	0.90f, 0.18f, 0.70f, 0.32f,  0.52f, 0.20f, 0.42f, 0.38f };
-static const float kSnare16[16] = {
-	0.05f, 0.20f, 0.12f, 0.34f,  1.00f, 0.12f, 0.30f, 0.50f,
-	0.08f, 0.40f, 0.26f, 0.28f,  0.95f, 0.14f, 0.32f, 0.48f };
-static const float kHat16[16] = {
-	1.00f, 0.25f, 0.55f, 0.28f,  0.92f, 0.26f, 0.52f, 0.30f,
-	0.96f, 0.25f, 0.55f, 0.28f,  0.90f, 0.26f, 0.50f, 0.32f };
+//: Each voice's grouping of sixteen at SEED 0, as the lengths of consecutive
+//: groups -- an additive meter, the way Aksak and the Balkan and Arab rhythms count
+//: Toussaint lists (3+3+2, 2+2+3) rather than the way a drummer in four counts.
+//: Every voice counts differently, so the kit is a polyrhythm sitting in one bar:
+//: the kick in 3+3+3+3+4, the snare in 3+3+2+3+3+2 turned to start on its own
+//: step, the hat in 2+2+3+2+2+3+2.
+static const int kPreset[V_COUNT][10] = {
+	{ 3, 3, 3, 3, 4, 0 },
+	{ 3, 3, 2, 3, 3, 2, 0 },
+	{ 2, 2, 3, 2, 2, 3, 2, 0 },
+	{ 5, 5, 6, 0 },
+	{ 3, 5, 3, 5, 0 },
+	{ 4, 3, 4, 5, 0 },
+};
 
-/** Metric weight of every step of an L-step cycle, 0..1, for any L.
-
-    A step's rank in the hierarchy is the number of groupings it takes to find
-    it: with sixteen as 2x2x2x2, step 0 is the whole bar, 8 the half, 4 and 12
-    the quarters, the even steps the 8ths, the odd ones the leaves -- Barlow's
-    indispensability, flattened to the ladder. The larger prime factors go
-    outermost, so twelve is three groups of four and fifteen five groups of
-    three. A prime length has no groupings to speak of, so it takes an 8th-note
-    split instead of leaving every step but the first level. */
-inline void meterWeights(int L, float* w) {
-	int f[8], m = 0, rem = L;
-	static const int primes[4] = { 7, 5, 3, 2 };
-	for (int i = 0; i < 4; i++)
-		while (rem % primes[i] == 0 && m < 8) { f[m++] = primes[i]; rem /= primes[i]; }
-	if (m == 0) { for (int s = 0; s < L; s++) w[s] = s == 0 ? 1.f : 0.2f; return; }
-	if (m == 1) {
-		for (int s = 0; s < L; s++) w[s] = s == 0 ? 1.f : ((s & 1) ? 0.2f : 0.38f);
-		return;
+/** A grouping of `L` steps: consecutive group lengths summing to L, 2 to 6 long.
+    At SEED 0 and sixteen steps it is the voice's preset; otherwise it is composed
+    from `key`, mostly threes and twos with the odd four and five, never leaving a
+    group of one. Returns the number of groups. */
+inline int makeGrouping(int v, int L, uint32_t key, bool useSeed, int* g) {
+	int n = 0;
+	if (!useSeed && L == kSteps) {
+		for (; kPreset[v][n]; n++) g[n] = kPreset[v][n];
+		return n;
 	}
-	for (int s = 0; s < L; s++) {
-		int depth = m;
-		if (s == 0) depth = 0;
-		else {
-			int prod = 1;
-			for (int j = 0; j < m; j++) {
-				prod *= f[j];
-				if (s % (L / prod) == 0) { depth = j + 1; break; }
-			}
-		}
-		w[s] = 1.f - 0.8f * (float)depth / (float)m;
+	static const int parts[8] = { 3, 3, 2, 3, 4, 2, 5, 3 };
+	int rem = L;
+	uint32_t h = key * 2654435761u + 12345u;
+	while (rem > 0 && n < 15) {
+		h ^= h << 13; h ^= h >> 17; h ^= h << 5;
+		int p = parts[h & 7u];
+		if (p >= rem) p = rem;
+		else if (rem - p == 1) p = rem;      // never strand a group of one
+		g[n++] = p;
+		rem -= p;
 	}
+	return n;
 }
 
-/** One voice's spine: how much each step of its L-step cycle is worth. At
-    sixteen steps the kick, snare and hat have their own hand-set profiles; at
-    any other length they are derived from the metric weights, the snare shifted
-    a quarter of the cycle so its strongest step is the backbeat. Toms are the
-    end of the bar, shifted a little apart so three of them do not roll in
-    unison. */
-inline void spineFor(int v, int L, float* out) {
-	if (L == kSteps && v <= V_HAT) {
-		const float* t = v == V_KICK ? kKick16 : (v == V_SNARE ? kSnare16 : kHat16);
-		for (int s = 0; s < L; s++) out[s] = t[s];
-		return;
-	}
+/** One voice's spine: what each step of its L-step cycle is worth to it, 0..1.
+
+    The first step of a group is strong, the middle of a long group middling, the
+    rest weak, and the groups lose weight as the cycle goes on, with a seeded wobble
+    so no two groups are quite equal. Then the whole thing is turned by the voice's
+    own rotation, so each voice's strongest step falls somewhere different. The kick
+    is not turned; the snare is turned to start on the "and" of two; the others by
+    the seed. Hat is lifted so its weak steps still outrank the other voices' nothing
+    -- a hat is allowed to be dense -- and toms lean toward the end of the cycle. */
+inline void spineFor(int v, int L, uint32_t seed, float* out) {
+	int g[16];
+	const bool useSeed = seed > 0;
+	uint32_t key = hash3(seed * 7u + (uint32_t)v * 101u + (uint32_t)L, (uint32_t)v, 0x51u);
+	int n = makeGrouping(v, L, key, useSeed, g);
 	float w[kSteps];
-	meterWeights(L, w);
-	if (v == V_KICK) { for (int s = 0; s < L; s++) out[s] = w[s]; return; }
-	if (v == V_SNARE) {
-		int q = (L + 2) / 4;
-		for (int s = 0; s < L; s++) {
-			float x = w[((s - q) % L + L) % L];
-			out[s] = s == 0 ? x * 0.4f : x;
+	int s = 0;
+	for (int j = 0; j < n; j++) {
+		int len = g[j];
+		float jitter = 0.14f * (hash3f(key + 1u, (uint32_t)j, 0u) - 0.5f);
+		float start = j == 0 ? 1.f : 0.88f - 0.05f * (float)(j < 6 ? j : 6) + jitter;
+		for (int o = 0; o < len && s < L; o++, s++) {
+			float x;
+			if (o == 0) x = start;
+			else if (len >= 4 && o == len / 2) x = 0.52f + jitter;
+			else x = 0.30f - 0.025f * (float)(o < 4 ? o : 4) + 0.5f * jitter;
+			w[s] = x < 0.05f ? 0.05f : x;
 		}
-		return;
 	}
-	if (v == V_HAT) { for (int s = 0; s < L; s++) out[s] = std::pow(w[s], 0.4f); return; }
-	int shift = (v - V_TOM1) * 3 % L;
-	for (int s = 0; s < L; s++) {
-		float pos = (float)((s + shift) % L + 1) / (float)L;
-		out[s] = 0.1f + 0.9f * pos * pos * (0.7f + 0.3f * (1.f - w[s]));
+	int rot = 0;
+	if (v == V_SNARE) rot = (3 * L) / 8;
+	else if (v >= V_TOM1) rot = (v * 5) % L;
+	if (useSeed && v != V_KICK) rot = (int)(hash3(seed, (uint32_t)v, 3u) % (uint32_t)L);
+	for (int i = 0; i < L; i++) {
+		float x = w[((i - rot) % L + L) % L];
+		if (v == V_HAT) x = 0.35f + 0.65f * x;
+		else if (v >= V_TOM1) x *= 0.6f + 0.4f * (float)(i + 1) / (float)L;
+		out[i] = x;
 	}
 }
 
@@ -222,22 +237,6 @@ static const float kClockRatio[kRatioCount] = {
 static const int kDivCount = 6;
 static const float kDivPerBeat[kDivCount] = { 1.f, 2.f, 3.f, 4.f, 6.f, 8.f };
 
-/** One deterministic 32-bit hash. The pattern has to be the same every time a
-    patch is opened and the same on every machine, so it is derived from
-    (seed, voice, step) rather than drawn from a running generator. */
-inline uint32_t hash3(uint32_t a, uint32_t b, uint32_t c) {
-	uint32_t x = a * 0x9E3779B1u ^ b * 0x85EBCA77u ^ c * 0xC2B2AE3Du;
-	x ^= x >> 15; x *= 0x2C1B3C6Du;
-	x ^= x >> 12; x *= 0x297A2D39u;
-	x ^= x >> 15;
-	return x;
-}
-
-inline float hash3f(uint32_t a, uint32_t b, uint32_t c) {
-	return (float)(hash3(a, b, c) >> 8) * (1.f / 16777216.f);   // 0..1
-}
-
-
 /** The engine. One instance per module; `process` is called once a sample and
     reports, through `fired`/`vel`, which voices the engine wants struck now. */
 struct Payroll {
@@ -256,6 +255,7 @@ struct Payroll {
 	// --- the pattern, rebuilt only when SEED or FILL moves --------------------
 	bool on[V_COUNT][kSteps] = {};
 	float amp[V_COUNT][kSteps] = {};
+	int ratch[V_COUNT][kSteps] = {};     // hits in this step: 1 plain, 2-4 a ratchet
 	float offs[V_COUNT][kSteps] = {};   // microtiming, in fractions of a step
 	int onsets[V_COUNT] = {};           // the k each voice was asked for, before conditions
 	int rotation[V_COUNT] = {};         // how far its Euclidean necklace is turned
@@ -286,8 +286,19 @@ struct Payroll {
 	float pulseLeft = 0.f;          // seconds of CLK OUT high remaining
 
 	// Steps that are waiting on their microtiming offset before they fire.
-	bool pending[V_COUNT] = {};
-	float pendingIn[V_COUNT] = {};  // seconds until it lands
+	//: Hits waiting for their moment, per voice: how long until each lands and
+	//: how hard. A step's micro-timing, a ratchet's later hits and a hit pulled
+	//: *early* from the step after (see advanceInto) all wait here, so a voice can
+	//: have several in flight at once.
+	static const int kQ = 8;
+	float qT[V_COUNT][kQ] = {};
+	float qVel[V_COUNT][kQ] = {};
+	int qn[V_COUNT] = {};
+	//: This voice's next step was armed ahead of time, on the previous boundary,
+	//: because its micro-timing puts it before the beat.
+	bool early[V_COUNT] = {};
+	//: The voice's next pass was already built, for the same reason.
+	bool preWrapped[V_COUNT] = {};
 
 	//: Grid mode's per-voice phase, one turn per hit. Free-running against the
 	//: step grid at that voice's own ratio, so two voices on coprime divisions
@@ -333,7 +344,7 @@ struct Payroll {
 		}
 		for (int v = 0; v < V_COUNT; v++) {
 			fired[v] = false; vel[v] = 0.f;
-			pending[v] = false; pendingIn[v] = 0.f;
+			qn[v] = 0; early[v] = false; preWrapped[v] = false;
 			gridPhase[v] = 0.0;
 		}
 	}
@@ -440,41 +451,47 @@ struct Payroll {
 		const int L = len[v];
 		const uint32_t seed = (uint32_t)(builtSeed < 0 ? 0 : builtSeed);
 		const uint32_t cy = cycle[v];
+		const float ev = curEvolve;
 
 		float spine[kSteps];
-		spineFor(v, L, spine);
+		spineFor(v, L, seed, spine);
 
 		// --- how many ---------------------------------------------------------
 		float fill = curFill;
-		if (v != V_KICK && curEvolve > 0.05f && (cy & 3u) == 3u)
-			fill = std::min(1.f, fill + 0.2f + 0.2f * curEvolve);     // the fill pass
+		const bool fillPass = v != V_KICK && ev > 0.05f && (cy & 3u) == 3u;
+		if (fillPass) fill = std::min(1.f, fill + 0.2f + 0.2f * ev);
 		float t = clampf((fill - role.start) / role.span, 0.f, 1.f);
-		// Round rather than truncate, so the first onset arrives as soon as the
-		// voice's share of the knob is half a hit wide.
 		int k = (int)(t * (float)role.most * (float)L / (float)kSteps + 0.5f);
-		// FILL above zero always leaves the kick its downbeat: the module's
-		// bottom stop is grid mode, so zero never reaches here as a "quiet" setting.
 		if (v == V_KICK && fill > 0.0005f && k < 1) k = 1;
 		if (k > L) k = L;
 		onsets[v] = k;
 
-		// --- the necklace -----------------------------------------------------
-		int kE = (role.kLo + role.kHi) / 2;
-		if (seed > 0) kE = role.kLo + (int)(hash3(seed, (uint32_t)v, 17u)
-		                                    % (uint32_t)(role.kHi - role.kLo + 1));
+		// --- two necklaces, laid over each other ------------------------------
+		// Bonus from two Euclidean rhythms of different k at once: where they
+		// agree a step is strong, where one of them has it a step is lifted. The
+		// interference is what makes the in-between hits feel like a polyrhythm
+		// rather than one pattern. With EVOLVE past a half the necklaces change
+		// every four passes, and past three quarters they turn as well.
+		uint32_t era = ev > 0.5f ? (cy >> 2) : 0u;
+		int kE = role.kLo + (int)(hash3(seed + era * 977u, (uint32_t)v, 17u)
+		                          % (uint32_t)(role.kHi - role.kLo + 1));
+		int kF = 2 + (int)(hash3(seed + era * 977u, (uint32_t)v, 19u) % 6u);
 		kE = (int)((float)kE * (float)L / (float)kSteps + 0.5f);
+		kF = (int)((float)kF * (float)L / (float)kSteps + 0.5f);
 		if (kE < 1) kE = 1;
+		if (kF < 1) kF = 1;
 		if (kE > L) kE = L;
-		int rot = role.rot;
-		if (seed > 0) rot += (int)(hash3(seed, (uint32_t)v, 7u) % (uint32_t)L);
-		rot %= L;
+		if (kF > L) kF = L;
+		int rot = role.rot + (int)(hash3(seed, (uint32_t)v, 7u) % (uint32_t)L);
+		int rot2 = (int)(hash3(seed, (uint32_t)v, 11u) % (uint32_t)L);
+		if (ev > 0.75f) { rot += (int)(cy >> 2); rot2 += (int)(cy >> 3); }
+		rot %= L; rot2 %= L;
 		rotation[v] = rot;
-		bool raw[kSteps];
-		euclid(kE, L, raw);
+		bool e1[kSteps], e2[kSteps];
+		euclid(kE, L, e1);
+		euclid(kF, L, e2);
 
-		// --- pins: the voice's strongest steps --------------------------------
-		// Ranked among themselves too, strongest first, so a voice with k = 1
-		// always keeps its first anchor and never its second.
+		// --- pins: the voice's strongest step -------------------------------------
 		bool pinned[kSteps] = {};
 		float pinBonus[kSteps] = {};
 		for (int n = 0; n < kPins[v] && n < L; n++) {
@@ -489,11 +506,12 @@ struct Payroll {
 		float score[kSteps];
 		int order[kSteps];
 		for (int s = 0; s < L; s++) {
-			int src = ((s - rot) % L + L) % L;
-			float sc = spine[s] + curShape * 0.6f * (raw[src] ? 1.f : 0.f)
+			float neck = 0.6f * (e1[((s - rot) % L + L) % L] ? 1.f : 0.f)
+			           + 0.4f * (e2[((s - rot2) % L + L) % L] ? 1.f : 0.f);
+			float sc = spine[s] + curShape * 0.8f * neck
 			         + 0.03f * hash3f(seed + 13u, (uint32_t)v, (uint32_t)s);
-			if (curEvolve > 0.f && !pinned[s])
-				sc += curEvolve * 0.7f
+			if (ev > 0.f && !pinned[s])
+				sc += ev * 1.4f
 				    * (hash3f(seed + 977u + cy * 40503u, (uint32_t)v, (uint32_t)s) - 0.5f);
 			sc += pinBonus[s];
 			score[s] = sc;
@@ -502,51 +520,82 @@ struct Payroll {
 			order[i] = s;
 		}
 
-		for (int s = 0; s < kSteps; s++) on[v][s] = false;
-		for (int i = 0; i < k; i++) on[v][order[i]] = true;
-
-		// --- conditions on the ghosts -------------------------------------------
-		// The fill pass is exempt: it is the one pass meant to be everything.
-		const bool fillPass = v != V_KICK && curEvolve > 0.05f && (cy & 3u) == 3u;
-		if (curEvolve > 0.001f && !fillPass) {
-			float share = clampf(curEvolve * 1.5f, 0.f, 1.f);
+		// --- conditions on everything that is not an anchor -----------------------
+		// Which passes a step plays on, Elektron-style: every other pass, two in
+		// three, one in four, half the time. A step whose condition is off this
+		// pass hands its place to the next best step rather than leaving a hole, so
+		// the density stays where FILL put it and what moves is *which* steps -- the
+		// pattern mutates instead of thinning. The more EVOLVE, the more of the
+		// pattern is conditional, and none of it is on the fill pass.
+		bool blocked[kSteps] = {};
+		if (ev > 0.001f && !fillPass) {
+			float share = clampf(ev, 0.f, 1.f);
 			for (int s = 0; s < L; s++) {
-				if (!on[v][s] || pinned[s] || spine[s] >= 0.35f) continue;
+				if (pinned[s]) continue;
 				if (hash3f(seed + 51u, (uint32_t)v, (uint32_t)s) >= share) continue;
 				bool play;
-				switch (hash3(seed + 77u, (uint32_t)v, (uint32_t)s) % 6u) {
+				switch (hash3(seed + 77u, (uint32_t)v, (uint32_t)s) % 9u) {
 					case 0:  play = (cy & 1u) == 0u; break;   // 1:2
 					case 1:  play = (cy & 1u) == 1u; break;   // 2:2
-					case 2:  play = (cy & 3u) == 0u; break;   // 1:4
-					case 3:  play = (cy & 3u) == 2u; break;   // 3:4
-					case 4:  play = (cy & 3u) == 3u; break;   // the fill pass only
-					default: play = hash3f(seed + 91u + cy * 131u, (uint32_t)v,
+					case 2:  play = (cy & 3u) != 0u; break;   // not 1:4
+					case 3:  play = (cy & 3u) != 1u; break;   // not 2:4
+					case 4:  play = cy % 3u != 0u; break;     // not 1:3
+					case 5:  play = cy % 3u != 2u; break;     // not 3:3
+					case 6:  play = (cy & 3u) == 2u; break;   // 3:4
+					case 7:  play = hash3f(seed + 91u + cy * 131u, (uint32_t)v,
 					                       (uint32_t)s) < 0.5f; break;   // 50%
+					default: play = true; break;
 				}
-				if (!play) on[v][s] = false;
+				if (!play) blocked[s] = true;
+			}
+		}
+
+		for (int s = 0; s < kSteps; s++) { on[v][s] = false; ratch[v][s] = 1; }
+		for (int i = 0, took = 0; i < L && took < k; i++)
+			if (!blocked[order[i]]) { on[v][order[i]] = true; took++; }
+
+		// --- ratchets ----------------------------------------------------------
+		// A step may be struck two to four times inside itself. Chance rises with
+		// EVOLVE and doubles on the fill pass; the kick and snare only double.
+		if (ev > 0.05f) {
+			float chance = ev * 0.45f * (fillPass ? 2.f : 1.f);
+			for (int s = 0; s < L; s++) {
+				if (!on[v][s] || pinned[s]) continue;
+				if (hash3f(seed + 601u + cy * 17u, (uint32_t)v, (uint32_t)s) >= chance) continue;
+				int n = 2 + (int)(hash3(seed + 603u + cy * 19u, (uint32_t)v, (uint32_t)s) % 3u);
+				if (v <= V_SNARE && n > 2) n = 2;
+				ratch[v][s] = n;
 			}
 		}
 
 		// --- velocity and feel --------------------------------------------------
 		const float human = curHuman;
+		// Micro-timing is a rhythmic device, not only a human one: a step may be
+		// shifted off the grid by a half, a third or a quarter of a step -- the
+		// positions where a triplet, a sextuplet or a thirty-second would fall --
+		// so a hit lands where no sixteenth-note grid has one. Elektron's
+		// micro-timing does the same, in 1/384ths. A share of the steps is shifted
+		// by SEED and does not change; EVOLVE adds more, and moves them each pass.
+		static const float kShift[8] = { -0.5f, -0.333f, -0.25f, -0.167f,
+		                                 0.167f, 0.25f, 0.333f, 0.5f };
+		float shiftChance = 0.22f + 0.45f * ev;
 		for (int s = 0; s < kSteps; s++) {
 			if (s >= L) { amp[v][s] = 0.f; offs[v][s] = 0.f; continue; }
-			// Velocity follows the step's weight: an onset on a strong step is an
-			// accent and one in the tail is a ghost, which alone is most of what
-			// makes a generated pattern sit down.
 			float w = spine[s];
 			float spread = (hash3f(seed + 101u, (uint32_t)v, (uint32_t)s) - 0.5f) * human * 0.8f;
 			amp[v][s] = clampf(0.25f + 0.75f * std::pow(w, 0.9f) + spread, 0.14f, 1.f);
 
-			// Microtiming, quantised to 1/384 of a step as a sequencer's tick
-			// grid would be. The voice's own lay-back (the snare sits behind the
-			// beat, ghosts a little more) rides on HUMAN; the spread is up to a
-			// sixth of a step either way, with the downbeats moving least. Early
-			// offsets fire on the step -- a hit cannot be sent before it is armed.
+			float o = 0.f;
+			if (!pinned[s]) {
+				uint32_t salt = ev > 0.3f ? cy : 0u;
+				if (hash3f(seed + 301u + salt * 53u, (uint32_t)v, (uint32_t)s) < shiftChance)
+					o = kShift[hash3(seed + 311u + salt * 59u, (uint32_t)v, (uint32_t)s) & 7u];
+			}
+			// HUMAN is the small, unintended kind: a spread of up to a sixth of a
+			// step either way, zero at zero.
 			float pull = (hash3f(seed + 211u, (uint32_t)v, (uint32_t)s) - 0.5f) * 2.f;
-			float anchor = (s % 4 == 0) ? 0.25f : 1.f;
-			float lay = role.bias * (w < 0.35f ? 1.6f : 1.f) * std::min(1.f, human * 2.f);
-			float o = lay + pull * human * 0.16f * anchor;
+			o += pull * human * 0.16f;
+			o += role.bias * std::min(1.f, human * 2.f);
 			offs[v][s] = std::floor(o * 384.f + 0.5f) / 384.f;
 		}
 	}
@@ -556,6 +605,7 @@ struct Payroll {
 		for (int v = 0; v < V_COUNT; v++) {
 			bool moved = cycle[v] != 0;
 			vstep[v] = 0; cycle[v] = 0;
+			early[v] = false; preWrapped[v] = false; qn[v] = 0;
 			if (moved && curEvolve > 0.001f && builtSeed >= 0) buildVoice(v);
 		}
 	}
@@ -564,6 +614,7 @@ struct Payroll {
 	void setStep(int s) {
 		int d = s - step;
 		step = s;
+		for (int v = 0; v < V_COUNT; v++) early[v] = false;
 		for (int v = 0; v < V_COUNT; v++)
 			vstep[v] = (((vstep[v] + d) % len[v]) + len[v]) % len[v];
 	}
@@ -592,7 +643,7 @@ struct Payroll {
 		if (resetEdge) {
 			step = 0; phase = 0.0;
 			restartVoices();
-			for (int v = 0; v < V_COUNT; v++) { pending[v] = false; gridPhase[v] = 0.0; }
+			for (int v = 0; v < V_COUNT; v++) { qn[v] = 0; gridPhase[v] = 0.0; }
 		}
 
 		if (pulseLeft > 0.f) pulseLeft -= dt;
@@ -634,7 +685,7 @@ struct Payroll {
 			// holds where it is (resuming on the next edge) and any hit still
 			// waiting on its microtiming is dropped rather than fired late.
 			if (!extClockLive()) {
-				for (int v = 0; v < V_COUNT; v++) pending[v] = false;
+				for (int v = 0; v < V_COUNT; v++) qn[v] = 0;
 				return;
 			}
 		}
@@ -644,7 +695,7 @@ struct Payroll {
 				// Held at the top of the bar, so pressing RUN starts on 1.
 				step = 0; phase = 0.0;
 				restartVoices();
-				for (int v = 0; v < V_COUNT; v++) pending[v] = false;
+				for (int v = 0; v < V_COUNT; v++) qn[v] = 0;
 				return;
 			}
 		}
@@ -663,7 +714,7 @@ struct Payroll {
 		// from, and it is why division is worth as much as multiplication here.
 		if (gridMode) {
 			for (int v = 0; v < V_COUNT; v++) {
-				pending[v] = false;
+				qn[v] = 0;
 				int idx = ratioIndex[v];
 				idx = idx < 0 ? 0 : (idx >= kRatioCount ? kRatioCount - 1 : idx);
 				double hz = stepHz * (double)kClockRatio[idx];
@@ -705,7 +756,7 @@ struct Payroll {
 			// At x1 the phase turns once per step, which is a single hit on the
 			// beat -- exactly what the module does with BURST off.
 			for (int v = 0; v < V_COUNT; v++) {
-				pending[v] = false;
+				qn[v] = 0;
 				int idx = ratioIndex[v];
 				idx = idx < 0 ? 0 : (idx >= kRatioCount ? kRatioCount - 1 : idx);
 				float ratio = kClockRatio[idx];
@@ -750,11 +801,17 @@ struct Payroll {
 		else {
 			// --- release anything whose microtiming offset has come due ------
 			for (int v = 0; v < V_COUNT; v++) {
-				if (!pending[v]) continue;
-				pendingIn[v] -= dt;
-				if (pendingIn[v] <= 0.f) {
-					pending[v] = false;
-					if (!gate[v]) fired[v] = true;
+				bool spoke = false;
+				for (int i = 0; i < qn[v]; ) {
+					qT[v][i] -= dt;
+					if (qT[v][i] <= 0.f && !spoke) {
+						spoke = true;
+						if (!gate[v]) { fired[v] = true; vel[v] = qVel[v][i]; }
+						qn[v]--;
+						qT[v][i] = qT[v][qn[v]]; qVel[v][i] = qVel[v][qn[v]];
+						continue;
+					}
+					i++;
 				}
 			}
 		}
@@ -770,8 +827,10 @@ struct Payroll {
 			for (int v = 0; v < V_COUNT; v++) {
 				if (++vstep[v] >= len[v]) {
 					vstep[v] = 0;
-					cycle[v]++;
-					if (curEvolve > 0.001f) buildVoice(v);
+					// advanceInto may have built this pass already, to look
+					// ahead into it; if not, build it now.
+					if (!preWrapped[v]) { cycle[v]++; buildVoice(v); }
+					preWrapped[v] = false;
 				}
 			}
 			// The bar line, and the only place a new seed is allowed in. It
@@ -784,7 +843,7 @@ struct Payroll {
 
 	/** Arm whatever the new step wants, offset by swing and microtiming. */
 	void advanceInto(int s, float swing) {
-		const bool* gate = gateNow;
+		swingNow = swing;
 		clockPulse = true;
 		pulseLeft = 0.001f;
 		// In grid mode a step boundary is still a clock tick -- CLK OUT and the
@@ -801,27 +860,65 @@ struct Payroll {
 			// the step's phase in process(), and a dividing one is running a
 			// phase that deliberately spans steps. All this boundary does is
 			// clear the sub-division counter so the new step starts on a hit.
-			for (int v = 0; v < V_COUNT; v++) { pending[v] = false; burstSub[v] = -1; }
+			for (int v = 0; v < V_COUNT; v++) { qn[v] = 0; burstSub[v] = -1; }
 			return;
 		}
 		float stepSec = stepHz > 1e-6 ? (float)(1.0 / stepHz) : 0.f;
-		// Swing pushes the odd sixteenths later; the even ones never move, so
-		// the pulse on CLK OUT stays where a downbeat should be.
-		float sw = (s & 1) ? swing * 0.62f : 0.f;
 		for (int v = 0; v < V_COUNT; v++) {
+			// This step: unless it was already armed from the step before.
 			int vs = vstep[v];
-			if (!on[v][vs]) continue;
-			vel[v] = amp[v][vs];
-			float delay = (sw + offs[v][vs]) * stepSec;
-			if (delay <= 0.f) {
-				pending[v] = false;
-				if (!gate[v]) fired[v] = true;
+			if (early[v]) early[v] = false;
+			else if (on[v][vs]) arm(v, vs, s, stepSec, 0.f, true);
+
+			// The next step, if its micro-timing puts it before its own beat: it
+			// has to be armed now, a step ahead, to land early. If the next step
+			// begins a new pass, build that pass first so the hit comes from it.
+			int nv = vs + 1;
+			if (nv >= len[v]) {
+				nv = 0;
+				if (!preWrapped[v]) {
+					cycle[v]++;
+					buildVoice(v);
+					preWrapped[v] = true;
+				}
 			}
-			else {
-				pending[v] = true;
-				pendingIn[v] = delay;
+			if (on[v][nv] && total(v, nv, (s + 1) % kSteps, swing) < 0.f) {
+				arm(v, nv, (s + 1) % kSteps, stepSec, stepSec, false);
+				early[v] = true;
 			}
 		}
+	}
+
+	float swingNow = 0.f;
+	/** Where a step's hit lands against its beat, in steps: swing plus the
+	    step's own micro-timing. Negative is early. */
+	float total(int v, int vs, int gs, float swing) const {
+		return ((gs & 1) ? swing * 0.62f : 0.f) + offs[v][vs];
+	}
+
+	/** Put a step's hit, and its ratchet, in the queue. `base` is how long from
+	    now the step's beat is: zero for the current step, one step for one armed
+	    ahead. `now` says this is the step's own boundary, where an early hit that
+	    could not be armed ahead (the first step after a reset) just plays at once. */
+	void arm(int v, int vs, int gs, float stepSec, float base, bool now) {
+		float t = base + total(v, vs, gs, swingNow) * stepSec;
+		if (t < 0.f) t = 0.f;
+		float a = amp[v][vs];
+		int n = ratch[v][vs];
+		if (n < 1) n = 1;
+		float gap = stepSec / (float)n;
+		for (int i = 0; i < n && qn[v] < kQ; i++) {
+			// Each hit of a ratchet is a little softer than the one before.
+			float x = a * (i == 0 ? 1.f : std::pow(0.82f, (float)i));
+			if (t + gap * (float)i <= 0.f && i == 0) {
+				if (!gateNow[v]) { fired[v] = true; vel[v] = x; }
+				continue;
+			}
+			qT[v][qn[v]] = t + gap * (float)i;
+			qVel[v][qn[v]] = x;
+			qn[v]++;
+		}
+		(void)now;
 	}
 
 	/** CLK OUT: a 1 ms pulse on every grid step, so Kickback can be the clock

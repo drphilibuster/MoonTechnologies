@@ -27,22 +27,24 @@ Hermod+ manual. 68 HP.
   step; a song of up to 32 entries, each a row and a number of passes; undo for the
   display's edits.
 
-### Changed: Kickback's pattern engine, ranked instead of Euclidean per k
+### Changed: Kickback's pattern engine, grouped, ranked and off the grid
 
 Below about 40% FILL the kick was E(3,16), `x....x....x.....`, on none of the beats after
 the first, while the snare and hat were busier than it; Euclid's pattern at k+1 has no
-relation to the one at k, so it is a poor density control. Each voice now scores every step
-(a hand-set metric spine, plus SHAPE times an Euclidean-necklace bonus, plus seeded noise) and
-plays its k best, with the voice's anchors pinned.
+relation to the one at k, so it is a poor density control. A first fix (a drummer's ladder with
+the kick on 1 and 3 and the snare on 2 and 4) then sounded like a polka. Now:
 
-* FILL is **nested**: every hit at one setting is still there at any higher one. The kick keeps
-  1 and 3 and the snare both backbeats from 25% up, at every SEED and SHAPE.
-* New **SHAPE** (ladder to Euclid), **EVOLVE** (ghost conditions, per-pass variation, a fill on
-  every fourth pass) and a per-voice **LENGTH** (3 to 16, polymeter). The three new parameters
-  are appended after the old ones; a saved patch loads, but sounds different.
-* Velocity follows the step's weight (accents and ghosts); microtiming is quantised to 1/384 of
-  a step with a per-voice lay-back.
-* The panel's section caption was dropped to make room for the LENGTH row (31 HP, unchanged).
+* each voice scores every step from an **additive grouping** of its cycle (3+3+3+3+4 and so on,
+  every voice counting differently), plus SHAPE times **two layered Euclidean necklaces**, plus
+  noise, and plays its k best. Only the strongest step is pinned. FILL is **nested**.
+* **micro-timing** shifts steps off the grid by a half, third or quarter of a step, early as well as
+  late (armed a step ahead), quantised to 1/384; **ratchets**; Elektron-style **pass conditions**
+  that reassign a hit rather than drop it; per-pass re-ranking; necklaces that change and turn
+  with EVOLVE; a fill every fourth pass.
+* new **SHAPE**, **EVOLVE** and per-voice **LENGTH** (3 to 16, polymeter). The new parameters are
+  appended after the old ones; a saved patch loads, but sounds different.
+* defaults: HUMAN 0, SWING 50%, EVOLVE 50%.
+* the panel's section caption was dropped to make room for the LENGTH row (31 HP, unchanged).
 
 ### Changed: Depreciation, redesigned around what it was like to use
 

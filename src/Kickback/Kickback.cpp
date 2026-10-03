@@ -95,7 +95,7 @@ struct Kickback : Module {
 		configParam(FILL_PARAM, 0.f, 1.f, 0.45f, "Pattern fill", "%", 0.f, 100.f);
 		configSwitch(BURST_PARAM, 0.f, 1.f, 0.f, "Ratios drive the steps",
 			{"Off -- one hit per step", "Burst -- each step runs at its voice's ratio"});
-		configParam(SWING_PARAM, 0.f, 1.f, 0.f, "Swing", "%", 0.f, 100.f);
+		configParam(SWING_PARAM, 0.f, 1.f, 0.5f, "Swing", "%", 0.f, 100.f);
 		configParam(SEED_PARAM, 0.f, 15.f, 0.f, "Pattern seed");
 		paramQuantities[SEED_PARAM]->snapEnabled = true;
 		// SHAPE: how far the Euclidean necklaces pull on the ranking. At zero the
@@ -104,8 +104,8 @@ struct Kickback : Module {
 		configParam(SHAPE_PARAM, 0.f, 1.f, 0.5f, "Shape: metric ladder to Euclidean", "%", 0.f, 100.f);
 		// EVOLVE: how much the loop moves from one pass to the next -- ghost notes
 		// that come and go on their own cycle, and a fill on every fourth pass.
-		configParam(EVOLVE_PARAM, 0.f, 1.f, 0.3f, "Evolve", "%", 0.f, 100.f);
-		configParam(HUMAN_PARAM, 0.f, 1.f, 0.25f, "Humanise", "%", 0.f, 100.f);
+		configParam(EVOLVE_PARAM, 0.f, 1.f, 0.5f, "Evolve", "%", 0.f, 100.f);
+		configParam(HUMAN_PARAM, 0.f, 1.f, 0.f, "Humanise", "%", 0.f, 100.f);
 		configParam(GATELEN_PARAM, 0.f, 1.f, 0.3f, "Gate length", " ms", 0.f, 1.f);
 		paramQuantities[GATELEN_PARAM]->displayMultiplier = 95.f;
 		paramQuantities[GATELEN_PARAM]->displayOffset = 5.f;

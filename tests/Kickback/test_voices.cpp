@@ -898,12 +898,10 @@ static void rankedTests() {
 	const float shapes[] = { 0.f, 0.5f, 1.f };
 	const float evolves[] = { 0.f, 0.7f };
 
-	// The anchors never vanish. This is the fault the redesign was for: with
-	// E(k,16) standing in for the pattern, FILL below 40% gave a kick of
-	// x....x....x..... -- on none of the beats after the first -- while the
-	// snare and hat were busier than it was. A pinned step outranks every knob,
-	// so the kick keeps its downbeat at any FILL above the bottom stop, the half
-	// bar from a quarter up, and the snare both backbeats from then on.
+	// The one anchor never vanishes: the kick keeps its downbeat at any FILL above
+	// the bottom stop, at every SEED, SHAPE, EVOLVE and pass. A pinned step
+	// outranks every knob. Nothing else is promised -- no half bar, no backbeat --
+	// because a kit that promises those is a polka.
 	{
 		int bad = 0;
 		for (int sd = 0; sd < 16; sd++)
@@ -917,7 +915,6 @@ static void rankedTests() {
 			p.build(fill, sd, 0.f, shapes[sh], evolves[ev]);
 			for (int v = 0; v < V_COUNT; v++) { p.cycle[v] = (uint32_t)cy; p.buildVoice(v); }
 			if (!p.on[V_KICK][0]) bad++;
-			if (fill >= 0.25f && (!p.on[V_KICK][8] || !p.on[V_SNARE][4] || !p.on[V_SNARE][12])) bad++;
 		}
 		checks++;
 		if (bad) {
@@ -927,18 +924,45 @@ static void rankedTests() {
 		}
 	}
 
-	// ...and at a fifth of the knob the kick is exactly the downbeat and the
-	// half bar, whatever SEED and SHAPE say -- two hits, both on the beat.
+	// At a fifth of the knob the kick is two hits, one of them the downbeat -- and
+	// the other is not always the half bar. Across the sixteen seeds the kick has
+	// to land on at least eight different patterns, and some of them on steps that
+	// are not on a quarter of the bar: a kick that can only halve is a polka.
 	{
-		bool ok = true;
-		for (int sd = 0; sd < 16; sd++)
-		for (size_t sh = 0; sh < 3; sh++) {
-			Payroll p; p.reset(); p.build(0.2f, sd, 0.f, shapes[sh]);
-			for (int s = 0; s < kSteps; s++)
-				ok &= (p.on[V_KICK][s] == (s == 0 || s == 8));
+		bool offQuarter = false;
+		int distinct = 0;
+		bool seen[16][kSteps] = {};
+		for (int sd = 0; sd < 16; sd++) {
+			Payroll p; p.reset(); p.build(0.45f, sd, 0.f, 0.5f);
+			bool dup = false;
+			for (int e = 0; e < sd; e++) {
+				bool same = true;
+				for (int s = 0; s < kSteps; s++) same &= (seen[e][s] == p.on[V_KICK][s]);
+				if (same) dup = true;
+			}
+			for (int s = 0; s < kSteps; s++) {
+				seen[sd][s] = p.on[V_KICK][s];
+				if (p.on[V_KICK][s] && s % 4 != 0) offQuarter = true;
+			}
+			if (!dup) distinct++;
+			Payroll q; q.reset(); q.build(0.2f, sd, 0.f, 0.5f);
+			checks++;
+			if (litCount(q, V_KICK) != 2 || !q.on[V_KICK][0])
+				fail("anchors", "the kick at 20% FILL was not two hits including the downbeat");
 		}
 		checks++;
-		if (!ok) fail("anchors", "the kick at 20% FILL was not the downbeat and the half bar");
+		if (distinct < 8) {
+			char d[96];
+			snprintf(d, sizeof d, "sixteen seeds gave only %d different kick patterns", distinct);
+			fail("variety", d);
+		}
+		checks++;
+		if (!offQuarter) fail("variety", "no seed ever put a kick off the quarter-note grid");
+		Payroll z; z.reset(); z.build(0.45f, 0, 0.f, 0.5f);
+		bool floor4 = true;
+		for (int s = 0; s < kSteps; s++) floor4 &= (z.on[V_KICK][s] == (s % 4 == 0));
+		checks++;
+		if (floor4) fail("variety", "the default kick is four on the floor");
 	}
 
 	// Below half the knob the kick is never outnumbered by the snare.
@@ -1102,22 +1126,82 @@ static void rankedTests() {
 		if (!fillBusier) fail("evolve", "the fourth pass of four was not a fill");
 	}
 
-	// Feel: ghosts speak quieter than anchors, and the offsets sit on the 1/384
-	// tick grid and never go past a third of a step.
+	// Micro-timing. Steps are shifted off the grid by a half, a third or a quarter
+	// of a step, the anchor never is, every offset sits on the 1/384 tick grid, and
+	// at HUMAN 0 the only offsets are those deliberate shifts.
 	{
-		Payroll p; p.reset(); p.build(1.f, 0, 0.5f);
-		bool quiet = p.amp[V_SNARE][4] > p.amp[V_SNARE][7] + 0.2f;
-		bool grid = true;
+		Payroll p; p.reset(); p.build(1.f, 3, 0.f);
+		bool grid = true, anyShift = false, anchorMoved = false, early = false;
 		for (int v = 0; v < V_COUNT; v++)
-			for (int s = 0; s < kSteps; s++) {
+			for (int s = 0; s < p.len[v]; s++) {
 				float o = p.offs[v][s] * 384.f;
-				if (std::fabs(o - std::floor(o + 0.5f)) > 1e-3f || std::fabs(p.offs[v][s]) > 0.34f)
+				if (std::fabs(o - std::floor(o + 0.5f)) > 1e-3f || std::fabs(p.offs[v][s]) > 0.52f)
 					grid = false;
+				if (p.offs[v][s] != 0.f) anyShift = true;
+				if (p.offs[v][s] < 0.f) early = true;
 			}
+		for (int sd = 0; sd < 16; sd++) {
+			Payroll q; q.reset(); q.build(0.5f, sd, 0.f, 0.5f, 0.9f);
+			if (q.offs[V_KICK][0] != 0.f) anchorMoved = true;
+		}
 		checks++;
-		if (!quiet) fail("feel", "a ghost note was not quieter than the backbeat");
+		if (!grid) fail("feel", "an offset was off the 1/384 grid or past half a step");
 		checks++;
-		if (!grid) fail("feel", "a microtiming offset was off the 1/384 grid or over a third of a step");
+		if (!anyShift) fail("feel", "no step was shifted off the grid");
+		checks++;
+		if (!early) fail("feel", "no step was ever pulled early");
+		checks++;
+		if (anchorMoved) fail("feel", "the pinned anchor was shifted off the beat");
+	}
+
+	// Every hit the table lights is played exactly once, with micro-timing, early
+	// hits armed a step ahead and swing all on: the look-ahead must neither lose a
+	// hit nor play one twice. Counted over five bars of a 16-step cycle.
+	{
+		const float fs = 48000.f;
+		bool none[V_COUNT] = {};
+		bool ok = true;
+		char why[96] = "";
+		for (int sd = 0; sd < 6 && ok; sd++) {
+			Payroll p;
+			p.reset(); p.running = true; p.build(0.7f, sd, 0.f, 0.6f);
+			int lit[V_COUNT], fires[V_COUNT] = {};
+			for (int v = 0; v < V_COUNT; v++) lit[v] = litCount(p, v);
+			for (long i = 0; i < (long)(fs * 2.f * 6); i++) {
+				p.process(1.f / fs, false, false, false, 120.f, 3, 0.5f, none);
+				for (int v = 0; v < V_COUNT; v++) if (p.fired[v]) fires[v]++;
+			}
+			for (int v = 0; v < V_COUNT; v++)
+				if (fires[v] < lit[v] * 5 || fires[v] > lit[v] * 6) {
+					ok = false;
+					snprintf(why, sizeof why, "seed %d voice %d: %d hits in 6 bars from %d lit steps",
+					         sd, v, fires[v], lit[v]);
+				}
+		}
+		checks++;
+		if (!ok) fail("look-ahead", why);
+	}
+
+	// Ratchets exist once EVOLVE is up, never on the anchor, never more than four.
+	{
+		bool any = false, bad = false;
+		Payroll p; p.reset(); p.build(1.f, 2, 0.f, 0.5f, 0.9f);
+		for (int cy = 0; cy < 8; cy++)
+			for (int v = 0; v < V_COUNT; v++) {
+				p.cycle[v] = (uint32_t)cy; p.buildVoice(v);
+				for (int s = 0; s < p.len[v]; s++) {
+					if (p.ratch[v][s] > 1) any = true;
+					if (p.ratch[v][s] < 1 || p.ratch[v][s] > 4) bad = true;
+				}
+				if (p.ratch[v][0] > 1 && v == V_KICK) bad = true;
+			}
+		Payroll q; q.reset(); q.build(1.f, 2, 0.f, 0.5f, 0.f);
+		for (int v = 0; v < V_COUNT; v++)
+			for (int s = 0; s < q.len[v]; s++) if (q.ratch[v][s] != 1) bad = true;
+		checks++;
+		if (!any) fail("ratchet", "EVOLVE up and no step was ever ratcheted");
+		checks++;
+		if (bad) fail("ratchet", "a ratchet count was out of range, on the anchor, or present at EVOLVE 0");
 	}
 }
 
