@@ -203,6 +203,12 @@ credit: *Grew out of Kickback's bell.*
 
 BaSnaHi's snare stage was always a better bell than a snare, so it has a module of its own: modal partials over a membrane, a bar, a tuned bell or a bare harmonic series, with strike position, mallet hardness, per-partial damping, an inharmonicity stretch, a buzzing second layer and a choke. No clock and no patterns — Kickback has those.
 
+## Obfuscation
+group: grew
+credit: *A phaser taken to its logical conclusion.*
+
+A three-band allpass matrix: the input is split into low, mid and high, each band runs through up to ninety-six first-order allpass stages inside its own feedback loop, and the bands are summed, saturated, tilted, clipped and boosted. RANDOM redraws every stage's cutoff on a clock or on the input's peaks, and the RANDOM gate also freezes the matrix, holding whatever is ringing in it.
+
 ## ScheduleA
 group: grew
 credit: *The Repossession expander.*

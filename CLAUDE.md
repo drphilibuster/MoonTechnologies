@@ -1,7 +1,7 @@
 # Moon Technologies
 
 One VCV Rack 2 plugin, slug `MoonTechnologies`, brand **Moon Technologies**,
-author **Taxxess**. Thirty-five modules sharing one panel pipeline: the three
+author **Taxxess**. Thirty-six modules sharing one panel pipeline: the three
 originals (`PatchAudit`, `Retroactive`, `UncertaintyPolicy`), eleven built to
 order (`Dividend`, `TaxBracket`, `Racketeer`, `Gross`, `Amortization`,
 `Repossession`, `Collusion`, `Reconciliation`, `Dependents`, `Calculation`,
@@ -11,7 +11,8 @@ order (`Dividend`, `TaxBracket`, `Racketeer`, `Gross`, `Amortization`,
 `Deduction`, `AuditLogic`, `Kickback`, `PaymentSchedule`, `SignHere`,
 `Diversified`), one voice that split off from a bank (`Toll`, out of
 `Kickback`), one bank doubled into a module of its own (`Bailout`, out of
-`Consolidation`), two about video (`Transmittal`, which publishes it, and
+`Consolidation`), one new effect (`Obfuscation`, a three-band allpass
+matrix), two about video (`Transmittal`, which publishes it, and
 `Projection`, which makes it) and five hardware emulations (`Apportionment`,
 an Ensoniq DP/4, `Depreciation`, a Lexicon PCM 70, `Rebate`, an Alesis MIDIverb,
 `Contagion`, an Access Virus C, and `NordicBanking`, a Clavia Nord Lead 2X, each
@@ -102,7 +103,7 @@ what the generator writes.
 Look at `tools/previews/<Module>.png` before calling a panel done — it goes
 through the real widget tree, so it is the only preview that cannot lie. Do this
 for **every** module whose header the change touched, not just the one you were
-working in; a `panelkit/` change reaches all thirty-five.
+working in; a `panelkit/` change reaches all thirty-six.
 
 See `panelkit/README.md` for the design language, the spec API and what the
 linter checks.
@@ -126,7 +127,7 @@ one. A screenshot showing old behaviour after a fix usually means exactly this.
 
 ## Slugs are permanent
 
-`MoonTechnologies` and the thirty-five module slugs listed at the top of this file.
+`MoonTechnologies` and the thirty-six module slugs listed at the top of this file.
 Changing any of them orphans every saved patch that used it: Rack's fallback table
 (`Rack/src/plugin.cpp:374`) is maintained by VCV, not by plugin authors.
 

@@ -384,6 +384,17 @@
       ]
     },
     {
+      "slug": "Obfuscation",
+      "name": "Obfuscation",
+      "description": "Three-band allpass matrix: up to 96 feedback allpass stages per band, clock- or peak-driven randomization, a freeze gate, then saturation, tilt, clip and boost",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Obfuscation.md",
+      "tags": [
+        "Filter",
+        "Effect",
+        "Distortion"
+      ]
+    },
+    {
       "slug": "UncertaintyPolicy",
       "name": "Uncertainty Policy",
       "description": "Signal-aware knob and cable randomizer that auditions each roll and reverts the ones that kill the sound",
