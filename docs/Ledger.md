@@ -1,4 +1,4 @@
-# Ledger — SCHEDULE L
+# Ledger — generative sequencer · SCHEDULE L
 
 **An eight-track sequencer that grows its melodies, and writes them down when
 you want to keep them.** By default each track's melody is grown from a seed
@@ -8,7 +8,7 @@ destructive, because turning it back brings the exact line back. And a seed
 number is a melody: give someone the seed and the settings, and they hear what
 you heard. A track can also play a **written pattern**: notes you draw or
 capture, chords and all. Each track holds sixteen slots of either kind, and
-launches between them. 68 HP.
+launches between them. 35 HP.
 
 Ledger's generator is **Shoal**, by Ormer Modular, whose engine is open source
 under the MIT licence (<https://github.com/ormermodular/shoal>). Ledger runs a
@@ -31,9 +31,18 @@ thirds; give it SHFT −4 and it plays a canon.
 
 ## The display
 
-The display has five pages, chosen with the **TANK**, **ROLL**, **FX**, **SEQ**
-and **SONG** buttons: the eight tracks at a glance, the selected track's piano
-roll, its effects, the slots, and the song.
+The display has five pages: the eight tracks at a glance, the selected track's
+piano roll, its effects, the slots, and the song.
+
+Across the top of the glass, on every page, is a **strip of tabs**: Ledger's
+buttons, on the screen. Its first row is the pages (**TANK**, **ROLL**, **FX**,
+**SEQ**, **SONG**) and the eight tracks (**T1–T8**); its second the transport
+(**RUN**, **RESET**, **FREEZE**, **REC**) and what is done to the selected track
+(**MUTE**, **SOLO**, **RESEED**, **CAPTURE**). Click a tab to press it. A tab lights
+the way its button's LED did: the page on show, the selected track (and the
+others glowing with their gates), RUN while running, and so on. They are Rack
+parameters, so right-click one for its menu, and MIDI-Map can learn it. What
+each does is under "Buttons" below.
 
 ### TANK
 
@@ -50,9 +59,19 @@ each extra note of a chord.
 
 The right of the display shows the selected track's books: its number, the seed
 it is playing, chance (CH), note (NT), octave (OC), rate, length, direction
-(DIR), evolve (EV), breathe (BR), fixed octave (OCT) and transpose (TR). The
-bottom line shows the key. It blinks **RESEED ARM** while a reseed waits for the
-loop to come round, and shows FRZ while frozen or STOP while stopped.
+(DIR), evolve (EV), breathe (BR), fixed octave (OCT) and transpose (TR), then
+the key (root and scale). The line under the key blinks **RESEED ARM** while a
+reseed waits for the loop to come round, and shows REC, FRZ while frozen, STOP
+while stopped, or `> n` while a launch is queued.
+
+**Every value in the books is a control.** The pointer turns into up/down
+arrows over a number: hold it and drag up or down (Ctrl drags finely, Shift
+coarsely; double-click resets). RATE, DIR, OCT, the root and the scale are
+lists: click one to pick from them, or hold and drag to step through them.
+Right-click any of them for Rack's parameter menu, where a value can be typed
+in. They set the same things the knobs of the same names did, for the selected
+track, so a patch made before they moved loads unchanged, and undo and MIDI-Map
+work on them as on a knob.
 
 Click a lane to select its track.
 
@@ -251,12 +270,14 @@ A note that lands on a voice still sounding is **legato** (the gate stays
 high); *Retrigger overlapping notes* in the menu dips the gate for 1 ms
 instead, so envelopes restart. A generator track is always one voice, exactly as
 Shoal plays it.
-## Knobs
+## Knobs and the books
 
-The first fourteen knobs address the **selected track**. Selecting a different
-track moves them to that track's values.
+Fourteen settings address the **selected track**. Selecting a different
+track moves them to that track's values. CHANCE, NOTE ±, OCTAVE ±, SHFT, GATE,
+TIE and SLOP are knobs on the face; the others are set on the display's books
+(TANK page), and the performance trio, CHANCE, NOTE ± and OCTAVE ±, is on both.
 
-| knob | range | what it does |
+| setting | range | what it does |
 |---|---|---|
 | CHANCE | 0–100 % | how likely each step is to sound |
 | NOTE ± | ±100 % | random scale-step variation. Distance from the centre sets how often a note varies and how far it can go (up to 12 scale steps); the sign sets the direction. At 0, the pure base melody |
@@ -273,22 +294,25 @@ track moves them to that track's values.
 | TIE | 0–100 % | chance a note holds into the next step without retriggering |
 | SLOP | 0–100 % | a seeded per-note lateness of up to half a step. The same notes lean by the same amount every loop |
 
-The last four knobs are **the books**, shared by every track:
+Four settings are **the books**, shared by every track. WEIGHT and BPM are
+knobs; SCALE and ROOT are the key line of the display's books.
 
-| knob | what it does |
+| setting | what it does |
 |---|---|
 | SCALE | Chromatic, Major, Natural minor, Harmonic minor, Dorian, Phrygian, Lydian, Mixolydian, Major pentatonic, Minor pentatonic, Blues, Hirajoshi, In-Sen |
 | ROOT | C … B. A track adopts a new key on its next note |
 | WEIGHT | consonance: this share of notes is pulled to the nearest root, third or fifth |
 | BPM | the internal tempo, 20–300. ×1 is one step per beat. Ignored while CLOCK is patched |
 
-Rack's parameter menu, MIDI-mapping and undo work on the knobs as usual. A
-mapped knob controls whichever track is selected.
+Rack's parameter menu, MIDI-mapping and undo work on the knobs and the books'
+fields as usual. A mapped setting controls whichever track is selected.
 
 ## CV
 
-**Under every knob but BPM is a CV jack**, labelled with its knob's name. It
-adds to the knob and the result is clamped, as Shoal's expander does it. One
+**Every setting but BPM has a CV jack.** Under each knob is its own; the row
+under those holds the books' settings, each jack named (LENG, RATE, DIRN, TRNS,
+OCTA, EVOLVE, BREATHE, SCALE, ROOT). It adds to the setting and the result is
+clamped, as Shoal's expander does it. One
 volt is a tenth of the setting's range, so 0–10 V sweeps a one-sided setting
 (CHANCE, EVOLVE, GATE …) from bottom to top and ±5 V sweeps a two-sided one
 (NOTE ±, TRNS, SHFT, OCTA …) from end to end.
@@ -311,13 +335,15 @@ of the track's fourteen settings or any parameter of its effects, with:
 | CC | for a MIDI CC source: which CC (0–119). *Learn* takes the next CC the track receives |
 | Offset | −100…100 % of the setting's range, added while the slot has a source |
 
-The matrix also adds to the knob, so the knob still works underneath. A CV
+The matrix also adds to the setting, so its knob or field still works underneath. A CV
 jack and matrix slots aimed at the same setting add together.
 
 **Knobs show what is set; the display shows what is playing.** A value under
 CV is drawn in lime at its modulated value, and so is the lane number of any
-track something is modulating. Modulation is never saved and never moves a
-knob: a patch saved mid-sweep keeps the knob's value.
+track something is modulating. That includes the books' own fields: one under
+CV shows, in lime, where it is playing, and dragging it moves where it is set.
+Modulation is never saved and never moves a knob: a patch saved mid-sweep keeps
+the knob's value.
 
 ## Effects
 
@@ -368,9 +394,11 @@ settings or effect parameters.
 
 ## Buttons
 
-| button | what it does |
+Ledger's buttons are the tabs across the top of the display (see "The display").
+
+| tab | what it does |
 |---|---|
-| 1–8 | select a track. The light is full on the selected track and flickers with the others' gates |
+| T1–T8 | select a track. The tab is full on the selected track and flickers with the others' gates |
 | TANK, ROLL, FX, SEQ, SONG | the display's page |
 | CAPTURE | write the selected generator's loop into its next empty slot, and launch it (see Slots and patterns) |
 | REC | record MIDI in into the playing patterns (see MIDI). Lit while recording; flashing while it waits for a first note (punch in) or for the clock |
@@ -416,7 +444,7 @@ step.
 | FREEZE in | a gate, combined with the button |
 | SEED in | 0–10 V picks the selected track's seed (about 10 mV per seed), armed. Quantised CV gives repeatable seeds |
 | CV A–D | sources for the mod matrix |
-| (under the knobs) | see CV above |
+| (under the knobs, and the row below) | see CV above |
 | PITCH 1–8 | 1 V/oct, 0 V = C3, or the track's pitch standard. Holds through rests. A channel per voice on a pattern track |
 | GATE 1–8 | 10 V gates (the menu's Gate level). A channel per voice |
 | VEL | 8 channels: each track's last velocity, 0–10 V. A generator's is the MIDI velocity setting, 100 |

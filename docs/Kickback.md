@@ -1,10 +1,10 @@
-# Kickback — FORM 1099-NEC
+# Kickback — drum machine · FORM 1099-NEC
 
 **A Modular in a Week drum bank that is also a drum machine.** Six percussion
 voices from Modular in a Week's Day 9 folder, each with its own trigger and
 output; a clock; a ranked pattern engine (a metric spine plus Euclidean necklaces) that plays any voice whose trigger
 jack is empty; and a grid mode where each voice instead runs at its own multiple
-or division of the clock, from /256 to ×256. 31 HP, monophonic (drums; no
+or division of the clock, from /256 to ×256. 30 HP, monophonic (drums; no
 per-channel processing).
 
 Form 1099-NEC is the IRS's *Nonemployee Compensation* form — what a payer files

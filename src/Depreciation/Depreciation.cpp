@@ -64,10 +64,9 @@ std::vector<uint8_t> unbase64(const std::string& s) {
 	return out;
 }
 
-#define ROWPOS(r) { panel::P##r##0_POS, panel::P##r##1_POS, panel::P##r##2_POS, panel::P##r##3_POS, panel::P##r##4_POS, panel::P##r##5_POS, panel::P##r##6_POS, panel::P##r##7_POS, panel::P##r##8_POS }
-#define ROWCAP(r) { panel::CAP##r##0_POS, panel::CAP##r##1_POS, panel::CAP##r##2_POS, panel::CAP##r##3_POS, panel::CAP##r##4_POS, panel::CAP##r##5_POS, panel::CAP##r##6_POS, panel::CAP##r##7_POS, panel::CAP##r##8_POS }
-const Vec CELL_POS[5][9] = { ROWPOS(0), ROWPOS(1), ROWPOS(2), ROWPOS(3), ROWPOS(4) };
-const Vec CAP_POS[5][9] = { ROWCAP(0), ROWCAP(1), ROWCAP(2), ROWCAP(3), ROWCAP(4) };
+#define ROWFIELD(r) { panel::FIELD_P##r##0, panel::FIELD_P##r##1, panel::FIELD_P##r##2, panel::FIELD_P##r##3, panel::FIELD_P##r##4, panel::FIELD_P##r##5, panel::FIELD_P##r##6, panel::FIELD_P##r##7, panel::FIELD_P##r##8 }
+// the matrix's cells on the read-out, row by row: where each is drawn and where it is grabbed
+const Rect CELL_FIELD[5][9] = { ROWFIELD(0), ROWFIELD(1), ROWFIELD(2), ROWFIELD(3), ROWFIELD(4) };
 
 } // namespace
 
@@ -429,10 +428,26 @@ struct Depreciation : Module {
 namespace {
 
 /** The read-out well: the machine's own 16-digit display, what the selector points at (and what LOAD will do with it), the last parameter touched, the headroom bar
-    and what the module is doing. */
+    and what the module is doing; under it the preset strip, the 9 x 5 parameter matrix and the setup strip, whose cells are the FIELD_* rectangles the fields sit on. */
 struct WellDisplay : widget::Widget {
 	Depreciation* module = nullptr;
 	int shownSlot = -1; bool shownUser = false; double slotMovedAt = -99.0;      // UI-thread memory: when the selector last moved, so the cue gives way to a touched parameter only after
+	panel::FittedText fitted[5 * 9 * 2], fitStat, fitSlot;
+
+	/** A strip cell: a small caption over its value, both centred. */
+	void cell(NVGcontext* vg, const Rect& f, const char* tag, const std::string& value, NVGcolor ink) {
+		const Rect c = panel::inGlass(f);
+		const float mmx = mm2px(1.f), cx = c.pos.x + c.size.x / 2.f;
+		const panel::TextStyle TAG(panel::Face::Mono, 2.0f * mmx, panel::SAGE, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+		const panel::TextStyle VAL(panel::Face::Mono, 2.9f * mmx, ink, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+		panel::text(vg, TAG, cx, c.pos.y + c.size.y * 0.40f, tag);
+		panel::text(vg, VAL, cx, c.pos.y + c.size.y * 0.88f, value);
+	}
+
+	std::string shown(int id) {
+		engine::ParamQuantity* q = module ? module->paramQuantities[id] : nullptr;
+		return q ? q->getDisplayValueString() + q->getUnit() : std::string("--");
+	}
 
 	void drawLayer(const DrawArgs& args, int layer) override {
 		if (layer != 1) return;
@@ -444,80 +459,102 @@ struct WellDisplay : widget::Widget {
 			{ std::lock_guard<std::mutex> lock(module->romMutex); status = module->status; ok = module->roms.ok(); }
 		}
 		const bool live = module && status.empty();
-		// the 16 digits
-		const float dx = 6.f * mmx, dy = 1.4f * mmx, dw = 6.2f * mmx, dh = 9.6f * mmx;
+		// the 16 digits, across the width
+		const float dx = (panel::X0 - panel::GLASS_X) * mmx, dy = (panel::DIG_Y - panel::GLASS_Y) * mmx;
+		const float dw = panel::IW / 16.f * mmx, dh = panel::DIG_H * mmx;
 		std::string txt = live ? s.display : (module ? status : std::string("DEPRECIATION"));
 		std::vector<std::pair<char, bool>> digits;
 		for (char ch : txt) { if (ch == '.' && !digits.empty() && !digits.back().second && live) digits.back().second = true; else digits.push_back({ ch, false }); }
 		while (digits.size() < 16) digits.push_back({ ' ', false });
-		const panel::TextStyle big(panel::Face::Mono, 8.6f * mmx, live ? panel::LIME : (ok ? panel::SAGE : panel::CLAY), NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+		const panel::TextStyle big(panel::Face::Mono, 0.95f * dh, live ? panel::LIME : (ok ? panel::SAGE : panel::CLAY), NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
 		for (int i = 0; i < 16 && i < (int)digits.size(); i++) {
 			const float x = dx + i * dw;
-			nvgBeginPath(vg); nvgRoundedRect(vg, x + 0.25f * mmx, dy, dw - 0.5f * mmx, dh, 0.5f * mmx); nvgFillColor(vg, panel::alpha(panel::LIME, 0.05f)); nvgFill(vg);
+			nvgBeginPath(vg); nvgRoundedRect(vg, x + 0.2f * mmx, dy, dw - 0.4f * mmx, dh, 0.5f * mmx); nvgFillColor(vg, panel::alpha(panel::LIME, 0.05f)); nvgFill(vg);
 			const char buf[2] = { digits[i].first, 0 };
-			if (digits[i].first != ' ') panel::text(vg, big, x + dw / 2 - (digits[i].second ? 0.4f * mmx : 0.f), dy + dh / 2 + 0.3f * mmx, buf);
-			if (digits[i].second) { nvgBeginPath(vg); nvgCircle(vg, x + dw - 0.9f * mmx, dy + dh - 1.0f * mmx, 0.45f * mmx); nvgFillColor(vg, panel::LIME); nvgFill(vg); }
+			if (digits[i].first != ' ') panel::text(vg, big, x + dw / 2 - (digits[i].second ? 0.3f * mmx : 0.f), dy + dh / 2 + 0.3f * mmx, buf);
+			if (digits[i].second) { nvgBeginPath(vg); nvgCircle(vg, x + dw - 0.7f * mmx, dy + dh - 0.9f * mmx, 0.4f * mmx); nvgFillColor(vg, panel::LIME); nvgFill(vg); }
 		}
-		const panel::TextStyle small(panel::Face::Mono, 3.5f * mmx, panel::SAGE, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
-		// the line under the digits: a refusal, the last parameter touched, or what the selector points at and what LOAD will do
-		const float ly = dy + dh + 2.0f * mmx;
+		// the status line: a refusal, the last parameter touched, or what the selector points at and what LOAD will do; the headroom bar at its right
+		const panel::TextStyle small(panel::Face::Mono, 3.0f * mmx, panel::SAGE, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
+		const float ly = (panel::STAT_Y - panel::GLASS_Y) * mmx;
+		const float barW = 24.f * mmx, hx = dx + panel::IW * mmx - barW;
+		const float statW = hx - dx - 2.f * mmx;
 		if (live) {
 			const bool user = module->params[Depreciation::REGMODE_PARAM].getValue() > 0.5f;
 			const int slot = (int)std::lround(module->params[Depreciation::SLOT_PARAM].getValue());
 			const double now = glfwGetTime();
 			if (slot != shownSlot || user != shownUser) { if (shownSlot >= 0) slotMovedAt = now; shownSlot = slot; shownUser = user; }
-			if (!s.refusal.empty() && s.sinceRefusal < 3.0)
-				panel::text(vg, small.inked(panel::CLAY), dx, ly, s.refusal.c_str());
+			std::string line; NVGcolor ink = panel::LIME;
+			if (!s.refusal.empty() && s.sinceRefusal < 3.0) { line = s.refusal; ink = panel::CLAY; }
 			else if (s.touched >= 0 && s.sinceTouch < 4.0 && now - slotMovedAt > s.sinceTouch) {
 				const int r = s.touched / 9, c = s.touched % 9;
-				panel::text(vg, small.inked(panel::LIME), dx, ly, (std::to_string(r) + "." + std::to_string(c) + "  " + s.name[r][c] + "  " + s.caption[r][c]).c_str());
+				line = std::to_string(r) + "." + std::to_string(c) + "  " + s.name[r][c] + "  " + s.caption[r][c];
 			} else {
 				bool empty = false; const std::string what = module->slotText(user, slot, &empty);
 				const bool running = s.loadedSlot == slot && s.loadedUser == user;
-				panel::text(vg, small.inked(empty ? panel::CLAY : panel::LIME), dx, ly, (what + (empty ? "" : (running ? "   RUNNING" : "   PRESS LOAD"))).c_str());
+				line = what + (empty ? "" : (running ? "  RUNNING" : "  PRESS LOAD")); ink = empty ? panel::CLAY : panel::LIME;
 			}
+			panel::text(vg, small.inked(ink), dx, ly, fitStat.get(vg, small, line, statW));
 		}
-		// headroom bar (the detector the firmware's gates read), 0 / -6 / -12 / -18 / -24 dB
-		const float hx = 112.f * mmx, hy = 3.f * mmx;
-		panel::text(vg, small, hx, hy - 0.6f * mmx, "HEADROOM");
+		else if (module)
+			panel::text(vg, small.inked(ok ? panel::SAGE : panel::CLAY), dx, ly, fitStat.get(vg, small, ok ? "POWER-UP TAKES ABOUT 9 SECONDS" : "RIGHT-CLICK: LOAD ROM FOLDER", statW));
+		// headroom (the detector the firmware's gates read), -24 / -18 / -12 / -6 / 0 dB
 		for (int i = 0; i < 5; i++) {
 			const bool lit = live && s.leds >= i + 1;      // leds() counts from the bottom of the bar: 1 = only -24 dB, 5 = 0 dB overload
-			nvgBeginPath(vg); nvgRoundedRect(vg, hx + i * 5.2f * mmx, hy + 1.2f * mmx, 4.4f * mmx, 2.6f * mmx, 0.4f * mmx);
+			nvgBeginPath(vg); nvgRoundedRect(vg, hx + i * barW / 5.f, ly - 2.4f * mmx, barW / 5.f - 0.6f * mmx, 2.4f * mmx, 0.3f * mmx);
 			nvgFillColor(vg, panel::alpha(i == 4 ? panel::CLAY : panel::LIME, lit ? 1.f : 0.14f)); nvgFill(vg);
 		}
-		panel::text(vg, small.sized(2.9f * mmx), hx, hy + 6.4f * mmx, "-24  -18  -12  -6   0");
-		if (live && s.fault) panel::text(vg, small.inked(panel::CLAY), hx, hy + 9.5f * mmx, "FIRMWARE STALLED");
-		// what the module is doing
-		if (!live && module) panel::text(vg, small.inked(ok ? panel::SAGE : panel::CLAY), hx, hy + 9.5f * mmx, ok ? "POWER-UP TAKES ABOUT 9 SECONDS" : "RIGHT-CLICK: LOAD ROM FOLDER");
-	}
-};
+		if (live && s.fault) panel::text(vg, small.inked(panel::CLAY), dx, ly, "FIRMWARE STALLED");
 
-/** The 45 plates under the matrix knobs: each parameter's own name, and its printed value for a moment after a touch; the knobs the program does not use are
-    dimmed. */
-struct MatrixPlates : widget::Widget {
-	Depreciation* module = nullptr;
-	panel::FittedText fitted[5 * 9];
+		// the preset strip
+		{
+			const bool user = module && module->params[Depreciation::REGMODE_PARAM].getValue() > 0.5f;
+			const int slot = module ? (int)std::lround(module->params[Depreciation::SLOT_PARAM].getValue()) : 0;
+			bool empty = false;
+			const std::string what = module ? module->slotText(user, slot, &empty) : std::string("--");
+			const Rect f = panel::inGlass(panel::FIELD_SLOT);
+			const panel::TextStyle VAL(panel::Face::Mono, 2.9f * mmx, empty ? panel::CLAY : panel::PAPER, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+			cell(vg, panel::FIELD_SLOT, "PRESET", "", panel::PAPER);
+			panel::text(vg, VAL, f.pos.x + f.size.x / 2.f, f.pos.y + f.size.y * 0.88f, fitSlot.get(vg, VAL, what, f.size.x - 1.5f * mmx));
+			cell(vg, panel::FIELD_REGMODE, "BANK", user ? "USER" : "FACTORY", panel::LIME);
+			const bool running = live && s.loadedSlot == slot && s.loadedUser == user;
+			cell(vg, panel::FIELD_LOAD, "", "LOAD", running ? panel::alpha(panel::LIME, 0.45f) : panel::LIME);
+			cell(vg, panel::FIELD_STORE, "", "STORE", user ? panel::LIME : panel::alpha(panel::SAGE, 0.5f));
+			const bool byp = module && module->lights[Depreciation::BYPASS_LED].getBrightness() > 0.5f;
+			cell(vg, panel::FIELD_BYPASS, "", "BYPASS", byp ? panel::CLAY : panel::SAGE);
+		}
 
-	void drawLayer(const DrawArgs& args, int layer) override {
-		if (layer != 1) return;
-		NVGcontext* vg = args.vg;
-		pcm70::PanelLogic::Snap s;
-		if (module) { std::lock_guard<std::mutex> lock(module->snapMutex); s = module->snap; }
-		const float pw = mm2px(panel::READOUT_W), ph = mm2px(panel::READOUT_H);
-		const panel::TextStyle st(panel::Face::Mono, ph * 0.80f, panel::SAGE, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
-		for (int r = 0; r < 5; r++) for (int c = 0; c < 9; c++) {
-			const Vec p = mm2px(CAP_POS[r][c]) - box.pos;
-			const bool valid = s.valid[r][c];
-			std::string t = valid ? s.name[r][c] : "";
-			NVGcolor ink = panel::SAGE;
-			if (valid && s.touched == r * 9 + c && s.sinceTouch < 2.0 && !s.caption[r][c].empty()) { t = s.caption[r][c]; ink = panel::LIME; }
-			else if (!valid) t = "--";
-			panel::text(vg, st.inked(valid ? ink : panel::alpha(panel::SAGE, 0.35f)), p.x, p.y, fitted[r * 9 + c].get(vg, st.inked(valid ? ink : panel::alpha(panel::SAGE, 0.35f)), t, pw - 1.f).c_str());
-			if (!valid) {                                                    // a knob the running program does not have
-				const Vec k = mm2px(CELL_POS[r][c]) - box.pos;
-				nvgBeginPath(vg); nvgCircle(vg, k.x, k.y, mm2px(3.9f)); nvgFillColor(vg, nvgRGBAf(0.f, 0.f, 0.f, 0.45f)); nvgFill(vg);
+		// the matrix: each cell the firmware's own name over its printed value; a cell the program does not use is dimmed
+		{
+			const panel::TextStyle NAME(panel::Face::Mono, 2.1f * mmx, panel::SAGE, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+			const panel::TextStyle VAL(panel::Face::Mono, 2.6f * mmx, panel::PAPER, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+			for (int r = 0; r < 5; r++) for (int c = 0; c < 9; c++) {
+				const Rect f = panel::inGlass(CELL_FIELD[r][c]);
+				const float cx = f.pos.x + f.size.x / 2.f, w = f.size.x - 0.8f * mmx;
+				const bool valid = !module || s.valid[r][c];
+				if (!valid) {
+					panel::text(vg, NAME.inked(panel::alpha(panel::SAGE, 0.3f)), cx, f.pos.y + f.size.y * 0.66f, "--");
+					continue;
+				}
+				const bool touched = module && s.touched == r * 9 + c && s.sinceTouch < 2.0;
+				if (touched) {
+					nvgBeginPath(vg); nvgRoundedRect(vg, f.pos.x + 0.3f, f.pos.y + 0.3f, f.size.x - 0.6f, f.size.y - 0.6f, 1.2f);
+					nvgFillColor(vg, panel::alpha(panel::LIME, 0.10f)); nvgFill(vg);
+				}
+				const std::string name = module ? s.name[r][c] : std::to_string(r) + "." + std::to_string(c);
+				const std::string val = module ? (s.caption[r][c].empty() ? std::to_string(s.word[r][c]) : s.caption[r][c]) : std::string("");
+				panel::text(vg, NAME, cx, f.pos.y + f.size.y * 0.40f, fitted[(r * 9 + c) * 2].get(vg, NAME, name, w));
+				panel::text(vg, VAL.inked(touched ? panel::LIME : panel::PAPER), cx, f.pos.y + f.size.y * 0.86f, fitted[(r * 9 + c) * 2 + 1].get(vg, VAL, val, w));
 			}
 		}
+
+		// the setup strip
+		cell(vg, panel::FIELD_INPUT, "INPUT", shown(Depreciation::INPUT_PARAM), panel::LIME);
+		cell(vg, panel::FIELD_TRIM, "FULL SCALE", shown(Depreciation::TRIM_PARAM), panel::LIME);
+		cell(vg, panel::FIELD_IN_PAD, "IN", module && module->params[Depreciation::IN_PAD_PARAM].getValue() > 0.5f ? "-20" : "+4", panel::LIME);
+		cell(vg, panel::FIELD_OUT_PAD, "OUT", module && module->params[Depreciation::OUT_PAD_PARAM].getValue() > 0.5f ? "-20" : "+4", panel::LIME);
+		cell(vg, panel::FIELD_CLK_DIV, "CLK /", shown(Depreciation::CLK_DIV_PARAM), panel::LIME);
+		cell(vg, panel::FIELD_OUT_LEVEL, "OUT LEVEL", shown(Depreciation::OUT_LEVEL_PARAM), panel::LIME);
 	}
 };
 
@@ -536,26 +573,25 @@ struct DepreciationWidget : ModuleWidget {
 		well->box.size = panel::mm(panel::GLASS_W, panel::GLASS_H);
 		addChild(well);
 
-		addParam(createParamCentered<panel::StepPair>(panel::mm(panel::SLOT_POS.x, panel::SLOT_POS.y), module, Depreciation::SLOT_PARAM));
-		addParam(createParamCentered<CKSS>(panel::mm(panel::REGMODE_POS.x, panel::REGMODE_POS.y), module, Depreciation::REGMODE_PARAM));
-		addParam(createParamCentered<VCVButton>(panel::mm(panel::LOAD_POS.x, panel::LOAD_POS.y), module, Depreciation::LOAD_PARAM));
-		addParam(createParamCentered<VCVButton>(panel::mm(panel::STORE_POS.x, panel::STORE_POS.y), module, Depreciation::STORE_PARAM));
-		addParam(createParamCentered<VCVButton>(panel::mm(panel::BYPASS_POS.x, panel::BYPASS_POS.y), module, Depreciation::BYPASS_PARAM));
-		addChild(createLightCentered<SmallLight<panel::ClayLight>>(panel::mm(panel::BYPASS_LED_POS.x, panel::BYPASS_LED_POS.y), module, Depreciation::BYPASS_LED));
-		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::INPUT_POS.x, panel::INPUT_POS.y), module, Depreciation::INPUT_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::TRIM_POS.x, panel::TRIM_POS.y), module, Depreciation::TRIM_PARAM));
-		addParam(createParamCentered<CKSS>(panel::mm(panel::IN_PAD_POS.x, panel::IN_PAD_POS.y), module, Depreciation::IN_PAD_PARAM));
-		addParam(createParamCentered<CKSS>(panel::mm(panel::OUT_PAD_POS.x, panel::OUT_PAD_POS.y), module, Depreciation::OUT_PAD_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::OUT_LEVEL_POS.x, panel::OUT_LEVEL_POS.y), module, Depreciation::OUT_LEVEL_PARAM));
-		addParam(createParamCentered<Trimpot>(panel::mm(panel::CLK_DIV_POS.x, panel::CLK_DIV_POS.y), module, Depreciation::CLK_DIV_PARAM));
-
+		// Every control is a cell of the read-out, bound to the param its knob or button was.
+		panel::ScreenSelect* slot = panel::createField<panel::ScreenSelect>(panel::FIELD_SLOT, module, Depreciation::SLOT_PARAM);
+		slot->nameOf = [module](int i) {
+			if (!module) return std::to_string(i);
+			return module->slotText(module->params[Depreciation::REGMODE_PARAM].getValue() > 0.5f, i);
+		};
+		addParam(slot);
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_REGMODE, module, Depreciation::REGMODE_PARAM));
+		addParam(panel::createField<panel::ScreenButton>(panel::FIELD_LOAD, module, Depreciation::LOAD_PARAM));
+		addParam(panel::createField<panel::ScreenButton>(panel::FIELD_STORE, module, Depreciation::STORE_PARAM));
+		addParam(panel::createField<panel::ScreenButton>(panel::FIELD_BYPASS, module, Depreciation::BYPASS_PARAM));
 		for (int r = 0; r < 5; r++) for (int c = 0; c < 9; c++)
-			addParam(createParamCentered<Trimpot>(panel::mm(CELL_POS[r][c].x, CELL_POS[r][c].y), module, Depreciation::CELL_PARAM + r * 9 + c));
-		MatrixPlates* plates = new MatrixPlates;
-		plates->module = module;
-		plates->box.pos = Vec(0.f, 0.f);
-		plates->box.size = panel::mm(panel::W, panel::H);
-		addChild(plates);
+			addParam(panel::createField<panel::ScreenKnob>(CELL_FIELD[r][c], module, Depreciation::CELL_PARAM + r * 9 + c));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_INPUT, module, Depreciation::INPUT_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_TRIM, module, Depreciation::TRIM_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_IN_PAD, module, Depreciation::IN_PAD_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_OUT_PAD, module, Depreciation::OUT_PAD_PARAM));
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_CLK_DIV, module, Depreciation::CLK_DIV_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_OUT_LEVEL, module, Depreciation::OUT_LEVEL_PARAM));
 
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::MOD_POS.x, panel::MOD_POS.y), module, Depreciation::MOD_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::AT_POS.x, panel::AT_POS.y), module, Depreciation::AT_INPUT));

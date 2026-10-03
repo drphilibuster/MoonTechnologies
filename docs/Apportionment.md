@@ -1,6 +1,6 @@
-# Apportionment
+# Apportionment — DP/4 parallel effects
 
-**FORM 1116 — foreign tax credit, the form on which income is apportioned among categories.** 40 HP.
+**FORM 1116 — foreign tax credit, the form on which income is apportioned among categories.** 26 HP.
 
 An Ensoniq DP/4 parallel effects processor, running its own operating system.
 Four Ensoniq ESP (ES5510) signal processors, one Motorola 68B03 host, and the
@@ -12,7 +12,7 @@ What the module adds is the one thing the hardware hid behind menus: the
 **routing**. On a DP/4 the way the four units are wired to each other and to the
 jacks is a *Config* — a source count and a handful of parameters on pages you
 reach through EDIT, CONFIG and the arrow keys. Here every one of those parameters
-is a control on the panel.
+is a word on the routing map, and the word is the control: click it, or drag it.
 
 ---
 
@@ -46,11 +46,22 @@ to boot, which the module runs off the audio thread in about a second.
 
 The read-out well is the DP/4's own front panel, drawn from the byte stream the
 firmware sends to it: the **2 × 16 LCD** (a flashing field is the one the knob
-will change), the **two-digit LED** (parameter number; the right-hand point is
-the MIDI light) and, on the right, a **map** of the routing the machine is
-actually running — inputs on the left, the four units as the DP/4 pairs them
-(A–B above, C–D below), outputs on the right. Feedback is drawn as an arc from
-the second unit of a pair back to the first.
+will change) and the **two-digit LED** (parameter number; the right-hand point is
+the MIDI light) across the top, and under them, the whole width of the well, a
+**map** of the routing the machine is actually running — inputs on the left, the
+four units as the DP/4 pairs them (A–B above, C–D below), outputs on the right.
+Feedback is drawn as an arc from the second unit of a pair back to the first. The
+map is also where the routing is changed: see **CONFIG** below.
+
+Two things on the LCD are controls. The **double arrows** at its two ends are
+**PREV SCREEN** and **NEXT SCREEN** (below): a click is one press. And the
+**scroll wheel** over the LCD turns **DATA**, a detent a notch, so you can work a
+page without moving to the knob.
+
+Everything on the screen that you can change shows it under the pointer: a
+highlight, and an up/down-arrow pointer over a value you hold and drag, or a hand
+over a word you click. Right-click any of them for the usual parameter menu
+(typed entry, MIDI-Map, reset); Ctrl-Z undoes them like any knob.
 
 ## FRONT PANEL
 
@@ -62,8 +73,9 @@ them. Everything in the DP/4 manual can be done here.
 | **A B C D** | unit buttons; lit as the firmware lights them. Pressing an active unit's button again **bypasses** it, as on the DP/4; the small light beside its name is that unit's red bypass LED |
 | **CONFIG**, **SYSTEM**, **EDIT** | Config, System•MIDI, Edit•Compare |
 | **SELECT**, **<**, **>**, **CANCEL**, **WRITE** | Select, the parameter arrows, Cancel•Undo, Write•Copy |
-| **A B/K … D B/K** | what bypass does to each unit — the Config's bypass/kill page. **B** (down) passes the dry signal through a bypassed unit; **K** (up) mutes it. Like the CONFIG controls, moving one makes the module set it on the firmware's own page, and it follows the firmware back |
-| **DATA** | the big knob. It is endless, as on the hardware: drag it (up or right turns it up) or use the scroll wheel. It reports detents, not a position, so it has no value to reset |
+| **DATA** | the big knob. It is endless, as on the hardware: drag it (up or right turns it up) or use the scroll wheel, over the knob or over the LCD. It reports detents, not a position, so it has no value to reset |
+
+What bypass *does* to each unit — the Config's bypass/kill page — is on the map: click a unit's box (below).
 
 ### Combinations that need two hands
 
@@ -77,40 +89,50 @@ exactly the presses it would from a hand, so what it does is what the unit does.
 | **INIT RAM** | hold SYSTEM•MIDI, press B | "Hit <WRITE> To Init RAM Presets": **WRITE** initialises the RAM presets, or **>** then **WRITE** reinitialises the whole unit, which asks for it by name; **CANCEL** leaves |
 | **A+B**, **C+D** | EDIT, then the two Unit buttons together | the unit now takes a two-unit preset for that pair: turn **DATA** and wait a moment, it loads by itself |
 | **ALGORITHM** | hold <, press CANCEL | jumps to the first page of the unit being edited, where its algorithm is chosen, instead of stepping back through every parameter |
-| **NEXT SCREEN**, **PREV SCREEN** | hold >, press < (and the reverse) | jumps a whole screen of parameters at a time, not one cursor step |
+| **NEXT SCREEN**, **PREV SCREEN** — the double arrows at the right and left ends of the LCD | hold >, press < (and the reverse) | jumps a whole screen of parameters at a time, not one cursor step |
 | **COPY**, **SWAP** | EDIT, WRITE, one Unit button held while another is pressed (and for copy, DATA one click clockwise) | click **COPY** (it lights), then the unit to copy *from*, then the unit to copy *to*. The panel does the rest and the unit asks "Hit <WRITE> To Copy Unit A to B": **WRITE** makes it so ("Unit Copied!"). **SWAP** is the same, and swaps the two. Click the lit button again to cancel |
 
 The unit's last two-handed gesture, holding < or > while turning DATA to scroll quickly through a long list of
 parameters, has no control here: DATA drags and scrolls, and the arrows repeat.
 
-## CONFIG — the routing
+## CONFIG — the routing, on the map
 
-Each control is one Config parameter. Moving one makes the module work the
-Config pages for you — EDIT, CONFIG, the arrows and the data knob, at a human
-pace — until the firmware's own copy of that parameter says what the control
-says, then it returns to Select. The light beside the caption is on while it is
-working (a source-count change rebuilds all four ESP programs and takes a couple
-of seconds). The firmware builds every routing itself; the module only asks.
+Every word on the routing map is one Config parameter, and it is the control for
+it, standing where the map draws what it does. Change one and the module works
+the Config pages for you — EDIT, CONFIG, the arrows and the data knob, at a human
+pace — until the firmware's own copy of that parameter says what the map says,
+then it returns to Select. **CONFIG** in the map's bottom-right corner lights
+while it is working (a source-count change rebuilds all four ESP programs and
+takes a couple of seconds). The firmware builds every routing itself; the module
+only asks. The words show what you asked for at once; the wires show what the
+machine is running, and catch up when it has been built.
 
-The controls also follow the firmware back. Select a Config preset, or change a
-Config parameter on the DP/4's own pages, and the controls move to match.
+The map also follows the firmware back. Select a Config preset, or change a
+Config parameter on the DP/4's own pages, and the words change to match.
 
-| control | parameter | exists with |
-|---|---|---|
-| **SOURCES** | input configuration: 1 (1,2 > ABCD), 2 (12 > AB, 34 > CD), 3 (1 > A, 2 > B, 34 > CD), 4 (one input per unit) | always |
-| **A-B** | how A and B are joined: serial, parallel, feedback 1, feedback 2 | 1, 2 sources |
-| **C-D** | the same for C and D | 1, 2, 3 sources |
-| **AB>CD** | whether the AB pair feeds the CD pair (serial) or runs beside it (parallel) | 1 source |
-| **AB AMT** | 0-99: the dry path around A-B when serial, the B-to-A feedback when feedback | 1, 2 sources |
-| **CD AMT** | the same for C-D | 1, 2, 3 sources |
-| **AB IN** | stereo (1, 2) or mono (1) into A-B | 1, 2 sources |
-| **CD IN** | stereo (3, 4) or mono (3) into C-D | 2, 3 sources |
-| **AB OUT** | A > 1 and B > 2 as dual mono, or both mixed to 1-2 in stereo | 3, 4 sources |
-| **CD OUT** | C > 3 and D > 4 as dual mono, or mixed to 3-4 | 4 sources |
-| **IN LEVEL**, **OUT LEVEL** | the rear-panel level pots, all four channels at once | — |
+How each one is changed: a **choice** (SRC, A-B, C-D) opens a list of its options
+when clicked, and steps through them when held and dragged up or down; a
+**switch** (an input, an output, AB > CD, a unit's B/K) steps to its other setting
+when clicked; a **value** (AMT, IN, OUT levels) is held and dragged up or down —
+Ctrl drags finely, Shift coarsely, and double-click resets it.
 
-A control whose parameter does not exist in the current source count is left
-where it is and has no effect until it does.
+| on the map | parameter | how | exists with |
+|---|---|---|---|
+| **SRC**, left, between the pairs | input configuration: 1 (1,2 > ABCD), 2 (12 > AB, 34 > CD), 3 (1 > A, 2 > B, 34 > CD), 4 (one input per unit) | choice | always |
+| **A-B**, above the joint between A and B (the joint itself too) | how A and B are joined: SER(ial), PAR(allel), FB1, FB2 (feedback 1, 2) | choice | 1, 2 sources |
+| **C-D**, below the joint between C and D | the same for C and D | choice | 1, 2, 3 sources |
+| **AB > CD SERIAL** / **AB \| CD PARALLEL**, between the pairs | whether the AB pair feeds the CD pair or runs beside it | switch | 1 source |
+| **AMT** above B | 0-99: the dry path around A-B when serial, the B-to-A feedback when feedback | value | 1, 2 sources |
+| **AMT** below D | the same for C-D | value | 1, 2, 3 sources |
+| **IN 1,2** / **IN 1**, the A-B input | stereo (1, 2) or mono (1) into A-B | switch | 1, 2 sources |
+| **IN 3,4** / **IN 3**, the C-D input | stereo (3, 4) or mono (3) into C-D | switch | 2, 3 sources |
+| **OUT 1  2** / **OUT 1,2**, the A-B output | A > 1 and B > 2 as dual mono, or both mixed to 1-2 in stereo | switch | 3, 4 sources |
+| **OUT 3  4** / **OUT 3,4**, the C-D output | C > 3 and D > 4 as dual mono, or mixed to 3-4 | switch | 4 sources |
+| the unit boxes **A B C D** | what bypass does to that unit: **B** passes the dry signal through it when it is bypassed, **K** mutes it. The letter in the box's corner says which; the box fills clay while the unit is bypassed (its red LED by the unit button is lit) | switch | always |
+| **IN %**, top left, and **OUT %**, top right | the rear-panel level pots, all four channels at once | value | — |
+
+A word whose parameter does not exist at the source count you asked for is
+dimmed; it keeps its setting and has no effect until it does.
 
 Feedback 1 and feedback 2 differ only in how the dry signal is mixed into the
 wet one; see the DP/4 manual's Config section.
@@ -122,7 +144,7 @@ wet one; see the DP/4 manual's Config section.
 | **IN 1-4** | the four inputs, ±5 V to full scale at IN LEVEL 100 %. As on the DP/4's own jacks, IN 2 follows IN 1 when nothing is plugged into it, and IN 4 follows IN 3 |
 | **PEDAL** | the CV pedal, 0-10 V; unplugged reads as "no pedal", as on the hardware |
 | **FS L**, **FS R** | the two footswitches, as gates (above 1 V is pressed) |
-| **OUT 1-4** | the four outputs. As on the DP/4: with OUT 3 unplugged, 3/4 are mixed onto 1/2, and with OUT 2 (or OUT 4) unplugged, its pair is summed to mono on OUT 1 (or OUT 3) |
+| **OUT 1-4** | the four outputs, down the right-hand edge with the taps. As on the DP/4: with OUT 3 unplugged, 3/4 are mixed onto 1/2, and with OUT 2 (or OUT 4) unplugged, its pair is summed to mono on OUT 1 (or OUT 3) |
 | **TAP A-D** | each unit's own output port, stereo on a two-channel polyphonic cable (A and C: their SER3 port; B and D: their SER1 port, which carries the pair's result). Use them to take a unit out on its own, or to patch the units into each other and the rest of the rack beyond what the Configs offer |
 
 ## The battery

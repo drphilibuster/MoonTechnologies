@@ -524,18 +524,52 @@ struct Apportionment : Module {
 
 namespace {
 
-/** The DP/4's 2 x 16 LCD, from the firmware's own byte stream. */
+/** A field's rectangle in the local pixels of a widget placed at (x0, y0) mm. */
+Rect local(const Rect& f, float x0, float y0) { return panel::mmRect(f.pos.x - x0, f.pos.y - y0, f.size.x, f.size.y); }
+
+/** The DP/4's 2 x 16 LCD, from the firmware's own byte stream. The sixteen columns stand
+    between the two arrow fields at its ends (NEXT and PREV SCREEN, the "whole screen"
+    gestures), which are drawn here as chevrons. The wheel over it turns DATA. */
 struct LcdDisplay : widget::Widget {
 	Apportionment* module = nullptr;
+
+	/** A double chevron pointing `dir` (-1 left, +1 right), centred in `r`. */
+	static void chevrons(NVGcontext* vg, const Rect& r, int dir, NVGcolor c) {
+		const Vec m = r.getCenter();
+		const float h = std::min(r.size.x * 0.32f, r.size.y * 0.16f), w = h * 0.8f;
+		for (int k = 0; k < 2; k++) {
+			const float x = m.x + dir * (k - 0.5f) * w * 1.1f;
+			nvgBeginPath(vg);
+			nvgMoveTo(vg, x - dir * w / 2, m.y - h);
+			nvgLineTo(vg, x + dir * w / 2, m.y);
+			nvgLineTo(vg, x - dir * w / 2, m.y + h);
+			nvgClosePath(vg);
+			nvgFillColor(vg, c);
+			nvgFill(vg);
+		}
+	}
+
+	void onHoverScroll(const HoverScrollEvent& e) override {
+		const int d = e.scrollDelta.y > 0 ? 1 : e.scrollDelta.y < 0 ? -1 : 0;
+		if (module && d) module->dataDetents += d;
+		e.consume(this);
+	}
 
 	void drawLayer(const DrawArgs& args, int layer) override {
 		if (layer != 1) return;
 		NVGcontext* vg = args.vg;
-		const float cw = box.size.x / 17.f, lh = box.size.y / 2.f;
+		const Rect prev = local(panel::FIELD_SCREEN_PREV, panel::LCD_X, panel::LCD_Y);
+		const Rect next = local(panel::FIELD_SCREEN_NEXT, panel::LCD_X, panel::LCD_Y);
+		const bool ready = module && module->status.empty();
+		auto lit = [&](int p) { return module && module->params[p].getValue() > 0.5f; };
+		chevrons(vg, prev, -1, lit(Apportionment::SCREEN_PREV_PARAM) ? panel::LIME : panel::alpha(panel::SAGE, ready ? 0.7f : 0.3f));
+		chevrons(vg, next, +1, lit(Apportionment::SCREEN_NEXT_PARAM) ? panel::LIME : panel::alpha(panel::SAGE, ready ? 0.7f : 0.3f));
+		const float x0 = prev.pos.x + prev.size.x, x1 = next.pos.x, mid = (x0 + x1) / 2;
+		const float cw = (x1 - x0) / 16.f, lh = box.size.y / 2.f;
 		const panel::TextStyle st(panel::Face::Mono, lh * 0.62f, panel::LIME, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
 		if (!module) {
-			panel::text(vg, st, box.size.x / 2, lh * 0.55f, "ENSONIQ * DP/4");
-			panel::text(vg, st.inked(panel::SAGE), box.size.x / 2, lh * 1.45f, "APPORTIONMENT");
+			panel::text(vg, st, mid, lh * 0.55f, "ENSONIQ * DP/4");
+			panel::text(vg, st.inked(panel::SAGE), mid, lh * 1.45f, "APPORTIONMENT");
 			return;
 		}
 		dp4::Display d;
@@ -546,8 +580,8 @@ struct LcdDisplay : widget::Widget {
 			status = module->status;
 		}
 		if (!status.empty()) {
-			panel::text(vg, st.inked(panel::CLAY), box.size.x / 2, lh * 0.55f, status);
-			panel::text(vg, st.inked(panel::SAGE), box.size.x / 2, lh * 1.45f,
+			panel::text(vg, st.inked(panel::CLAY), mid, lh * 0.55f, status);
+			panel::text(vg, st.inked(panel::SAGE), mid, lh * 1.45f,
 				module->booting ? "PLEASE WAIT" : "RIGHT-CLICK: LOAD");
 			return;
 		}
@@ -558,8 +592,8 @@ struct LcdDisplay : widget::Widget {
 				std::lock_guard<std::mutex> lock(module->snapMutex);
 				v = module->osVersion;
 			}
-			panel::text(vg, st.inked(panel::CLAY), box.size.x / 2, lh * 0.55f, "OLD OS " + v);
-			panel::text(vg, st.inked(panel::CLAY), box.size.x / 2, lh * 1.45f, "1.15 RECOMMENDED");
+			panel::text(vg, st.inked(panel::CLAY), mid, lh * 0.55f, "OLD OS " + v);
+			panel::text(vg, st.inked(panel::CLAY), mid, lh * 1.45f, "1.15 RECOMMENDED");
 			return;
 		}
 		const bool blinkOff = std::fmod(system::getTime(), 0.6) > 0.4;
@@ -568,7 +602,7 @@ struct LcdDisplay : widget::Widget {
 				const int i = 16 * row + c;
 				if (d.blink[i] && blinkOff) continue;
 				const char s[2] = { d.lcd[i], 0 };
-				panel::text(vg, st, cw * (c + 1.f), lh * (row + 0.55f), s);
+				panel::text(vg, st, x0 + cw * (c + 0.5f), lh * (row + 0.55f), s);
 			}
 	}
 };
@@ -606,9 +640,13 @@ struct DigitDisplay : widget::Widget {
 	}
 };
 
-/** The routing the machine is running, read back from its Config. Inputs on the
-    left, the four units as the DP/4 pairs them (A-B above, C-D below), outputs on
-    the right. Signal runs left to right; feedback is the clay arc. */
+/** The routing, as a map you can change. Inputs on the left, the four units as the DP/4
+    pairs them (A-B above, C-D below), outputs on the right; signal runs left to right
+    and feedback is the clay arc. The wires are what the machine is running, read back
+    from its Config; every word on the map is one of the CONFIG params and stands in the
+    field (FIELD_* in Panel.hpp) that changes it, so it says what was asked for even
+    while the module is still working the pages to get it. A word whose parameter does
+    not exist at the source count asked for is dimmed. */
 struct RoutingMap : widget::Widget {
 	Apportionment* module = nullptr;
 	NVGcontext* vg = nullptr;
@@ -628,28 +666,47 @@ struct RoutingMap : widget::Widget {
 	}
 	void poly(std::initializer_list<Vec> pts) { poly(pts, ink); }
 
+	static Rect at(const Rect& f) { return local(f, panel::MAP_X, panel::MAP_Y); }
+
 	void drawLayer(const DrawArgs& args, int layer) override {
 		if (layer != 1) return;
 		vg = args.vg;
-		Routing r;
+		Routing r, want;
 		bool ready = false;
+		float inLevel = 1.f, outLevel = 1.f, working = 0.f;
+		float bypassed[4] = {};
 		if (module) {
-			std::lock_guard<std::mutex> lock(module->snapMutex);
-			r = module->snap.routing;
-			ready = module->status.empty();
+			{
+				std::lock_guard<std::mutex> lock(module->snapMutex);
+				r = module->snap.routing;
+				ready = module->status.empty();
+			}
+			want = module->fromParams();
+			inLevel = module->params[Apportionment::IN_LEVEL_PARAM].getValue();
+			outLevel = module->params[Apportionment::OUT_LEVEL_PARAM].getValue();
+			working = module->lights[Apportionment::ROUTING_LIGHT].getBrightness();
+			for (int u = 0; u < 4; u++) bypassed[u] = module->lights[Apportionment::BYPASS_A_LIGHT + u].getBrightness();
+		}
+		else {
+			r.cdRoute = want.cdRoute = 1;
 		}
 		ink = ready ? panel::LIME : panel::alpha(panel::SAGE, 0.35f);
-		const float W = box.size.x, H = box.size.y;
-		const float bw = W * 0.12f, bh = H * 0.22f;
-		const float yT = H * 0.30f, yB = H * 0.74f, xIn = W * 0.08f, xOut = W * 0.92f;
-		const float xA = W * 0.38f, xB = W * 0.62f;
-		const Vec unit[4] = { Vec(xA, yT), Vec(xB, yT), Vec(xA, yB), Vec(xB, yB) };
+
+		// Geometry, all of it from the fields: a unit stands in its kill field, a pair's
+		// joint is its route field, the jacks end at the in and out fields.
+		const Rect unitField[4] = { at(panel::FIELD_KILL_A), at(panel::FIELD_KILL_B), at(panel::FIELD_KILL_C), at(panel::FIELD_KILL_D) };
+		const float bw = unitField[0].size.x * 0.62f, bh = unitField[0].size.y * 0.6f;
+		const Vec unit[4] = { unitField[0].getCenter(), unitField[1].getCenter(), unitField[2].getCenter(), unitField[3].getCenter() };
+		const float yT = unit[0].y, yB = unit[2].y;
+		const Rect abIn = at(panel::FIELD_AB_MONO), cdIn = at(panel::FIELD_CD_MONO);
+		const Rect abOut = at(panel::FIELD_AB_OUT), cdOut = at(panel::FIELD_CD_OUT);
+		const float xIn = abIn.pos.x + abIn.size.x, xOut = abOut.pos.x;
 		auto L = [&](int u) { return unit[u].minus(Vec(bw / 2, 0)); };
 		auto R = [&](int u) { return unit[u].plus(Vec(bw / 2, 0)); };
-		const float gap = bh * 0.85f;   // how far a bypassing path clears a unit
+		const float gap = bh * 0.8f;    // how far a bypassing path clears a unit
 
-		// One pair between an entry point and an exit point on its own row.
-		// Returns nothing; draws serial, parallel or serial-with-feedback.
+		// One pair between an entry point and an exit point on its own row:
+		// serial, parallel or serial-with-feedback.
 		auto pair = [&](int a, int b, int route, Vec in, Vec out) {
 			const float y = unit[a].y, up = (a < 2) ? -gap : gap;
 			if (route == 1) {
@@ -671,6 +728,7 @@ struct RoutingMap : widget::Widget {
 		};
 
 		const Vec inT(xIn, yT), inB(xIn, yB), outT(xOut, yT), outB(xOut, yB);
+		const float o = bh * 0.8f;
 		switch (r.sources) {
 		case 1:
 			if (r.abToCd == 0) {
@@ -694,49 +752,86 @@ struct RoutingMap : widget::Widget {
 			pair(0, 1, r.abRoute, inT, outT);
 			pair(2, 3, r.cdRoute, inB, outB);
 			break;
-		case 3: {
-			const float o = bh * 0.8f;
+		case 3:
 			poly({ Vec(xIn, yT - o), Vec(L(0).x - bw * 0.3f, yT - o), Vec(L(0).x - bw * 0.3f, yT), L(0) });
 			poly({ R(0), Vec(R(0).x + bw * 0.3f, yT), Vec(R(0).x + bw * 0.3f, yT - gap), Vec(xOut, yT - gap), Vec(xOut, yT - o) });
 			poly({ Vec(xIn, yT + o), Vec(L(1).x - bw * 0.3f, yT + o), Vec(L(1).x - bw * 0.3f, yT), L(1) });
 			poly({ R(1), Vec(xOut, yT), Vec(xOut, yT + o) });
 			pair(2, 3, r.cdRoute, inB, outB);
 			break;
-		}
 		default:
 			for (int u = 0; u < 4; u++) {
-				const float y = unit[u].y, o = (u % 2 ? 1.f : -1.f) * bh * 0.8f;
-				poly({ Vec(xIn, y + o), Vec(L(u).x - bw * 0.3f, y + o), Vec(L(u).x - bw * 0.3f, y), L(u) });
-				poly({ R(u), Vec(R(u).x + bw * 0.3f, y), Vec(R(u).x + bw * 0.3f, y + o), Vec(xOut, y + o) });
+				const float y = unit[u].y, d = (u % 2 ? 1.f : -1.f) * o;
+				poly({ Vec(xIn, y + d), Vec(L(u).x - bw * 0.3f, y + d), Vec(L(u).x - bw * 0.3f, y), L(u) });
+				poly({ R(u), Vec(R(u).x + bw * 0.3f, y), Vec(R(u).x + bw * 0.3f, y + d), Vec(xOut, y + d) });
 			}
 			break;
 		}
 
-		const panel::TextStyle st(panel::Face::Mono, bh * 0.66f, panel::PAPER, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+		// The units: the letter, and what bypass does to it (B or K, a click on the box).
+		// A bypassed unit is filled clay, as its red LED is lit.
+		const float px = mm2px(1.f);                             // pixels per mm, for type sized in mm
+		const panel::TextStyle big(panel::Face::Mono, bh * 0.7f, panel::PAPER, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+		const panel::TextStyle small(panel::Face::Mono, 2.0f * px, panel::SAGE, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
 		for (int u = 0; u < 4; u++) {
 			nvgBeginPath(vg);
 			nvgRoundedRect(vg, unit[u].x - bw / 2, unit[u].y - bh / 2, bw, bh, 1.5f);
-			nvgFillColor(vg, panel::GLASS);
+			nvgFillColor(vg, bypassed[u] > 0.5f ? panel::alpha(panel::CLAY, 0.55f) : panel::GLASS);
 			nvgFill(vg);
 			nvgStrokeColor(vg, ink);
 			nvgStrokeWidth(vg, 1.f);
 			nvgStroke(vg);
 			const char s[2] = { char('A' + u), 0 };
-			panel::text(vg, st.inked(ready ? panel::PAPER : panel::SAGE), unit[u].x, unit[u].y, s);
+			panel::text(vg, big.inked(ready ? panel::PAPER : panel::SAGE), unit[u].x - bw * 0.14f, unit[u].y, s);
+			panel::text(vg, small.inked(want.kill[u] ? panel::CLAY : panel::SAGE), unit[u].x + bw * 0.3f, unit[u].y, want.kill[u] ? "K" : "B");
 		}
 
-		// The jacks at each end, named the way the DP/4's Config screen names them.
-		const panel::TextStyle io(panel::Face::Mono, bh * 0.44f, panel::SAGE, NVG_ALIGN_CENTER | NVG_ALIGN_BOTTOM);
-		const float ty = bh * 0.72f;
-		const char* inTop = r.sources >= 3 ? "1  2" : (r.abMono ? "1" : "1,2");
-		const char* outTop = (r.sources >= 3 && !r.abOut) ? "1  2" : "1,2";
-		panel::text(vg, io, xIn, yT - ty, inTop);
-		panel::text(vg, io, xOut, yT - ty, outTop);
-		if (r.sources >= 2) {
-			const panel::TextStyle iob = io.aligned(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
-			panel::text(vg, iob, xIn, yB + ty, r.sources == 4 ? "3  4" : (r.cdMono ? "3" : "3,4"));
-			panel::text(vg, iob, xOut, yB + ty, (r.sources == 4 && !r.cdOut) ? "3  4" : "3,4");
-		}
+		// The words, each in the field that changes it.
+		const panel::TextStyle word(panel::Face::Mono, 2.0f * px, panel::LIME, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+		const int src = want.sources;
+		auto exists = [&](Router::Field f) { return f == Router::F_SOURCES || Router::page(src, f) >= 0; };
+		auto say = [&](const Rect& f, const std::string& t, bool on, int rowOf = 0, int rows = 1) {
+			// In a field spanning several grid rows, the word stands in row `rowOf` of them.
+			const float h = f.size.y / rows;
+			const Vec c(f.pos.x + f.size.x / 2, f.pos.y + h * (rowOf + 0.5f));
+			const NVGcolor in = !ready ? panel::alpha(panel::SAGE, 0.5f) : on ? panel::LIME : panel::alpha(panel::SAGE, 0.45f);
+			// a pill of glass under the word, so a wire passing behind it does not run through it
+			const float w = panel::textWidth(vg, word, t) + 1.5f * px;
+			nvgBeginPath(vg);
+			const float ph = std::min(h * 0.96f, 2.3f * px);
+			nvgRoundedRect(vg, c.x - w / 2, c.y - ph / 2, w, ph, 1.f);
+			nvgFillColor(vg, panel::BAND);
+			nvgFill(vg);
+			panel::text(vg, word.inked(in), c.x, c.y, t);
+		};
+		static const char* const ROUTE[4] = { "SER", "PAR", "FB1", "FB2" };
+		const std::string abInW = src >= 3 ? "1  2" : (want.abMono ? "1" : "1,2");
+		const std::string cdInW = src == 4 ? "3  4" : src == 1 ? "1,2" : (want.cdMono ? "3" : "3,4");
+		const std::string abOutW = (src >= 3 && !want.abOut) ? "1  2" : "1,2";
+		const std::string cdOutW = src == 1 ? "1,2" : (src == 4 && !want.cdOut) ? "3  4" : "3,4";
+		say(at(panel::FIELD_IN_LEVEL), string::f("IN %d%%", int(std::round(inLevel * 100.f))), true);
+		say(at(panel::FIELD_OUT_LEVEL), string::f("OUT %d%%", int(std::round(outLevel * 100.f))), true);
+		say(abIn, "IN " + abInW, exists(Router::F_AB_MONO));
+		say(cdIn, "IN " + cdInW, exists(Router::F_CD_MONO));
+		say(abOut, "OUT " + abOutW, exists(Router::F_AB_OUT));
+		say(cdOut, "OUT " + cdOutW, exists(Router::F_CD_OUT));
+		say(at(panel::FIELD_AB_ROUTE), std::string("A-B ") + ROUTE[want.abRoute & 3], exists(Router::F_AB_ROUTE), 0, 3);
+		say(at(panel::FIELD_CD_ROUTE), std::string("C-D ") + ROUTE[want.cdRoute & 3], exists(Router::F_CD_ROUTE), 2, 3);
+		say(at(panel::FIELD_AB_AMOUNT), string::f("AMT %d", want.abAmount), exists(Router::F_AB_AMOUNT));
+		say(at(panel::FIELD_CD_AMOUNT), string::f("AMT %d", want.cdAmount), exists(Router::F_CD_AMOUNT));
+		say(at(panel::FIELD_SOURCES), string::f("%d SRC", src), true);
+		say(at(panel::FIELD_AB_CD), want.abToCd ? "AB | CD PARALLEL" : "AB > CD SERIAL", exists(Router::F_AB_TO_CD));
+
+		// The module working the Config pages to reach what the map asks for: the light
+		// the CONFIG caption used to carry, in the map's free corner (row 6, column 6).
+		const Rect corner = at(Rect(Vec(panel::FIELD_OUT_LEVEL.pos.x, panel::FIELD_CD_AMOUNT.pos.y), panel::FIELD_CD_AMOUNT.size));
+		const panel::TextStyle cfg = word.aligned(NVG_ALIGN_RIGHT | NVG_ALIGN_MIDDLE);
+		panel::text(vg, cfg.inked(working > 0.5f ? panel::LIME : panel::alpha(panel::SAGE, 0.45f)),
+			corner.pos.x + corner.size.x, corner.getCenter().y, "CONFIG");
+		nvgBeginPath(vg);
+		nvgCircle(vg, corner.pos.x + corner.size.x * 0.12f, corner.getCenter().y, corner.size.y * 0.28f);
+		nvgFillColor(vg, working > 0.5f ? panel::LIME : panel::alpha(panel::SAGE, 0.2f));
+		nvgFill(vg);
 	}
 };
 
@@ -825,9 +920,9 @@ struct ApportionmentWidget : ModuleWidget {
 		for (int i = 0; i < 5; i++)
 			addParam(createParamCentered<VCVButton>(panel::mm(plain[i].x, plain[i].y), module, Apportionment::SELECT_PARAM + i));
 		// The two-handed combinations, played for you; COPY and SWAP are lit while armed.
-		const Vec shortcut[7] = { panel::SOFT_RESET_POS, panel::INIT_RAM_POS, panel::PAIR_AB_POS, panel::PAIR_CD_POS,
-			panel::ALGORITHM_POS, panel::SCREEN_NEXT_POS, panel::SCREEN_PREV_POS };
-		for (int i = 0; i < 7; i++)
+		const Vec shortcut[5] = { panel::SOFT_RESET_POS, panel::INIT_RAM_POS, panel::PAIR_AB_POS, panel::PAIR_CD_POS,
+			panel::ALGORITHM_POS };
+		for (int i = 0; i < 5; i++)
 			addParam(createParamCentered<VCVButton>(panel::mm(shortcut[i].x, shortcut[i].y), module, Apportionment::SOFT_RESET_PARAM + i));
 		addParam(createLightParamCentered<VCVLightBezel<panel::LimeLight> >(panel::mm(panel::COPY_POS.x, panel::COPY_POS.y), module,
 			Apportionment::COPY_PARAM, Apportionment::COPY_LIGHT));
@@ -839,25 +934,31 @@ struct ApportionmentWidget : ModuleWidget {
 		knob->box.pos = panel::mm(panel::DATA_POS.x, panel::DATA_POS.y).minus(knob->box.size.div(2));
 		addChild(knob);
 
-		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::SOURCES_POS.x, panel::SOURCES_POS.y), module, Apportionment::SOURCES_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::AB_ROUTE_POS.x, panel::AB_ROUTE_POS.y), module, Apportionment::AB_ROUTE_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::CD_ROUTE_POS.x, panel::CD_ROUTE_POS.y), module, Apportionment::CD_ROUTE_PARAM));
-		addParam(createParamCentered<CKSS>(panel::mm(panel::AB_CD_POS.x, panel::AB_CD_POS.y), module, Apportionment::AB_CD_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::AB_AMOUNT_POS.x, panel::AB_AMOUNT_POS.y), module, Apportionment::AB_AMOUNT_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::CD_AMOUNT_POS.x, panel::CD_AMOUNT_POS.y), module, Apportionment::CD_AMOUNT_PARAM));
-		addParam(createParamCentered<CKSS>(panel::mm(panel::AB_MONO_POS.x, panel::AB_MONO_POS.y), module, Apportionment::AB_MONO_PARAM));
-		addParam(createParamCentered<CKSS>(panel::mm(panel::CD_MONO_POS.x, panel::CD_MONO_POS.y), module, Apportionment::CD_MONO_PARAM));
-		addParam(createParamCentered<CKSS>(panel::mm(panel::AB_OUT_POS.x, panel::AB_OUT_POS.y), module, Apportionment::AB_OUT_PARAM));
-		addParam(createParamCentered<CKSS>(panel::mm(panel::CD_OUT_POS.x, panel::CD_OUT_POS.y), module, Apportionment::CD_OUT_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::IN_LEVEL_POS.x, panel::IN_LEVEL_POS.y), module, Apportionment::IN_LEVEL_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::OUT_LEVEL_POS.x, panel::OUT_LEVEL_POS.y), module, Apportionment::OUT_LEVEL_PARAM));
-		addChild(createLightCentered<SmallLight<panel::LimeLight> >(panel::mm(panel::ROUTING_POS.x, panel::ROUTING_POS.y), module, Apportionment::ROUTING_LIGHT));
-		// The DP/4's red bypass LEDs, and the Config's bypass/kill switch per unit.
+		// The "whole screen" gestures, at the two ends of the LCD: a click is one press of the gesture.
+		addParam(panel::createField<panel::ScreenButton>(panel::FIELD_SCREEN_PREV, module, Apportionment::SCREEN_PREV_PARAM));
+		addParam(panel::createField<panel::ScreenButton>(panel::FIELD_SCREEN_NEXT, module, Apportionment::SCREEN_NEXT_PARAM));
+
+		// The Config, on the map that draws it. Each field is the param the CONFIG control
+		// was, so syncRouting() and the Router play the pages exactly as before.
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_SOURCES, module, Apportionment::SOURCES_PARAM));
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_AB_ROUTE, module, Apportionment::AB_ROUTE_PARAM));
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_CD_ROUTE, module, Apportionment::CD_ROUTE_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_AB_CD, module, Apportionment::AB_CD_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_AB_AMOUNT, module, Apportionment::AB_AMOUNT_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_CD_AMOUNT, module, Apportionment::CD_AMOUNT_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_AB_MONO, module, Apportionment::AB_MONO_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_CD_MONO, module, Apportionment::CD_MONO_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_AB_OUT, module, Apportionment::AB_OUT_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_CD_OUT, module, Apportionment::CD_OUT_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_IN_LEVEL, module, Apportionment::IN_LEVEL_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_OUT_LEVEL, module, Apportionment::OUT_LEVEL_PARAM));
+		// The DP/4's red bypass LEDs, by the unit buttons; what bypass does (the Config's
+		// bypass/kill page) is a click on the unit's box on the map.
 		const Vec bypass[4] = { panel::BYPASS_A_POS, panel::BYPASS_B_POS, panel::BYPASS_C_POS, panel::BYPASS_D_POS };
-		const Vec kill[4] = { panel::KILL_A_POS, panel::KILL_B_POS, panel::KILL_C_POS, panel::KILL_D_POS };
+		const Rect kill[4] = { panel::FIELD_KILL_A, panel::FIELD_KILL_B, panel::FIELD_KILL_C, panel::FIELD_KILL_D };
 		for (int u = 0; u < 4; u++) {
 			addChild(createLightCentered<SmallLight<panel::ClayLight> >(panel::mm(bypass[u].x, bypass[u].y), module, Apportionment::BYPASS_A_LIGHT + u));
-			addParam(createParamCentered<CKSS>(panel::mm(kill[u].x, kill[u].y), module, Apportionment::KILL_A_PARAM + u));
+			addParam(panel::createField<panel::ScreenSwitch>(kill[u], module, Apportionment::KILL_A_PARAM + u));
 		}
 
 		addInput(createInputCentered<panel::PortInMain>(panel::mm(panel::IN1_POS.x, panel::IN1_POS.y), module, Apportionment::IN1_INPUT));

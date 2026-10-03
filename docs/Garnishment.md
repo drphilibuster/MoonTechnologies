@@ -1,10 +1,10 @@
-# Garnishment
+# Garnishment — VCA / low-pass gate
 
 A six-channel VCA / low-pass gate for VCV Rack 2, built from three Modular in a
 Week circuits sharing one panel.
 
-Each of the six identical channels has a MODE switch that picks which circuit
-it is:
+Each of the six identical channels picks which circuit it is -- click the
+channel's name on the read-out (OTA, LPG, JFET) and choose:
 
 - **OTA** — Simple 13700 Dual VCA (Kristian Blåsol): an LM13700 operational
   transconductance amplifier whose control current sets its gain. Clean and
@@ -86,10 +86,16 @@ gate-drain diodes. What that does, none of it a multiplier:
 
 ## Controls
 
+The read-out at the top shows each channel's circuit by name over a bar of how
+open the channel is right now (bias and CV together, through the lag), with a
+tick where BIAS alone sits. Click a name to pick the circuit; drag a bar up or
+down to set BIAS -- the knobs below do the same. Right-click either for the
+param's own menu.
+
 | Control | Range | Default |
 |---|---|---|
 | BIAS | 0–10 V | 0 V |
-| MODE | OTA / Vactrol / JFET AM | OTA |
+| MODE (read-out) | OTA / Vactrol (LPG) / JFET AM | OTA |
 | LAG | 0–100 % (50–200 ms decay, ~2 ms attack) | 0 % |
 | CV AMOUNT | −100–100 % | 100 % |
 | CV IN | 0–10 V typical | — |
@@ -117,7 +123,7 @@ The Modular in a Week day this comes from is two boards, and this module was two
 channels to match. The circuits are the same either way, so the count was only
 ever a question of panel: each channel took a whole section, three rows of three
 columns to hold three controls and a CV pair, with two thirds of two of those
-rows empty. One channel per *column* instead holds six in 18 HP — 3.0 HP a
+rows empty. One channel per *column* instead holds six in 17 HP — under 3 HP a
 channel against the old 5.0.
 
 Six rather than four or eight because the rest of the family runs on six:

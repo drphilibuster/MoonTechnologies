@@ -1,5 +1,10 @@
 #pragma once
-// Ledger's display: five pages on one piece of glass.
+// Ledger's display: five pages on one piece of glass, under a strip of controls.
+//
+//   The strip (LedgerStrip, the top two rows of the glass) is on every page: the five
+//   pages and the eight tracks, then the transport and what is done to the selected
+//   track. Each is a field (FIELD_* in Panel.hpp) bound to the button param that used to
+//   stand on the face; this only draws them. The page is LedgerDisplay, below it.
 //
 //   TANK  Shoal's view: eight lanes, each the whole of what its track will play, and
 //         the selected track's books beside them.
@@ -10,7 +15,8 @@
 //         queued. Launching happens here, and copying, pasting and clearing rows.
 //   SONG  the rows in the order the song plays them, each with its number of passes.
 //
-// Included by Ledger.cpp only, after Panel.hpp (it draws through panel::).
+// Included by Ledger.cpp only, after Panel.hpp (it draws through panel:: and places the
+// books in the FIELD_* rectangles the spec cut the glass into).
 // Everything it changes goes to the module as an edit (Ledger::sendEdit) or an atomic
 // request; it never writes the module's state directly. Each edit leaves an undo step
 // in Rack's history (LedgerUndo.hpp).
@@ -119,16 +125,6 @@ struct LedgerDisplay : widget::OpaqueWidget {
 
 	int page() const { return module ? module->page.load() : kPageTank; }
 
-	void draw(const DrawArgs& args) override {
-		nvgBeginPath(args.vg);
-		nvgRoundedRect(args.vg, 0, 0, box.size.x, box.size.y, 3.f);
-		nvgFillColor(args.vg, panel::GLASS);
-		nvgFill(args.vg);
-		nvgStrokeColor(args.vg, panel::RULE);
-		nvgStrokeWidth(args.vg, 0.6f);
-		nvgStroke(args.vg);
-	}
-
 	// A preview with no module: the default books, so the browser shows the tank alive.
 	void loadPreview() {
 		for (int p = 0; p < S::kNumParameters; p++) view.v[p] = S::paramRange(p).def;
@@ -147,6 +143,15 @@ struct LedgerDisplay : widget::OpaqueWidget {
 	}
 
 	void step() override {
+		// as many semitones as the roll has room for at about four pixels a row
+		{
+			RollRect r = rollRect();
+			int rows = clamp((int)((r.y1 - r.y0) / 4.f), 12, 25);
+			if (rows != rollRows) {
+				rollRows = rows;
+				rollLow = clamp(rollLow, 0, 127 - rollRows + 1);
+			}
+		}
 		if (module) {
 			if (module->readSnapshot(snap)) {
 				std::memcpy(view.v, snap.v, sizeof view.v);
@@ -239,7 +244,22 @@ struct LedgerDisplay : widget::OpaqueWidget {
 	// ---- geometry -----------------------------------------------------------
 
 	const float pad = 4.f;
-	float laneW() const { return box.size.x * 0.70f; }
+
+	// A field's rectangle (panel mm, from Panel.hpp) in this widget's pixels. The display
+	// sits on the glass below the strip, so this is inGlass() less the strip.
+	Rect local(const Rect& f) const {
+		Rect r = panel::mmRect(f.pos.x, f.pos.y, f.size.x, f.size.y);
+		r.pos = r.pos.minus(box.pos);
+		return r;
+	}
+	// The tank's lanes stop short of the books, whose fields start where the spec put them.
+	float laneW() const { return local(panel::FIELD_CHANCE).pos.x - 5.f; }
+
+	// The long help lines in the page headers, cut to the glass with an ellipsis.
+	panel::FittedText headFit;
+	void headText(NVGcontext* vg, const panel::TextStyle& st, float x, float y, const std::string& str) {
+		panel::text(vg, st, x, y, headFit.get(vg, st, str, std::max(0.f, box.size.x - pad - x)));
+	}
 
 	struct RollRect { float x0, x1, y0, y1, ly0, ly1, kx; };
 	RollRect rollRect() const {
@@ -811,7 +831,7 @@ struct LedgerDisplay : widget::OpaqueWidget {
 		if (lq == kLaunchNow || lq == kLaunchStep || lq == kLaunchLoop) lq = kLaunchModulo;
 		float x = panel::text(vg, HEAD.inked(snap.songOn ? panel::LIME : panel::SAGE), pad, pad + 8.f,
 			snap.songOn ? "SONG PLAYING  " : "SONG STOPPED  ");
-		panel::text(vg, HEAD, x, pad + 8.f, string::f("a pass: %s  ·  click here to start or stop  ·  + adds a row  ·  scroll: the row (shift: times)  ·  right-click for more",
+		headText(vg, HEAD, x, pad + 8.f, string::f("a pass: %s  ·  click here to start or stop  ·  + adds a row  ·  scroll: the row (shift: times)  ·  right-click for more",
 			launchNames[lq]));
 		const L::Song& sg = module->song;		// small ints the UI only reads; a torn read mislabels a frame
 		int len = std::min(sg.len, (int)L::kSongMax);
@@ -1031,8 +1051,8 @@ struct LedgerDisplay : widget::OpaqueWidget {
 		int slot = snap.active[t];
 		const L::Slot& sl = module->slots[t][slot];
 		bool live = module->routed[t];
-		panel::text(vg, HEAD.inked(panel::LIME), pad, pad + 8.f, string::f("T%d EFFECTS", t + 1));
-		panel::text(vg, HEAD, pad + 70.f, pad + 8.f, string::f("slot %d  ·  M mutes everywhere, S on this slot  ·  drag a bar; double-click resets; right-click for more%s",
+		float hx = panel::text(vg, HEAD.inked(panel::LIME), pad, pad + 8.f, string::f("T%d EFFECTS  ", t + 1));
+		headText(vg, HEAD, hx, pad + 8.f, string::f("slot %d  ·  M mutes everywhere, S on this slot  ·  drag a bar; double-click resets; right-click for more%s",
 			slot + 1, live ? "" : "  ·  (a generator with no live effect plays as Shoal made it)"));
 		const panel::TextStyle ROW(panel::Face::Mono, std::min(8.f, r.rowH * 0.62f), panel::PAPER, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
 		for (int i = 0; i < L::kChainSlots; i++) {
@@ -1236,87 +1256,101 @@ struct LedgerDisplay : widget::OpaqueWidget {
 		nvgStrokeWidth(vg, 0.5f);
 		nvgStroke(vg);
 
-		drawBooks(vg, laneW() + 8.f, pad, box.size.x - pad, box.size.y - pad);
+		drawBooks(vg);
 	}
 
-	void drawBooks(NVGcontext* vg, float x0, float y0, float x1, float y1) {
+	// The books: the selected track's settings, each printed in the field that sets it
+	// (FIELD_* in Panel.hpp), so the number you read is the number you drag. A header row
+	// above the fields, two columns of five, the key, and a status line under it.
+	void drawBooks(NVGcontext* vg) {
 		const int16_t* v = view.v;
 		int t = snap.sel;
 		const S::TrackState& tr = view.dtc->tracks[t];
 		uint32_t mm = snap.modMask[t];
 		bool pat = isPat(t);
-		float h = y1 - y0;
-		float row = h / 7.f;
-		float fs = std::min(8.5f, row * 0.72f);
+		const Rect first = local(panel::FIELD_CHANCE), last = local(panel::FIELD_TRNS);
+		const float step = local(panel::FIELD_NOTE).pos.y - first.pos.y;		// one grid row
+		const float x0 = first.pos.x, x1 = last.pos.x + last.size.x, rh = first.size.y;
+		const float fs = std::min(8.5f, rh * 0.68f);
 		const panel::TextStyle TAG(panel::Face::Mono, fs, panel::SAGE, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
-		const panel::TextStyle VAL = TAG.inked(panel::PAPER);
-		float colW = (x1 - x0) / 2.f;
+		const panel::TextStyle VAL = TAG.inked(panel::PAPER).aligned(NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE);
+		auto base = [&](const Rect& r) { return r.pos.y + r.size.y * 0.72f; };
 
-		float base = y0 + row * 1.15f;
-		float end = panel::text(vg, panel::TextStyle(panel::Face::Mono, row * 1.2f, panel::LIME,
-			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE), x0, base, string::f("T%d", t + 1));
-		float sx = std::max(end + 6.f, x0 + colW * 0.6f);
+		// the header: the track, and the seed it is playing or what its slot holds
+		Rect head = first;
+		head.pos.y -= step;
+		float hb = base(head);
+		float end = panel::text(vg, panel::TextStyle(panel::Face::Mono, std::min(12.f, rh * 0.95f), panel::LIME,
+			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE), x0 + 2.f, hb, string::f("T%d", t + 1));
+		float sx = std::max(end + 6.f, x0 + (x1 - x0) * 0.3f);
 		if (pat) {
-			sx = panel::text(vg, TAG, sx, base, string::f("SLOT %d ", snap.active[t] + 1));
-			panel::text(vg, VAL, sx, base, cache[t].kind == L::kSlotEmpty ? "EMPTY"
+			sx = panel::text(vg, TAG, sx, hb, string::f("SLOT %d ", snap.active[t] + 1));
+			panel::text(vg, TAG.inked(panel::PAPER), sx, hb, cache[t].kind == L::kSlotEmpty ? "EMPTY"
 				: string::f("%d NOTES", cache[t].pat.count));
 		}
 		else {
-			sx = panel::text(vg, TAG, sx, base, "SEED ");
-			panel::segValue(vg, sx, base, row * 0.95f, string::f("%03d", (int)tr.activeSeed), "", panel::PAPER);
+			sx = panel::text(vg, TAG, sx, hb, "SEED ");
+			panel::segValue(vg, sx, hb, rh * 0.75f, string::f("%03d", (int)tr.activeSeed), "", panel::PAPER);
 		}
 
-		struct Pair { const char* tag; std::string val; int dest; bool used; };
-		const Pair left[] = {
-			{ "CH", string::f("%d", v[S::TP(t, S::kTChance)]), L::kDChance, true },
-			{ "NT", string::f("%+d", v[S::TP(t, S::kTNote)]), L::kDNote, !pat },
-			{ "OC", string::f("%+d", v[S::TP(t, S::kTOct)]), L::kDOct, !pat },
-			{ "RATE", S::rateNames[v[S::TP(t, S::kTRate)]], L::kDRate, true },
-			{ "LEN", string::f("%d", v[S::TP(t, S::kTLength)]), L::kDLength, true },
+		struct Pair { const Rect* f; const char* tag; std::string val; int dest; bool used; };
+		const Pair pairs[] = {
+			{ &panel::FIELD_CHANCE, "CH", string::f("%d", v[S::TP(t, S::kTChance)]), L::kDChance, true },
+			{ &panel::FIELD_NOTE, "NT", string::f("%+d", v[S::TP(t, S::kTNote)]), L::kDNote, !pat },
+			{ &panel::FIELD_OCTAVE, "OC", string::f("%+d", v[S::TP(t, S::kTOct)]), L::kDOct, !pat },
+			{ &panel::FIELD_RATE, "RATE", S::rateNames[v[S::TP(t, S::kTRate)]], L::kDRate, true },
+			{ &panel::FIELD_LENG, "LEN", string::f("%d", v[S::TP(t, S::kTLength)]), L::kDLength, true },
+			{ &panel::FIELD_DIRN, "DIR", S::directionShort[v[S::TP(t, S::kTDirection)]], L::kDDirection, true },
+			{ &panel::FIELD_EVOLVE, "EV", string::f("%d", v[S::TP(t, S::kTEvolve)]), L::kDEvolve, !pat },
+			{ &panel::FIELD_BREATHE, "BR", string::f("%d", v[S::TP(t, S::kTBreathe)]), L::kDBreathe, true },
+			{ &panel::FIELD_OCTA, "OCT", string::f("%+d", v[S::TP(t, S::kTOctave)]), L::kDOctave, true },
+			{ &panel::FIELD_TRNS, "TR", string::f(pat ? "%+dst" : "%+d", v[S::TP(t, S::kTTrans)]), L::kDTrans, true },
 		};
-		const Pair right[] = {
-			{ "DIR", S::directionShort[v[S::TP(t, S::kTDirection)]], L::kDDirection, true },
-			{ "EV", string::f("%d", v[S::TP(t, S::kTEvolve)]), L::kDEvolve, !pat },
-			{ "BR", string::f("%d", v[S::TP(t, S::kTBreathe)]), L::kDBreathe, true },
-			{ "OCT", string::f("%+d", v[S::TP(t, S::kTOctave)]), L::kDOctave, true },
-			{ "TR", string::f(pat ? "%+dst" : "%+d", v[S::TP(t, S::kTTrans)]), L::kDTrans, true },
-		};
-		for (int i = 0; i < 5; i++) {
-			float y = y0 + row * (2.25f + i * 0.9f);
-			const Pair* ps[2] = { &left[i], &right[i] };
-			for (int c = 0; c < 2; c++) {
-				const Pair& p = *ps[c];
-				float cx = x0 + c * colW;
-				float e = panel::text(vg, TAG, cx, y, p.tag);
-				NVGcolor ink = !p.used ? panel::alpha(panel::SAGE, 0.4f)
-					: (mm & (1u << p.dest)) ? panel::LIME : panel::PAPER;
-				panel::text(vg, VAL.inked(ink), std::max(e + 3.f, cx + 15.f), y, p.used ? p.val : std::string("-"));
-			}
+		for (const Pair& p : pairs) {
+			Rect r = local(*p.f);
+			float y = base(r);
+			NVGcolor ink = !p.used ? panel::alpha(panel::SAGE, 0.4f)
+				: (mm & (1u << p.dest)) ? panel::LIME : panel::PAPER;
+			panel::text(vg, TAG, r.pos.x + 3.f, y, p.tag);
+			panel::text(vg, VAL.inked(ink), r.pos.x + r.size.x - 3.f, y, p.used ? p.val : std::string("-"));
 		}
-		float y = y1 - 1.f;
-		int src = v[S::TP(t, S::kTSource)];
+
+		// the key: the root and the scale are fields of their own; who it follows and the
+		// transpose leader's offset after them
+		{
+			const Rect rr = local(panel::FIELD_ROOT), sr = local(panel::FIELD_SCALE);
+			float y = base(rr);
+			NVGcolor rootInk = (snap.gMod & Ledger::GMOD_ROOT) ? panel::LIME : panel::PAPER;
+			NVGcolor scaleInk = (snap.gMod & Ledger::GMOD_SCALE) ? panel::LIME : panel::PAPER;
+			panel::text(vg, TAG.inked(rootInk), rr.pos.x + 3.f, y, NOTE_NAMES[v[S::kGRoot] % 12]);
+			panel::text(vg, TAG.inked(scaleInk), sr.pos.x + 3.f, y, S::scaleShort[v[S::kGScale]]);
+			int src = v[S::TP(t, S::kTSource)];
+			std::string tail;
+			if (src > 0 && src - 1 != t && !pat) tail += string::f("<%d", src);
+			if (snap.trans != 0 && module && module->followTrans[t]) tail += string::f(" %+d", snap.trans);
+			if (!tail.empty())
+				panel::text(vg, TAG.aligned(NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE), x1 - 3.f, y, tail);
+		}
+
+		// the status line under the key
+		Rect st = local(panel::FIELD_ROOT);
+		st.pos.y += step;
+		float y = base(st);
 		if (tr.pendingSeed >= 0 && !pat) {
 			if ((int)(system::getTime() * 4.0) & 1)
-				panel::text(vg, TAG.inked(panel::LIME), x0, y, "RESEED ARM");
-		}
-		else {
-			bool keyMod = snap.gMod & (Ledger::GMOD_SCALE | Ledger::GMOD_ROOT);
-			std::string key = string::f("%s %s", NOTE_NAMES[v[S::kGRoot] % 12], S::scaleShort[v[S::kGScale]]);
-			if (src > 0 && src - 1 != t && !pat) key += string::f("  <%d", src);
-			if (snap.trans != 0 && module && module->followTrans[t]) key += string::f("  %+d", snap.trans);
-			panel::text(vg, TAG.inked(keyMod ? panel::LIME : panel::SAGE), x0, y, key);
+				panel::text(vg, TAG.inked(panel::LIME), x0 + 3.f, y, "RESEED ARM");
 		}
 		if (snap.rec) {
 			// recording; flashing while it waits for a first note or the clock
 			if (snap.rec == 2 || ((int)(system::getTime() * 4.0) & 1))
-				panel::text(vg, TAG.inked(panel::LIME).aligned(NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE), x1, y, "REC");
+				panel::text(vg, TAG.inked(panel::LIME).aligned(NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE), x1 - 3.f, y, "REC");
 		}
 		else if (v[S::kGFreeze])
-			panel::text(vg, TAG.inked(panel::LIME).aligned(NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE), x1, y, "FRZ");
+			panel::text(vg, TAG.inked(panel::LIME).aligned(NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE), x1 - 3.f, y, "FRZ");
 		else if (!v[S::kGRun])
-			panel::text(vg, TAG.aligned(NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE), x1, y, "STOP");
+			panel::text(vg, TAG.aligned(NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE), x1 - 3.f, y, "STOP");
 		else if (snap.queued[t] >= 0)
-			panel::text(vg, TAG.inked(panel::LIME).aligned(NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE), x1, y,
+			panel::text(vg, TAG.inked(panel::LIME).aligned(NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE), x1 - 3.f, y,
 				string::f("> %d", snap.queued[t] + 1));
 	}
 
@@ -1328,14 +1362,14 @@ struct LedgerDisplay : widget::OpaqueWidget {
 		std::string head = string::f("T%d  SLOT %d  ", t + 1, rollSlot + 1);
 		float x = panel::text(vg, HEAD.inked(panel::LIME), pad, pad + 8.f, head);
 		if (roll.kind == L::kSlotGen) {
-			panel::text(vg, HEAD, x, pad + 8.f, "A GENERATOR -- CAPTURE writes it down; right-click for more");
+			headText(vg, HEAD, x, pad + 8.f, "A GENERATOR -- CAPTURE writes it down; right-click for more");
 			return;
 		}
 		const char* snaps[] = { "1", "1/2", "1/3", "1/4", "1/6", "1/8", "OFF" };
 		const int snapT[] = { 24, 12, 8, 6, 4, 3, 1 };
 		const char* sn = "1/4";
 		for (int i = 0; i < 7; i++) if (snapT[i] == snapTicks) sn = snaps[i];
-		panel::text(vg, HEAD, x, pad + 8.f, string::f("%s  LEN %d  %s  SNAP %s  %d NOTES  %s %s",
+		headText(vg, HEAD, x, pad + 8.f, string::f("%s  LEN %d  %s  SNAP %s  %d NOTES  %s %s",
 			roll.kind == L::kSlotEmpty ? "EMPTY" : "PATTERN", len, S::rateNames[view.v[S::TP(t, S::kTRate)]],
 			sn, roll.pat.count, L::laneNames[laneSel], L::interpNames[roll.pat.interp[laneSel]]));
 
@@ -1435,8 +1469,8 @@ struct LedgerDisplay : widget::OpaqueWidget {
 		SeqRect r = seqRect();
 		const panel::TextStyle HEAD(panel::Face::Mono, 7.5f, panel::SAGE, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
 		int lq = module ? module->launchQ : kLaunchLoop;
-		panel::text(vg, HEAD, pad, pad + 8.f, string::f("SLOTS  launch: %s  ·  click a slot to launch it, a row number for the row", launchNames[lq]));
-		const panel::TextStyle CELL(panel::Face::Mono, std::min(7.f, r.rowH * 0.75f), panel::PAPER,
+		headText(vg, HEAD, pad, pad + 8.f, string::f("SLOTS  launch: %s  ·  click a slot to launch it, a row number for the row", launchNames[lq]));
+		const panel::TextStyle CELL(panel::Face::Mono, std::min(7.f, r.rowH * 0.9f), panel::PAPER,
 			NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
 		bool blink = (int)(system::getTime() * 4.0) & 1;
 		for (int t = 0; t < S::kNumTracks; t++) {
@@ -1469,5 +1503,67 @@ struct LedgerDisplay : widget::OpaqueWidget {
 					cx + r.colW * 0.5f, y + r.rowH * 0.5f, label);
 			}
 		}
+	}
+};
+
+// The glass, and the strip across its top two rows. Each tab is a field the module places
+// (a ScreenButton on the param the panel's button used to be: a page, a track, the transport,
+// what is done to the selected track); this paints the glass under the page, and each tab's
+// name and state, lit the way its LED was.
+struct LedgerStrip : widget::TransparentWidget {
+	Ledger* module = NULL;
+
+	void draw(const DrawArgs& args) override {
+		nvgBeginPath(args.vg);
+		nvgRoundedRect(args.vg, 0, 0, box.size.x, box.size.y, 3.f);
+		nvgFillColor(args.vg, panel::GLASS);
+		nvgFill(args.vg);
+		nvgStrokeColor(args.vg, panel::RULE);
+		nvgStrokeWidth(args.vg, 0.6f);
+		nvgStroke(args.vg);
+	}
+
+	void tab(NVGcontext* vg, const Rect& f, const char* name, float lit) {
+		Rect r = panel::mmRect(f.pos.x, f.pos.y, f.size.x, f.size.y);
+		r.pos = r.pos.minus(box.pos);
+		nvgBeginPath(vg);
+		nvgRoundedRect(vg, r.pos.x + 0.4f, r.pos.y + 0.4f, r.size.x - 0.8f, r.size.y - 0.8f, 1.2f);
+		nvgFillColor(vg, lit > 0.02f ? panel::alpha(panel::LIME, 0.10f + 0.32f * std::min(lit, 1.f))
+			: panel::alpha(panel::SAGE, 0.10f));
+		nvgFill(vg);
+		const panel::TextStyle NAME(panel::Face::Mono, std::min(7.f, r.size.y * 0.6f),
+			lit > 0.5f ? panel::PAPER : panel::SAGE, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+		panel::text(vg, NAME, r.pos.x + r.size.x * 0.5f, r.pos.y + r.size.y * 0.5f + 0.3f, name);
+	}
+
+	void drawLayer(const DrawArgs& args, int layer) override {
+		TransparentWidget::drawLayer(args, layer);
+		if (layer != 1) return;
+		NVGcontext* vg = args.vg;
+		auto light = [&](int id) { return module ? module->lights[id].getBrightness() : 0.f; };
+
+		static const Rect* const pages[kNumPages] = { &panel::FIELD_PG_TANK, &panel::FIELD_PG_ROLL,
+			&panel::FIELD_PG_FX, &panel::FIELD_PG_SEQ, &panel::FIELD_PG_SONG };
+		static const char* const pageNames[kNumPages] = { "TANK", "ROLL", "FX", "SEQ", "SONG" };
+		int page = module ? module->page.load() : kPageTank;
+		for (int p = 0; p < kNumPages; p++)
+			tab(vg, *pages[p], pageNames[p], p == page ? 1.f : 0.f);
+
+		// a track's tab is its old bezel: full on the selected track, a glow while it plays
+		static const Rect* const trks[S::kNumTracks] = { &panel::FIELD_TRK1, &panel::FIELD_TRK2,
+			&panel::FIELD_TRK3, &panel::FIELD_TRK4, &panel::FIELD_TRK5, &panel::FIELD_TRK6,
+			&panel::FIELD_TRK7, &panel::FIELD_TRK8 };
+		static const char* const trkNames[S::kNumTracks] = { "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8" };
+		for (int t = 0; t < S::kNumTracks; t++)
+			tab(vg, *trks[t], trkNames[t], module ? light(Ledger::TRK_LIGHT + t) : (t == 0 ? 1.f : 0.f));
+
+		tab(vg, panel::FIELD_RUN, "RUN", module ? light(Ledger::RUN_LIGHT) : 1.f);
+		tab(vg, panel::FIELD_RSET, "RESET", module ? module->params[Ledger::RSET_PARAM].getValue() : 0.f);
+		tab(vg, panel::FIELD_FRZE, "FREEZE", light(Ledger::FRZE_LIGHT));
+		tab(vg, panel::FIELD_REC, "REC", light(Ledger::REC_LIGHT));
+		tab(vg, panel::FIELD_MUTE, "MUTE", light(Ledger::MUTE_LIGHT));
+		tab(vg, panel::FIELD_SOLO, "SOLO", light(Ledger::SOLO_LIGHT));
+		tab(vg, panel::FIELD_RSED, "RESEED", light(Ledger::RSED_LIGHT));
+		tab(vg, panel::FIELD_CAPT, "CAPTURE", light(Ledger::CAPT_LIGHT));
 	}
 };

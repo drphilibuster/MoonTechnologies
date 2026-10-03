@@ -18,6 +18,9 @@ COUPLING wears the lime ring: it is the one knob the module is about, and
 turning it is the demonstration -- six lamps beating against each other, then a
 phase transition, then one collective rhythm six times over.
 
+The read-out holds what used to be detents: SCHEME and TERM by name, RANGE and
+DEAL, with ORDER beside them -- every word on it a control or a measure.
+
 Compact density: three sections, five rows. The width is solved, not typed --
 see panelkit/layout.py.
 """
@@ -28,13 +31,25 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from panelkit import *   # noqa: E402
 
+GLASS_H = 10.5
+
 P = Panel(
     slug="Collusion",
     title="COLLUSION",
+    what="COUPLED LFO SWARM",
     # Form 211 is the IRS whistleblower award claim -- the form you file about
     # people who have agreed among themselves. ORDER is this panel's Form 211.
     form="FORM 211",
     density="compact",
+    # The read-out: two lines, every word on them a control or a measure.
+    # SCHEME and TERM by name (they were detents on knobs, named only in
+    # tooltips), RANGE, DEAL, and ORDER -- how much the six agree right now.
+    glass=Glass(h=GLASS_H, grid=(2, 6), fields=[
+        Field("scheme", cell=(0, 0), span=(1, 4), kind="select"),
+        Field("term",   cell=(0, 4), span=(1, 2), kind="select"),
+        Field("range",  cell=(1, 0), span=(1, 2), kind="toggle"),
+        Field("deal",   cell=(1, 2), span=(1, 2), kind="button"),
+    ]),
 )
 
 P.sections = [
@@ -47,9 +62,7 @@ P.sections = [
     Section("FILINGS", rows=[
         Row([BigKnob("rate", "RATE"),
              Knob("spread", "SPREAD"),
-             Knob("shape", "SHAPE"),
-             Switch("range", "RANGE"),
-             Bezel("deal", "DEAL")]),
+             Knob("shape", "SHAPE")]),
     ]),
 
     # What they do about each other, and the record they keep of it. COUPLING is
@@ -68,9 +81,7 @@ P.sections = [
     Section("AGREEMENT", caption_light="order_led", rows=[
         Row([BigKnob("couple", "COUPLING", primary=True),
              Knob("evade", "EVASION"),
-             Knob("scheme", "SCHEME", steps=4),
              Knob("leverage", "LEVERAGE"),
-             Knob("term", "TERM", steps=8),
              Knob("audit", "AUDIT")]),
         Row([Trim("rate_cv", "V/OCT"),
              Trim("couple_cv", "COUPLE"),
@@ -83,17 +94,12 @@ P.sections = [
     ]),
 
     # The six of them. Each jack carries its own filer, and the lamp on its
-    # label is that filer's own cycle -- so the section is the instrument's
-    # read-out as much as its output: six lamps beating against each other
+    # label is that filer's own cycle: six lamps beating against each other
     # below the critical coupling, one lamp six times over above it.
     Section("PARTIES", rows=[
-        Row([Jack("out1", "1", ink="MINT", light="led1"),
-             Jack("out2", "2", ink="MINT", light="led2"),
-             Jack("out3", "3", ink="MINT", light="led3"),
-             Jack("out4", "4", ink="MINT", light="led4"),
-             Jack("out5", "5", ink="MINT", light="led5"),
-             Jack("out6", "6", ink="MINT", light="led6")]),
+        Row([Jack("out%d" % k, str(k), ink="MINT", light="led%d" % k) for k in range(1, 7)]),
     ]),
+
 ]
 
 # The I/O row sits as low as the bottom screws allow: RACK_GRID_HEIGHT -

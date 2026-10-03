@@ -1,4 +1,4 @@
-# Collusion
+# Collusion — coupled LFO swarm
 
 Six LFOs that listen to each other, for VCV Rack 2. Form 211 — the IRS
 whistleblower claim, the form you file about people who have agreed among
@@ -20,7 +20,12 @@ but a phase diagram, and the module is the business of moving around inside it.
 
 ## Layout
 
-21 HP. **FILINGS** is what each filer would do unsupervised; **AGREEMENT** is
+The read-out under the masthead has two lines: SCHEME and TERM by name, then
+RANGE, DEAL and ORDER (how much the six agree right now, as a bar). The first
+four are controls -- click SCHEME or TERM to pick from the list, click RANGE to
+flip it, click DEAL to deal; right-click any for the param's own menu.
+
+17 HP. **FILINGS** is what each filer would do unsupervised; **AGREEMENT** is
 what they do about each other and the record they keep of it; **PARTIES** is the
 six of them, each with a lamp; the footer carries the collective outputs.
 
@@ -60,8 +65,8 @@ and 10 V when it is in unison.
 | **RATE** | large knob | The centre of the swarm. `V/OCT` tracks it |
 | **SPREAD** | knob | How far the six natural rates fan out around `RATE`, up to 1.5 octaves either side. Zero makes six identical oscillators, which lock at any coupling at all |
 | **SHAPE** | knob | Warps each cycle from a sine toward a relaxation spike (below) |
-| **RANGE** | switch | `LO` 0.02–40 Hz, `HI` 20 Hz–4 kHz |
-| **DEAL** | button | Re-rolls the fan: six random natural rates instead of the even spread. The fan is saved with the patch |
+| **RANGE** | read-out, click | `LO` 0.02–40 Hz, `HI` 20 Hz–4 kHz |
+| **DEAL** | read-out, click | Re-rolls the fan: six random natural rates instead of the even spread. The fan is saved with the patch |
 
 **SHAPE** is a phase warp, not a waveform crossfade. It makes the cycle dwell
 near its minimum and then snap through the rest — the shape a relaxation
@@ -84,9 +89,9 @@ SHAPE quietly becoming a noise control.
 |---|---|---|
 | **COUPLING** | large knob, bipolar | How hard each filer is pulled toward the others. Left of centre they *repel* and spread into maximal disagreement; right of centre they attract and lock |
 | **EVASION** | knob | Sakaguchi's phase lag, 0 to 0.4 turns. See below |
-| **SCHEME** | 4-position snap knob | Who each filer can hear |
+| **SCHEME** | read-out, click to pick | Who each filer can hear, by name |
 | **LEVERAGE** | knob, bipolar | How much of the ledger's own voltage goes back into the rates |
-| **TERM** | 8-position snap knob | Shift-register length: 2, 3, 4, 5, 6, 8, 12 or 16 steps |
+| **TERM** | read-out, click to pick | Shift-register length: 2, 3, 4, 5, 6, 8, 12 or 16 steps |
 | **AUDIT** | knob | How often a step is rewritten from the swarm rather than recirculated |
 | ORDER lamp | beside the caption | How much the population currently agrees |
 

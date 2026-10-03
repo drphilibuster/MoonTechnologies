@@ -17,23 +17,26 @@ namespace panel {
 static const int   HP = 14;
 static const float W  = 71.1200f;  // mm
 static const float H  = 128.5000f;  // mm
+//: What the module is, as the masthead's second line says it.
+static const char* const WHAT = "REPOSSESSION EXPANDER";
 
 // --- panel metrics, mirrored from tools/panels/ScheduleA.py ---
 static const int   NUM_SLOTS      = 8;
 
 // --- silkscreen ------------------------------------------------------------
 static const Label LABELS[] = {
-	{ 11.5600f,   5.5000f, 10.50f, 1.50f, PAPER    , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "SCHEDULE A"},
-	{ 59.5600f,   5.5000f,  6.00f, 0.00f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "ITEMIZED LIENS"},
-	{ 11.5600f,   8.2500f,  7.40f, 0.00f, LIME     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, true,  "$"},
-	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
-	{ 66.9200f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 1099-A"},
-	{ 35.5600f,  14.0000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ITEMIZED"},
-	{ 15.5340f,  17.0618f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SPEED"},
-	{ 27.4580f,  17.0618f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GAIN"},
-	{ 39.3820f,  17.0618f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "START"},
-	{ 51.3060f,  17.0618f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LENGTH"},
-	{ 63.2300f,  17.0618f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
+	{ 11.5600f,   5.5000f, 10.50f, 1.50f, PAPER    , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, 0,     "SCHEDULE A"},
+	{ 59.5600f,   5.5000f,  6.00f, 0.00f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, 0,     "ITEMIZED LIENS"},
+	{  1.4000f,   8.2500f,  7.40f, 0.00f, LIME     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, 1,     "$"},
+	{ 35.5600f,   8.0000f,  5.40f, 0.40f, LIME     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "REPOSSESSION EXPANDER"},
+	{  2.1717f,  66.0000f,  4.60f, 0.40f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 2,     "MOON TECHNOLOGIES"},
+	{ 68.9483f,  66.0000f,  4.60f, 0.40f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 3,     "FORM 1099-A"},
+	{ 35.5600f,  14.0000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "ITEMIZED"},
+	{ 15.5340f,  17.0618f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "SPEED"},
+	{ 27.4580f,  17.0618f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "GAIN"},
+	{ 39.3820f,  17.0618f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "START"},
+	{ 51.3060f,  17.0618f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "LENGTH"},
+	{ 63.2300f,  17.0618f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "OUT"},
 };
 
 /** Draws this panel's silkscreen. `static` so each module keeps its own,

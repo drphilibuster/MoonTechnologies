@@ -1,6 +1,6 @@
-# Schedule A
+# Schedule A — Repossession expander
 
-**FORM 1099-A, itemized attachment — the Repossession expander.** 16 HP.
+**FORM 1099-A, itemized attachment — the Repossession expander.** 14 HP.
 
 Eight rows, one per seized asset. Each carries the four charges that can be
 varied against that step — **SPEED**, **GAIN**, **START**, **LENGTH** — and the

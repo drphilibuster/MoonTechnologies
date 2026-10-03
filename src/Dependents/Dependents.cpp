@@ -52,6 +52,10 @@ struct Dependents : Module {
 
 	Unity unity;
 	DcBlock dc;
+	// What the read-out draws: the spectrum actually sounding (both sides of the
+	// morph, CV and all) and which chords are in play once their CV is added.
+	float dispW[kMaxHarmonic + 1] = {};
+	int dispA = 3, dispB = 4;
 	double phase = 0.0;
 	float dcR = 0.999f;
 	dsp::Upsampler<kOversample, 8> up;
@@ -151,6 +155,9 @@ struct Dependents : Module {
 		fill(ia, tilt, wa);
 		fill(ib, tilt, wb);
 		morph(wa, wb, t, w);
+		for (int n = 0; n <= kMaxHarmonic; n++) dispW[n] = w[n];
+		dispA = ia;
+		dispB = ib;
 
 		float drive = clamp(params[DRIVE_PARAM].getValue()
 		                    + inputs[DRIVE_INPUT].getVoltage() / 10.f
@@ -224,6 +231,80 @@ std::string RootQuantity::getDisplayValueString() {
 	return ParamQuantity::getDisplayValueString();
 }
 
+// The read-out. Every value on it is a control: the root and its scale, HOLD,
+// the two chords by name, and the twelve harmonics as drawbars -- the CUSTOM
+// chord, drawn over the spectrum that is actually sounding, so a named chord
+// can be read off the bars and then copied onto them by hand.
+struct DependentsDisplay : LedDisplay {
+	Dependents* module = NULL;
+	panel::FittedText fitA, fitB, fitScale;
+
+	static void cell(NVGcontext* vg, const Rect& f, const char* tag, const std::string& v,
+	                 NVGcolor ink, panel::FittedText* fit = NULL) {
+		const Rect c = panel::inGlass(f);
+		const float base = c.pos.y + c.size.y * 0.72f;
+		const panel::TextStyle TAG(panel::Face::Mono, 6.f, panel::SAGE, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
+		const panel::TextStyle VAL(panel::Face::Mono, 8.f, ink, NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE);
+		const float x0 = c.pos.x + 2.f, x1 = c.pos.x + c.size.x - 2.f;
+		const float after = tag[0] ? panel::text(vg, TAG, x0, base, tag) + 3.f : x0;
+		panel::text(vg, VAL, x1, base, fit ? fit->get(vg, VAL, v, x1 - after) : v);
+	}
+
+	void drawLayer(const DrawArgs& args, int layer) override {
+		if (layer != 1) {
+			LedDisplay::drawLayer(args, layer);
+			return;
+		}
+		NVGcontext* vg = args.vg;
+		auto pv = [&](int id, float d) { return module ? module->params[id].getValue() : d; };
+		const bool quant = pv(Dependents::ROOT_QUANT_PARAM, 0.f) > 0.5f;
+		std::string root = "C1";
+		if (module) {
+			engine::ParamQuantity* q = module->paramQuantities[Dependents::ROOT_PARAM];
+			root = q->getDisplayValueString() + (quant ? "" : q->getUnit());
+		}
+		const int scale = clamp((int)std::round(pv(Dependents::ROOT_SCALE_PARAM, 0.f)), 0, quant::NUM_SCALES - 1);
+		cell(vg, panel::FIELD_ROOT_FIELD, "ROOT", root, panel::LIME);
+		cell(vg, panel::FIELD_ROOT_QUANT, "", quant ? "QUANT" : "FREE", quant ? panel::LIME : panel::SAGE);
+		cell(vg, panel::FIELD_ROOT_SCALE, "", quant::SCALE_NAMES[scale],
+		     quant ? panel::LIME : panel::alpha(panel::SAGE, 0.6f), &fitScale);
+		cell(vg, panel::FIELD_NORM, "", pv(Dependents::NORM_PARAM, 1.f) > 0.5f ? "HOLD" : "RAW", panel::LIME);
+		const int a = module ? module->dispA : 3, b = module ? module->dispB : 4;
+		cell(vg, panel::FIELD_CHORD_A, "A", kChords[a].name, panel::MINT, &fitA);
+		cell(vg, panel::FIELD_CHORD_B, "B", kChords[b].name, panel::MINT, &fitB);
+
+		// The drawbars. Behind each, the weight actually sounding at that
+		// harmonic, scaled to the loudest; in front, the CUSTOM chord's own
+		// setting -- bright when either side of the morph is CUSTOM, faint when
+		// it is only in reserve.
+		static const Rect H[kCustomHarmonics] = {
+			panel::FIELD_H1, panel::FIELD_H2, panel::FIELD_H3, panel::FIELD_H4,
+			panel::FIELD_H5, panel::FIELD_H6, panel::FIELD_H7, panel::FIELD_H8,
+			panel::FIELD_H9, panel::FIELD_H10, panel::FIELD_H11, panel::FIELD_H12 };
+		float peak = 1e-6f;
+		if (module)
+			for (int n = 1; n <= kCustomHarmonics; n++) peak = std::max(peak, std::fabs(module->dispW[n]));
+		const bool custom = kChords[a].count == 0 || kChords[b].count == 0;
+		const panel::TextStyle NUM(panel::Face::Mono, 5.5f, panel::SAGE, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+		for (int n = 0; n < kCustomHarmonics; n++) {
+			const Rect c = panel::inGlass(H[n]);
+			const float top = c.pos.y + 1.f, bot = c.pos.y + c.size.y - 8.f, h = bot - top;
+			const float x = c.pos.x + c.size.x * 0.18f, w = c.size.x * 0.64f;
+			nvgBeginPath(vg); nvgRect(vg, x, top, w, h);
+			nvgFillColor(vg, panel::alpha(panel::SAGE, 0.08f)); nvgFill(vg);
+			if (module) {
+				const float sounding = clamp(std::fabs(module->dispW[n + 1]) / peak, 0.f, 1.f);
+				nvgBeginPath(vg); nvgRect(vg, x, bot - h * sounding, w, h * sounding);
+				nvgFillColor(vg, panel::alpha(panel::MINT, 0.35f)); nvgFill(vg);
+			}
+			const float set = clamp(pv(Dependents::HARM_PARAM + n, n == 0 ? 1.f : 0.f), 0.f, 1.f);
+			nvgBeginPath(vg); nvgRect(vg, x, bot - h * set, w, std::max(1.2f, h * set));
+			nvgFillColor(vg, panel::alpha(panel::LIME, custom ? 0.85f : 0.30f)); nvgFill(vg);
+			panel::text(vg, NUM, c.pos.x + c.size.x / 2.f, c.pos.y + c.size.y - 1.5f, std::to_string(n + 1));
+		}
+	}
+};
+
 struct DependentsWidget : ModuleWidget {
 	DependentsWidget(Dependents* module) {
 		setModule(module);
@@ -231,18 +312,36 @@ struct DependentsWidget : ModuleWidget {
 		panel::addScrews(this);
 		panel::addLabels(this);
 
-		addParam(createParamCentered<RoundLargeBlackKnob>(panel::mm(panel::ROOT_POS.x, panel::ROOT_POS.y), module, Dependents::ROOT_PARAM));
-		addParam(createParamCentered<CKSS>(panel::mm(panel::ROOT_QUANT_POS.x, panel::ROOT_QUANT_POS.y), module, Dependents::ROOT_QUANT_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::ROOT_SCALE_POS.x, panel::ROOT_SCALE_POS.y), module, Dependents::ROOT_SCALE_PARAM));
+		DependentsDisplay* display = new DependentsDisplay;
+		display->module = module;
+		display->box.pos = panel::mm(panel::GLASS_X, panel::GLASS_Y);
+		display->box.size = panel::mm(panel::GLASS_W, panel::GLASS_H);
+		addChild(display);
 
-		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::CHORD_A_POS.x, panel::CHORD_A_POS.y), module, Dependents::CHORD_A_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::CHORD_B_POS.x, panel::CHORD_B_POS.y), module, Dependents::CHORD_B_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_ROOT_FIELD, module, Dependents::ROOT_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_ROOT_QUANT, module, Dependents::ROOT_QUANT_PARAM));
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_ROOT_SCALE, module, Dependents::ROOT_SCALE_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_NORM, module, Dependents::NORM_PARAM));
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_CHORD_A, module, Dependents::CHORD_A_PARAM));
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_CHORD_B, module, Dependents::CHORD_B_PARAM));
+		static const Rect H[kCustomHarmonics] = {
+			panel::FIELD_H1, panel::FIELD_H2, panel::FIELD_H3, panel::FIELD_H4,
+			panel::FIELD_H5, panel::FIELD_H6, panel::FIELD_H7, panel::FIELD_H8,
+			panel::FIELD_H9, panel::FIELD_H10, panel::FIELD_H11, panel::FIELD_H12 };
+		for (int n = 0; n < kCustomHarmonics; n++) {
+			// A drawbar travels its own height, not a knob's throw: full scale in
+			// about the bar's length, so the pointer stays on the bar it moves.
+			panel::ScreenKnob* bar = panel::createField<panel::ScreenKnob>(H[n], module, Dependents::HARM_PARAM + n);
+			bar->speed = 2.5f;
+			addParam(bar);
+		}
+
+		addParam(createParamCentered<RoundLargeBlackKnob>(panel::mm(panel::ROOT_POS.x, panel::ROOT_POS.y), module, Dependents::ROOT_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::MORPH_POS.x, panel::MORPH_POS.y), module, Dependents::MORPH_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::TILT_POS.x, panel::TILT_POS.y), module, Dependents::TILT_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::DRIVE_POS.x, panel::DRIVE_POS.y), module, Dependents::DRIVE_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::MIX_POS.x, panel::MIX_POS.y), module, Dependents::MIX_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::LEVEL_POS.x, panel::LEVEL_POS.y), module, Dependents::LEVEL_PARAM));
-		addParam(createParamCentered<CKSS>(panel::mm(panel::NORM_POS.x, panel::NORM_POS.y), module, Dependents::NORM_PARAM));
 
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::MORPH_CV_POS.x, panel::MORPH_CV_POS.y), module, Dependents::MORPH_CV_PARAM));
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::TILT_CV_POS.x, panel::TILT_CV_POS.y), module, Dependents::TILT_CV_PARAM));
@@ -256,14 +355,6 @@ struct DependentsWidget : ModuleWidget {
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::CHORD_B_IN_POS.x, panel::CHORD_B_IN_POS.y), module, Dependents::CHORD_B_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::DRIVE_IN_POS.x, panel::DRIVE_IN_POS.y), module, Dependents::DRIVE_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::LEVEL_IN_POS.x, panel::LEVEL_IN_POS.y), module, Dependents::LEVEL_INPUT));
-
-		static const Vec* harmPos[kCustomHarmonics] = {
-			&panel::H1_POS, &panel::H2_POS, &panel::H3_POS, &panel::H4_POS,
-			&panel::H5_POS, &panel::H6_POS, &panel::H7_POS, &panel::H8_POS,
-			&panel::H9_POS, &panel::H10_POS, &panel::H11_POS, &panel::H12_POS };
-		for (int n = 0; n < kCustomHarmonics; n++)
-			addParam(createParamCentered<Trimpot>(
-				panel::mm(harmPos[n]->x, harmPos[n]->y), module, Dependents::HARM_PARAM + n));
 
 		addInput(createInputCentered<panel::PortInMain>(panel::mm(panel::IN_POS.x, panel::IN_POS.y), module, Dependents::IN_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::VOCT_POS.x, panel::VOCT_POS.y), module, Dependents::VOCT_INPUT));

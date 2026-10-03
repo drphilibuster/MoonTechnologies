@@ -27,24 +27,54 @@ from panelkit import *   # noqa: E402
 P = Panel(
     slug="Contagion",
     title="CONTAGION",
-    subtitle="VIRUS C",
+    what="VIRUS C SYNTHESIZER",
     form="FORM 8300",
-    glass=Glass(h=18.0),
+    # The display is one piece of glass, and everything it shows is a control; see below.
+    glass=Glass(h=24.5, grid=(7, 104), fields=[
+        # PRESET: the last program screen (columns 0-20, rows 1-4), which a click opens the
+        # sound list from; its three step pairs beside it, named in row 6; TRANSPOSE and
+        # its octave lamps under it.
+        Field("preset_lcd", cell=(1, 0), span=(4, 21), kind="menu"),
+        Field("preset",    cell=(1, 21), span=(5, 3), kind="button"),
+        Field("category",  cell=(1, 24), span=(5, 3), kind="button"),
+        Field("incat",     cell=(1, 27), span=(5, 3), kind="button"),
+        Field("trans",     cell=(5, 0),  span=(2, 3), kind="button"),
+        # PARAMETER: the LCD as it is now (columns 31-51), the same for its steppers,
+        # and the tempo under it.
+        Field("param",     cell=(1, 52), span=(5, 3), kind="button"),
+        Field("value",     cell=(1, 55), span=(5, 3), kind="button"),
+        Field("page",      cell=(1, 58), span=(5, 3), kind="button"),
+        Field("tempo",     cell=(5, 31), span=(2, 21), kind="value"),
+        # SELECTED: one line per selector, its name then its positions. The positions
+        # are the selector; the name, where the section has one, is its EDIT key.
+        Field("lfo_edit",  cell=(1, 62), span=(1, 4),  kind="button"),
+        Field("lfo_sel",   cell=(1, 66), span=(1, 12), kind="select"),
+        Field("lfo_shape", cell=(2, 66), span=(1, 12), kind="select"),
+        Field("osc_edit",  cell=(3, 62), span=(1, 4),  kind="button"),
+        Field("osc_sel",   cell=(3, 66), span=(1, 12), kind="select"),
+        Field("fx_edit",   cell=(4, 62), span=(1, 4),  kind="button"),
+        Field("fx_sel",    cell=(4, 66), span=(1, 12), kind="select"),
+        Field("flt1_mode", cell=(5, 66), span=(1, 12), kind="select"),
+        Field("flt2_mode", cell=(6, 66), span=(1, 12), kind="select"),
+        # AMOUNT: the four sources' destinations, and the key that steps them.
+        Field("lfo_amount", cell=(1, 79), span=(6, 25), kind="button"),
+    ]),
     footer_groups=(2, 7, 3, 8, 8),      # audio in, a keyboard, a transport, CV, gates
 )
 
 # The display is one piece of glass: the unit's own 2 x 16 LCD as it is now (the parameter
 # screen), the last program screen kept beside it (the preset), and the lamps the unit
-# shows its selectors and its AMOUNT destinations with, grouped by what they answer. The
-# module draws all of it; where it goes inside the glass is the widget's business.
+# shows its selectors and its AMOUNT destinations with, grouped by what they answer. Each
+# of those is also where you change it (Field, above): the selectors' positions are picked
+# there, a selector's name is its section's EDIT, the AMOUNT lamps are the AMOUNT key, and
+# the step pairs that walk the program, category, parameter, value, page and transpose stand
+# beside the screen they walk. The module draws all of it in the fields' own rectangles.
 
 # The unit has no encoders and no selectors, only buttons -- PART -/+, a key that steps through
-# four filter modes with four LEDs. A modular face can do better, so here the pairs are endless
-# knobs (a detent is a press) and the cycles are detented knobs that press until the unit's
-# LEDs agree. Pushing a selector knob presses the section's EDIT. Everything still reaches the
-# firmware as a key press and comes back as an LED (Controls.hpp).
-#
-# `steps` is the knob's detent count; an endless knob has none.
+# four filter modes with four LEDs. A modular face can do better, so here the pairs are step
+# buttons (a click is a press) and the cycles are choices that press until the unit's LEDs
+# agree. Everything still reaches the firmware as a key press and comes back as an LED
+# (Controls.hpp).
 #
 # Four gestures of the unit need one key held while another is pressed, or two pressed together, which a mouse
 # cannot do, so each is a control that does it for you: MULTI+SINGLE (both together enter Multi-Single mode, and
@@ -67,32 +97,24 @@ def knob_row_1():
 P.sections = [
     Section("LFOS/MOD · OSCILLATORS · MIXER · EFFECTS · DELAY/REVERB", groups=(1, 5, 5, 2, 3, 3), rows=[
         Row(knob_row_1()),
-        Row([Knob("lfo_sel", "LFO", steps=4, light="lfo_edit_led"), Knob("lfo_shape", "LFO SHAPE", steps=5),
-             Button("lfo_amount", "AMOUNT"), Light("rate1", "RATE 1"), Light("rate23", "2/3"),
-             Knob("osc_sel", "OSC", steps=3, light="osc_edit_led"),
+        Row([Light("rate1", "RATE 1"), Light("rate23", "2/3"),
              Bezel("sync", "SYNC"), Bezel("osc3_on", "OSC 3 ON"),
-             Knob("fx_sel", "EFFECT", steps=3, light="fx_edit_led"),
              Button("dly_edit", "DLY/REV", light="dly_edit_led"),
              Bezel("arp_on", "ARP ON"), Button("arp_edit", "ARP EDIT", light="arp_edit_led"),
              Button("edit", "EDIT", light="edit_led"), Button("global", "GLOBAL", light="global_led"),
              Button("random", "RANDOM")], own_grid=True),
     ]),
-    Section("FILTERS · ENVELOPES · PROGRAM", groups=(5, 4, 4, 5), rows=[
+    Section("FILTERS · ENVELOPES · PROGRAM", groups=(5, 4, 4, 1), rows=[
         Row([Knob("cutoff", "CUTOFF", primary=True), Knob("cutoff2", "CUTOFF 2"),
              Knob("reso", "RESO"), Knob("env_amt", "ENV AMT"), Knob("flt_bal", "FLT BAL"),
              Knob("f_att", "ATTACK"), Knob("f_dec", "DECAY"), Knob("f_sus", "SUSTAIN"), Knob("f_rel", "RELEASE"),
              Knob("a_att", "ATTACK"), Knob("a_dec", "DECAY"), Knob("a_sus", "SUSTAIN"), Knob("a_rel", "RELEASE"),
-             Stepper("preset", "PRESET"), Stepper("part", "PART"), Stepper("param", "PARAMETER"), Stepper("value", "VALUE"),
-             Stepper("trans", "TRANSPOSE")]),
+             Stepper("part", "PART")]),
         Row([Button("flt_edit", "EDIT", light="flt_edit_led"),
-             Knob("flt1_mode", "FILT 1", steps=4), Knob("flt2_mode", "FILT 2", steps=4),
              Button("flt_sel1", "SEL 1", light="sel1_led"), Button("flt_sel2", "SEL 2", light="sel2_led"),
              Button("undo", "UNDO"), Button("store", "STORE"),
              Button("multi", "MULTI", light="multi_led"), Button("single", "SINGLE", light="single_led"),
-             Button("multisingle", "MULTI+SINGLE"),
-             Stepper("category", "CATEGORY"), Stepper("incat", "IN CATEGORY"), Stepper("page", "PAGE")]
-            + [Light("tr%d" % (i + 1), t) for i, t in enumerate(["-2", "-1", "0", "+1", "+2"])]
-            + [Knob("tempo", "BPM", light="bpm")], own_grid=True),
+             Button("multisingle", "MULTI+SINGLE")], own_grid=True),
     ]),
 ]
 

@@ -45,8 +45,9 @@ const char* const POT_NAME[32] = { "LFO rate", "Delay/reverb time", "Osc shape",
 	"Filter balance", "Filter attack", "Filter decay", "Filter sustain", "Filter release", "Amp attack",
 	"Amp decay", "Amp sustain", "Amp release" };
 
-/** The six selector knobs: the key that steps the unit through them (or the key of each position),
-    the LEDs that show where it is, and the key a push on the knob presses. Order = SEL_PARAM. */
+/** The six selectors (the SELECTED lines on the display): the key that steps the unit through them (or
+    the key of each position), the LEDs that show where it is, and the section's EDIT key, which the
+    line's name presses. Order = SEL_PARAM. */
 const int OSC_KEYS[3] = { 6, 7, 8 };
 struct SelDef {
 	const char* name;
@@ -448,8 +449,8 @@ struct Contagion : Module {
 			float rate[2];
 			v.rateLeds(rate);
 			for (int i = 0; i < 2; i++) lights[RATE_LIGHT + i].setBrightness(rate[i]);
-			// The selector knobs: where the unit's LEDs say each one is, and presses to put it where
-			// the knob was turned.
+			// The selectors: where the unit's LEDs say each one is, and presses to put it where
+			// it was set on the screen.
 			const float tick = float(int(args.sampleRate / 40)) / args.sampleRate;
 			auto lit = [&](int i) { return g[LED[i][0]][LED[i][1]]; };
 			for (int i = 0; i < 6; i++) {
@@ -599,16 +600,6 @@ struct Contagion : Module {
 
 namespace {
 
-/** A knob that is also a button: a click that does not turn it presses the unit's key. Turning is the
-    stock knob's own, so tooltips, snapping, scroll-wheel and double-click-to-reset all stay. */
-struct PushKnob : RoundBlackKnob {
-	Contagion* module = nullptr;
-	int pushKey = -1;
-	void onAction(const ActionEvent& e) override {
-		if (module && pushKey >= 0) module->keys.press(pushKey);
-	}
-};
-
 /** One 2 x 16 LCD screen, dot by dot: the unit's character ROM for the fixed glyphs and the
     controller's CGRAM for the eight the firmware defines. x, y, w, h are in pixels. */
 void drawLcd(NVGcontext* vg, const uint8_t chars[32], const uint8_t cgram[64], float x, float y, float w, float h) {
@@ -631,45 +622,47 @@ void drawLcd(NVGcontext* vg, const uint8_t chars[32], const uint8_t cgram[64], f
 
 /** The read-out well, all of it one piece of glass: the preset screen (the last program the unit
     showed), the parameter screen (the unit's LCD as it is now), and the lamps the unit answers its
-    selectors and its AMOUNT destinations with, grouped by what they answer. */
+    selectors and its AMOUNT destinations with, grouped by what they answer. Everything here is a
+    control as well: each thing is drawn in the rectangle of the field that changes it (FIELD_* in
+    Panel.hpp), so what you read and what you grab are one place. */
 struct DisplayWidget : widget::Widget {
 	Contagion* module = nullptr;
 
 	struct Lamp { const char* text; int led; };
-	struct Row { const char* label; int n; Lamp lamps[6]; };
+	struct Row { const char* label; int n; Lamp lamps[6]; int editLed; };
 
-	// The selectors, in two columns of three, and what each position is called. LED indices are
-	// PanelMap.hpp's.
+	// The selectors, one line each in SEL_PARAM order, and what each position is called. LED
+	// indices are PanelMap.hpp's; `editLed` is the section's EDIT lamp, for the three whose name
+	// is their EDIT key, -1 for the rest.
 	static const Row* selectorRows() {
 		static const Row rows[6] = {
-			{ "LFO", 4, { { "1", 1 }, { "2", 2 }, { "3", 3 }, { "MOD", 4 } } },
-			{ "OSC", 3, { { "1", 12 }, { "2", 13 }, { "3", 14 } } },
-			{ "EFFECT", 3, { { "DIST", 17 }, { "PHA", 18 }, { "CHO", 19 } } },
-			{ "SHAPE", 5, { { "SIN", 5 }, { "TRI", 6 }, { "SAW", 7 }, { "SQR", 8 }, { "WAV", 9 } } },
-			{ "FILT 1", 4, { { "LP", 51 }, { "HP", 52 }, { "BP", 53 }, { "BS", 54 } } },
-			{ "FILT 2", 4, { { "LP", 55 }, { "HP", 56 }, { "BP", 57 }, { "BS", 58 } } },
+			{ "LFO", 4, { { "1", 1 }, { "2", 2 }, { "3", 3 }, { "MOD", 4 } }, 0 },
+			{ "SHAPE", 5, { { "SIN", 5 }, { "TRI", 6 }, { "SAW", 7 }, { "SQR", 8 }, { "WAV", 9 } }, -1 },
+			{ "OSC", 3, { { "1", 12 }, { "2", 13 }, { "3", 14 } }, 10 },
+			{ "EFFECT", 3, { { "DIST", 17 }, { "PHA", 18 }, { "CHO", 19 } }, 16 },
+			{ "FILT 1", 4, { { "LP", 51 }, { "HP", 52 }, { "BP", 53 }, { "BS", 54 } }, -1 },
+			{ "FILT 2", 4, { { "LP", 55 }, { "HP", 56 }, { "BP", 57 }, { "BS", 58 } }, -1 },
 		};
 		return rows;
 	}
 	// What AMOUNT steps through for each of the four modulation sources.
 	static const Row* amountRows() {
 		static const Row rows[4] = {
-			{ "LFO 1", 6, { { "OSC 1", 21 }, { "OSC 2", 22 }, { "PW 1+2", 23 }, { "RESO", 24 }, { "F GAIN", 25 }, { "ASSIGN", 26 } } },
-			{ "LFO 2", 6, { { "FILT 1", 27 }, { "FILT 2", 28 }, { "SHAPE", 29 }, { "FM AMT", 30 }, { "PAN", 31 }, { "ASSIGN", 32 } } },
-			{ "LFO 3", 5, { { "OSC 1", 33 }, { "OSC 2", 34 }, { "PW 1", 35 }, { "PW 2", 36 }, { "SYNC PH", 37 } } },
-			{ "MOD", 6, { { "ASGN 1", 38 }, { "ASGN 2", 39 }, { "ASGN 3", 40 }, { "ASGN 4", 41 }, { "ASGN 5", 42 }, { "ASGN 6", 43 } } },
+			{ "LFO 1", 6, { { "OSC 1", 21 }, { "OSC 2", 22 }, { "PW 1+2", 23 }, { "RESO", 24 }, { "F GAIN", 25 }, { "ASSIGN", 26 } }, -1 },
+			{ "LFO 2", 6, { { "FILT 1", 27 }, { "FILT 2", 28 }, { "SHAPE", 29 }, { "FM AMT", 30 }, { "PAN", 31 }, { "ASSIGN", 32 } }, -1 },
+			{ "LFO 3", 5, { { "OSC 1", 33 }, { "OSC 2", 34 }, { "PW 1", 35 }, { "PW 2", 36 }, { "SYNC PH", 37 } }, -1 },
+			{ "MOD", 6, { { "ASGN 1", 38 }, { "ASGN 2", 39 }, { "ASGN 3", 40 }, { "ASGN 4", 41 }, { "ASGN 5", 42 }, { "ASGN 6", 43 } }, -1 },
 		};
 		return rows;
 	}
 
-	void drawRow(NVGcontext* vg, const Row& r, float x, float y, float labelW, float pitch, float size, float s) {
-		const panel::TextStyle st(panel::Face::Mono, size, panel::SAGE, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
-		panel::text(vg, st.inked(panel::PAPER), x * s, y * s, r.label);
-		for (int i = 0; i < r.n; i++) {
-			const float b = module ? module->lights[Contagion::LED_LIGHT + r.lamps[i].led].getBrightness() : 0.f;
-			panel::text(vg, st.inked(b > 0.05f ? panel::alpha(panel::LIME, 0.35f + 0.65f * b) : panel::alpha(panel::SAGE, 0.55f)),
-				(x + labelW + i * pitch) * s, y * s, r.lamps[i].text);
-		}
+	float led(int i) { return module ? module->lights[Contagion::LED_LIGHT + i].getBrightness() : 0.f; }
+	NVGcolor lampInk(float b) { return b > 0.05f ? panel::alpha(panel::LIME, 0.35f + 0.65f * b) : panel::alpha(panel::SAGE, 0.55f); }
+
+	/** A row of lamps: `x` and `pitch` in pixels, `y` the line's centre. */
+	void drawLamps(NVGcontext* vg, const Row& r, float x, float y, float pitch, const panel::TextStyle& st) {
+		for (int i = 0; i < r.n; i++)
+			panel::text(vg, st.inked(lampInk(led(r.lamps[i].led))), x + i * pitch, y, r.lamps[i].text);
 	}
 
 	void drawLayer(const DrawArgs& args, int layer) override {
@@ -685,38 +678,82 @@ struct DisplayWidget : widget::Widget {
 			booting = module->booting;
 		}
 		const float s = box.size.x / panel::GLASS_W;                 // pixels per mm
-		// Everything below is millimetres across a glass GLASS_W wide, and all of it has to end before it:
-		// the LCDs, the SELECTED lamps (two columns of `selW`), the AMOUNT lamps. The LCD's dots are sized by
-		// its cell height (see drawLcd), so 62 mm of width is as sharp as 74 was; the lamp pitches are the
-		// narrowest that still clear the widest word in each column ("SQR", "SYNC PH").
-		const float lcdW = 62.f, lcdH = 11.4f, lcdY = 5.0f, gap = 4.f, x0 = 4.f;
-		const float selW = 46.f, selPitch = 7.f, amtPitch = 11.2f, labelW = 10.5f;
 		const panel::TextStyle cap(panel::Face::Mono, 6.0f, panel::SAGE, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, 0.8f);
+		const panel::TextStyle name(panel::Face::Mono, 6.0f, panel::SAGE, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+		const panel::TextStyle lamp(panel::Face::Mono, 7.f, panel::SAGE, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+		const float capY = 3.1f * s;                                  // row 0 of the glass grid: the captions
 
-		// PRESET: the last program screen, and the PARAMETER screen: the unit's LCD as it is.
-		panel::text(vg, cap, x0 * s, 3.3f * s, "PRESET");
-		panel::text(vg, cap, (x0 + lcdW + gap) * s, 3.3f * s, "PARAMETER");
+		// PRESET: the last program screen (a click on it lists the sounds), and PARAMETER: the unit's
+		// LCD as it is. Each has its step pairs beside it, named underneath.
+		const Rect pre = panel::inGlass(panel::FIELD_PRESET_LCD);
+		const Rect par = panel::inGlass(Rect(Vec(panel::FIELD_TEMPO.pos.x, panel::FIELD_PRESET_LCD.pos.y),
+			Vec(panel::FIELD_TEMPO.size.x, panel::FIELD_PRESET_LCD.size.y)));
+		panel::text(vg, cap, pre.pos.x, capY, "PRESET");
+		panel::text(vg, cap, par.pos.x, capY, "PARAMETER");
 		const panel::TextStyle word(panel::Face::Mono, 7.5f, panel::CLAY, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
 		if (!module || !status.empty()) {
-			const float cx = (x0 + lcdW + gap + lcdW / 2) * s;
-			panel::text(vg, word, cx, (lcdY + lcdH * 0.27f) * s, module ? status : "ACCESS VIRUS C");
-			panel::text(vg, word.inked(panel::SAGE), cx, (lcdY + lcdH * 0.73f) * s, !module ? "CONTAGION" : booting ? "PLEASE WAIT" : "RIGHT-CLICK: LOAD OS");
+			const float cx = par.getCenter().x;
+			panel::text(vg, word, cx, par.pos.y + par.size.y * 0.27f, module ? status : "ACCESS VIRUS C");
+			panel::text(vg, word.inked(panel::SAGE), cx, par.pos.y + par.size.y * 0.73f, !module ? "CONTAGION" : booting ? "PLEASE WAIT" : "RIGHT-CLICK: LOAD OS");
 		}
 		else {
-			drawLcd(vg, snap.chars, snap.cgram, (x0 + lcdW + gap) * s, lcdY * s, lcdW * s, lcdH * s);
-			if (snap.havePreset) drawLcd(vg, snap.preset, snap.cgram, x0 * s, lcdY * s, lcdW * s, lcdH * s);
+			drawLcd(vg, snap.chars, snap.cgram, par.pos.x, par.pos.y, par.size.x, par.size.y);
+			if (snap.havePreset) drawLcd(vg, snap.preset, snap.cgram, pre.pos.x, pre.pos.y, pre.size.x, pre.size.y);
+		}
+		struct Step { const Rect* f; const char* label; };
+		const Step steps[6] = { { &panel::FIELD_PRESET, "PRESET" }, { &panel::FIELD_CATEGORY, "CAT" }, { &panel::FIELD_INCAT, "IN CAT" },
+			{ &panel::FIELD_PARAM, "PARAM" }, { &panel::FIELD_VALUE, "VALUE" }, { &panel::FIELD_PAGE, "PAGE" } };
+		const Rect lastRow = panel::inGlass(panel::FIELD_FLT2_MODE);   // row 6 of the grid
+		for (const Step& st : steps) {
+			const Rect r = panel::inGlass(*st.f);
+			panel::text(vg, name, r.getCenter().x, lastRow.getCenter().y, st.label);
 		}
 
-		// The lamps: the unit lights one per selector position and one per AMOUNT destination.
-		const float sx = x0 + 2 * (lcdW + gap);
-		panel::text(vg, cap, sx * s, 3.3f * s, "SELECTED");
+		// TRANSPOSE, under the preset: its step pair, then the unit's five octave lamps.
+		const Rect tr = panel::inGlass(panel::FIELD_TRANS);
+		const float trX = tr.pos.x + tr.size.x + 1.5f * s, trY = tr.getCenter().y;
+		const float trEnd = panel::text(vg, lamp.inked(panel::PAPER), trX, trY, "TRANSPOSE");
+		static const char* const OCT[5] = { "-2", "-1", "0", "+1", "+2" };
+		for (int i = 0; i < 5; i++)
+			panel::text(vg, lamp.inked(lampInk(led(61 + i))), trEnd + (3.f + i * 6.f) * s, trY, OCT[i]);
+
+		// BPM, under the parameter screen: hold and drag it. The lamp blinks at the unit's tempo.
+		const Rect bpm = panel::inGlass(panel::FIELD_TEMPO);
+		const float bY = bpm.getCenter().y;
+		const float bEnd = panel::text(vg, lamp.inked(panel::PAPER), bpm.pos.x + 1.f * s, bY, "BPM");
+		const std::string tempo = module ? module->paramQuantities[Contagion::TEMPO_PARAM]->getDisplayValueString() : "101";
+		const panel::TextStyle num(panel::Face::Mono, 9.f, panel::LIME, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+		const float nEnd = panel::text(vg, num, bEnd + 2.5f * s, bY, tempo);
+		nvgBeginPath(vg);
+		nvgCircle(vg, nEnd + 3.f * s, bY, 0.9f * s);
+		nvgFillColor(vg, lampInk(led(66)));
+		nvgFill(vg);
+
+		// SELECTED: a line per selector. The positions are the selector (click one, or drag);
+		// LFO, OSC and EFFECT are their section's EDIT keys, lit while the unit's EDIT lamp is.
+		panel::text(vg, cap, panel::inGlass(panel::FIELD_LFO_EDIT).pos.x, capY, "SELECTED");
+		const Rect* selField[6] = { &panel::FIELD_LFO_SEL, &panel::FIELD_LFO_SHAPE, &panel::FIELD_OSC_SEL,
+			&panel::FIELD_FX_SEL, &panel::FIELD_FLT1_MODE, &panel::FIELD_FLT2_MODE };
+		const float labelX = panel::inGlass(panel::FIELD_LFO_EDIT).pos.x + 0.5f * s;
 		const Row* sel = selectorRows();
-		for (int i = 0; i < 6; i++)
-			drawRow(vg, sel[i], sx + (i / 3) * selW, 6.9f + (i % 3) * 3.35f, labelW, selPitch, 7.f, s);
-		const float ax = sx + 2 * selW + 4.f;
-		panel::text(vg, cap, ax * s, 3.3f * s, "AMOUNT");
-		const Row* amt = amountRows();
-		for (int i = 0; i < 4; i++) drawRow(vg, amt[i], ax, 6.9f + i * 3.35f, labelW, amtPitch, 7.f, s);
+		for (int i = 0; i < 6; i++) {
+			const Rect f = panel::inGlass(*selField[i]);
+			const float y = f.getCenter().y;
+			const NVGcolor ink = sel[i].editLed >= 0 && led(sel[i].editLed) > 0.5f ? panel::LIME : panel::PAPER;
+			panel::text(vg, lamp.inked(ink), labelX, y, sel[i].label);
+			drawLamps(vg, sel[i], f.pos.x + 0.5f * s, y, f.size.x / 5.f, lamp);
+		}
+
+		// AMOUNT: what each source is routed to; the whole list is the AMOUNT key.
+		const Rect amt = panel::inGlass(panel::FIELD_LFO_AMOUNT);
+		panel::text(vg, cap, amt.pos.x, capY, "AMOUNT");
+		const float labelW = 10.5f * s, amtPitch = (amt.size.x - labelW - 0.5f * s) / 6.f;
+		const Row* am = amountRows();
+		for (int i = 0; i < 4; i++) {
+			const float y = amt.pos.y + amt.size.y * (i + 0.5f) / 4.f;
+			panel::text(vg, lamp.inked(panel::PAPER), amt.pos.x + 0.5f * s, y, am[i].label);
+			drawLamps(vg, am[i], amt.pos.x + 0.5f * s + labelW, y, amtPitch, lamp);
+		}
 	}
 };
 
@@ -746,8 +783,28 @@ struct CvAmountSlider : ui::Slider {
 	~CvAmountSlider() { delete quantity; }
 };
 
-/** Presets > bank > sixteen at a time > the sound, named as the unit's display names it. The names are
-    read from the user's own image and, for banks A and B, from the unit's battery RAM. */
+/** Bank > sixteen at a time > the sound, named as the unit's display names it. The names are read
+    from the user's own image and, for banks A and B, from the unit's battery RAM. */
+void appendPresetBanks(Menu* sub, Contagion* m, int shown) {
+	static const char* const kind[8] = { "A (user)", "B (user)", "C", "D", "E", "F", "G", "H" };
+	for (int bank = 0; bank < 8; bank++) {
+		sub->addChild(createSubmenuItem(std::string("Bank ") + kind[bank], shown / 128 == bank && shown >= 0 ? "*" : "", [=](Menu* bm) {
+			for (int g = 0; g < 8; g++) {
+				const int p0 = g * 16;
+				bm->addChild(createSubmenuItem(vc::Presets::label(bank, p0) + " - " + std::to_string(p0 + 15), "", [=](Menu* gm) {
+					for (int p = p0; p < p0 + 16; p++) {
+						const std::string name = m->presetName(bank, p);
+						gm->addChild(createCheckMenuItem(vc::Presets::label(bank, p) + "  " + (name.empty() ? "-" : name), "",
+							[=]() { return shown == bank * 128 + p; },
+							[=]() { m->presetRequest = bank * 128 + p; }));
+					}
+				}));
+			}
+		}));
+	}
+}
+
+/** Presets > bank > sixteen at a time > the sound: the context menu's way to the sounds. */
 void appendPresetMenu(Menu* menu, Contagion* m) {
 	const int shown = m->shownPreset.load();
 	std::string now = shown >= 0 ? vc::Presets::label(shown / 128, shown % 128) : "";
@@ -755,24 +812,7 @@ void appendPresetMenu(Menu* menu, Contagion* m) {
 		menu->addChild(createMenuLabel("Presets (load an OS image first)"));
 		return;
 	}
-	menu->addChild(createSubmenuItem("Presets", now, [=](Menu* sub) {
-		static const char* const kind[8] = { "A (user)", "B (user)", "C", "D", "E", "F", "G", "H" };
-		for (int bank = 0; bank < 8; bank++) {
-			sub->addChild(createSubmenuItem(std::string("Bank ") + kind[bank], shown / 128 == bank && shown >= 0 ? "*" : "", [=](Menu* bm) {
-				for (int g = 0; g < 8; g++) {
-					const int p0 = g * 16;
-					bm->addChild(createSubmenuItem(vc::Presets::label(bank, p0) + " - " + std::to_string(p0 + 15), "", [=](Menu* gm) {
-						for (int p = p0; p < p0 + 16; p++) {
-							const std::string name = m->presetName(bank, p);
-							gm->addChild(createCheckMenuItem(vc::Presets::label(bank, p) + "  " + (name.empty() ? "-" : name), "",
-								[=]() { return shown == bank * 128 + p; },
-								[=]() { m->presetRequest = bank * 128 + p; }));
-						}
-					}));
-				}
-			}));
-		}
-	}));
+	menu->addChild(createSubmenuItem("Presets", now, [=](Menu* sub) { appendPresetBanks(sub, m, shown); }));
 }
 
 struct ContagionWidget : ModuleWidget {
@@ -797,10 +837,10 @@ struct ContagionWidget : ModuleWidget {
 		for (int i = 0; i < 32; i++)
 			addParam(createParamCentered<RoundBlackKnob>(panel::mm(pots[i].x, pots[i].y), module, Contagion::POT_PARAM + i));
 
-		// The buttons the panel still has. The rest of the unit's 35 are the selector and endless
-		// knobs below, which press them.
+		// The buttons the panel still has. The rest of the unit's 35 are on the display (the
+		// selectors and their EDITs, AMOUNT) or are the step pairs, which press them.
 		struct Btn { int key; Vec pos; };
-		const Btn buttons[16] = { { 3, panel::LFO_AMOUNT_POS }, { 5, panel::SYNC_POS }, { 9, panel::OSC3_ON_POS },
+		const Btn buttons[15] = { { 5, panel::SYNC_POS }, { 9, panel::OSC3_ON_POS },
 			{ 12, panel::DLY_EDIT_POS }, { 13, panel::ARP_ON_POS }, { 14, panel::ARP_EDIT_POS }, { 15, panel::EDIT_POS },
 			{ 16, panel::GLOBAL_POS }, { 17, panel::RANDOM_POS }, { 18, panel::UNDO_POS }, { 19, panel::STORE_POS },
 			{ 20, panel::MULTI_POS }, { 21, panel::SINGLE_POS }, { 28, panel::FLT_EDIT_POS }, { 31, panel::FLT_SEL1_POS },
@@ -815,46 +855,53 @@ struct ContagionWidget : ModuleWidget {
 				addParam(createParamCentered<VCVButton>(panel::mm(b.pos.x, b.pos.y), module, Contagion::KEY_PARAM + b.key));
 		}
 
-		// Selector knobs: turn to select, push to press the section's EDIT.
-		const Vec sels[6] = { panel::LFO_SEL_POS, panel::LFO_SHAPE_POS, panel::OSC_SEL_POS, panel::FX_SEL_POS,
-			panel::FLT1_MODE_POS, panel::FLT2_MODE_POS };
+		// The selectors, on the screen: each is the SELECTED line of its positions. A click lists them to pick one, a
+		// drag steps through them; either way Selector::tick presses the unit's key until its LEDs agree.
+		const Rect selField[6] = { panel::FIELD_LFO_SEL, panel::FIELD_LFO_SHAPE, panel::FIELD_OSC_SEL, panel::FIELD_FX_SEL,
+			panel::FIELD_FLT1_MODE, panel::FIELD_FLT2_MODE };
 		for (int i = 0; i < 6; i++) {
-			PushKnob* k = createParamCentered<PushKnob>(panel::mm(sels[i].x, sels[i].y), module, Contagion::SEL_PARAM + i);
-			k->module = module;
-			k->pushKey = SELECTORS[i].pushKey;
-			k->snap = true;
-			k->speed = 3.f;
-			addParam(k);
+			panel::ScreenSelect* f = panel::createField<panel::ScreenSelect>(selField[i], module, Contagion::SEL_PARAM + i);
+			f->wrap = true;          // the unit's key cycles
+			addParam(f);
 		}
-		// Endless knobs: a detent is a press of the - or + key.
-		{
-			RoundBlackKnob* tempo = createParamCentered<RoundBlackKnob>(panel::mm(panel::TEMPO_POS.x, panel::TEMPO_POS.y), module, Contagion::TEMPO_PARAM);
-			tempo->snap = true;
-			tempo->speed = 2.f;
-			addParam(tempo);
-		}
-		// The chorded gestures: a button that presses MULTI and SINGLE together, and steppers whose clicks hold one key and press another.
+		// A selector's name is its section's EDIT key (what pushing the selector knob pressed before it moved to the screen), and the AMOUNT
+		// lamps are the AMOUNT key: held while the mouse is, like the panel's buttons.
+		addParam(panel::createField<panel::ScreenButton>(panel::FIELD_LFO_EDIT, module, Contagion::KEY_PARAM + SELECTORS[0].pushKey));
+		addParam(panel::createField<panel::ScreenButton>(panel::FIELD_OSC_EDIT, module, Contagion::KEY_PARAM + SELECTORS[2].pushKey));
+		addParam(panel::createField<panel::ScreenButton>(panel::FIELD_FX_EDIT, module, Contagion::KEY_PARAM + SELECTORS[3].pushKey));
+		addParam(panel::createField<panel::ScreenButton>(panel::FIELD_LFO_AMOUNT, module, Contagion::KEY_PARAM + 3));
+
+		// BPM, dragged on the screen under the parameter LCD: a turn is a parameter change to the unit, sent once it settles.
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_TEMPO, module, Contagion::TEMPO_PARAM));
+
+		// The step pairs: UP is one detent clockwise, DOWN one counterclockwise, and each param still counts detents,
+		// so the firmware side (vc::Encoder, vc::Chord) is untouched. PART stays on the panel; the rest stand on the
+		// screen beside the LCD they walk.
+		addParam(createParamCentered<panel::StepPair>(panel::mm(panel::PART_POS.x, panel::PART_POS.y), module, Contagion::ENC_PARAM + 0));
+		addParam(panel::createField<panel::StepPair>(panel::FIELD_PARAM, module, Contagion::ENC_PARAM + 1));
+		addParam(panel::createField<panel::StepPair>(panel::FIELD_VALUE, module, Contagion::ENC_PARAM + 2));
+		addParam(panel::createField<panel::StepPair>(panel::FIELD_TRANS, module, Contagion::ENC_PARAM + 3));
+		addParam(panel::createField<panel::StepPair>(panel::FIELD_PRESET, module, Contagion::PRESET_PARAM));
+		addParam(panel::createField<panel::StepPair>(panel::FIELD_CATEGORY, module, Contagion::CATEGORY_PARAM));
+		addParam(panel::createField<panel::StepPair>(panel::FIELD_INCAT, module, Contagion::INCAT_PARAM));
+		addParam(panel::createField<panel::StepPair>(panel::FIELD_PAGE, module, Contagion::PAGE_PARAM));
+		// The chorded gesture that stays a button: MULTI and SINGLE pressed together.
 		addParam(createParamCentered<VCVButton>(panel::mm(panel::MULTISINGLE_POS.x, panel::MULTISINGLE_POS.y), module, Contagion::MULTISINGLE_PARAM));
-		addParam(createParamCentered<panel::StepPair>(panel::mm(panel::CATEGORY_POS.x, panel::CATEGORY_POS.y), module, Contagion::CATEGORY_PARAM));
-		addParam(createParamCentered<panel::StepPair>(panel::mm(panel::INCAT_POS.x, panel::INCAT_POS.y), module, Contagion::INCAT_PARAM));
-		addParam(createParamCentered<panel::StepPair>(panel::mm(panel::PAGE_POS.x, panel::PAGE_POS.y), module, Contagion::PAGE_PARAM));
-		const Vec encs[5] = { panel::PART_POS, panel::PARAM_POS, panel::VALUE_POS, panel::TRANS_POS, panel::PRESET_POS };
-		// Each is a pair of buttons now: UP is one detent clockwise, DOWN one counterclockwise, and the
-		// param still counts detents, so the firmware side (vc::Encoder) is untouched.
-		for (int i = 0; i < 4; i++)
-			addParam(createParamCentered<panel::StepPair>(panel::mm(encs[i].x, encs[i].y), module, Contagion::ENC_PARAM + i));
-		addParam(createParamCentered<panel::StepPair>(panel::mm(encs[4].x, encs[4].y), module, Contagion::PRESET_PARAM));
+		// The preset screen opens the sound list.
+		if (module)
+			addChild(panel::createMenuField(panel::FIELD_PRESET_LCD, [=](ui::Menu* menu) {
+				menu->addChild(createMenuLabel("Presets"));
+				if (!module->haveNames() && module->imagePath.empty()) menu->addChild(createMenuLabel("(load an OS image first)"));
+				else appendPresetBanks(menu, module, module->shownPreset.load());
+			}));
 
 		// The lamps that stay lamps. The unit's other LEDs are drawn on the display.
 		struct Lamp { int led; Vec pos; };
-		const Lamp lamps[17] = { { 0, panel::LFO_EDIT_LED_POS }, { 10, panel::OSC_EDIT_LED_POS }, { 16, panel::FX_EDIT_LED_POS },
-			{ 20, panel::DLY_EDIT_LED_POS }, { 45, panel::ARP_EDIT_LED_POS }, { 46, panel::EDIT_LED_POS },
+		const Lamp lamps[9] = { { 20, panel::DLY_EDIT_LED_POS }, { 45, panel::ARP_EDIT_LED_POS }, { 46, panel::EDIT_LED_POS },
 			{ 47, panel::GLOBAL_LED_POS }, { 48, panel::MULTI_LED_POS }, { 49, panel::SINGLE_LED_POS },
-			{ 50, panel::FLT_EDIT_LED_POS }, { 59, panel::SEL1_LED_POS }, { 60, panel::SEL2_LED_POS },
-			{ 61, panel::TR1_POS }, { 62, panel::TR2_POS }, { 63, panel::TR3_POS }, { 64, panel::TR4_POS }, { 65, panel::TR5_POS } };
+			{ 50, panel::FLT_EDIT_LED_POS }, { 59, panel::SEL1_LED_POS }, { 60, panel::SEL2_LED_POS } };
 		for (const Lamp& l : lamps)
 			addChild(createLightCentered<SmallLight<panel::ClayLight> >(panel::mm(l.pos.x, l.pos.y), module, Contagion::LED_LIGHT + l.led));
-		addChild(createLightCentered<SmallLight<panel::ClayLight> >(panel::mm(panel::BPM_POS.x, panel::BPM_POS.y), module, Contagion::LED_LIGHT + 66));
 		addChild(createLightCentered<SmallLight<panel::ClayLight> >(panel::mm(panel::RATE1_POS.x, panel::RATE1_POS.y), module, Contagion::RATE_LIGHT));
 		addChild(createLightCentered<SmallLight<panel::ClayLight> >(panel::mm(panel::RATE23_POS.x, panel::RATE23_POS.y), module, Contagion::RATE_LIGHT + 1));
 

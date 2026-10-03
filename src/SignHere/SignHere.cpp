@@ -197,12 +197,12 @@ struct SignHere : Module {
 
 
 // ---------------------------------------------------------------------------
-// The joystick pad and the four touch pads: custom widgets drawn with nvg
+// The joystick pad, the four touch pads and the button pad: custom widgets drawn with nvg
 // geometry and panel:: colours over the recessed GLASS wells the spec laid
 // out as Plates (see the family idiom in src/Repossession/Repossession.cpp's
 // TimelineStrip). Everything else about the panel's look comes from
 // src/PanelTheme.hpp and this panel's own Panel.hpp -- nothing is hand-drawn
-// here except these two widgets' own live content.
+// here except these widgets' own live content.
 
 struct JoystickPad : widget::OpaqueWidget {
 	SignHere* module = NULL;
@@ -338,6 +338,35 @@ struct TouchPad : widget::OpaqueWidget {
 };
 
 
+/** The stage button, as the fifth pad: a tall well down the right of the glass. The press
+ *  itself is a ScreenButton on BUTTON_PARAM laid over it (FIELD_BUTTON), the same momentary
+ *  param the panel bezel was; this only draws it, lime while the button or the pedal is down,
+ *  as the bezel's light was. */
+struct ButtonPad : widget::Widget {
+	SignHere* module = NULL;
+
+	void drawLayer(const DrawArgs& args, int layer) override {
+		if (layer != 1) {
+			Widget::drawLayer(args, layer);
+			return;
+		}
+		float w = box.size.x, h = box.size.y;
+		bool lit = module && module->lights[SignHere::BUTTON_LIGHT].getBrightness() > 0.5f;
+		if (lit) {
+			nvgBeginPath(args.vg);
+			nvgRoundedRect(args.vg, 1.f, 1.f, w - 2.f, h - 2.f, 1.0f);
+			nvgFillColor(args.vg, panel::alpha(panel::LIME, 0.45f));
+			nvgFill(args.vg);
+		}
+		panel::TextStyle st(panel::Face::Ui, 8.5f,
+			lit ? panel::PAPER : panel::alpha(panel::SAGE, 0.7f),
+			NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+		panel::text(args.vg, st, w / 2.f, h / 2.f, "BTN");
+		Widget::drawLayer(args, layer);
+	}
+};
+
+
 struct SignHereWidget : ModuleWidget {
 	SignHereWidget(SignHere* module) {
 		setModule(module);
@@ -363,6 +392,14 @@ struct SignHereWidget : ModuleWidget {
 			addChild(pad);
 		}
 
+		// The stage button: the fifth pad, and the field that presses it.
+		ButtonPad* btn = new ButtonPad;
+		btn->module = module;
+		btn->box.pos = panel::mm(panel::BTN_X, panel::JOY_Y);
+		btn->box.size = panel::mm(panel::BTN_W, panel::JOY_H);
+		addChild(btn);
+		addParam(panel::createField<panel::ScreenButton>(panel::FIELD_BUTTON, module, SignHere::BUTTON_PARAM));
+
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::X_SCALE_POS.x, panel::X_SCALE_POS.y), module, SignHere::X_SCALE_PARAM));
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::X_OFFSET_POS.x, panel::X_OFFSET_POS.y), module, SignHere::X_OFFSET_PARAM));
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::Y_SCALE_POS.x, panel::Y_SCALE_POS.y), module, SignHere::Y_SCALE_PARAM));
@@ -370,8 +407,6 @@ struct SignHereWidget : ModuleWidget {
 		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::GLIDE_POS.x, panel::GLIDE_POS.y), module, SignHere::GLIDE_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::AMOUNT_POS.x, panel::AMOUNT_POS.y), module, SignHere::AMOUNT_PARAM));
 
-		addParam(createLightParamCentered<VCVLightBezel<panel::LimeLight> >(
-			panel::mm(panel::BUTTON_POS.x, panel::BUTTON_POS.y), module, SignHere::BUTTON_PARAM, SignHere::BUTTON_LIGHT));
 		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::LEVEL_POS.x, panel::LEVEL_POS.y), module, SignHere::LEVEL_PARAM));
 		addParam(createParamCentered<CKSS>(panel::mm(panel::INV_POS.x, panel::INV_POS.y), module, SignHere::INV_PARAM));
 

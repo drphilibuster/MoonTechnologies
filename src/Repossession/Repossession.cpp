@@ -1940,19 +1940,69 @@ struct RepossessionDisplay : widget::Widget {
 		return string::f("%d:%02d", t / 60, t % 60);
 	}
 
+	/** One LIENS field's cell: what it is, small, over what it is set to. The cells
+	 *  are the FIELD_* rectangles the spec cut the strip into, and the fields that
+	 *  take the mouse sit on the same rectangles. */
+	static void lien(NVGcontext* vg, const Rect& f, const char* tag,
+	                 const std::string& value, NVGcolor ink) {
+		const Rect c = panel::mmRect(f.pos.x, f.pos.y, f.size.x, f.size.y);
+		const panel::TextStyle TAG(panel::Face::Mono, 5.6f, panel::SAGE,
+			NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+		const panel::TextStyle VAL(panel::Face::Mono, 8.0f, ink,
+			NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+		const float cx = c.pos.x + c.size.x / 2.f;
+		panel::text(vg, TAG, cx, c.pos.y + c.size.y * 0.38f, tag);
+		panel::text(vg, VAL, cx, c.pos.y + c.size.y * 0.90f, value);
+	}
+
+	void drawLiens(NVGcontext* vg) {
+		static const char* const MODE_SHORT[] = {"FORWARD", "RANDOM", "PING-PONG", "CV ONLY"};
+		static const char* const RUN_SHORT[] = {"LATCH", "STOP", "RUN"};
+		auto pv = [&](int id, float dflt) {
+			return module ? module->params[id].getValue() : dflt;
+		};
+		int sel = clamp((int) std::round(pv(Repossession::REGION_PARAM, 0.f)), 0, rp::NUM_SLOTS - 1);
+		NVGcolor rink = panel::LIME;
+		if (module) {
+			const Repossession::Region& R = module->regions[sel];
+			// The selected step in its own colour ties the cell to a button and a
+			// span on the strip without naming either; clay when disabled.
+			rink = !R.active ? panel::alpha(panel::SAGE, 0.6f)
+			     : R.enabled ? slotInk(sel) : panel::CLAY;
+		}
+		const float spd = pv(Repossession::SPEED_PARAM, 0.f);
+		const bool rev = pv(Repossession::REV_PARAM, 0.f) > 0.5f;
+		const int mode = clamp((int) std::round(pv(Repossession::MODE_PARAM, 0.f)), 0, 3);
+		const int run = clamp((int) std::round(pv(Repossession::RUNMODE_PARAM, 2.f)), 0, 2);
+		lien(vg, panel::FIELD_REGION, "REGION", string::f("R%d", sel + 1), rink);
+		lien(vg, panel::FIELD_SPEED, "SPEED", string::f("%.2fx", std::pow(2.f, spd)), panel::LIME);
+		lien(vg, panel::FIELD_GAIN, "GAIN",
+			string::f("%d%%", (int) (pv(Repossession::GAIN_PARAM, 1.f) * 100.f + 0.5f)), panel::LIME);
+		lien(vg, panel::FIELD_LOOP, "LOOP",
+			pv(Repossession::LOOP_PARAM, 1.f) > 0.5f ? "ON" : "OFF", panel::LIME);
+		lien(vg, panel::FIELD_REV, "DIR", rev ? "REV" : "FWD", rev ? panel::MINT : panel::LIME);
+		lien(vg, panel::FIELD_MODE, "SEQUENCE", MODE_SHORT[mode], panel::LIME);
+		lien(vg, panel::FIELD_TEMPO, "BPM",
+			string::f("%d", (int) std::round(pv(Repossession::TEMPO_PARAM, 120.f))), panel::LIME);
+		lien(vg, panel::FIELD_RUNMODE, "TRANSPORT", RUN_SHORT[run],
+			run == 2 ? panel::MINT : run == 0 ? panel::LIME : panel::SAGE);
+	}
+
 	void drawLayer(const DrawArgs& args, int layer) override {
 		if (layer != 1) {
 			Widget::drawLayer(args, layer);
 			return;
 		}
-		float x = panel::mm(panel::INFO_X + 2.4f, 0.f).x;
-		float w = panel::mm(panel::INFO_W - 4.8f, 0.f).x;
-		float y = panel::mm(0.f, panel::INFO_Y + 4.2f).y;
-		float lead = panel::mm(0.f, 4.0f).y;
+		drawLiens(args.vg);
+
+		float x = panel::mm(panel::INFO_X + 2.0f, 0.f).x;
+		float w = panel::mm(panel::INFO_W - 4.0f, 0.f).x;
+		float y = panel::mm(0.f, panel::INFO_Y + 4.0f).y;
+		float lead = panel::mm(0.f, 3.6f).y;
 
 		panel::TextStyle head(panel::Face::Ui, 8.4f, panel::PAPER,
 			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, 0.4f);
-		panel::TextStyle body(panel::Face::Mono, 8.0f, panel::SAGE,
+		panel::TextStyle body(panel::Face::Mono, 7.6f, panel::SAGE,
 			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
 
 		nvgScissor(args.vg, x - 2.f, panel::mm(0.f, panel::INFO_Y).y - 1.f,
@@ -1960,12 +2010,11 @@ struct RepossessionDisplay : widget::Widget {
 
 		if (!module) {
 			panel::text(args.vg, head, x, y, "SECURED PROPERTY");
-			panel::text(args.vg, body, x, y + lead,
-				"Paste a link. yt-dlp and ffmpeg");
-			panel::text(args.vg, body, x, y + 2 * lead,
-				"do the seizing; the panel does");
-			panel::text(args.vg, body, x, y + 3 * lead,
-				"the sequencing.");
+			panel::text(args.vg, body, x, y + lead, "Paste a link.");
+			panel::text(args.vg, body, x, y + 2 * lead, "yt-dlp and ffmpeg");
+			panel::text(args.vg, body, x, y + 3 * lead, "do the seizing;");
+			panel::text(args.vg, body, x, y + 4 * lead, "the panel does the");
+			panel::text(args.vg, body, x, y + 5 * lead, "sequencing.");
 			nvgResetScissor(args.vg);
 			Widget::drawLayer(args, layer);
 			return;
@@ -1980,32 +2029,31 @@ struct RepossessionDisplay : widget::Widget {
 
 		if (m) {
 			panel::text(args.vg, body, x, y + lead,
-				string::f("%s  %d Hz  %d frames", timeOf(m->duration).c_str(),
-					m->sampleRate, m->videoFrames));
+				string::f("%s  %.1f kHz", timeOf(m->duration).c_str(), m->sampleRate / 1000.0));
+			panel::text(args.vg, body, x, y + 2 * lead,
+				string::f("%d frames", m->videoFrames));
 		}
 		else {
 			panel::text(args.vg, body, x, y + lead, "--:--");
 		}
 
+		// The selected region's span of the clip. Its terms are on the LIENS
+		// strip below; this is the one thing about it the strip has no cell for.
 		int sel = clamp((int) std::round(
 			module->params[Repossession::REGION_PARAM].getValue()),
 			0, rp::NUM_SLOTS - 1);
 		const Repossession::Region& R = module->regions[sel];
 		double dur = m ? m->duration : 0.0;
 		if (R.active) {
-			// The selected step is drawn in its own colour, which is how the
-			// line ties itself to a button and a span without naming either.
 			NVGcolor ink = R.enabled ? slotInk(sel) : panel::CLAY;
-			panel::text(args.vg, body.inked(ink), x, y + 2 * lead,
-				string::f("R%d  %s - %s  %s%.2fx  %d%%%s%s", sel + 1,
+			panel::text(args.vg, body.inked(ink), x, y + 3 * lead,
+				string::f("R%d %s-%s%s", sel + 1,
 					timeOf(R.lo() * dur).c_str(), timeOf(R.hi() * dur).c_str(),
-					R.reverse ? "-" : "", std::pow(2.f, R.speed),
-					(int) (R.gain * 100.f + 0.5f), R.loop ? "  LOOP" : "",
-					R.enabled ? "" : "  DISABLED"));
+					R.enabled ? "" : " OFF"));
 		}
 		else {
 			panel::text(args.vg, body.inked(panel::alpha(panel::SAGE, 0.6f)),
-				x, y + 2 * lead, string::f("R%d  released", sel + 1));
+				x, y + 3 * lead, string::f("R%d released", sel + 1));
 		}
 
 		// The memory meter. The number is measured off the buffers rather than
@@ -2019,13 +2067,12 @@ struct RepossessionDisplay : widget::Widget {
 			// Clay once the budget is nearly gone: the point of a meter is to be
 			// read before it matters, not after.
 			NVGcolor c = (frac > 0.92) ? panel::CLAY : panel::SAGE;
-			panel::text(args.vg, body.inked(c), x, y + 3 * lead,
-				string::f("MEM %.1f / %d MB   %.1fs free", mb, cap,
-					module->budget.free));
+			panel::text(args.vg, body.inked(c), x, y + 4 * lead,
+				string::f("MEM %.0f/%d MB", mb, cap));
 
 			float bx = x;
 			float bw = w;
-			float by = panel::mm(0.f, panel::INFO_Y + 17.6f).y;
+			float by = y + 4 * lead + panel::mm(0.f, 1.0f).y;
 			float bh = panel::mm(0.f, 0.9f).y;
 			nvgBeginPath(args.vg);
 			nvgRect(args.vg, bx, by, bw, bh);
@@ -2053,11 +2100,13 @@ struct RepossessionDisplay : widget::Widget {
 				if (at > bx + bw)
 					break;
 			}
+			panel::text(args.vg, body.inked(c), x, y + 5.5f * lead,
+				string::f("%.1fs free", module->budget.free));
 		}
 
 		if (!status.empty()) {
 			NVGcolor c = statusIsError ? panel::CLAY : panel::SAGE;
-			panel::text(args.vg, body.inked(c), x, y + 4.2f * lead,
+			panel::text(args.vg, body.inked(c), x, y + 6.6f * lead,
 				fittedStatus.get(args.vg, body, status, w));
 		}
 
@@ -2103,30 +2152,16 @@ struct RepossessionWidget : ModuleWidget, ui_rp::SeizeHost {
 			addParam(b);
 		}
 
-		addParam(createParamCentered<RoundBlackKnob>(
-			panel::mm(panel::REGION_POS.x, panel::REGION_POS.y), module,
-			Repossession::REGION_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(
-			panel::mm(panel::SPEED_POS.x, panel::SPEED_POS.y), module,
-			Repossession::SPEED_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(
-			panel::mm(panel::GAIN_POS.x, panel::GAIN_POS.y), module,
-			Repossession::GAIN_PARAM));
-		addParam(createParamCentered<CKSS>(
-			panel::mm(panel::LOOP_POS.x, panel::LOOP_POS.y), module,
-			Repossession::LOOP_PARAM));
-		addParam(createParamCentered<CKSS>(
-			panel::mm(panel::REV_POS.x, panel::REV_POS.y), module,
-			Repossession::REV_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(
-			panel::mm(panel::MODE_POS.x, panel::MODE_POS.y), module,
-			Repossession::MODE_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(
-			panel::mm(panel::TEMPO_POS.x, panel::TEMPO_POS.y), module,
-			Repossession::TEMPO_PARAM));
-		addParam(createParamCentered<CKSSThree>(
-			panel::mm(panel::RUNMODE_POS.x, panel::RUNMODE_POS.y), module,
-			Repossession::RUNMODE_PARAM));
+		// The LIENS strip: the terms charged against the selected region and the
+		// transport, as fields over the cells the display draws them in.
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_REGION, module, Repossession::REGION_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_SPEED, module, Repossession::SPEED_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_GAIN, module, Repossession::GAIN_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_LOOP, module, Repossession::LOOP_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_REV, module, Repossession::REV_PARAM));
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_MODE, module, Repossession::MODE_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_TEMPO, module, Repossession::TEMPO_PARAM));
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_RUNMODE, module, Repossession::RUNMODE_PARAM));
 
 		addInput(createInputCentered<panel::PortIn>(
 			panel::mm(panel::CLOCK_IN_POS.x, panel::CLOCK_IN_POS.y), module,

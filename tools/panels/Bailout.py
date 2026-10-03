@@ -30,6 +30,7 @@ from panelkit import *   # noqa: E402
 P = Panel(
     slug="Bailout",
     title="BAILOUT",
+    what="8-CHANNEL MIXER & MULTS",
     form="FORM 1040-X",
 )
 

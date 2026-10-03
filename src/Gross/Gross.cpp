@@ -27,7 +27,7 @@ static const float kMidQ        = 0.8f;
 
 static inline float dbToLin(float db) { return std::pow(10.f, db / 20.f); }
 
-/** A preset is every knob on the panel. The three circuit presets are read off
+/** A preset is every control on the panel and its read-out. The three circuit presets are read off
     Fig. 7 of Eichas & Zölzer: the paper reports the model but not the fitted
     parameter vectors, so these reproduce the plotted curves rather than quote
     numbers. */
@@ -454,7 +454,7 @@ struct Gross : Module {
 		return std::fabs(a - b) <= tol;
 	}
 
-	/** True when every panel knob still sits where the preset put it. */
+	/** True when every control still sits where the preset put it. */
 	bool matchesPreset(const Preset& p) {
 		return near(params[CURVE_PARAM].getValue(), (float) p.curve, 0.4f)
 		    && near(params[DRIVE_PARAM].getValue(), p.driveDb, 0.3f)
@@ -497,11 +497,30 @@ typedef RoundBlackKnob PanelKnob;
 // ---------------------------------------------------------------------------
 // Panel display: the transfer curve as it stands -- drive, offset and the live
 // dynamic bias included, wet/dry included, before POST and the output EQ -- with
-// the preset name, the curve, and the numbers behind the picture. The curve is
-// nanovg geometry; every word goes through panel::text.
+// the preset name, and beside it every number behind the picture, each one a
+// control. The cells are the FIELD_* rectangles the spec cut the glass into
+// (src/Gross/Panel.hpp); the fields that take the mouse sit on the same
+// rectangles. The curve is nanovg geometry; every word goes through panel::text.
 
 struct GrossDisplay : LedDisplay {
 	Gross* module = NULL;
+	panel::FittedText fitName;
+
+	float param(int id, float def) const {
+		return module ? module->params[id].getValue() : def;
+	}
+
+	/** A cell: its name small at the top, its value under it. */
+	static void cell(NVGcontext* vg, const Rect& c, const char* tag,
+	                 const std::string& value, NVGcolor ink) {
+		const panel::TextStyle TAG(panel::Face::Mono, 5.5f, panel::SAGE,
+			NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+		const panel::TextStyle VAL(panel::Face::Mono, 7.f, ink,
+			NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+		const float cx = c.pos.x + c.size.x * 0.5f;
+		panel::text(vg, TAG, cx, c.pos.y + c.size.y * 0.40f, tag);
+		panel::text(vg, VAL, cx, c.pos.y + c.size.y * 0.88f, value);
+	}
 
 	void drawLayer(const DrawArgs& args, int layer) override {
 		if (layer != 1) {
@@ -528,10 +547,17 @@ struct GrossDisplay : LedDisplay {
 			shape.set(gross::CURVE_TANH, 1.f, 1.f, 1.f, 1.f);
 		}
 
+		const Rect curveC = panel::inGlass(panel::FIELD_CURVE);
+		const Rect driveC = panel::inGlass(panel::FIELD_DRIVE_VAL);
+		const Rect wetC = panel::inGlass(panel::FIELD_WET);
+		const Rect kpC = panel::inGlass(panel::FIELD_KP);
+		const Rect gnC = panel::inGlass(panel::FIELD_GN);
+
 		// --- the curve --------------------------------------------------------
-		// Input +/-1 (5 V) across the plot; output +/-1.25 up it.
-		const float px0 = 4.f, pw = 38.f;
-		const float py0 = 2.5f, ph = box.size.y - 5.f;
+		// The first two columns, all three lines. Input +/-1 (5 V) across the
+		// plot; output +/-1.25 up it.
+		const float px0 = 4.f, pw = driveC.pos.x - 3.f - px0;
+		const float py0 = curveC.pos.y + 1.f, ph = kpC.pos.y + kpC.size.y - 1.f - py0;
 		const float cx = px0 + pw / 2.f, cy = py0 + ph / 2.f;
 		const float yScale = ph / 2.5f;
 
@@ -565,32 +591,33 @@ struct GrossDisplay : LedDisplay {
 		nvgRestore(vg);
 
 		// --- the words ----------------------------------------------------------
-		const float col = px0 + pw + 8.f;
-		const float rightX = box.size.x - 5.f;
 		const NVGcolor dim = panel::alpha(panel::LIME, 0.55f);
-		const panel::TextStyle NAME(panel::Face::Mono, 10.f, panel::MINT,
+		const panel::TextStyle NAME(panel::Face::Mono, 9.f, panel::MINT,
 			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, -0.5f);
-		const panel::TextStyle CURVE(panel::Face::Mono, 9.f, panel::SAGE,
-			NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE);
-		const panel::TextStyle TAG(panel::Face::Mono, 8.f, dim,
-			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
-		const panel::TextStyle RTAG(panel::Face::Mono, 8.f, dim,
-			NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE);
 
-		// Row 1: the preset, and which curve family is running.
-		panel::text(vg, NAME, col, 12.f, name);
-		panel::text(vg, CURVE, rightX, 12.f, kCurveShort[shape.curve]);
+		// Top line: the preset (a menu field: click it for the list), and CURVE.
+		const float nameW = curveC.pos.x - driveC.pos.x - 4.f;
+		panel::text(vg, NAME, driveC.pos.x + 2.f, curveC.pos.y + curveC.size.y * 0.74f,
+		            fitName.get(vg, NAME, name, nameW));
+		cell(vg, curveC, "CURVE", kCurveShort[shape.curve], panel::MINT);
 
-		// Row 2: drive, the operating point as it stands, and the envelope.
-		// DSEG7 carries [0-9 . : -] only, so the numerals are formatted without a
-		// '+' and the units stay in the text face.
-		float x = panel::text(vg, TAG, col, 24.f, "DRV");
-		x = panel::segValue(vg, x + 2.5f, 24.f, 8.f, string::f("%.0f", driveDb), "dB", dim);
-		x = panel::text(vg, TAG, x + 7.f, 24.f, "BIAS");
-		panel::segValue(vg, x + 2.5f, 24.f, 8.f, string::f("%.2f", bias), "", dim);
+		// Middle line: drive and wet as they stand once their CV is added in, the
+		// static offset, and the envelope, which is a read-out, not a control.
+		cell(vg, driveC, "DRIVE", string::f("%.0fdB", driveDb), panel::LIME);
+		cell(vg, panel::inGlass(panel::FIELD_OFFSET), "OFFSET",
+		     string::f("%.2f", param(Gross::OFFSET_PARAM, 0.f)), panel::LIME);
+		cell(vg, wetC, "WET", string::f("%.0f%%", wet * 100.f), panel::LIME);
+		const Rect envC(Vec(gnC.pos.x, wetC.pos.y), Vec(gnC.size.x, wetC.size.y));
+		cell(vg, envC, "ENV", string::f("%.0f%%", clamp(env, 0.f, 9.99f) * 100.f), dim);
 
-		panel::text(vg, RTAG, rightX, 24.f,
-			string::f("ENV %3.0f%%  WET %3.0f%%", clamp(env, 0.f, 9.99f) * 100.f, wet * 100.f));
+		// Bottom line: the mapping function's own four numbers.
+		cell(vg, kpC, "KNEE+", string::f("%.2f", param(Gross::KP_PARAM, 1.f)), panel::LIME);
+		cell(vg, panel::inGlass(panel::FIELD_KN), "KNEE-",
+		     string::f("%.2f", param(Gross::KN_PARAM, 1.f)), panel::LIME);
+		cell(vg, panel::inGlass(panel::FIELD_GP), "SHAPE+",
+		     string::f("%.1fx", std::pow(10.f, param(Gross::GP_PARAM, 0.f))), panel::LIME);
+		cell(vg, gnC, "SHAPE-",
+		     string::f("%.1fx", std::pow(10.f, param(Gross::GN_PARAM, 0.f))), panel::LIME);
 	}
 };
 
@@ -611,24 +638,42 @@ struct GrossWidget : ModuleWidget {
 		display->box.size = panel::mm(panel::GLASS_W, panel::GLASS_H);
 		addChild(display);
 
+		// The read-out's fields, over the cells it draws them in. DRIVE keeps its
+		// knob as well; the rest have no other place on the face.
+		// The preset name opens the preset list: a preset is every control at
+		// once, not a param, so it is a menu field rather than a value.
+		if (module) {
+			Gross* g = module;
+			addChild(panel::createMenuField(panel::FIELD_PRESET, [g](Menu* menu) {
+				menu->addChild(createMenuLabel("Filing status"));
+				for (int i = 0; i < kNumPresets; i++) {
+					const Preset* p = &kPresets[i];
+					menu->addChild(createCheckMenuItem(p->name, "",
+						[=]() { return g->matchesPreset(*p); },
+						[=]() { g->applyPreset(*p); }));
+				}
+			}));
+		}
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_CURVE, module, Gross::CURVE_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_DRIVE_VAL, module, Gross::DRIVE_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_OFFSET, module, Gross::OFFSET_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_WET, module, Gross::WET_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_KP, module, Gross::KP_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_KN, module, Gross::KN_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_GP, module, Gross::GP_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_GN, module, Gross::GN_PARAM));
+
 		addParam(createParamCentered<PanelKnob>(at(panel::LOW_POS), module, Gross::LOW_PARAM));
 		addParam(createParamCentered<PanelKnob>(at(panel::MID_POS), module, Gross::MID_PARAM));
 		addParam(createParamCentered<PanelKnob>(at(panel::MIDF_POS), module, Gross::MIDF_PARAM));
 		addParam(createParamCentered<PanelKnob>(at(panel::HIGH_POS), module, Gross::HIGH_PARAM));
 		addParam(createParamCentered<PanelKnob>(at(panel::DRIVE_POS), module, Gross::DRIVE_PARAM));
 
-		addParam(createParamCentered<PanelKnob>(at(panel::OFFSET_POS), module, Gross::OFFSET_PARAM));
 		addParam(createParamCentered<PanelKnob>(at(panel::DYN_POS), module, Gross::DYN_PARAM));
 		addParam(createParamCentered<PanelKnob>(at(panel::ATTACK_POS), module, Gross::ATTACK_PARAM));
 		addParam(createParamCentered<PanelKnob>(at(panel::RELEASE_POS), module, Gross::RELEASE_PARAM));
-		addParam(createParamCentered<PanelKnob>(at(panel::CURVE_POS), module, Gross::CURVE_PARAM));
 
-		addParam(createParamCentered<Trimpot>(at(panel::KP_POS), module, Gross::KP_PARAM));
-		addParam(createParamCentered<Trimpot>(at(panel::KN_POS), module, Gross::KN_PARAM));
-		addParam(createParamCentered<Trimpot>(at(panel::GP_POS), module, Gross::GP_PARAM));
-		addParam(createParamCentered<Trimpot>(at(panel::GN_POS), module, Gross::GN_PARAM));
 
-		addParam(createParamCentered<PanelKnob>(at(panel::WET_POS), module, Gross::WET_PARAM));
 		addParam(createParamCentered<PanelKnob>(at(panel::POST_POS), module, Gross::POST_PARAM));
 		addParam(createParamCentered<PanelKnob>(at(panel::TONE_POS), module, Gross::TONE_PARAM));
 		addParam(createParamCentered<PanelKnob>(at(panel::LOCUT_POS), module, Gross::LOCUT_PARAM));

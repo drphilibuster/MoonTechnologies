@@ -14,9 +14,11 @@
 namespace panel {
 
 // --- identity --------------------------------------------------------------
-static const int   HP = 34;
-static const float W  = 172.7200f;  // mm
+static const int   HP = 21;
+static const float W  = 106.6800f;  // mm
 static const float H  = 128.5000f;  // mm
+//: What the module is, as the masthead's second line says it.
+static const char* const WHAT = "VIDEO SAMPLER";
 
 // --- the read-out well: the spec's numbers, not the widget's ---------------
 // A display used to be positioned by hand in the module's C++, in the same
@@ -24,64 +26,79 @@ static const float H  = 128.5000f;  // mm
 // they drifted. The widget takes them from here now.
 static const float GLASS_X = 3.6000f;
 static const float GLASS_Y = 9.8000f;
-static const float GLASS_W = 165.5200f;
-static const float GLASS_H = 39.0000f;
+static const float GLASS_W = 99.4800f;
+static const float GLASS_H = 59.2000f;
+
+// --- controls on the glass: where each is drawn and where it is grabbed --
+// One rectangle per Field in the spec, in panel mm. Place the widget with
+// createField<Screen...>(FIELD_X, ...) -- or createMenuField for a "menu" --
+// and draw the value in
+// inGlass(FIELD_X), the same rectangle in the display's own pixels.
+static const Rect FIELD_REGION = Rect(Vec(7.3000f, 52.2000f), Vec(9.7867f, 5.8000f));  // select: ScreenSelect
+static const Rect FIELD_SPEED = Rect(Vec(17.5867f, 52.2000f), Vec(9.7867f, 5.8000f));  // value: ScreenKnob
+static const Rect FIELD_GAIN = Rect(Vec(27.8733f, 52.2000f), Vec(9.7867f, 5.8000f));  // value: ScreenKnob
+static const Rect FIELD_LOOP = Rect(Vec(38.1600f, 52.2000f), Vec(9.7867f, 5.8000f));  // toggle: ScreenSwitch
+static const Rect FIELD_REV = Rect(Vec(48.4467f, 52.2000f), Vec(9.7867f, 5.8000f));  // toggle: ScreenSwitch
+static const Rect FIELD_MODE = Rect(Vec(58.7333f, 52.2000f), Vec(20.0733f, 5.8000f));  // select: ScreenSelect
+static const Rect FIELD_TEMPO = Rect(Vec(79.3067f, 52.2000f), Vec(9.7867f, 5.8000f));  // value: ScreenKnob
+static const Rect FIELD_RUNMODE = Rect(Vec(89.5933f, 52.2000f), Vec(9.7867f, 5.8000f));  // select: ScreenSelect
+
+/** A field's rectangle in the display's pixels, for a display placed on the glass. */
+static inline Rect inGlass(const Rect& f) {
+	return mmRect(f.pos.x - GLASS_X, f.pos.y - GLASS_Y, f.size.x, f.size.y);
+}
 
 // --- panel metrics, mirrored from tools/panels/Repossession.py ---
-static const float INFO_H         = 23.6000f;
-static const float INFO_W         = 100.2200f;
-static const float INFO_X         = 66.0000f;
-static const float INFO_Y         = 19.2000f;
-static const float IW             = 159.7200f;
+static const float INFO_H         = 31.5000f;
+static const float INFO_W         = 36.1800f;
+static const float INFO_X         = 64.0000f;
+static const float INFO_Y         = 19.1000f;
+static const float IW             = 93.6800f;
+static const float LIEN_H         = 7.4000f;
+static const float LIEN_W         = 93.6800f;
+static const float LIEN_X         = 6.5000f;
+static const float LIEN_Y         = 51.4000f;
 static const float M              = 6.5000f;
 static const int   NUM_SLOTS      = 8;
-static const float TL_H           = 4.9000f;
-static const float TL_W           = 159.7200f;
+static const float TL_H           = 8.2000f;
+static const float TL_W           = 93.6800f;
 static const float TL_X           = 6.5000f;
-static const float TL_Y           = 43.6000f;
+static const float TL_Y           = 59.6000f;
 static const float URL_H          = 7.0000f;
-static const float URL_W          = 100.2200f;
-static const float URL_X          = 66.0000f;
+static const float URL_W          = 93.6800f;
+static const float URL_X          = 6.5000f;
 static const float URL_Y          = 11.3000f;
 static const float VID_H          = 31.5000f;
 static const float VID_W          = 56.0000f;
 static const float VID_X          = 6.5000f;
-static const float VID_Y          = 11.3000f;
+static const float VID_Y          = 19.1000f;
 
 // --- silkscreen ------------------------------------------------------------
 static const Label LABELS[] = {
-	{ 11.5600f,   5.5000f, 10.50f, 1.50f, PAPER    , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "REPOSSESSION"},
-	{161.1600f,   5.5000f,  6.00f, 0.00f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "SECURED PROPERTY"},
-	{ 11.5600f,   8.2500f,  7.40f, 0.00f, LIME     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, true,  "$"},
-	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
-	{168.5200f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 1099-A"},
-	{ 86.3600f,  52.3000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SEIZED ASSETS"},
-	{ 86.3600f,  70.3000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LIENS"},
-	{ 17.2219f,  85.0069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "REGION"},
-	{ 33.4969f,  85.0069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SPEED"},
-	{ 49.7719f,  85.0069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GAIN"},
-	{ 77.1090f,  85.0069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LOOP"},
-	{ 87.1590f,  85.0069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "REV"},
-	{114.4960f,  85.0069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODE"},
-	{130.7710f,  85.0069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TEMPO"},
-	{158.0181f,  85.0069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RUN"},
-	{ 86.3600f,  92.0985f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "COLLECTIONS"},
-	{ 30.7202f,  96.3444f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CLOCK"},
-	{ 47.1498f,  96.3444f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RESET"},
-	{ 60.6998f,  96.3444f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "REGION"},
-	{ 74.2498f,  96.3444f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SCAN"},
-	{ 87.7998f,  96.3444f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FIRE"},
-	{101.3498f,  96.3444f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SPEED"},
-	{114.8998f,  96.3444f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GAIN"},
-	{128.4498f,  96.3444f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "START"},
-	{141.9998f,  96.3444f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LENGTH"},
-	{ 45.7100f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT L"},
-	{ 59.2600f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT R"},
-	{ 72.8100f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "STEPS"},
-	{ 86.3600f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "POS"},
-	{ 99.9100f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
-	{113.4600f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EOR"},
-	{127.0100f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "REGION"},
+	{ 11.5600f,   5.5000f, 10.50f, 1.50f, PAPER    , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, 0,     "REPOSSESSION"},
+	{ 95.1200f,   5.5000f,  6.00f, 0.00f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, 0,     "SECURED PROPERTY"},
+	{  1.4000f,   8.2500f,  7.40f, 0.00f, LIME     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, 1,     "$"},
+	{ 53.3400f,   8.0000f,  5.40f, 0.40f, LIME     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "VIDEO SAMPLER"},
+	{  2.1717f,  60.0500f,  4.60f, 0.40f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 2,     "MOON TECHNOLOGIES"},
+	{104.5083f,  60.0500f,  4.60f, 0.40f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 3,     "FORM 1099-A"},
+	{ 53.3400f,  72.5000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "SEIZED ASSETS"},
+	{ 53.3400f,  90.6085f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "COLLECTIONS"},
+	{  7.8900f,  94.8544f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "CLOCK"},
+	{ 21.7721f,  94.8544f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "RESET"},
+	{ 32.7747f,  94.8544f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "REGION"},
+	{ 43.7772f,  94.8544f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "SCAN"},
+	{ 54.7798f,  94.8544f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "FIRE"},
+	{ 65.7823f,  94.8544f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "SPEED"},
+	{ 76.7849f,  94.8544f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "GAIN"},
+	{ 87.7874f,  94.8544f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "START"},
+	{ 98.7900f,  94.8544f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "LENGTH"},
+	{ 12.6900f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "OUT L"},
+	{ 26.2400f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "OUT R"},
+	{ 39.7900f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "STEPS"},
+	{ 53.3400f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "POS"},
+	{ 66.8900f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "GATE"},
+	{ 80.4400f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "EOR"},
+	{ 93.9900f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "REGION"},
 };
 
 /** Draws this panel's silkscreen. `static` so each module keeps its own,
@@ -92,39 +109,31 @@ static inline void addLabels(app::ModuleWidget* mw) {
 
 // --- widget positions, by the names used in tools/panels/Repossession.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
-static const Vec BUSY_POS = Vec(98.2456, 51.5685);
-static const Vec SLOT1_POS = Vec(38.9350, 58.7085);
-static const Vec SLOT2_POS = Vec(52.4850, 58.7085);
-static const Vec SLOT3_POS = Vec(66.0350, 58.7085);
-static const Vec SLOT4_POS = Vec(79.5850, 58.7085);
-static const Vec SLOT5_POS = Vec(93.1350, 58.7085);
-static const Vec SLOT6_POS = Vec(106.6850, 58.7085);
-static const Vec SLOT7_POS = Vec(120.2350, 58.7085);
-static const Vec SLOT8_POS = Vec(133.7850, 58.7085);
-static const Vec REGION_POS = Vec(17.2219, 76.9000);
-static const Vec SPEED_POS = Vec(33.4969, 76.9000);
-static const Vec GAIN_POS = Vec(49.7719, 76.9000);
-static const Vec LOOP_POS = Vec(77.1090, 76.9000);
-static const Vec REV_POS = Vec(87.1590, 76.9000);
-static const Vec MODE_POS = Vec(114.4960, 76.9000);
-static const Vec TEMPO_POS = Vec(130.7710, 76.9000);
-static const Vec RUNMODE_POS = Vec(158.0181, 76.9000);
-static const Vec CLOCK_IN_POS = Vec(30.7202, 102.0185);
-static const Vec RESET_IN_POS = Vec(47.1498, 102.0185);
-static const Vec REGION_IN_POS = Vec(60.6998, 102.0185);
-static const Vec SCAN_IN_POS = Vec(74.2498, 102.0185);
-static const Vec FIRE_IN_POS = Vec(87.7998, 102.0185);
-static const Vec SPEED_IN_POS = Vec(101.3498, 102.0185);
-static const Vec GAIN_IN_POS = Vec(114.8998, 102.0185);
-static const Vec START_IN_POS = Vec(128.4498, 102.0185);
-static const Vec LEN_IN_POS = Vec(141.9998, 102.0185);
-static const Vec CLOCK_LED_POS = Vec(36.5098, 95.5885);
-static const Vec OUT_L_POS = Vec(45.7100, 118.6000);
-static const Vec OUT_R_POS = Vec(59.2600, 118.6000);
-static const Vec STEPS_OUT_POS = Vec(72.8100, 118.6000);
-static const Vec POS_OUT_POS = Vec(86.3600, 118.6000);
-static const Vec GATE_OUT_POS = Vec(99.9100, 118.6000);
-static const Vec EOR_OUT_POS = Vec(113.4600, 118.6000);
-static const Vec REG_OUT_POS = Vec(127.0100, 118.6000);
+static const Vec BUSY_POS = Vec(65.2256, 71.7685);
+static const Vec SLOT1_POS = Vec(7.9000, 78.9085);
+static const Vec SLOT2_POS = Vec(20.8829, 78.9085);
+static const Vec SLOT3_POS = Vec(33.8657, 78.9085);
+static const Vec SLOT4_POS = Vec(46.8486, 78.9085);
+static const Vec SLOT5_POS = Vec(59.8314, 78.9085);
+static const Vec SLOT6_POS = Vec(72.8143, 78.9085);
+static const Vec SLOT7_POS = Vec(85.7971, 78.9085);
+static const Vec SLOT8_POS = Vec(98.7800, 78.9085);
+static const Vec CLOCK_IN_POS = Vec(7.8900, 100.5285);
+static const Vec RESET_IN_POS = Vec(21.7721, 100.5285);
+static const Vec REGION_IN_POS = Vec(32.7747, 100.5285);
+static const Vec SCAN_IN_POS = Vec(43.7772, 100.5285);
+static const Vec FIRE_IN_POS = Vec(54.7798, 100.5285);
+static const Vec SPEED_IN_POS = Vec(65.7823, 100.5285);
+static const Vec GAIN_IN_POS = Vec(76.7849, 100.5285);
+static const Vec START_IN_POS = Vec(87.7874, 100.5285);
+static const Vec LEN_IN_POS = Vec(98.7900, 100.5285);
+static const Vec CLOCK_LED_POS = Vec(13.6796, 94.0985);
+static const Vec OUT_L_POS = Vec(12.6900, 118.6000);
+static const Vec OUT_R_POS = Vec(26.2400, 118.6000);
+static const Vec STEPS_OUT_POS = Vec(39.7900, 118.6000);
+static const Vec POS_OUT_POS = Vec(53.3400, 118.6000);
+static const Vec GATE_OUT_POS = Vec(66.8900, 118.6000);
+static const Vec EOR_OUT_POS = Vec(80.4400, 118.6000);
+static const Vec REG_OUT_POS = Vec(93.9900, 118.6000);
 
 } // namespace panel

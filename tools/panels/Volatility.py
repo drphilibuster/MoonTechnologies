@@ -25,6 +25,7 @@ from panelkit import *   # noqa: E402
 P = Panel(
     slug="Volatility",
     title="VOLATILITY",
+    what="NOISE, S&H & RANDOM",
     form="SCHEDULE D",
     density="compact",
 )

@@ -13,6 +13,11 @@ jack, and an AUX output that is whatever that core has left over (the cap
 voltage, the triangle, the phase comparator, the avalanche pulse). The seventh
 column is the totals column: RANGE, the PLL's CAPTURE and LOCK, SYNC, DRIFT,
 SIGNAL and, on the footer, MIX.
+
+The read-out across the top names each voice's CORE and shows the frequency it
+is actually running at, with RANGE at the end of the line. The cores were four
+detents on six knobs, named only in tooltips; now a click on a voice's name lists
+the four circuits to pick from.
 """
 
 import os
@@ -24,10 +29,14 @@ from panelkit import *   # noqa: E402
 P = Panel(
     slug="SixFigures",
     title="SIX FIGURES",
+    what="OSCILLATOR BANK",
     form="FORM W-2",
     # The OUT jacks carry the voice column indices, so they belong under
     # their own voice rather than on a grid of the band's own.
     footer_grid=True,
+    glass=Glass(h=18.0, grid=(2, 7), fields=
+        [Field("core%d" % (i + 1), cell=(0, i), kind="select") for i in range(6)]
+        + [Field("range", cell=(0, 6), span=(2, 1), kind="toggle")]),
 )
 
 # Seven columns: six voices and a totals column on the right. Every row names
@@ -38,9 +47,6 @@ T = 6
 
 P.sections = [
     Section("WAGES, TIPS, OTHER COMPENSATION", rows=[
-        Row([Knob("core%d" % (i + 1), "CORE %d" % (i + 1), steps=4, col=i)
-             for i in V]
-            + [Switch("range", "RANGE", col=T)]),
         Row([BigKnob("rate%d" % (i + 1), "RATE", light="led%d" % (i + 1), col=i)
              for i in V]
             + [Knob("capture", "CAPT", light="lock", light_side="left",
@@ -61,7 +67,7 @@ P.sections = [
         Row(span=[(0, 5, "AUX", 6.2, "MINT")],
             items=[Jack("aux%d" % (i + 1), "", ink="MINT", col=i) for i in V]
             + [Jack("signal", "SIGNAL", col=T)]),
-    ], divide_after=(1,)),
+    ], divide_after=(0,)),
 ]
 
 # The audio row sits as low as the bottom screws allow: RACK_GRID_HEIGHT -

@@ -1,4 +1,4 @@
-# Six Figures
+# Six Figures — oscillator bank
 
 A six-voice oscillator bank for VCV Rack 2, form W-2 — six sources of income, one
 line each.
@@ -22,7 +22,7 @@ original character available and default, and let VCV do the rest.
 
 ## Layout
 
-26 HP, six identical voice columns and a seventh "totals" column on the right
+24 HP, six identical voice columns and a seventh "totals" column on the right
 that holds the controls shared by all six voices.
 
 ## The four cores
@@ -68,7 +68,7 @@ flyback, the junction's on-resistance times the capacitor, is taken as instantan
 
 | Control | Type | Description |
 |---|---|---|
-| **CORE** | 4-position snap knob | Which of the four cores this voice runs |
+| **CORE** | name on the read-out | Which of the four cores this voice runs. Click the voice's name on the read-out to pick one; the frequency it is running at is printed under it |
 | **RATE** | knob | The voice's frequency, RC-pot style by default (see [CV response](#cv-response) below) |
 | **CV** | trim, paired with the jack below it | How much the `CV` jack affects `RATE` |
 | **CV** (jack) | input | CV for this voice's rate |
@@ -80,7 +80,7 @@ flyback, the junction's on-resistance times the capacitor, is taken as instantan
 
 | Control | Type | Description |
 |---|---|---|
-| **RANGE** | 2-position switch | `LO` ≈ 0.05–8 Hz (LFO range), `HI` ≈ 20 Hz–4 kHz (audio range). Applies to every voice. |
+| **RANGE** | click on the read-out | `LO` ≈ 0.05–8 Hz (LFO range), `HI` ≈ 20 Hz–4 kHz (audio range). Applies to every voice. |
 | **CAPT** | knob | For voices set to the PLL core: the loop filter's bandwidth. Low = narrow/slow lock, high = wide capture range and faster lock, at the cost of more audible ripple from the phase comparator leaking into the pitch. |
 | **LOCK** | light, beside `CAPT` | Lit when at least one PLL-core voice is locked to `SIGNAL`. See [PLL lock](#pll-lock-heuristic) below. |
 | **SYNC** | input | A rising edge (Schmitt, 0.1 V/2 V thresholds) hard-resets every voice's phase, drift and PLL state at once, whatever core each is set to. |

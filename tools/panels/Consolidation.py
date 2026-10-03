@@ -20,6 +20,7 @@ from panelkit import *   # noqa: E402
 P = Panel(
     slug="Consolidation",
     title="CONSOLIDATION",
+    what="MIXER & MULTIPLES",
     form="FORM 1040",
 )
 

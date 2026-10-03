@@ -22,6 +22,7 @@ from panelkit import *   # noqa: E402
 P = Panel(
     slug="PatchAudit",
     title="PATCHAUDIT",
+    what="PATCH BROWSER",
     subtitle="PATCHSTORAGE RETURNS",
     form="FORM 4564",
     hp=26,

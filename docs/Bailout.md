@@ -1,4 +1,4 @@
-# Bailout
+# Bailout — 8-channel mixer & mults
 
 Consolidation at twice the size, and not quite the same shape — an eight-channel
 mixer for VCV Rack 2, arranged as two banks of four.

@@ -1,6 +1,6 @@
-# Sign Here
+# Sign Here — controllers
 
-FORM 8879. Slug `SignHere`. 20 HP, monophonic.
+FORM 8879. Slug `SignHere`. 17 HP, monophonic.
 
 > *Modular in a Week*, Day 11: Kristian Blåsol's button-and-pedal, the
 > offset-scaler joystick, and the touch circuit built for drum
@@ -11,7 +11,7 @@ FORM 8879. Slug `SignHere`. 20 HP, monophonic.
 Three gesture controllers that share nothing electrically in the original
 course -- they're grouped here because they're all "read a human doing
 something, output a voltage," not because one circuit feeds another. The
-joystick and the four touch pads are drawn live: a custom widget over a
+joystick, the four touch pads and the button pad are drawn live: a custom widget over a
 recessed well, exactly the idiom `Repossession`'s timeline strip uses,
 with its position and touch state kept in the module (a hidden pair of
 params for the joystick, so its position automates and saves like any real
@@ -58,8 +58,11 @@ bias network's own capacitors.
 
 ## Button and pedal
 
-- **BUTTON** (big bezel, momentary) and **PEDAL** (jack, gate in) -- either
-  one presses it; the bezel lights while pressed.
+- **BTN** (the tall fifth pad at the right of the screen, momentary) and
+  **PEDAL** (jack, gate in) -- either one presses it; the pad lights lime
+  while pressed. It is the same button param the panel bezel used to be, so
+  right-click it for MIDI-Map and the usual parameter menu, and old patches
+  load unchanged.
 - **LEVEL** (knob, 0-10 V) -- the voltage `CV` reaches while pressed.
 - **INV** (switch) -- Non-inverted / Inverted. Swaps the idle and active
   voltage on `GATE`, `FLIP` and `CV` (idle 0 V/active high becomes idle

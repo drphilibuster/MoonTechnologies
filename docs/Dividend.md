@@ -1,4 +1,4 @@
-# Dividend
+# Dividend — pulsar VCO
 
 A pulsar-synthesis VCO for VCV Rack 2. FORM 1099-DIV: the payout is a train of
 pulsarets, and how many of them you actually receive is a matter of withholding.
@@ -48,33 +48,38 @@ pulsaret longer and the formant narrower and more resonant, without moving it.
 
 ## Controls
 
+Two knobs stand on the face: `FREQ` and `FORMANT`, the two you play. Every
+other setting lives on the read-out (see below), and those two are on it too.
+The CV attenuverters sit over their jacks under the knobs; the inputs are on the
+band at the foot and the outputs on a rail down the right-hand edge.
+
 ### PAYOUT
 
 | Control | Range | Default | What |
 |---|---|---|---|
 | FREQ | ±4 octaves around C4 (16 Hz – 4.2 kHz before CV) | C4, 261.6 Hz | The fundamental: the pulsar rate. The one control with the lime ring. |
-| FINE | ±1 semitone | 0 | Fine tune. |
+| FINE | ±1 semitone | 0 | Fine tune. On the read-out, line 5. |
 | FORMANT | −2 … +6 octaves | +2 | Formant frequency. With TRACK up it is a ratio to the fundamental (×0.25 … ×64, default ×4); with TRACK down it is absolute (65 Hz – 16.7 kHz, default 1046 Hz). The tooltip reports whichever applies. |
-| TRACK | switch | up (tracks) | Up: the formant follows FREQ, V/OCT and FM, so the timbre stays put as the pitch moves. Down: the formant is fixed in Hz and the duty cycle changes with the pitch, the classic pulsar behaviour. |
-| FM | switch | down (exp) | The law the FM input follows. Down: exponential, 1 V/oct through the FM attenuverter. Up: linear through-zero — `f = f0 × (1 + FM × amount / 5)`, so ±5 V at full amount sweeps the train through zero and out the other side, running backwards. |
+| TRACK | read-out switch, line 1 (`TRACK` / `ABS`) | TRACK | `TRACK`: the formant follows FREQ, V/OCT and FM, so the timbre stays put as the pitch moves. `ABS`: the formant is fixed in Hz and the duty cycle changes with the pitch, the classic pulsar behaviour. |
+| FM | read-out switch, line 2 (`FM EXP` / `FM LIN`) | EXP | The law the FM input follows. `EXP`: exponential, 1 V/oct through the FM attenuverter. `LIN`: linear through-zero — `f = f0 × (1 + FM × amount / 5)`, so ±5 V at full amount sweeps the train through zero and out the other side, running backwards. |
 
 ### DISTRIBUTION
 
 | Control | Range | Default | What |
 |---|---|---|---|
-| WAVE | 6 positions | Sine | The pulsaret waveform: **Sine**, **Sinc** (`sin πt / πt`, CYCLES lobes each side of the centre), **Saw**, **Square**, **Triangle**, **Cosine burst** (cosine starting at its peak, so the onset is a step). |
-| WINDOW | 6 positions | Gaussian | The pulsaret envelope: **Rectangular**, **Gaussian** (σ = 0.15 of the pulsaret), **Hann**, **Exponential decay**, **Reverse exponential** (a swell), **Linear decay**. |
-| CYCLES | 1 – 8, continuous | 1 | Cycles of the waveform per pulsaret. Fractional values are allowed; under a rectangular window they end mid-cycle, which is a step. |
-| L/R | switch | down (off) | Channel masking. Down: mono, R follows L. Up: paid pulsarets alternate between OUT L and OUT R — the stereo pulsar. |
+| WAVE | read-out list, line 3 (`WAV`) | Sine | The pulsaret waveform: **Sine**, **Sinc** (`sin πt / πt`, CYCLES lobes each side of the centre), **Saw**, **Square**, **Triangle**, **Cosine burst** (cosine starting at its peak, so the onset is a step). |
+| WINDOW | read-out list, line 3 (`ENV`) | Gaussian | The pulsaret envelope: **Rectangular**, **Gaussian** (σ = 0.15 of the pulsaret), **Hann**, **Exponential decay**, **Reverse exponential** (a swell), **Linear decay**. |
+| CYCLES | 1 – 8, continuous; read-out line 3 (`CYC`) | 1 | Cycles of the waveform per pulsaret. Fractional values are allowed; under a rectangular window they end mid-cycle, which is a step. |
+| L/R | read-out switch, line 4 (`MONO` / `L/R`) | MONO | Channel masking. `MONO`: R follows L. `L/R`: paid pulsarets alternate between OUT L and OUT R — the stereo pulsar. |
 
 ### WITHHOLDING
 
 | Control | Range | Default | What |
 |---|---|---|---|
-| ON | 1 – 8 | 1 | Burst masking: pulsars paid per burst cycle. |
-| OFF | 0 – 8 | 0 | Burst masking: pulsars withheld after them. `ON 3 / OFF 1` pays three, skips one. |
-| PROB | 0 – 100 % | 100 % | Stochastic masking: the chance a pulsar that survives the burst pattern is actually paid. |
-| HELD | light | | Lights for every pulsar withheld. A flash at LFO rates, a glow at audio rates. |
+| ON | 1 – 8; read-out line 4 | 1 | Burst masking: pulsars paid per burst cycle. |
+| OFF | 0 – 8; read-out line 4 | 0 | Burst masking: pulsars withheld after them. `ON 3 / OFF 1` pays three, skips one. |
+| PROB | 0 – 100 %; read-out line 5 | 100 % | Stochastic masking: the chance a pulsar that survives the burst pattern is actually paid. |
+| HELD | lamp on the read-out, line 5 | | Lights for every pulsar withheld. A flash at LFO rates, a glow at audio rates. |
 | FM, FMT, PROB, BURST | ±100 % | 0 | Attenuverters for the four CV inputs directly below them. |
 
 Masking is applied in that order — burst pattern first, then the coin toss,
@@ -88,12 +93,12 @@ what was paid.
 |---|---|---|
 | V/OCT | in | 1 V/oct pitch, added to FREQ + FINE. Monophonic: a polyphonic cable contributes its first channel. |
 | SYNC | in | Rising edge (Schmitt, 0.1 V / 2 V) hard-resets the train: the pulsar clock restarts at zero, the burst pattern restarts at its first step, anything still sounding is cut, and a new pulsar begins immediately. |
-| FM | in | Frequency modulation through the FM attenuverter; exponential or linear through-zero per the FM switch. |
+| FM | in | Frequency modulation through the FM attenuverter; exponential or linear through-zero per FM on the read-out. |
 | FMT | in | Formant CV, 1 V/oct through its attenuverter, in both TRACK modes. |
 | PROB | in | 0 – 10 V adds up to ±100 % to PROB through its attenuverter. |
 | BURST | in | 0 – 10 V adds up to ±8 to ON through its attenuverter. |
-| OUT L | out | ±5 V audio for a single pulsaret; overlapping pulsarets sum and are clamped at ±12 V. Mono when L/R is down. |
-| OUT R | out | As above; follows L unless L/R is up. |
+| OUT L | out | ±5 V audio for a single pulsaret; overlapping pulsarets sum and are clamped at ±12 V. Mono unless L/R is on. |
+| OUT R | out | As above; follows L unless L/R is on. |
 | TRIG | out | 0 / 10 V gate, high while any pulsaret is sounding — the duty cycle as a gate. With overlapping pulsarets longer than the period it stays high. |
 | ENV | out | 0 – 10 V, the window of the most recently issued pulsaret. |
 
@@ -103,11 +108,21 @@ VCA or a limiter after it is the usual answer.
 
 ## Read-out
 
-Two lines. `FUND` is the fundamental in Hz (or kHz) after V/OCT and FM, and
-`TRACK` / `ABS` says which formant mode is in force. `FMT` is the resulting
-formant frequency, `D/P` the duty cycle it makes against the period
-(`FUND × CYCLES / FMT`), and `L/R` / `MONO` the channel-masking state. Values
-above 99.99 read as 99.99.
+Five lines, and every setting on them is a control: hold a value and drag it up
+or down (Ctrl for fine, Shift for coarse, as on a knob); click `WAV` or `ENV` to
+pick from the list, or hold and drag to step through it; click `TRACK`/`ABS`,
+`FM`, or `MONO`/`L/R` to flip it. Each field is the same parameter its knob or
+switch used to be, so right-clicking it gives the usual parameter menu —
+typed entry, MIDI-Map, reset — and patches saved before they moved load
+unchanged.
+
+| Line | Shows |
+|---|---|
+| 1 | `FUND`: the fundamental in Hz (or kHz) after V/OCT and FM — drag for FREQ. `TRACK` / `ABS`: the formant mode |
+| 2 | `FMT`: the resulting formant frequency — drag for FORMANT — and `D/P`, the duty cycle it makes against the period (`FUND × CYCLES / FMT`; values above 99.99 read as 99.99). `FM EXP` / `FM LIN`: the FM law |
+| 3 | `WAV` WAVE, `ENV` WINDOW, `CYC` CYCLES |
+| 4 | `ON` and `OFF`, the burst mask, and `MONO` / `L/R` |
+| 5 | `FINE` in semitones, `PROB`, and the `HELD` lamp |
 
 ## Context menu
 

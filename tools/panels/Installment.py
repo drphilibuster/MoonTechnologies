@@ -30,6 +30,7 @@ from panelkit import *   # noqa: E402
 P = Panel(
     slug="Installment",
     title="INSTALLMENT",
+    what="FUNCTION GENERATOR",
     form="FORM 9465",
     density="compact",
 )

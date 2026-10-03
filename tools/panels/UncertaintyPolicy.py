@@ -16,6 +16,12 @@ for, SAFE HARBOR how much of the patch's timing is off limits. AMEND scopes and
 commits. LAST FILING is the escape hatch and the opinion issued on the roll you
 just made -- and the read-out carries three lines: the verdict, the evidence it
 rested on, and the mandate the next filing will be made under.
+
+The mandate line is where the mandate is set: BASIS is a click that lists the
+three bases, SAFE HARBOR a value you hold and drag. The switch and trimpot that
+used to sit under EXPOSURE are gone and the glass has their height. The AMEND
+and RESCIND buttons stay on the face: they are what you hit, often, mid-patch,
+and the bezel's ring and the opinion light belong to them.
 """
 
 import os
@@ -27,9 +33,15 @@ from panelkit import *   # noqa: E402
 P = Panel(
     slug="UncertaintyPolicy",
     title="UNCERTAINTY POLICY",
+    what="SMART RANDOMIZER",
     form="SCHEDULE UTP",
     density="compact",
-    glass=Glass(h=15.0),
+    # Three lines: the verdict, its evidence, and the mandate -- BASIS and
+    # SAFE HARBOR, each a field.
+    glass=Glass(h=32.0, grid=(3, 6), fields=[
+        Field("basis", cell=(2, 0), span=(1, 4), kind="select"),
+        Field("spine", cell=(2, 4), span=(1, 2), kind="value"),
+    ]),
 )
 
 P.sections = [
@@ -39,14 +51,11 @@ P.sections = [
              BigKnob("spread", "SPREAD"),
              BigKnob("cable_count", "TRANSFERS")]),
     ]),
-    # What a filing is allowed to do, as opposed to how much of it there is.
-    # BASIS is what the review listens for once the roll has been made; SAFE
-    # HARBOR is how much of the patch's timing is off limits while it is being
-    # made. Turning SAFE HARBOR down is the sanctioned way to reach a drone.
-    Section("MANDATE", rows=[
-        Row([Switch3("basis", "BASIS"),
-             Trim("spine", "SAFE HARBOR")]),
-    ]),
+    # What a filing is allowed to do, as opposed to how much of it there is, is
+    # the read-out's mandate line. BASIS is what the review listens for once the
+    # roll has been made; SAFE HARBOR is how much of the patch's timing is off
+    # limits while it is being made. Turning SAFE HARBOR down is the sanctioned
+    # way to reach a drone.
     # The filing itself. One row rather than two: the ringed bezel sits between
     # the two narrower scopes and reads as the commit without needing a subtotal
     # rule under them to say so.

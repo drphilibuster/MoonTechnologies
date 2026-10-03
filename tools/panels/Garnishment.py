@@ -10,6 +10,10 @@ gate, or a 2N5457 JFET amplitude modulator. One set of controls (BIAS, LAG, CV I
 CV AMOUNT) drives whichever circuit MODE selects, so the panel repeats once per
 channel rather than growing a row per topology. CV AMOUNT sits directly over its own
 CV IN jack -- the paired idiom -- so the pair reads as one thing wearing two knobs.
+
+The read-out shows each channel's circuit by name and how open it is right now,
+bias and CV together. Click a name to pick the circuit (it used to be a
+three-way switch nothing explained); drag a channel's bar to set its BIAS.
 """
 
 import os
@@ -18,10 +22,16 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from panelkit import *   # noqa: E402
 
+GLASS_H = 28.0
+
 P = Panel(
     slug="Garnishment",
     title="GARNISHMENT",
+    what="VCA / LOW-PASS GATE",
     form="FORM 668-W",
+    glass=Glass(h=GLASS_H, grid=(5, 6), fields=
+        [Field("mode%d" % k, cell=(0, k - 1), kind="select") for k in range(1, 7)]
+        + [Field("bar%d" % k, cell=(1, k - 1), span=(4, 1), kind="value") for k in range(1, 7)]),
 )
 
 
@@ -31,8 +41,6 @@ P.sections = [
     Section("GARNISHEE", rows=[
         Row(span=[(0, N - 1, "BIAS")],
             items=[Knob("bias%d" % k, "") for k in range(1, N + 1)]),
-        Row(span=[(0, N - 1, "MODE")],
-            items=[Switch3("mode%d" % k, "") for k in range(1, N + 1)]),
         Row(span=[(0, N - 1, "LAG")],
             items=[Knob("lag%d" % k, "") for k in range(1, N + 1)]),
         Row(span=[(0, N - 1, "CV AMT")],

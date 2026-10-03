@@ -1,4 +1,4 @@
-# Reconciliation
+# Reconciliation — just-intonation quantizer
 
 A just-intonation quantizer for VCV Rack 2. Schedule M-1 — income per books
 against income per return: two records of the same thing, made to agree.
@@ -7,7 +7,7 @@ Part of the [Moon Technologies](../README.md) plugin.
 
 Most quantizers answer one question — *which note of this scale is nearest?* —
 and the only interesting thing about them is which scale you loaded. This one
-splits that into two questions and puts a knob on each.
+splits that into two questions and puts a control on each.
 
 **Which pitches exist** is `BASIS`: Harry Partch's eleven-limit tonality diamond
 and his 43-tone scale, one Otonality or Utonality hexad out of that diamond, two
@@ -23,19 +23,41 @@ twelve-tone pitch it is nearest.
 
 ## Layout
 
-21 HP. `BASIS` is which pitches exist, `RECONCILE` is how one gets chosen and
+11 HP. `BASIS` is which pitches exist, `RECONCILE` is how one gets chosen and
 what happens to it on the way out, `ALLOWANCES` is what the CV inputs may take
 off the four controls worth modulating. Polyphonic: `OUT`, `TRIG` and `PURITY`
 follow `IN`'s channel count, up to sixteen.
+
+Everything in `BASIS`, and every `RECONCILE` setting but the two you play, is set
+on the read-out rather than by a knob: only `BIAS` and `WINDOW` keep knobs on the
+face. The inputs are on the band at the foot; the four outputs stand down the
+right-hand edge.
+
+## The read-out
+
+Five lines, and every setting printed on them is a control:
+
+| Line | Shows | Under the mouse |
+|---|---|---|
+| 1 | The ratio you are on, its size in cents, and how far that is from the nearest twelve-tone pitch (`ET`) | read only |
+| 2 | `SET`, `O`/`U` (the `UTONAL` polarity), the `NEXUS` identity, the `RULE` | `SET`, `NEXUS` and `RULE`: click for the list and pick one, or hold and drag to step through it. `O`/`U`: click to flip |
+| 3 | `LIMIT` (`PRIME`) and `DEGREE` | `LIMIT`: click for the list, or hold and drag. `DEGREE`: hold and drag up or down |
+| 4 | `HYST` and `SLEW` | hold and drag up or down |
+| 5 | How many pitches survived the prime limit, and the `TRIG` and `DRIFT` lamps | read only |
+
+Dragging takes Ctrl for fine and Shift for coarse, like a knob. Each field is the
+same parameter its knob used to be, so right-clicking one gives the usual
+parameter menu — typed entry, MIDI-Map, reset — and patches saved before the
+knobs moved load unchanged. `NEXUS` shows the identity in use, its CV included.
 
 ## BASIS
 
 | Control | Type | Description |
 |---|---|---|
-| **SET** | 6-position snap knob | Which structure — see below |
-| **NEXUS** | 6-position snap knob | Which of Partch's identities the structure stands on: 1, 3, 5, 7, 9, 11 |
-| **UTONAL** | switch | The mirror. Partch's major and minor |
-| **PRIME** | 4-position snap knob | Prime limit: 3, 5, 7 or 11. Prunes the set to ratios whose largest prime factor is at or below it |
+| **SET** | read-out list, line 2 | Which structure — see below |
+| **NEXUS** | read-out list, line 2 | Which of Partch's identities the structure stands on: 1, 3, 5, 7, 9, 11 |
+| **UTONAL** | read-out switch, line 2 (`O`/`U`) | The mirror. Partch's major and minor |
+| **PRIME** | read-out list, line 3 (`LIMIT`) | Prime limit: 3, 5, 7 or 11. Prunes the set to ratios whose largest prime factor is at or below it |
 
 ### SET
 
@@ -67,8 +89,8 @@ Partch's numerary nexus: the identity a tonality is built on. An Otonality with
 nexus 7 is `{1/7, 3/7, 5/7, 7/7, 9/7, 11/7}`, which is the Otonality on 1
 transposed down by 7/4 — so `NEXUS` is implemented as a shift of the root, which
 is not a shortcut but what a numerary nexus *is*. `UTONAL` flips the direction of
-that shift, so between them the twelve tonalities of the diamond are two knob
-positions apart.
+that shift, so between them the twelve tonalities of the diamond are two settings
+apart.
 
 In the other SETs the same control simply transposes the structure onto that
 identity, which is a modulation to a harmonically related key rather than an
@@ -89,12 +111,12 @@ odd-limit filter set to 11 would throw away most of the 43-tone scale: 81/80 is
 
 | Control | Type | Description |
 |---|---|---|
-| **RULE** | 6-position snap knob | How the choice is made — see below |
+| **RULE** | read-out list, line 2 | How the choice is made — see below |
 | **BIAS** | large knob | How hard the rule pulls against plain distance. At zero every rule collapses to NEAREST |
 | **WINDOW** | knob | How far, in cents, the rule may reach past the nearest pitch. Up to 150 |
-| **DEGREE** | knob, snapped | Transpose by −12 to +12 steps *along the set* |
-| **HYST** | knob | Dead band, as a fraction of the local step |
-| **SLEW** | knob | Portamento, in seconds per octave |
+| **DEGREE** | read-out value, line 3 | Transpose by −12 to +12 steps *along the set* |
+| **HYST** | read-out value, line 4 | Dead band, as a fraction of the local step |
+| **SLEW** | read-out value, line 4 | Portamento, in seconds per octave |
 
 `WINDOW` and `BIAS` are the two halves of one idea. The window is a hard bound —
 nothing further from the input than that may be chosen — and the bias is how
@@ -159,7 +181,10 @@ is as far as it can go and still leave every degree reachable.
 than a narrow one, which is what a portamento does and what a fixed time
 constant does not.
 
-## Footer
+## Jacks
+
+The inputs are on the band at the foot, the outputs on the rail down the
+right-hand edge. `TRIG` and `DRIFT` have lamps on the read-out's bottom line.
 
 | Jack | Direction | Description |
 |---|---|---|

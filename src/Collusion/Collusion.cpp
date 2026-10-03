@@ -266,6 +266,57 @@ typedef RoundLargeBlackKnob BigKnob;    // RATE and COUPLING
 typedef RoundBlackKnob      PanelKnob;  // everything else
 
 
+/** The read-out: SCHEME and TERM by name, RANGE, DEAL, and ORDER -- how much the
+ *  six agree right now, as a number and a bar. The first four are fields. */
+struct CollusionDisplay : LedDisplay {
+	Collusion* module = NULL;
+	panel::FittedText fitScheme;
+
+	static void cell(NVGcontext* vg, const Rect& f, const char* tag, const std::string& v,
+	                 NVGcolor ink, panel::FittedText* fit = NULL) {
+		const Rect c = panel::inGlass(f);
+		const float base = c.pos.y + c.size.y * 0.74f;
+		const panel::TextStyle TAG(panel::Face::Mono, 6.f, panel::SAGE, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
+		const panel::TextStyle VAL(panel::Face::Mono, 8.f, ink, NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE);
+		const float x0 = c.pos.x + 2.f, x1 = c.pos.x + c.size.x - 2.f;
+		const float after = panel::text(vg, TAG, x0, base, tag) + 3.f;
+		panel::text(vg, VAL, x1, base, fit ? fit->get(vg, VAL, v, x1 - after) : v);
+	}
+
+	void drawLayer(const DrawArgs& args, int layer) override {
+		if (layer != 1) {
+			LedDisplay::drawLayer(args, layer);
+			return;
+		}
+		NVGcontext* vg = args.vg;
+		// The defaults' own names when there is no module (the browser), so the
+		// read-out says what a fresh instance will, not a bare index.
+		auto label = [&](int id, const std::string& dflt) -> std::string {
+			if (!module) return dflt;
+			return module->paramQuantities[id]->getDisplayValueString();
+		};
+		cell(vg, panel::FIELD_SCHEME, "SCHEME", label(Collusion::SCHEME_PARAM, kSchemeNames[0]), panel::MINT, &fitScheme);
+		cell(vg, panel::FIELD_TERM, "TERM",
+		     label(Collusion::TERM_PARAM, string::f("%d steps", Ledger::termLength(5))), panel::LIME);
+		const bool audio = module && module->params[Collusion::RANGE_PARAM].getValue() > 0.5f;
+		cell(vg, panel::FIELD_RANGE, "RANGE", audio ? "AUDIO" : "LFO", panel::LIME);
+		const float dealt = module ? module->lights[Collusion::DEAL_LIGHT].getBrightness() : 0.f;
+		cell(vg, panel::FIELD_DEAL, "", "DEAL", dealt > 0.1f ? panel::PAPER : panel::LIME);
+
+		// ORDER: Kuramoto's r, over the last third of the bottom line
+		const Rect d = panel::inGlass(panel::FIELD_DEAL);
+		const float x0 = d.pos.x + d.size.x + 6.f, x1 = box.size.x - 5.f;
+		const float base = d.pos.y + d.size.y * 0.74f;
+		const float r = module ? module->swarm.order : 0.f;
+		const panel::TextStyle TAG(panel::Face::Mono, 6.f, panel::SAGE, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
+		const float bx = panel::text(vg, TAG, x0, base, "ORDER") + 3.f;
+		nvgBeginPath(vg); nvgRect(vg, bx, base - 5.f, x1 - bx, 4.f);
+		nvgFillColor(vg, panel::alpha(panel::SAGE, 0.15f)); nvgFill(vg);
+		nvgBeginPath(vg); nvgRect(vg, bx, base - 5.f, (x1 - bx) * clamp(r, 0.f, 1.f), 4.f);
+		nvgFillColor(vg, panel::LIME); nvgFill(vg);
+	}
+};
+
 struct CollusionWidget : ModuleWidget {
 	CollusionWidget(Collusion* module) {
 		setModule(module);
@@ -274,6 +325,16 @@ struct CollusionWidget : ModuleWidget {
 		panel::addScrews(this);
 		panel::addLabels(this);
 
+		CollusionDisplay* display = new CollusionDisplay;
+		display->module = module;
+		display->box.pos = panel::mm(panel::GLASS_X, panel::GLASS_Y);
+		display->box.size = panel::mm(panel::GLASS_W, panel::GLASS_H);
+		addChild(display);
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_SCHEME, module, Collusion::SCHEME_PARAM));
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_TERM, module, Collusion::TERM_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_RANGE, module, Collusion::RANGE_PARAM));
+		addParam(panel::createField<panel::ScreenButton>(panel::FIELD_DEAL, module, Collusion::DEAL_PARAM));
+
 		// FILINGS.
 		addParam(createParamCentered<BigKnob>(
 		             panel::mm(panel::RATE_POS.x, panel::RATE_POS.y), module, Collusion::RATE_PARAM));
@@ -281,11 +342,6 @@ struct CollusionWidget : ModuleWidget {
 		             panel::mm(panel::SPREAD_POS.x, panel::SPREAD_POS.y), module, Collusion::SPREAD_PARAM));
 		addParam(createParamCentered<PanelKnob>(
 		             panel::mm(panel::SHAPE_POS.x, panel::SHAPE_POS.y), module, Collusion::SHAPE_PARAM));
-		addParam(createParamCentered<CKSS>(
-		             panel::mm(panel::RANGE_POS.x, panel::RANGE_POS.y), module, Collusion::RANGE_PARAM));
-		addParam(createLightParamCentered<VCVLightBezel<panel::LimeLight> >(
-		             panel::mm(panel::DEAL_POS.x, panel::DEAL_POS.y), module,
-		             Collusion::DEAL_PARAM, Collusion::DEAL_LIGHT));
 
 		// AGREEMENT.
 		addParam(createParamCentered<BigKnob>(
@@ -293,11 +349,7 @@ struct CollusionWidget : ModuleWidget {
 		addParam(createParamCentered<PanelKnob>(
 		             panel::mm(panel::EVADE_POS.x, panel::EVADE_POS.y), module, Collusion::EVADE_PARAM));
 		addParam(createParamCentered<PanelKnob>(
-		             panel::mm(panel::SCHEME_POS.x, panel::SCHEME_POS.y), module, Collusion::SCHEME_PARAM));
-		addParam(createParamCentered<PanelKnob>(
 		             panel::mm(panel::LEVERAGE_POS.x, panel::LEVERAGE_POS.y), module, Collusion::LEVERAGE_PARAM));
-		addParam(createParamCentered<PanelKnob>(
-		             panel::mm(panel::TERM_POS.x, panel::TERM_POS.y), module, Collusion::TERM_PARAM));
 		addParam(createParamCentered<PanelKnob>(
 		             panel::mm(panel::AUDIT_POS.x, panel::AUDIT_POS.y), module, Collusion::AUDIT_PARAM));
 		addChild(createLightCentered<SmallLight<panel::LimeLight> >(

@@ -10,10 +10,11 @@ audio in, spectrum out, and a picture driven by both that leaves through the
 video bus for Transmittal to publish.
 
 The read-out is the picture itself, small, so you can see what is being sent
-without switching to the thing receiving it.
+without switching to the thing receiving it. MODE is a label in its bottom-left
+corner, and clicking the label steps to the next mode.
 
-Three sections. SIGNAL is what it listens to. PICTURE is what it draws and every
-control has a jack under it, because a video module whose look cannot be
+Three sections. SIGNAL is what it listens to. PICTURE is what it draws and most
+controls have a jack, because a video module whose look cannot be
 sequenced is a screensaver. The footer is the analysis leaving as CV -- three
 bands and an onset trigger -- which is worth having patched even when nothing is
 looking at the video.
@@ -28,11 +29,21 @@ from panelkit import *   # noqa: E402
 P = Panel(
     slug="Projection",
     title="PROJECTION",
+    what="VIDEO GENERATOR",
     form="FORM 1120-W",
     density="compact",
-    # 16:9 at the panel's own width, so the preview is the shape of the thing
-    # being sent rather than a crop of it.
-    glass=Glass(h=32.0),
+    # Pinned: a video module's screen only ever grows. The rows would let it
+    # narrow, and the picture would lose the width it is watched across.
+    hp=12,
+    # The picture fills the glass, as before. MODE is a label drawn over its
+    # bottom-left corner -- the last line of a seven-line grid, two columns of
+    # four -- and clicking that label steps the picture to the next mode. Only
+    # the label takes the mouse; the rest of the picture is just the picture.
+    # The glass cannot grow to give MODE a strip of its own: the rows below
+    # leave about a millimetre and a half.
+    glass=Glass(h=32.0, grid=(7, 4), fields=[
+        Field("mode", cell=(6, 0), span=(1, 2), kind="toggle"),
+    ]),
 )
 
 P.sections = [
@@ -45,22 +56,24 @@ P.sections = [
              Knob("sens", "SENS"), Knob("tilt", "TILT")]),
     ]),
 
-    # What it draws. MODE picks the picture: the XY scope off L and R, the
-    # spectrum as bars, or a field warped by the band energies. Every knob in
-    # the first row has its own jack directly under it -- paired, so the panel
+    # What it draws. MODE picks the picture -- the XY scope off L and R, the
+    # spectrum as bars, or a field warped by the band energies -- and lives on
+    # the picture itself now; its jack stands in the last row. SCALE, WARP and
+    # HUE each have their own jack directly under them -- paired, so the panel
     # says which belongs to which -- because the whole point is that a patch can
-    # play the look.
+    # play the look. TRAIL took the column MODE's knob left; the slot under it
+    # is empty.
     Section("PICTURE", rows=[
-        Row([Knob("mode", "MODE", steps=3), Knob("scale", "SCALE"),
-             Knob("warp", "WARP"), Knob("hue", "HUE")],
-            pair=True),
-        Row([Jack("mode_cv"), Jack("scale_cv"),
-             Jack("warp_cv"), Jack("hue_cv")], silent=True),
         # TRAIL is how long the picture keeps what it drew, in seconds rather
         # than in frames, so it means the same at any output rate. FLASH adds
         # light on a gate; FREEZE holds the last frame for as long as it is high,
         # which is the one thing a video module needs that an audio one does not.
-        Row([Knob("trail", "TRAIL"), Knob("sat", "SAT"),
+        Row([Knob("trail", "TRAIL"), Knob("scale", "SCALE"),
+             Knob("warp", "WARP"), Knob("hue", "HUE")],
+            pair=True),
+        Row([Jack("scale_cv", col=1),
+             Jack("warp_cv", col=2), Jack("hue_cv", col=3)], silent=True),
+        Row([Knob("sat", "SAT"), Jack("mode_cv", "MODE"),
              Jack("flash", "FLASH"), Jack("freeze", "FREEZE")]),
     ]),
 ]

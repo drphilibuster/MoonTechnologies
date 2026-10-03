@@ -1,4 +1,4 @@
-# Payment Schedule
+# Payment Schedule — 8-step sequencer
 
 FORM 1040-V. Slug `PaymentSchedule`. Monophonic.
 

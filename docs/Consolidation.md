@@ -1,4 +1,4 @@
-# Consolidation
+# Consolidation — mixer & multiples
 
 A Modular in a Week mixer and multiples on one panel, for VCV Rack 2.
 

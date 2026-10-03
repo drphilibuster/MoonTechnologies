@@ -79,8 +79,8 @@ struct PolyLevelGate {
 static const int kFnNotA = 0, kFnAnd = 1, kFnOr = 2, kFnXor = 3,
                   kFnNand = 4, kFnNor = 5, kFnXnor = 6, kNumFn = 7;
 
-//: The same seven, short enough for the plate under each FN knob. The menu
-//: keeps the long forms; a 7 mm plate does not.
+//: The same seven, short enough for a cell of the read-out. The menu keeps the
+//: long forms.
 static const char* kFnShort[kNumFn] = {
 	"NOT A", "AND", "OR", "XOR", "NAND", "NOR", "XNOR"
 };
@@ -325,7 +325,56 @@ struct AuditLogic : Module {
 // Look and feel comes entirely from src/PanelTheme.hpp and this panel's own
 // generated Panel.hpp -- see ../../panelkit/README.md. Nothing about the
 // widget art is written here.
-typedef RoundBlackKnob AuditKnob;
+
+
+/** The read-out: every setting on the panel, as a word, and each word is the
+ *  control. The top line is the four gates' functions (click to pick one of
+ *  seven, or drag through them); the bottom line the four panel-wide switches
+ *  by their state words (click to flip). The cells are the FIELD_* rectangles
+ *  the spec cut the glass into (src/AuditLogic/Panel.hpp), and the fields that
+ *  take the mouse sit on the same rectangles. */
+struct AuditDisplay : LedDisplay {
+	AuditLogic* module = NULL;
+
+	/** A small caption over its value, both at the cell's left. */
+	static void cell(NVGcontext* vg, const Rect& f, const std::string& tag,
+	                 const std::string& value, NVGcolor ink) {
+		const Rect c = panel::inGlass(f);
+		const panel::TextStyle TAG(panel::Face::Mono, 7.f, panel::SAGE,
+			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
+		const panel::TextStyle VAL(panel::Face::Mono, 10.f, ink,
+			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, -0.3f);
+		panel::text(vg, TAG, c.pos.x + 3.f, c.pos.y + c.size.y * 0.38f, tag);
+		panel::text(vg, VAL, c.pos.x + 3.f, c.pos.y + c.size.y * 0.84f, value);
+	}
+
+	int setting(int id, int dflt) {
+		return module ? (int)std::round(module->params[id].getValue()) : dflt;
+	}
+
+	void drawLayer(const DrawArgs& args, int layer) override {
+		if (layer != 1) {
+			LedDisplay::drawLayer(args, layer);
+			return;
+		}
+		NVGcontext* vg = args.vg;
+		static const Rect* const FN[4] = {
+			&panel::FIELD_FN1, &panel::FIELD_FN2, &panel::FIELD_FN3, &panel::FIELD_FN4 };
+		static const int dflt[4] = { kFnNotA, kFnAnd, kFnOr, kFnXor };
+		for (int i = 0; i < 4; i++) {
+			int fn = clamp(setting(AuditLogic::FN1_PARAM + i, dflt[i]), 0, kNumFn - 1);
+			cell(vg, *FN[i], string::f("GATE %d", i + 1), kFnShort[fn], panel::LIME);
+		}
+		bool hiOn = setting(AuditLogic::POLARITY_PARAM, kPolarityHiOn) == kPolarityHiOn;
+		bool ref12 = setting(AuditLogic::REFV_PARAM, 0) > 0;
+		bool routeAC = setting(AuditLogic::ROUTE_PARAM, kRouteAB) == kRouteAC;
+		bool musical = setting(AuditLogic::DIVMODE_PARAM, kDivBinary) == kDivMusical;
+		cell(vg, panel::FIELD_POLARITY, "POLARITY", hiOn ? "HI ON" : "LO ON", panel::MINT);
+		cell(vg, panel::FIELD_REFV, "REF V", ref12 ? "12 V" : "0 V", panel::MINT);
+		cell(vg, panel::FIELD_ROUTE, "ROUTE", routeAC ? "A-B/A-C" : "A-B", panel::MINT);
+		cell(vg, panel::FIELD_DIVMODE, "MODE", musical ? "MUSICAL" : "BINARY", panel::MINT);
+	}
+};
 
 
 struct AuditLogicWidget : ModuleWidget {
@@ -336,6 +385,22 @@ struct AuditLogicWidget : ModuleWidget {
 		panel::addScrews(this);
 		panel::addLabels(this);
 
+		AuditDisplay* display = new AuditDisplay;
+		display->module = module;
+		display->box.pos = panel::mm(panel::GLASS_X, panel::GLASS_Y);
+		display->box.size = panel::mm(panel::GLASS_W, panel::GLASS_H);
+		addChild(display);
+
+		// The read-out's fields, over the cells it draws them in.
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_FN1, module, AuditLogic::FN1_PARAM));
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_FN2, module, AuditLogic::FN2_PARAM));
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_FN3, module, AuditLogic::FN3_PARAM));
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_FN4, module, AuditLogic::FN4_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_POLARITY, module, AuditLogic::POLARITY_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_REFV, module, AuditLogic::REFV_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_ROUTE, module, AuditLogic::ROUTE_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_DIVMODE, module, AuditLogic::DIVMODE_PARAM));
+
 		// FINDINGS
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::A1_POS.x, panel::A1_POS.y), module, AuditLogic::A1_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::B1_POS.x, panel::B1_POS.y), module, AuditLogic::B1_INPUT));
@@ -345,23 +410,6 @@ struct AuditLogicWidget : ModuleWidget {
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::B3_POS.x, panel::B3_POS.y), module, AuditLogic::B3_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::A4_POS.x, panel::A4_POS.y), module, AuditLogic::A4_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::B4_POS.x, panel::B4_POS.y), module, AuditLogic::B4_INPUT));
-
-		addParam(createParamCentered<AuditKnob>(panel::mm(panel::FN1_POS.x, panel::FN1_POS.y), module, AuditLogic::FN1_PARAM));
-		addParam(createParamCentered<AuditKnob>(panel::mm(panel::FN2_POS.x, panel::FN2_POS.y), module, AuditLogic::FN2_PARAM));
-		addParam(createParamCentered<AuditKnob>(panel::mm(panel::FN3_POS.x, panel::FN3_POS.y), module, AuditLogic::FN3_PARAM));
-		addParam(createParamCentered<AuditKnob>(panel::mm(panel::FN4_POS.x, panel::FN4_POS.y), module, AuditLogic::FN4_PARAM));
-
-		// Each FN knob's plate, naming the function it is actually on.
-		static const Vec* fnName[4] = {
-			&panel::FN1_NAME_POS, &panel::FN2_NAME_POS,
-			&panel::FN3_NAME_POS, &panel::FN4_NAME_POS };
-		for (int i = 0; i < 4; i++) {
-			panel::MiniDisplay* d = new panel::MiniDisplay;
-			d->box.size = panel::mm(panel::READOUT_W, panel::READOUT_H);
-			d->box.pos = panel::mm(fnName[i]->x, fnName[i]->y).minus(d->box.size.div(2.f));
-			d->name = module ? &module->dispFn[i] : NULL;
-			addChild(d);
-		}
 
 		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::OUT1_POS.x, panel::OUT1_POS.y), module, AuditLogic::OUT1_OUTPUT));
 		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::OUT2_POS.x, panel::OUT2_POS.y), module, AuditLogic::OUT2_OUTPUT));
@@ -375,8 +423,6 @@ struct AuditLogicWidget : ModuleWidget {
 		addChild(createLightCentered<SmallLight<panel::MintLight> >(panel::mm(panel::OUT4_LED_POS.x, panel::OUT4_LED_POS.y), module, AuditLogic::OUT4_LIGHT));
 
 		// REFERRAL
-		addParam(createParamCentered<CKSS>(panel::mm(panel::POLARITY_POS.x, panel::POLARITY_POS.y), module, AuditLogic::POLARITY_PARAM));
-		addParam(createParamCentered<CKSS>(panel::mm(panel::ROUTE_POS.x, panel::ROUTE_POS.y), module, AuditLogic::ROUTE_PARAM));
 
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::SW1_A_POS.x, panel::SW1_A_POS.y), module, AuditLogic::SW1_A_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::SW1_GATE_POS.x, panel::SW1_GATE_POS.y), module, AuditLogic::SW1_GATE_INPUT));
@@ -394,8 +440,6 @@ struct AuditLogicWidget : ModuleWidget {
 		// INSTALLMENTS
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::CLOCK_IN_POS.x, panel::CLOCK_IN_POS.y), module, AuditLogic::CLOCK_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::RESET_IN_POS.x, panel::RESET_IN_POS.y), module, AuditLogic::RESET_INPUT));
-		addParam(createParamCentered<CKSS>(panel::mm(panel::DIVMODE_POS.x, panel::DIVMODE_POS.y), module, AuditLogic::DIVMODE_PARAM));
-		addParam(createParamCentered<CKSS>(panel::mm(panel::REFV_POS.x, panel::REFV_POS.y), module, AuditLogic::REFV_PARAM));
 
 		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::DIV2_POS.x, panel::DIV2_POS.y), module, AuditLogic::DIV2_OUTPUT));
 		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::DIV4_POS.x, panel::DIV4_POS.y), module, AuditLogic::DIV4_OUTPUT));

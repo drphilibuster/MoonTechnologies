@@ -1,4 +1,4 @@
-# Volatility
+# Volatility — noise, S&H & random
 
 A random-signal utility for VCV Rack 2, consolidating three circuits from Modular in
 a Week's random day onto one panel, all three sharing a single clock.

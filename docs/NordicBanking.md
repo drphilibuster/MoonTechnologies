@@ -1,6 +1,6 @@
-# Nordic Banking
+# Nordic Banking — Nord Lead 2X synthesizer
 
-**FORM 8938 — the statement of foreign financial assets. Nordic banking is where the money goes to be discreet.** 42 HP.
+**FORM 8938 — the statement of foreign financial assets. Nordic banking is where the money goes to be discreet.** 36 HP.
 
 A Clavia Nord Lead 2X, running its own operating system. The 2X has a Motorola MC68331
 microcontroller and two DSP56362 signal processors. The 68331 owns the front panel, MIDI
@@ -134,9 +134,17 @@ synced.
 The selectors light one LED, or a pair of neighbours for the setting between them, as on
 the unit. Those lamps are drawn on the display glass, beside the three digits, grouped by the
 button that steps them (OSC 1, OSC 2, RING/SYNC, LFO 1, LFO 1 DEST, LFO 2, MOD ENV, FILTER,
-KBD TRACK, PLAY, WHEEL, OCT), which took 37 LED widgets and a row of gaps off the panel. A lamp
-that belongs to a button of its own (ARP, VELOCITY, DISTORTION, UNISON, AUTO, the four slots,
-VEL/MORPH, PERF MODE's KBD SPLIT, OSC 2's KBD TRACK) stays beside that button:
+KBD TRACK, PLAY, WHEEL, OCT), and **the group is the button**: click a group and its button is
+pressed once, exactly as the panel button used to press it, so the firmware does its own
+stepping. Hold the mouse down and the button is held. The octave group is two buttons, **OCT -**
+on its left half and **OCT +** on its right. The three digits are **PROGRAM UP** (top half,
+under the small up arrow) and **DOWN** (bottom half). With SHIFT latched, a click on a group is
+the shifted press (demo on RING/SYNC, the special functions on PLAY, dumps on OCT), and UP/DOWN
+on the digits set the value of a function, as on the unit. Right-click a group for the usual
+parameter menu, MIDI-Map learn included. WHEEL is the one group that is not a button: SHIFT
+steps it (below), and SHIFT stays on the panel. A lamp that belongs to a button of its own
+(ARP, VELOCITY, DISTORTION, UNISON, AUTO, the four slots, VEL/MORPH, PERF MODE's KBD SPLIT,
+OSC 2's KBD TRACK) stays beside that button, as does STORE:
 
 * **LFO 1 WAVE**: soft random, triangle, random; the top two lit is square, the bottom two
   sawtooth. **DEST**: FM, OSC 2, PW; FM + OSC 2 is OSC 1+2, OSC 2 + PW is the filter.

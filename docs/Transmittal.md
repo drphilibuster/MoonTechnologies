@@ -1,4 +1,4 @@
-# Transmittal
+# Transmittal — video output
 
 The plugin's video output, for VCV Rack 2. It takes frames from another module
 in this plugin and streams them out through `ffmpeg` as a live HLS playlist,
@@ -12,22 +12,28 @@ Part of the [Moon Technologies](../README.md) plugin.
 ## Quick start
 
 1. Put a **Repossession** in the rack and seize something, so it has frames.
-2. Put a **Transmittal** next to it. Turn **SOURCE** until the read-out names
-   the Repossession you want.
-3. Pick a **SIZE** and a **RATE**, press **SEND**. The caption light goes mint
-   once frames are actually going out.
+2. Put a **Transmittal** next to it. Click the **SRC** line on the read-out and
+   pick the Repossession you want.
+3. Pick a **SIZE** and a **RATE** the same way, then click the **SEND** line.
+   It turns mint and reads STOP once frames are actually going out.
 4. Right-click → **Copy Syphon server name**, and paste it into a Syphon Spout
    In TOP's *Sender Name*. (On the HLS transport the menu offers the playlist
    path instead, for a Video Stream In TOP.)
 
 ## Controls
 
+The read-out is the whole panel, and every setting is a line on it: click SRC,
+SIZE or RATE for the list to pick from (or hold and drag through them), and click
+the state line to start or stop. Right-click any line for the param's own menu,
+MIDI-Map included. Under them are the route and the playlist path, wrapped so the
+whole of it can be read.
+
 | Control | What it does |
 |---|---|
 | **SOURCE** | Which module's frames to send. `--` is nothing; every module publishing to the video bus appears after it, named for its own id. |
 | **SIZE** | The stream's frame size: 160×90, 320×180, 640×360 or 1280×720. A source publishing something else is scaled to fit. |
 | **RATE** | 12, 15, 24 or 30 fps. |
-| **SEND** | Start and stop. |
+| **SEND** | The state line. Each click starts or stops sending. |
 | **SEND** (input) | A gate: high starts, low stops, so a sequencer can hold the transport rather than having to toggle it. |
 | **LIVE** (output) | 10 V while frames are actually being written — which is not the same as having been asked to send, and is the difference you want when something is wrong. |
 

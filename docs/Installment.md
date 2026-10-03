@@ -1,4 +1,4 @@
-# Installment
+# Installment — function generator
 
 A dual function generator for VCV Rack 2 — two identical circuits, each running one
 of three Modular in a Week circuits at a time, plus a small CV-controlled PWM driver

@@ -521,14 +521,19 @@ std::string MacroQuantity::getLabel() {
 typedef RoundBlackKnob      PanelKnob;
 
 
-/** The read-out: which of the hundred and six holdings is running, and what the
- * three macro knobs are doing for it.
+/** The read-out: which of the hundred and six holdings is running, what the
+ * clock is worth, and the eight macros -- each the running program's name for
+ * it over its value. Every one of those is a control: the cells are the FIELD_*
+ * rectangles the spec cut the glass into (src/Diversified/Panel.hpp), and the
+ * fields that take the mouse sit on the same rectangles.
  *
- * The number is in the segment face and the words are not, because DSEG7 only
+ * Numbers are in the segment face and words are not, because DSEG7 only
  * carries [0-9 . : -] and Rack chains a Japanese sans onto every font as a
  * fallback -- a letter drawn in the segment face would silently come out in it. */
 struct DiversifiedDisplay : LedDisplay {
 	Diversified* module;
+	panel::FittedText fitName, fitDiv;
+	panel::FittedText fitMac[divfx::kMacros];
 
 	DiversifiedDisplay() : module(NULL) {}
 
@@ -537,34 +542,56 @@ struct DiversifiedDisplay : LedDisplay {
 			LedDisplay::drawLayer(args, layer);
 			return;
 		}
+		NVGcontext* vg = args.vg;
 		int idx = module ? module->dispProgram : 0;
 		const char* name = module ? module->dispName : "SMALL HALL";
 		bool clocked = module ? module->dispClocked : false;
+		const float pad = 3.f;
 
-		const float pad = 5.f;
-		const float rightX = box.size.x - pad;
-		const NVGcolor dim = panel::alpha(panel::LIME, 0.55f);
+		// The program: its number, and its name from the sheet.
+		const Rect pf = panel::inGlass(panel::FIELD_PROGRAM);
+		const float pb = pf.pos.y + pf.size.y * 0.80f;
+		float x = panel::segValue(vg, pf.pos.x + pad, pb, 9.f, string::f("%03d", idx), "",
+		                          panel::LIME) + 5.f;
+		const panel::TextStyle NAME(panel::Face::Mono, 9.f, panel::MINT,
+			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, -0.3f);
+		panel::text(vg, NAME, x, pb,
+		            fitName.get(vg, NAME, name, pf.pos.x + pf.size.x - pad - x));
 
-		const panel::TextStyle NAME(panel::Face::Mono, 10.f, panel::MINT,
-			NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, -0.5f);
-		const panel::TextStyle TAG(panel::Face::Mono, 7.5f, dim,
+		// What the clock is worth, mint while a clock is locked.
+		const Rect df = panel::inGlass(panel::FIELD_CLOCK_DIV);
+		const panel::TextStyle TAG(panel::Face::Mono, 7.f, panel::SAGE,
 			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
-		const panel::TextStyle MAC(panel::Face::Mono, 7.5f, dim,
-			NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+		const panel::TextStyle DIV(panel::Face::Mono, 8.f, clocked ? panel::MINT : panel::LIME,
+			NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE);
+		float dx = panel::text(vg, TAG, df.pos.x + pad, pb, "DIV") + 3.f;
+		std::string div = "x1";
+		if (module) {
+			engine::ParamQuantity* q = module->paramQuantities[Diversified::CLOCK_DIV_PARAM];
+			div = q->getDisplayValueString();
+		}
+		const float dr = df.pos.x + df.size.x - pad;
+		panel::text(vg, DIV, dr, pb, fitDiv.get(vg, DIV, div, dr - dx));
 
-		panel::segValue(args.vg, pad, 12.f, 11.f, string::f("%03d", idx), "",
-		                panel::LIME);
-		panel::text(args.vg, NAME, rightX, 12.f, name);
-
-		if (clocked)
-			panel::text(args.vg, TAG, pad, 24.f, "CLK");
-
-		// The macro names used to be listed here, over the three knobs, with
-		// their x positions typed in. Each knob wears its own little display
-		// now: six of them will not fit on one line, two rows of knobs cannot
-		// both be under it, and a typed coordinate goes wrong the moment the
-		// panel moves. This line is the program's, and the clock tag's.
-		(void) MAC;
+		// The macros: name over value, in the matrix the knobs used to stand in.
+		static const Rect* const MAC[divfx::kMacros] = {
+			&panel::FIELD_P1, &panel::FIELD_P2, &panel::FIELD_P3, &panel::FIELD_P4,
+			&panel::FIELD_P5, &panel::FIELD_P6, &panel::FIELD_P7, &panel::FIELD_P8 };
+		const panel::TextStyle MNAME(panel::Face::Mono, 7.5f, panel::SAGE,
+			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
+		for (int i = 0; i < divfx::kMacros; i++) {
+			const Rect c = panel::inGlass(*MAC[i]);
+			const char* mn = module ? module->dispMac[i] : NULL;
+			bool idle = !mn || !std::strcmp(mn, "--");
+			const float room = c.size.x - 2.f * pad;
+			panel::text(vg, MNAME.inked(idle ? panel::alpha(panel::SAGE, 0.5f) : panel::SAGE),
+			            c.pos.x + pad, c.pos.y + c.size.y * 0.40f,
+			            fitMac[i].get(vg, MNAME, mn ? mn : "--", room));
+			float v = module ? module->macro(i) : 0.5f;
+			panel::segValue(vg, c.pos.x + pad, c.pos.y + c.size.y * 0.86f, 8.f,
+			                string::f("%3d", (int) std::round(v * 100.f)), "%",
+			                idle ? panel::alpha(panel::LIME, 0.4f) : panel::LIME);
+		}
 	}
 };
 
@@ -583,31 +610,22 @@ struct DiversifiedWidget : ModuleWidget {
 		display->box.size = panel::mm(panel::GLASS_W, panel::GLASS_H);
 		addChild(display);
 
-		// The hundred and six programs are a ring: past the last one is the first.
-		panel::StepPair* program = createParamCentered<panel::StepPair>(panel::mm(panel::PROGRAM_POS.x, panel::PROGRAM_POS.y), module, Diversified::PROGRAM_PARAM);
+		// The read-out's fields, over the cells it draws them in. The hundred
+		// and six programs are a ring: past the last one is the first. Their
+		// names come from the param's own labels ("042  SMALL HALL").
+		panel::ScreenSelect* program = panel::createField<panel::ScreenSelect>(
+			panel::FIELD_PROGRAM, module, Diversified::PROGRAM_PARAM);
 		program->wrap = true;
 		addParam(program);
-		// Six macro knobs, each wearing its own little display: what a macro
-		// means changes with the program, so the panel does not engrave it.
-		static const Vec* macPos[divfx::kMacros] = {
-			&panel::P1_POS, &panel::P2_POS, &panel::P3_POS,
-			&panel::P4_POS,
-			&panel::P5_POS, &panel::P6_POS, &panel::P7_POS, &panel::P8_POS };
-		static const Vec* macDisp[divfx::kMacros] = {
-			&panel::P1_NAME_POS, &panel::P2_NAME_POS, &panel::P3_NAME_POS,
-			&panel::P4_NAME_POS,
-			&panel::P5_NAME_POS, &panel::P6_NAME_POS, &panel::P7_NAME_POS, &panel::P8_NAME_POS };
-		for (int i = 0; i < divfx::kMacros; i++) {
-			addParam(createParamCentered<PanelKnob>(
-				panel::mm(macPos[i]->x, macPos[i]->y), module, Diversified::P1_PARAM + i));
-			panel::MiniDisplay* d = new panel::MiniDisplay;
-			d->box.size = panel::mm(panel::READOUT_W, panel::READOUT_H);
-			d->box.pos = panel::mm(macDisp[i]->x, macDisp[i]->y).minus(d->box.size.div(2.f));
-			d->name = module ? &module->dispMac[i] : NULL;
-			addChild(d);
-		}
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_CLOCK_DIV, module, Diversified::CLOCK_DIV_PARAM));
+		// The eight macros: what each means changes with the program, so the
+		// glass names it, and the value under the name is what you drag.
+		static const Rect* const MAC[divfx::kMacros] = {
+			&panel::FIELD_P1, &panel::FIELD_P2, &panel::FIELD_P3, &panel::FIELD_P4,
+			&panel::FIELD_P5, &panel::FIELD_P6, &panel::FIELD_P7, &panel::FIELD_P8 };
+		for (int i = 0; i < divfx::kMacros; i++)
+			addParam(panel::createField<panel::ScreenKnob>(*MAC[i], module, Diversified::P1_PARAM + i));
 		addParam(createParamCentered<PanelKnob>(panel::mm(panel::MIX_POS.x, panel::MIX_POS.y), module, Diversified::MIX_PARAM));
-		addParam(createParamCentered<PanelKnob>(panel::mm(panel::CLOCK_DIV_POS.x, panel::CLOCK_DIV_POS.y), module, Diversified::CLOCK_DIV_PARAM));
 
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::PROGRAM_CV_POS.x, panel::PROGRAM_CV_POS.y), module, Diversified::PROGRAM_CV_PARAM));
 		static const Vec* macCv[divfx::kMacros] = {

@@ -32,6 +32,7 @@ from panelkit import *   # noqa: E402
 P = Panel(
     slug="ScheduleA",
     title="SCHEDULE A",
+    what="REPOSSESSION EXPANDER",
     subtitle="ITEMIZED LIENS",
     form="FORM 1099-A",
     density="regular",

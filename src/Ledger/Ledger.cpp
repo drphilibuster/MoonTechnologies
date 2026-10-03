@@ -12,7 +12,7 @@
 //   Midi.hpp           MIDI in and out, clock out, where a recorded note lands
 //   LedgerModule.hpp   the Module: books, slots, launches, outputs
 //   Song.hpp           rows, launch syncs in ticks, the song
-//   LedgerDisplay.hpp  the display's five pages
+//   LedgerDisplay.hpp  the display's five pages, and the strip of controls above them
 //   LedgerUndo.hpp     undo for the display's edits, through Rack's history
 //   this file          the panel's widgets and the context menu
 #include "../plugin.hpp"
@@ -20,63 +20,91 @@
 #include "LedgerDisplay.hpp"
 
 struct LedgerWidget : ModuleWidget {
+	// The books' fields: they are the TANK page's, and stand aside on the other pages,
+	// which take the mouse there for themselves.
+	std::vector<widget::Widget*> books;
+
 	LedgerWidget(Ledger* module) {
 		setModule(module);
 		setPanel(createPanel(asset::plugin(pluginInstance, "res/Ledger.svg")));
 		panel::addScrews(this);
 		panel::addLabels(this);
 
+		// The glass, with the strip of controls across its top two rows; the page below it.
+		LedgerStrip* strip = new LedgerStrip;
+		strip->module = module;
+		strip->box = panel::mmRect(panel::GLASS_X, panel::GLASS_Y, panel::GLASS_W, panel::GLASS_H);
+		addChild(strip);
+		const float bodyY = panel::FIELD_RUN.pos.y + panel::FIELD_RUN.size.y + 0.25f;
 		LedgerDisplay* display = new LedgerDisplay;
 		display->module = module;
-		display->box = panel::mmRect(panel::GLASS_X, panel::GLASS_Y, panel::GLASS_W, panel::GLASS_H);
+		display->box = panel::mmRect(panel::GLASS_X, bodyY, panel::GLASS_W, panel::GLASS_Y + panel::GLASS_H - bodyY);
 		addChild(display);
 
-		const Vec pots[Ledger::NUM_POTS] = { panel::CHANCE_POS, panel::NOTE_POS, panel::OCTAVE_POS,
-			panel::LENG_POS, panel::RATE_POS, panel::DIRN_POS, panel::TRNS_POS, panel::SHFT_POS, panel::OCTA_POS,
-			panel::EVOLVE_POS, panel::BREATHE_POS, panel::GATE_POS, panel::TIE_POS, panel::SLOP_POS };
+		// The strip: every button that stood on the face, as a field on the param it was.
+		struct Tab { const Rect* f; int param; };
+		const Tab tabs[] = {
+			{ &panel::FIELD_PG_TANK, Ledger::PAGE_PARAM + kPageTank },
+			{ &panel::FIELD_PG_ROLL, Ledger::PAGE_PARAM + kPageRoll },
+			{ &panel::FIELD_PG_FX, Ledger::PAGE_PARAM + kPageFx },
+			{ &panel::FIELD_PG_SEQ, Ledger::PAGE_PARAM + kPageSeq },
+			{ &panel::FIELD_PG_SONG, Ledger::PAGE_PARAM + kPageSong },
+			{ &panel::FIELD_TRK1, Ledger::TRK_PARAM + 0 }, { &panel::FIELD_TRK2, Ledger::TRK_PARAM + 1 },
+			{ &panel::FIELD_TRK3, Ledger::TRK_PARAM + 2 }, { &panel::FIELD_TRK4, Ledger::TRK_PARAM + 3 },
+			{ &panel::FIELD_TRK5, Ledger::TRK_PARAM + 4 }, { &panel::FIELD_TRK6, Ledger::TRK_PARAM + 5 },
+			{ &panel::FIELD_TRK7, Ledger::TRK_PARAM + 6 }, { &panel::FIELD_TRK8, Ledger::TRK_PARAM + 7 },
+			{ &panel::FIELD_RUN, Ledger::RUN_PARAM }, { &panel::FIELD_RSET, Ledger::RSET_PARAM },
+			{ &panel::FIELD_FRZE, Ledger::FRZE_PARAM }, { &panel::FIELD_REC, Ledger::REC_PARAM },
+			{ &panel::FIELD_MUTE, Ledger::MUTE_PARAM }, { &panel::FIELD_SOLO, Ledger::SOLO_PARAM },
+			{ &panel::FIELD_RSED, Ledger::RSED_PARAM }, { &panel::FIELD_CAPT, Ledger::CAPT_PARAM },
+		};
+		for (const Tab& b : tabs)
+			addParam(panel::createField<panel::ScreenButton>(*b.f, module, b.param));
+
+		// The books: each value is the field it is printed in, on the param its knob was.
+		struct Book { const Rect* f; int param; bool select; };
+		const Book bookFields[] = {
+			{ &panel::FIELD_CHANCE, Ledger::POT_PARAM + L::kDChance, false },
+			{ &panel::FIELD_NOTE, Ledger::POT_PARAM + L::kDNote, false },
+			{ &panel::FIELD_OCTAVE, Ledger::POT_PARAM + L::kDOct, false },
+			{ &panel::FIELD_RATE, Ledger::POT_PARAM + L::kDRate, true },
+			{ &panel::FIELD_LENG, Ledger::POT_PARAM + L::kDLength, false },
+			{ &panel::FIELD_DIRN, Ledger::POT_PARAM + L::kDDirection, true },
+			{ &panel::FIELD_EVOLVE, Ledger::POT_PARAM + L::kDEvolve, false },
+			{ &panel::FIELD_BREATHE, Ledger::POT_PARAM + L::kDBreathe, false },
+			{ &panel::FIELD_OCTA, Ledger::POT_PARAM + L::kDOctave, true },
+			{ &panel::FIELD_TRNS, Ledger::POT_PARAM + L::kDTrans, false },
+			{ &panel::FIELD_ROOT, Ledger::ROOT_PARAM, true },
+			{ &panel::FIELD_SCALE, Ledger::SCALE_PARAM, true },
+		};
+		for (const Book& b : bookFields) {
+			ParamWidget* w = b.select
+				? (ParamWidget*)panel::createField<panel::ScreenSelect>(*b.f, module, b.param)
+				: (ParamWidget*)panel::createField<panel::ScreenKnob>(*b.f, module, b.param);
+			addParam(w);
+			books.push_back(w);
+		}
+
+		// The knobs left on the face, and every CV. A track knob's CV is polyphonic by track.
+		struct Pot { int dest; Vec pos; };
+		const Pot pots[] = {
+			{ L::kDChance, panel::CHANCE_POS }, { L::kDNote, panel::NOTE_POS }, { L::kDOct, panel::OCTAVE_POS },
+			{ L::kDShift, panel::SHFT_POS }, { L::kDGate, panel::GATE_POS }, { L::kDTie, panel::TIE_POS },
+			{ L::kDSlop, panel::SLOP_POS },
+		};
+		for (const Pot& p : pots)
+			addParam(createParamCentered<RoundBlackKnob>(panel::mm(p.pos.x, p.pos.y), module, Ledger::POT_PARAM + p.dest));
 		const Vec potCv[Ledger::NUM_POTS] = { panel::CHANCE_CV_POS, panel::NOTE_CV_POS, panel::OCTAVE_CV_POS,
 			panel::LENG_CV_POS, panel::RATE_CV_POS, panel::DIRN_CV_POS, panel::TRNS_CV_POS, panel::SHFT_CV_POS,
 			panel::OCTA_CV_POS, panel::EVOLVE_CV_POS, panel::BREATHE_CV_POS, panel::GATE_CV_POS, panel::TIE_CV_POS,
 			panel::SLOP_CV_POS };
-		for (int i = 0; i < Ledger::NUM_POTS; i++) {
-			addParam(createParamCentered<RoundBlackKnob>(panel::mm(pots[i].x, pots[i].y), module, Ledger::POT_PARAM + i));
+		for (int i = 0; i < Ledger::NUM_POTS; i++)
 			addInput(createInputCentered<panel::PortIn>(panel::mm(potCv[i].x, potCv[i].y), module, Ledger::POT_CV_INPUT + i));
-		}
-		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::SCALE_POS.x, panel::SCALE_POS.y), module, Ledger::SCALE_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::ROOT_POS.x, panel::ROOT_POS.y), module, Ledger::ROOT_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::WEIGHT_POS.x, panel::WEIGHT_POS.y), module, Ledger::WEIGHT_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::BPM_POS.x, panel::BPM_POS.y), module, Ledger::BPM_PARAM));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::SCALE_CV_POS.x, panel::SCALE_CV_POS.y), module, Ledger::SCALE_CV_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::ROOT_CV_POS.x, panel::ROOT_CV_POS.y), module, Ledger::ROOT_CV_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::WEIGHT_CV_POS.x, panel::WEIGHT_CV_POS.y), module, Ledger::WEIGHT_CV_INPUT));
-
-		const Vec trk[S::kNumTracks] = { panel::TRK1_POS, panel::TRK2_POS, panel::TRK3_POS, panel::TRK4_POS,
-			panel::TRK5_POS, panel::TRK6_POS, panel::TRK7_POS, panel::TRK8_POS };
-		for (int t = 0; t < S::kNumTracks; t++)
-			addParam(createLightParamCentered<VCVLightBezel<panel::LimeLight> >(panel::mm(trk[t].x, trk[t].y),
-				module, Ledger::TRK_PARAM + t, Ledger::TRK_LIGHT + t));
-
-		struct Btn { int param; Vec pos; int light; Vec lpos; };
-		const Btn btns[] = {
-			{ Ledger::MUTE_PARAM, panel::MUTE_POS, Ledger::MUTE_LIGHT, panel::MUTE_LED_POS },
-			{ Ledger::SOLO_PARAM, panel::SOLO_POS, Ledger::SOLO_LIGHT, panel::SOLO_LED_POS },
-			{ Ledger::RSED_PARAM, panel::RSED_POS, Ledger::RSED_LIGHT, panel::RSED_LED_POS },
-			{ Ledger::RUN_PARAM, panel::RUN_POS, Ledger::RUN_LIGHT, panel::RUN_LED_POS },
-			{ Ledger::FRZE_PARAM, panel::FRZE_POS, Ledger::FRZE_LIGHT, panel::FRZE_LED_POS },
-			{ Ledger::RSET_PARAM, panel::RSET_POS, -1, Vec() },
-			{ Ledger::PAGE_PARAM + kPageTank, panel::PG_TANK_POS, Ledger::PAGE_LIGHT + kPageTank, panel::PG_TANK_LED_POS },
-			{ Ledger::PAGE_PARAM + kPageRoll, panel::PG_ROLL_POS, Ledger::PAGE_LIGHT + kPageRoll, panel::PG_ROLL_LED_POS },
-			{ Ledger::PAGE_PARAM + kPageFx, panel::PG_FX_POS, Ledger::PAGE_LIGHT + kPageFx, panel::PG_FX_LED_POS },
-			{ Ledger::PAGE_PARAM + kPageSeq, panel::PG_SEQ_POS, Ledger::PAGE_LIGHT + kPageSeq, panel::PG_SEQ_LED_POS },
-			{ Ledger::PAGE_PARAM + kPageSong, panel::PG_SONG_POS, Ledger::PAGE_LIGHT + kPageSong, panel::PG_SONG_LED_POS },
-			{ Ledger::CAPT_PARAM, panel::CAPT_POS, Ledger::CAPT_LIGHT, panel::CAPT_LED_POS },
-			{ Ledger::REC_PARAM, panel::REC_POS, Ledger::REC_LIGHT, panel::REC_LED_POS },
-		};
-		for (const Btn& b : btns) {
-			addParam(createParamCentered<VCVButton>(panel::mm(b.pos.x, b.pos.y), module, b.param));
-			if (b.light >= 0)
-				addChild(createLightCentered<SmallLight<panel::LimeLight> >(panel::mm(b.lpos.x, b.lpos.y), module, b.light));
-		}
 
 		addInput(createInputCentered<panel::PortTrigIn>(panel::mm(panel::CLK_IN_POS.x, panel::CLK_IN_POS.y), module, Ledger::CLK_INPUT));
 		addInput(createInputCentered<panel::PortTrigIn>(panel::mm(panel::RST_IN_POS.x, panel::RST_IN_POS.y), module, Ledger::RST_INPUT));
@@ -101,6 +129,14 @@ struct LedgerWidget : ModuleWidget {
 		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::CURRENT_POS.x, panel::CURRENT_POS.y), module, Ledger::CURRENT_OUTPUT));
 		addOutput(createOutputCentered<panel::PortTrigOut>(panel::mm(panel::EOS_POS.x, panel::EOS_POS.y), module, Ledger::EOS_OUTPUT));
 		addOutput(createOutputCentered<panel::PortTrigOut>(panel::mm(panel::CLK_OUT_POS.x, panel::CLK_OUT_POS.y), module, Ledger::CLK_OUTPUT));
+	}
+
+	void step() override {
+		Ledger* m = dynamic_cast<Ledger*>(module);
+		bool tank = !m || m->page.load() == kPageTank;
+		for (widget::Widget* w : books)
+			w->visible = tank;
+		ModuleWidget::step();
 	}
 
 	// The menu runs on the UI thread; a change lands at the next sample. Matrix

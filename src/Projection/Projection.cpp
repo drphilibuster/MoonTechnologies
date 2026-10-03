@@ -368,6 +368,7 @@ struct ProjectionScreen : widget::Widget {
 				panel::alpha(panel::SAGE, 0.55f),
 				NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
 			panel::text(args.vg, st, box.size.x / 2, box.size.y / 2, "NO SIGNAL");
+			drawMode(args.vg);
 			return;
 		}
 
@@ -405,6 +406,31 @@ struct ProjectionScreen : widget::Widget {
 			nvgFillPaint(args.vg, p);
 			nvgFill(args.vg);
 		}
+		drawMode(args.vg);
+	}
+
+	/** MODE, as a label over the picture's bottom-left corner (FIELD_MODE); the field over
+	    it steps the mode on a click. It names the mode actually drawn, so with a cable in
+	    MODE CV it follows the CV. A dark backing keeps it legible on any picture. */
+	void drawMode(NVGcontext* vg) {
+		static const char* const NAMES[3] = {"SCOPE", "BARS", "FIELD"};
+		int mode = module ? (int) std::round(module->knobCv(Projection::MODE_PARAM,
+		                                     Projection::MODE_CV_INPUT, 0.f, 2.f)) : 0;
+		mode = clamp(mode, 0, 2);
+		const Rect c = panel::inGlass(panel::FIELD_MODE);
+		const panel::TextStyle TAG(panel::Face::Mono, 7.f, panel::SAGE,
+			NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+		const panel::TextStyle VAL(panel::Face::Mono, 9.f, panel::LIME,
+			NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+		const float cy = c.pos.y + c.size.y / 2.f;
+		const float tagW = panel::textWidth(vg, TAG, "MODE");
+		const float w = 3.f + tagW + 3.f + panel::textWidth(vg, VAL, NAMES[mode]) + 3.f;
+		nvgBeginPath(vg);
+		nvgRoundedRect(vg, c.pos.x, c.pos.y, std::min(w, c.size.x), c.size.y, 1.6f);
+		nvgFillColor(vg, panel::alpha(panel::GLASS, 0.78f));
+		nvgFill(vg);
+		panel::text(vg, TAG, c.pos.x + 3.f, cy, "MODE");
+		panel::text(vg, VAL, c.pos.x + 6.f + tagW, cy, NAMES[mode]);
 	}
 };
 
@@ -423,10 +449,11 @@ struct ProjectionWidget : ModuleWidget {
 		s->box.size = math::Vec(panel::mm(panel::GLASS_W, 0.f).x,
 		                        panel::mm(0.f, panel::GLASS_H).y);
 		addChild(s);
+		// MODE is the label in the picture's corner: click it for the next mode.
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_MODE, module, Projection::MODE_PARAM));
 
 		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::SENS_POS.x, panel::SENS_POS.y), module, Projection::SENS_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::TILT_POS.x, panel::TILT_POS.y), module, Projection::TILT_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::MODE_POS.x, panel::MODE_POS.y), module, Projection::MODE_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::SCALE_POS.x, panel::SCALE_POS.y), module, Projection::SCALE_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::WARP_POS.x, panel::WARP_POS.y), module, Projection::WARP_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(panel::mm(panel::HUE_POS.x, panel::HUE_POS.y), module, Projection::HUE_PARAM));

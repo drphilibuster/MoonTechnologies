@@ -1,11 +1,11 @@
-# Amortization
+# Amortization — triple-PT2399 reverb
 
 The Pittsburgh Modular Verbtronic, as a circuit. Filed as PUB 535.
 
 A debt paid off in reflections: FEEDBACK is how long it runs, TILT leans the tail
 dark or bright, MODE swaps which of two clock settings the three delay chips run
 at, and the two outputs are the blend and the wet-only signal, as on the
-original. Part of the [Moon Technologies](../README.md) plugin. 11 HP.
+original. Part of the [Moon Technologies](../README.md) plugin. 9 HP.
 
 ## What it is based on
 
@@ -99,7 +99,7 @@ goes on ringing in a different shape.
 |---|---|
 | **FEEDBACK** | 0–100 %, a linear pot. Only the upper part of the travel feeds back much (see above). As modelled the mesh is just under unity even at zero — tails of several seconds — and the loop starts to sing at about 70 % in either mode; past that the limiter, the chips and the make-up stage clip it into a sustained wail. **How long the tail runs at zero, and where it starts to sing, depend on the chip's loss per pass, which the datasheet fixes only to about ±0.5 dB** — see the table below, and measure those two on a unit. |
 | **TILT** | The tone pot. −100 % to +100 %; flat at centre. See the note on direction below. |
-| **MODE** | **Verb** (switch closed) or **Tronic**. The lit TRONIC label shows what is actually running once the gate has had its say. |
+| **MODE** | **Verb** (switch closed) or **Tronic**. The original's toggle is the TRONIC/VERB word at the top right of the read-out: click it to flip. The word shows what is actually running once the gate has had its say; a small clay GATE under it means the gate is holding Verb while the toggle is at Tronic. |
 | **MIX** | The OUTPUT MIX pot. 0 is dry, 100 % is 99 % wet. |
 | **MIX CV** (trimmer) | The attenuverter on the MIX CV jack. Centre: no effect. Clockwise passes the CV, anticlockwise inverts it. |
 | **MODE GATE** | While high, Tronic is flipped to Verb. It only ever pulls the mode *down* to Verb, so with the switch at Verb it does nothing. |
@@ -113,7 +113,10 @@ goes on ringing in a different shape.
 | **MIX CV**, **MODE GATE** | See above. Mix CV reaches the control at 3.6 V for the whole range. |
 
 The read-out shows the first chip's delay and clock for the mode that is live,
-and whether the limiter is working. Outputs are ±10.5 V at most — the op-amps clip
+and whether the limiter is working. Its bottom line is FEEDBACK, TILT and MIX:
+hold any of them and drag up or down to set it (Ctrl fine, Shift coarse) -- the
+same params as the knobs, which stay. Right-click a value or the mode word for
+the usual parameter menu: typed entry, MIDI-Map, reset. Outputs are ±10.5 V at most — the op-amps clip
 inside their rails. Bypass routes IN to MIX.
 
 Mono, as the original is. Everything the previous version added around it —

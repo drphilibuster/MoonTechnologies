@@ -1,4 +1,4 @@
-# Retroactive
+# Retroactive — sample permuter
 
 A windowed sample-permutation effect for VCV Rack 2.
 
@@ -64,7 +64,7 @@ same reason. Every other mode breaks that composition apart and responds to SUBD
 
 The output is **inherently `N + L` samples late** (window length plus declick fade), in
 every mode including Identity — special-casing Identity to zero would re-time the output
-whenever you switched modes. The panel display shows the figure.
+whenever you switched modes. The read-out shows the figure (`LAT`, second line).
 
 **Rack 2 has no latency-reporting API**, so the panel and this file are the only
 disclosure. If you parallel a dry path around Retroactive, it will arrive `N + L` early.
@@ -73,18 +73,35 @@ to match; it does not help an external dry path.
 
 ## Controls
 
-| Control | Range | Default |
-|---|---|---|
-| TIME | 0.01 – 4.0 s, logarithmic | 0.25 s |
-| CLK DIV | ×1/16 … ×16 | ×1 |
-| MODE | the eight above | Reverse |
-| SUBDIV | 1, 2, 4, 8, 16, 32, 64 | 1 |
-| FADE | 0 – 20 ms declick | 3 ms |
-| MIX | 0 – 1 (insert effect) | 1.0 |
-| CHAR | Crossfade / Overlap | Crossfade |
-| FREEZE | button + gate input | off |
+| Control | Where | Range | Default |
+|---|---|---|---|
+| TIME | knob, and read-out line 1 | 0.01 – 4.0 s, logarithmic | 0.25 s |
+| MODE | read-out line 1 | the eight above | Reverse |
+| SUBDIV | read-out line 2 (`SUB`) | 1, 2, 4, 8, 16, 32, 64 | 1 |
+| CLK DIV | read-out line 2 (`DIV`) | ×1/16 … ×16 | ×1 |
+| CHAR | read-out line 3 | Crossfade (`XFADE`) / Overlap | Crossfade |
+| FREEZE | read-out line 3, + gate input | off / on | off |
+| FADE | knob, and read-out line 4 | 0 – 20 ms declick | 3 ms |
+| MIX | knob, and read-out line 4 | 0 – 1 (insert effect) | 1.0 |
 
 TIME, MODE, SUBDIV and MIX have attenuverted CV. FADE and CLK DIV do not.
+
+### The read-out
+
+Four lines, and every setting on them is a control. Hold a value — the window
+length, `FADE`, `MIX` — and drag it up or down (Ctrl for fine, Shift for coarse,
+as on a knob). Click `MODE`, `SUB` or `DIV` to pick from the list, or hold and
+drag to step through it. Click `CHAR` to switch it, and `FREEZE` to latch the
+freeze on and off. Each field is the same parameter its knob, switch or button
+used to be, so right-clicking it gives the usual parameter menu — typed entry,
+MIDI-Map, reset — and patches saved before they moved load unchanged.
+
+| Line | Shows |
+|---|---|
+| 1 | The window length in force (after CV, or set by the clock), and the mode |
+| 2 | `LAT`, the latency (or `CLK`, the clocked window length) — read only. `SUB`, shown as `--` in the two modes it cannot change, and lit while the fade is overdrawn. `DIV`, dim while no clock is heard |
+| 3 | `CHAR`, and `FREEZE`: `ON` latched here, `GATE` held by the FREEZE input, `OFF` |
+| 4 | `FADE` in milliseconds, lit with `SUB` while overdrawn, and `MIX` |
 
 - **IN R normals to IN L**, so a mono input gives dual mono. Polyphonic cables are
   summed rather than silently truncated to channel 1. The module is deliberately
@@ -103,8 +120,8 @@ TIME, MODE, SUBDIV and MIX have attenuverted CV. FADE and CLK DIV do not.
 
 - **Yellow, ASSESSMENT caption light** — window phase; it flashes at each boundary.
 - **Green, WITHHOLDING caption light** — clock locked; dim means the edges have stopped.
-- **White, in the FREEZE button** — frozen.
-- **OVERDRAFT, below the display** — you are asking for more fade than the sub-block can
+- **FREEZE on the read-out** — bright while frozen, by the field or the gate.
+- **OVERDRAFT, between TIME and FADE** — you are asking for more fade than the sub-block can
   pay for. Not a fault light; see below.
 
 ## Overdraft
@@ -156,8 +173,7 @@ renderer imposes are documented once, in [`../panelkit/README.md`](../panelkit/R
 which is also where the other two panels in the plugin get theirs. There is no
 per-module copy of any of it.
 
-Retroactive's panel runs at panelkit's `compact` density: six rows of controls
-and a read-out at 15 HP leaves no room for the regular scale.
+Retroactive's panel runs at panelkit's `compact` density.
 
 One constraint is Retroactive's alone rather than the family's: display numerals
 use DSEG7, and characters missing from its `cmap` do *not* render as tofu — Rack
@@ -165,10 +181,11 @@ chains NotoSansJP as a fallback onto every font, so a stray `+` or `%` would
 silently come out in a proportional Japanese sans. Keep segment strings to
 `0-9 . : -`.
 
-The OVERDRAFT light sits between TIME and CLK DIV, with a lime trace running to
-the three controls that actually determine it — `FADE > B/2` where
-`B = TIME / SUBDIV` — so the panel states the condition rather than just
-reporting it. The trace is declared as a function of the solved layout in
+The OVERDRAFT light sits between TIME and FADE, with a lime trace running
+through it from one to the other — `FADE > B/2` where `B = TIME / SUBDIV` — so
+the panel states the condition rather than just reporting it. SUBDIV, the third
+term, is on the read-out, where its value (and FADE's) turns lime while the
+condition holds. The trace is declared as a function of the solved layout in
 `tools/panels/Retroactive.py` and breaks itself around any label it crosses, so it stays
 correct when a row moves.
 

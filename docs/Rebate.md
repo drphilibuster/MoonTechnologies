@@ -1,6 +1,6 @@
-# Rebate
+# Rebate — MIDIverb digital reverb
 
-**FORM 843 — claim for refund. Some of what you put in, paid back to you later, a little less each time.** 12 HP.
+**FORM 843 — claim for refund. Some of what you put in, paid back to you later, a little less each time.** 10 HP.
 
 An Alesis MIDIverb, Keith Barr's 1986 reverb, running its own firmware. The
 MIDIverb has no DSP chip. Its signal processor is a few dozen TTL parts
@@ -36,21 +36,30 @@ silent.
 
 ## The front panel
 
-It is the MIDIverb's own.
+It is the MIDIverb's own, and its four buttons are on the read-out: press them
+where you read them.
 
 * **The two digits** show the program, 1 to 63, exactly as the firmware lights
   them. They show `--` when the effect is defeated.
-* **UP / DOWN** step through the programs, and auto-repeat when held. Every
-  change mutes the effect for about a tenth of a second while it switches.
-  That is the firmware: it runs the silent program 64 in between, so the old
-  program's delay memory does not spill into the new one.
-* **CHANNEL** is a pair of buttons, one over the other. On the unit you hold CHANNEL and the
-  digits show the MIDI receive channel, and UP and DOWN change it while you hold it, which a
-  mouse cannot do. Each click here does exactly that for you: it holds CHANNEL, presses UP (the top
-  button) or DOWN (the bottom) once and lets go, so the digits show the channel as it changes. It
-  stops at channel 1 and at 16, as the unit does.
-* **DEFEAT** mutes the effect (program 64). Press it again to bring the program
-  back.
+* **UP / DOWN** are the top and bottom halves of the digits (the small arrows
+  at their right edge say which is which). Press the half of the number you
+  want it to go; they step through the programs, and auto-repeat when held.
+  Every change mutes the effect for about a tenth of a second while it
+  switches. That is the firmware: it runs the silent program 64 in between, so
+  the old program's delay memory does not spill into the new one.
+* **CH**, left of the digits, is the MIDI receive channel. On the unit you hold
+  CHANNEL and the digits show the channel, and UP and DOWN change it while you
+  hold it, which a mouse cannot do. Here, hold and drag CH up or down to walk
+  the channel one at a time, or click it to pick one of the sixteen from a
+  list. Either way the module does what your hands would: it holds CHANNEL,
+  taps UP or DOWN once per channel and lets go, so the digits show the channel
+  as it changes. It stops at channel 1 and at 16, as the unit does.
+* **DEF**, right of the digits, is DEFEAT: click it to mute the effect
+  (program 64), click again to bring the program back. It reads `ON` in clay
+  while the effect is defeated.
+* Right-click any of them for the usual parameter menu (MIDI-Map learn
+  included). Right-click the status line or the panel for the module's own
+  menu: the EPROMs and the MIDI input.
 * **-12 dB / 0 dB** are the unit's input level LEDs. They watch the signal on
   its way into the converter. Red means you are close to the converter's full
   scale.
@@ -66,7 +75,7 @@ at 31,250 baud and the 80C31's UART receives it bit by bit.
 program 22, channel 1. A patch remembers the program, the channel and defeat,
 and after power-on the module plays them back into the firmware: it holds
 CHANNEL and taps UP, sends a Program Change, presses DEFEAT. Watch the digits
-and you will see it happen. The panel buttons are ignored for those couple of
+and you will see it happen. The buttons on the read-out are ignored for those couple of
 seconds.
 
 ## Levels

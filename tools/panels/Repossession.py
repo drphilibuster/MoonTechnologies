@@ -18,13 +18,15 @@ the well is drawn by RepossessionDisplay from the millimetre constants echoed
 into src/Repossession/Panel.hpp below, so the artwork and the live widget cannot
 disagree about where the video ends and the timeline begins.
 
-Density is "compact": three rows of controls under a 39.0 mm read-out leaves no
-room for the regular scale.
+Density is "compact".
 
-34 HP with room to spare, and deliberately not narrower. The per-step CV that
-would have forced this panel wide lives on the SCHEDULE A expander instead, and
-what is left could be squeezed -- but the timeline is the instrument here, and
-every millimetre taken off the panel comes off the strip you carve regions on.
+21 HP. The eight LIENS controls -- region, speed, gain, loop, direction,
+sequence mode, tempo and transport -- used to be a row of knobs under a screen
+that already printed half of them. They are fields on the screen now, in a strip
+of their own between the video and the timeline, and the row they stood in went
+to the read-out instead. The timeline is narrower than it was at 34 HP; it zooms
+under the scroll wheel, and it is taller now, which is what carving at a fine
+zoom wants.
 """
 
 import os
@@ -36,32 +38,43 @@ from panelkit import *   # noqa: E402
 P = Panel(
     slug="Repossession",
     title="REPOSSESSION",
+    what="VIDEO SAMPLER",
     subtitle="SECURED PROPERTY",
     form="FORM 1099-A",
-    hp=34,
+    # Pinned because the plates inside the well are laid out against the width;
+    # 21 is what the rows below solve to on their own.
+    hp=21,
     density="compact",
-    # The read-out is the module. 39.0 mm is everything the three control rows
-    # and the footer band can spare -- see the arithmetic in COLLECTIONS below.
-    glass=Glass(h=39.0),
+    # URL, the video beside the asset report, the LIENS strip and the timeline,
+    # stacked; the arithmetic is in the plates below.
+    glass=Glass(h=59.2, fields=[
+        Field("region",  plate="liens", cell=(0, 0), kind="select"),
+        Field("speed",   plate="liens", cell=(0, 1), kind="value"),
+        Field("gain",    plate="liens", cell=(0, 2), kind="value"),
+        Field("loop",    plate="liens", cell=(0, 3), kind="toggle"),
+        Field("rev",     plate="liens", cell=(0, 4), kind="toggle"),
+        Field("mode",    plate="liens", cell=(0, 5), span=(1, 2), kind="select"),
+        Field("tempo",   plate="liens", cell=(0, 7), kind="value"),
+        Field("runmode", plate="liens", cell=(0, 8), kind="select"),
+    ]),
 )
 
-W = P.w                         # 172.72 mm
+W = P.w                         # 106.68 mm
 M = 6.5                         # side margin, inside the glass well's own 4.2
-IW = W - 2 * M                  # 159.72 mm of usable width
+IW = W - 2 * M                  # 93.68 mm of usable width
 
 # --- inside the read-out well ------------------------------------------------
 # The well's own geometry is the spec's (Glass, above) and reaches the C++ as
-# panel::GLASS_*; only what sits inside it is laid out here.
-# The well runs 10.20 .. 49.80. The video sits left at 16:9; the URL box and the
-# asset report share the column beside it; the timeline spans the full width
-# underneath, because a region is a span of the whole clip and reads as one.
-GLASS_Y0, GLASS_H = 9.8, 39.0
-
-VID_X, VID_Y, VID_W, VID_H = M, 11.3, 56.0, 31.5        # 11.30 .. 42.80, 16:9
-URL_X, URL_Y, URL_W, URL_H = 66.0, 11.3, W - 66.0 - M, 7.0
-INFO_X, INFO_Y = URL_X, 19.2
-INFO_W, INFO_H = URL_W, 42.8 - 19.2
-TL_X, TL_Y, TL_W, TL_H = M, 43.6, IW, 4.9               # 43.60 .. 48.50
+# panel::GLASS_*; only what sits inside it is laid out here. Top to bottom: the
+# URL box across the width; the video at 16:9 with the asset report beside it;
+# the LIENS strip, whose cells are the fields above; and the timeline across the
+# full width, because a region is a span of the whole clip and reads as one.
+URL_X, URL_Y, URL_W, URL_H = M, 11.3, IW, 7.0           # 11.30 .. 18.30
+VID_X, VID_Y, VID_W, VID_H = M, 19.1, 56.0, 31.5        # 19.10 .. 50.60, 16:9
+INFO_X, INFO_Y = M + VID_W + 1.5, VID_Y
+INFO_W, INFO_H = W - M - INFO_X, VID_H
+LIEN_X, LIEN_Y, LIEN_W, LIEN_H = M, 51.4, IW, 7.4       # 51.40 .. 58.80
+TL_X, TL_Y, TL_W, TL_H = M, 59.6, IW, 8.2               # 59.60 .. 67.80
 
 P.plates = [
     # Glass on glass: only the sage hairline shows, which is the family's well
@@ -69,6 +82,7 @@ P.plates = [
     Plate("video", VID_X, VID_Y, VID_W, VID_H, r=0.8),
     Plate("url", URL_X, URL_Y, URL_W, URL_H, fill=BAND, r=1.0, tab="LIME"),
     Plate("info", INFO_X, INFO_Y, INFO_W, INFO_H, fill=BAND, r=1.0),
+    Plate("liens", LIEN_X, LIEN_Y, LIEN_W, LIEN_H, fill=BAND, r=1.0, grid=(1, 9)),
     Plate("timeline", TL_X, TL_Y, TL_W, TL_H, r=0.8),
 ]
 
@@ -81,26 +95,6 @@ P.sections = [
         Row([Bezel("slot1"), Bezel("slot2"), Bezel("slot3"), Bezel("slot4"),
              Bezel("slot5"), Bezel("slot6"), Bezel("slot7"), Bezel("slot8")],
             silent=True),
-    ]),
-
-    # What is charged against the selected region, and the transport that works
-    # the schedule through. There is no SKIP control because there is nothing to
-    # skip: a slot either holds a region or it is empty, and a region can be
-    # disabled in place, which is the same thing said louder.
-    #
-    # RUN is a three-position switch rather than a latch because it has three
-    # states to say: running the sequence, stopped, and latched on one step. The
-    # third used to be reachable only by accident -- patch a clock, stop it, and
-    # whichever step you landed on loops forever.
-    Section("LIENS", rows=[
-        Row([Knob("region", "REGION", steps=8),
-             Knob("speed", "SPEED"),
-             Knob("gain", "GAIN"),
-             Switch("loop", "LOOP"),
-             Switch("rev", "REV"),
-             Knob("mode", "MODE", steps=4),
-             Knob("tempo", "TEMPO"),
-             Switch3("runmode", "RUN")]),
     ]),
 
     # Everything that drives the sequence from outside. The last four are
@@ -143,6 +137,7 @@ P.metrics = dict(
     VID_X=VID_X, VID_Y=VID_Y, VID_W=VID_W, VID_H=VID_H,
     URL_X=URL_X, URL_Y=URL_Y, URL_W=URL_W, URL_H=URL_H,
     INFO_X=INFO_X, INFO_Y=INFO_Y, INFO_W=INFO_W, INFO_H=INFO_H,
+    LIEN_X=LIEN_X, LIEN_Y=LIEN_Y, LIEN_W=LIEN_W, LIEN_H=LIEN_H,
     TL_X=TL_X, TL_Y=TL_Y, TL_W=TL_W, TL_H=TL_H,
     NUM_SLOTS=8,
 )

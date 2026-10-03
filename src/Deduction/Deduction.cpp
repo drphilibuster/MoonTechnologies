@@ -275,43 +275,60 @@ typedef RoundBlackKnob      PanelKnob;
 
 
 // ---------------------------------------------------------------------------
-// Panel display: which model is loaded, its cutoff, and where RES/DRIVE sit.
-// Numerals are DSEG7; words stay in Share Tech Mono -- see PanelTheme.hpp's
-// segValue for why the two faces can never mix in one run.
+// Panel display: the filter's settings, each one a control. The cells are the
+// FIELD_* rectangles the spec cut the glass into (src/Deduction/Panel.hpp); the
+// fields that take the mouse sit on the same rectangles, so a value is grabbed
+// exactly where it is printed. Numerals are DSEG7; words stay in Share Tech
+// Mono -- see PanelTheme.hpp's segValue for why the two faces never mix.
 
 struct DeductionDisplay : LedDisplay {
 	Deduction* module = NULL;
+
+	/** A small caption at the left of a cell and its value at the right. */
+	static void pair(NVGcontext* vg, const Rect& c, const char* tag,
+	                 const std::string& value, NVGcolor ink) {
+		const float base = c.pos.y + c.size.y * 0.70f;
+		const panel::TextStyle TAG(panel::Face::Mono, 7.f, panel::SAGE,
+			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
+		const panel::TextStyle VAL(panel::Face::Mono, 9.f, ink,
+			NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE);
+		panel::text(vg, TAG, c.pos.x + 3.f, base, tag);
+		panel::text(vg, VAL, c.pos.x + c.size.x - 3.f, base, value);
+	}
 
 	void drawLayer(const DrawArgs& args, int layer) override {
 		if (layer != 1) {
 			LedDisplay::drawLayer(args, layer);
 			return;
 		}
+		NVGcontext* vg = args.vg;
 		int model = module ? module->dispModel : (int)deduction::KORG35;
 		float hz = module ? module->dispFreqHz : 1000.f;
 		float res = module ? module->dispRes : 0.f;
 		float drive = module ? module->dispDrive : 0.5f;
+		bool inv = module && module->params[Deduction::RESPONSE_PARAM].getValue() > 0.5f;
+		bool hot = module && module->lights[Deduction::SAT_LIGHT].getBrightness() > 0.15f;
 
-		const float pad = 5.f;
-		const float rightX = box.size.x - pad;
-
-		const panel::TextStyle NAME(panel::Face::Mono, 10.f, panel::MINT,
-			NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, -0.5f);
-		const panel::TextStyle TAG(panel::Face::Mono, 8.f, panel::alpha(panel::LIME, 0.55f),
-			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
-
-		// Row 1: cutoff, and which of the six models is loaded.
+		// Top line: the cutoff, and which of the six models is loaded.
+		const Rect f = panel::inGlass(panel::FIELD_FREQ_FIELD);
 		std::string num, unit;
 		if (hz < 1000.f) { num = string::f("%.0f", hz);        unit = "Hz"; }
 		else             { num = string::f("%.2f", hz * 0.001f); unit = "kHz"; }
-		panel::segValue(args.vg, pad, 12.f, 11.f, num, unit, panel::LIME);
-		panel::text(args.vg, NAME, rightX, 12.f, kModelShort[model]);
+		panel::segValue(vg, f.pos.x + 3.f, f.pos.y + f.size.y * 0.74f, 11.f, num, unit, panel::LIME);
 
-		// Row 2: where RES and DRIVE stand once their own CV is added in.
-		panel::text(args.vg, TAG, pad, 24.f,
-			string::f("RES %.0f%%", res * 100.f));
-		panel::text(args.vg, TAG.aligned(NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE), rightX, 24.f,
-			string::f("DRV %.0f%%", drive * 100.f));
+		const Rect m = panel::inGlass(panel::FIELD_MODEL);
+		const panel::TextStyle NAME(panel::Face::Mono, 10.f, panel::MINT,
+			NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, -0.5f);
+		panel::text(vg, NAME, m.pos.x + m.size.x - 3.f, m.pos.y + m.size.y * 0.72f, kModelShort[model]);
+
+		// Bottom line: where RES and DRIVE stand once their own CV is added in,
+		// DRIVE in clay while the stage is clipping, and the cutoff CV's sense.
+		pair(vg, panel::inGlass(panel::FIELD_RES), "RES",
+		     string::f("%.0f%%", res * 100.f), panel::LIME);
+		pair(vg, panel::inGlass(panel::FIELD_DRIVE), "DRV",
+		     string::f("%.0f%%", drive * 100.f), hot ? panel::CLAY : panel::LIME);
+		pair(vg, panel::inGlass(panel::FIELD_RESPONSE), "CV",
+		     inv ? "INV" : "NRM", panel::LIME);
 	}
 };
 
@@ -330,12 +347,14 @@ struct DeductionWidget : ModuleWidget {
 		display->box.size = panel::mm(panel::GLASS_W, panel::GLASS_H);
 		addChild(display);
 
-		addParam(createParamCentered<BigKnob>(panel::mm(panel::FREQ_POS.x, panel::FREQ_POS.y), module, Deduction::FREQ_PARAM));
-		addParam(createParamCentered<BigKnob>(panel::mm(panel::MODEL_POS.x, panel::MODEL_POS.y), module, Deduction::MODEL_PARAM));
+		// The read-out's fields, over the cells it draws them in.
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_FREQ_FIELD, module, Deduction::FREQ_PARAM));
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_MODEL, module, Deduction::MODEL_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_RES, module, Deduction::RES_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_DRIVE, module, Deduction::DRIVE_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_RESPONSE, module, Deduction::RESPONSE_PARAM));
 
-		addParam(createParamCentered<PanelKnob>(panel::mm(panel::RES_POS.x, panel::RES_POS.y), module, Deduction::RES_PARAM));
-		addParam(createParamCentered<PanelKnob>(panel::mm(panel::DRIVE_POS.x, panel::DRIVE_POS.y), module, Deduction::DRIVE_PARAM));
-		addParam(createParamCentered<CKSS>(panel::mm(panel::RESPONSE_POS.x, panel::RESPONSE_POS.y), module, Deduction::RESPONSE_PARAM));
+		addParam(createParamCentered<BigKnob>(panel::mm(panel::FREQ_POS.x, panel::FREQ_POS.y), module, Deduction::FREQ_PARAM));
 
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::CV_AMT_POS.x, panel::CV_AMT_POS.y), module, Deduction::FREQ_CV_PARAM));
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::RES_CV_POS.x, panel::RES_CV_POS.y), module, Deduction::RES_CV_PARAM));
@@ -350,9 +369,6 @@ struct DeductionWidget : ModuleWidget {
 		addInput(createInputCentered<panel::PortInMain>(panel::mm(panel::LP_IN_POS.x, panel::LP_IN_POS.y), module, Deduction::LP_INPUT));
 		addInput(createInputCentered<panel::PortInMain>(panel::mm(panel::HP_IN_POS.x, panel::HP_IN_POS.y), module, Deduction::HP_INPUT));
 		addOutput(createOutputCentered<panel::PortOutMain>(panel::mm(panel::OUT_POS.x, panel::OUT_POS.y), module, Deduction::OUT_OUTPUT));
-
-		addChild(createLightCentered<SmallLight<panel::ClayLight> >(
-		             panel::mm(panel::SAT_POS.x, panel::SAT_POS.y), module, Deduction::SAT_LIGHT));
 	}
 
 	void appendContextMenu(Menu* menu) override {

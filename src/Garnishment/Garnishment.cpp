@@ -221,6 +221,50 @@ struct Garnishment : Module {
 typedef RoundBlackKnob GarnishmentKnob;
 
 
+/** The read-out: each channel's circuit by name over a bar of how open it is
+ *  right now -- bias and CV together, through the lag, which is the thing the
+ *  three circuits share. The names and the bars are fields: click a name for
+ *  the circuit, drag a bar for BIAS. */
+struct GarnishmentDisplay : LedDisplay {
+	Garnishment* module = NULL;
+
+	void drawLayer(const DrawArgs& args, int layer) override {
+		if (layer != 1) {
+			LedDisplay::drawLayer(args, layer);
+			return;
+		}
+		NVGcontext* vg = args.vg;
+		static const Rect MODE[Garnishment::N] = { panel::FIELD_MODE1, panel::FIELD_MODE2, panel::FIELD_MODE3,
+		                                          panel::FIELD_MODE4, panel::FIELD_MODE5, panel::FIELD_MODE6 };
+		static const Rect BAR[Garnishment::N] = { panel::FIELD_BAR1, panel::FIELD_BAR2, panel::FIELD_BAR3,
+		                                         panel::FIELD_BAR4, panel::FIELD_BAR5, panel::FIELD_BAR6 };
+		static const char* const NAMES[3] = {"OTA", "LPG", "JFET"};
+		const panel::TextStyle NAME(panel::Face::Mono, 8.f, panel::MINT, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+		const panel::TextStyle NUM(panel::Face::Mono, 6.f, panel::SAGE, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+		for (int c = 0; c < Garnishment::N; c++) {
+			const int mode = module ? clamp((int)std::lround(module->params[Garnishment::pid(c, Garnishment::MODE_PARAM)].getValue()), 0, 2) : 0;
+			const Rect m = panel::inGlass(MODE[c]);
+			panel::text(vg, NAME, m.pos.x + m.size.x / 2.f, m.pos.y + m.size.y * 0.75f, NAMES[mode]);
+
+			const Rect b = panel::inGlass(BAR[c]);
+			const float x = b.pos.x + b.size.x * 0.25f, w = b.size.x * 0.5f;
+			const float top = b.pos.y + 1.f, bot = b.pos.y + b.size.y - 8.f, h = bot - top;
+			nvgBeginPath(vg); nvgRect(vg, x, top, w, h);
+			nvgFillColor(vg, panel::alpha(panel::SAGE, 0.10f)); nvgFill(vg);
+			// how open: the channel's control level, its first voice
+			const float open = module ? clamp(module->bus[c].ctrl[0], 0.f, 1.f) : 0.f;
+			nvgBeginPath(vg); nvgRect(vg, x, bot - h * open, w, h * open);
+			nvgFillColor(vg, panel::alpha(panel::LIME, 0.75f)); nvgFill(vg);
+			// where BIAS alone sits, as a tick across the bar
+			const float bias = module ? module->params[Garnishment::pid(c, Garnishment::BIAS_PARAM)].getValue() / 10.f : 0.f;
+			nvgBeginPath(vg); nvgRect(vg, x - 1.5f, bot - h * bias - 0.6f, w + 3.f, 1.2f);
+			nvgFillColor(vg, panel::PAPER); nvgFill(vg);
+			panel::text(vg, NUM, b.pos.x + b.size.x / 2.f, b.pos.y + b.size.y - 1.5f, std::to_string(c + 1));
+		}
+	}
+};
+
+
 struct GarnishmentWidget : ModuleWidget {
 	GarnishmentWidget(Garnishment* module) {
 		setModule(module);
@@ -232,9 +276,15 @@ struct GarnishmentWidget : ModuleWidget {
 		static const Vec* biasPos[Garnishment::N] = {
 			&panel::BIAS1_POS, &panel::BIAS2_POS, &panel::BIAS3_POS,
 			&panel::BIAS4_POS, &panel::BIAS5_POS, &panel::BIAS6_POS };
-		static const Vec* modePos[Garnishment::N] = {
-			&panel::MODE1_POS, &panel::MODE2_POS, &panel::MODE3_POS,
-			&panel::MODE4_POS, &panel::MODE5_POS, &panel::MODE6_POS };
+		GarnishmentDisplay* display = new GarnishmentDisplay;
+		display->module = module;
+		display->box.pos = panel::mm(panel::GLASS_X, panel::GLASS_Y);
+		display->box.size = panel::mm(panel::GLASS_W, panel::GLASS_H);
+		addChild(display);
+		static const Rect MODE[Garnishment::N] = { panel::FIELD_MODE1, panel::FIELD_MODE2, panel::FIELD_MODE3,
+		                                          panel::FIELD_MODE4, panel::FIELD_MODE5, panel::FIELD_MODE6 };
+		static const Rect BAR[Garnishment::N] = { panel::FIELD_BAR1, panel::FIELD_BAR2, panel::FIELD_BAR3,
+		                                         panel::FIELD_BAR4, panel::FIELD_BAR5, panel::FIELD_BAR6 };
 		static const Vec* lagPos[Garnishment::N] = {
 			&panel::LAG1_POS, &panel::LAG2_POS, &panel::LAG3_POS,
 			&panel::LAG4_POS, &panel::LAG5_POS, &panel::LAG6_POS };
@@ -255,9 +305,12 @@ struct GarnishmentWidget : ModuleWidget {
 			addParam(createParamCentered<GarnishmentKnob>(
 				panel::mm(biasPos[c]->x, biasPos[c]->y), module,
 				Garnishment::pid(c, Garnishment::BIAS_PARAM)));
-			addParam(createParamCentered<CKSSThree>(
-				panel::mm(modePos[c]->x, modePos[c]->y), module,
+			addParam(panel::createField<panel::ScreenSelect>(MODE[c], module,
 				Garnishment::pid(c, Garnishment::MODE_PARAM)));
+			panel::ScreenKnob* bar = panel::createField<panel::ScreenKnob>(BAR[c], module,
+				Garnishment::pid(c, Garnishment::BIAS_PARAM));
+			bar->speed = 2.5f;          // a bar travels its own height
+			addParam(bar);
 			addParam(createParamCentered<GarnishmentKnob>(
 				panel::mm(lagPos[c]->x, lagPos[c]->y), module,
 				Garnishment::pid(c, Garnishment::LAG_PARAM)));

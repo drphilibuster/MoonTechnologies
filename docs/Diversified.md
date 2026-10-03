@@ -1,14 +1,14 @@
-# Diversified — FORM 1099-B
+# Diversified — multi-effects · FORM 1099-B
 
-**One hundred and six effects behind one pair of buttons.** The ninety-nine programs of the
+**One hundred and six effects on one screen.** The ninety-nine programs of the
 DSP99 board, then the seven dedicated Modular in a Week effect circuits, in one
-stereo multi-effect with eight macro knobs whose meaning changes with the
-program. 15 HP, stereo in, stereo out, plus an effects loop.
+stereo multi-effect with eight macros whose meaning changes with the
+program. 14 HP, stereo in, stereo out, plus an effects loop.
 
 Form 1099-B is the IRS's *Proceeds From Broker and Barter Exchange
 Transactions* — the form that reports what a diversified portfolio actually did.
-PORTFOLIO holds the program and the macros, ALLOCATION is what CV may take off
-each of them, HOLDINGS is the blend and the two gates.
+The read-out holds the program, the clock division and the macros, ALLOCATION is
+what CV may take off each of them, HOLDINGS is the blend and the two gates.
 
 ## What it is based on
 
@@ -40,26 +40,34 @@ and from the boards and sheets published with it.
 
 ## Panel
 
-### PORTFOLIO
+### The read-out
+
+Everything the portfolio holds is on the glass under the masthead, and every
+value there is a control. A choice from a list (PROGRAM, DIV) opens the list
+when you click it, or steps through it as you hold and drag; a value (the
+macros) is held and dragged up or down, Ctrl for fine and Shift for coarse.
+Right-click any of them for the usual parameter menu: typed entry, MIDI-Map,
+reset.
 
 | control | what it does |
 |---|---|
-| **PROGRAM** | 0–105. The primary control: 0–98 is the DSP99 sheet, 99–105 the dedicated boards. Changing it crossfades over about 30 ms, so a reverb tail survives the change |
-| **P1–P8** | The eight macros. Nothing is engraved on them: what each one *is* changes with the program, so each wears a small lit plate that the module writes the running program's own name into |
-| **ACTIVE** | Beside the caption; follows the level of the wet signal |
+| **PROGRAM** | The top line: the number in seven-segment and the program's name. 0–105: 0–98 is the DSP99 sheet, 99–105 the dedicated boards. Click it to pick a program by name, or drag through them -- the bank is a ring, so past 105 is 0. Changing it crossfades over about 30 ms, so a reverb tail survives the change |
+| **DIV** | Beside it: what the clock at CLOCK is worth -- 1/4, 1/3, 1/2, 2/3, ×1, dotted, ×2, ×3, ×4. Click to pick. Mint while a clock is locked. A delay exactly on the beat is rarely the one you want, and without this the clock's own tempo was the only one on offer |
+| **P1–P8** | The eight macros, two rows of four. Each shows what it *is* for the running program -- the program's own name for it -- over its value, CV included. A macro the program has nothing for says `--` and is dimmed |
+| **ACTIVE** | The light beside the ALLOCATION caption; follows the level of the wet signal |
 
 **The macros work differently on the two banks, on purpose.**
 
-On **0–98** a macro is a *trim about the program's own setting*. Centred, the
-knob is exactly what that number is; either end still reaches the parameter's
+On **0–98** a macro is a *trim about the program's own setting*. At 50 %, the
+macro is exactly what that number is; either end still reaches the parameter's
 limit. This is what keeps the seven numbers the sheet calls "plate" seven
-different plates rather than one plate with the knobs in seven identical
-positions — turn PROGRAM with the macros untouched and the sound really changes.
+different plates rather than one plate with the macros in seven identical
+settings — turn PROGRAM with the macros untouched and the sound really changes.
 
 On **99–105** a macro is the board's own knob, absolute, because on the
 Echomatic FEEDBACK means feedback and nothing else.
 
-### Why some knobs say `--`
+### Why some macros say `--`
 
 Every program carries eight parameters — four in each of its two blocks — and
 the program sheet names three of them. **P4 to P8 are whichever slots that
@@ -87,20 +95,15 @@ Across the bank that comes out as:
 | 7 | 2 |
 | 8 | 22 |
 
-So most programs leave several plates reading `--`, and that is fine: a knob
-that says it has nothing to do costs you nothing, while a parameter with no knob
-cannot be reached at all. Twenty-two programs use all eight, and before there
-were eight knobs those five extra parameters were simply unavailable.
-
-The plates are attached to their knobs rather than laid out as a row of their
-own. On the grid every plate in a row has to clear the tallest widget in that
-row, so PROGRAM — once a big knob at the left, now a pair of step buttons — pushed the whole top row of plates a
-centimetre below the controls they name. Attached, they sit where a label would,
-0.7 mm under their own knob, both rows alike.
+So most programs leave several macros reading `--`, and that is fine: a macro
+that says it has nothing to do costs you nothing, while a parameter with no
+macro cannot be reached at all. Twenty-two programs use all eight, and before
+there were eight macros those five extra parameters were simply unavailable.
 
 ### ALLOCATION
 
-A trimmer over a jack for each of PROG, P1 through P8, and MIX. Each trimmer is an
+A trimmer over a jack for each of PROG, P1 through P8, and MIX, in two rows of
+five: PROG and P1–P4, then P5–P8 and MIX. Each trimmer is an
 attenuverter, ±100 %; each jack takes 0–10 V (or ±5 V through a negative
 trimmer setting). PROG's CV spans the whole bank, so a ramp sweeps all 106
 programs. The trimmers are excluded from randomisation.
@@ -111,8 +114,7 @@ programs. The trimmers are excluded from randomisation.
 |---|---|
 | **MIX** | Dry to wet, 0–100 %. Default 50 % |
 | **AUX** | A gate or a CV, whichever the running program wants — see the table below. Gate threshold 1 V, Schmitt hysteresis down to 0.1 V |
-| **CLOCK** | A clock or a tap. Two edges give a period, and every delay-based program uses it in place of its TIME macro. The light beside it is lit while a clock is locked; pull the cable or stop clocking for 3 s and the knob takes over again |
-| **DIV** | What that clock is worth: 1/4, 1/3, 1/2, 2/3, ×1, dotted, ×2, ×3, ×4. A delay exactly on the beat is rarely the one you want, and without this the clock's own tempo was the only one on offer |
+| **CLOCK** | A clock or a tap. Two edges give a period, and every delay-based program uses it in place of its TIME macro, scaled by DIV on the glass. The light beside it is lit while a clock is locked; pull the cable or stop clocking for 3 s and the macro takes over again |
 
 ### The footer
 
@@ -137,16 +139,18 @@ to mono; that is the trade, and leaving RETURN empty avoids it.
 
 Bypass (Rack's own) passes IN L and IN R straight to OUT L and OUT R.
 
-## The read-outs
+## Why there are no macro knobs
 
-The big one carries the program number in seven-segment and the program's name
-beside it. `CLK` appears at the left when a clock is locked.
-
-The macro names used to live there too, in a row over the three knobs. They are
-on the knobs now — a small lit plate under each — because that is the only
-arrangement that stays true: a name typed at a fixed x on the big display goes
-wrong the moment the panel moves, and a knob that says `--` needs to say it
-where the knob is rather than in a list somewhere above.
+The eight macros used to be eight knobs under the glass, each wearing a little
+lit plate the module wrote the macro's name into, with PROGRAM a pair of step
+buttons and DIV a knob of its own. The glass already showed the program, so
+those were the same numbers twice, and the knobs' two rows were what kept
+ALLOCATION in one long row of nine. With the macros, PROGRAM and DIV as fields
+on the glass -- the same parameters, so patches, CV, MIDI-Map and undo are
+unchanged -- ALLOCATION folds into two rows and the panel is as narrow as its
+audio row allows. A field drags exactly as far as a knob does for the same
+movement of the mouse; MIX keeps its knob because it is the one control that is
+not on the screen.
 
 ## The programs
 

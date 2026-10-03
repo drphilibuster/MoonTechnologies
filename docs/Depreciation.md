@@ -1,6 +1,6 @@
-# Depreciation
+# Depreciation — PCM 70 digital reverb
 
-**FORM 4562 — Depreciation and Amortization, the form on which value is written down on a schedule.** 34 HP.
+**FORM 4562 — Depreciation and Amortization, the form on which value is written down on a schedule.** 18 HP.
 
 A Lexicon PCM 70 digital effects processor (1986) — reverb, chorus, delay and
 resonant chords — running its own operating system. The module emulates the
@@ -12,9 +12,15 @@ parameters with the routine its soft knob calls, and listens to what it says. It
 is based on a 1986 Lexicon PCM 70; it is not made or endorsed by Lexicon.
 
 What the module adds is what the hardware hid behind a key matrix and one soft
-knob: the whole **parameter matrix** is on the panel, every parameter with the
-firmware's own name and printed value under its knob, and the dedicated jacks
-into the machine's own MIDI patch system.
+knob: the whole **parameter matrix** is on the read-out, every cell the
+firmware's own name over its printed value and every cell a control, and the
+dedicated jacks into the machine's own MIDI patch system.
+
+**Everything is set on the read-out.** Hold a value and drag up or down (the
+pointer turns into up/down arrows; Ctrl drags fine, Shift coarse); click a
+choice -- PRESET, CLK / -- to pick from its list; click a switch -- BANK, the
+pads -- to flip it; click LOAD, STORE or BYPASS to press it. Right-click any cell
+for the param's own menu: typed entry, reset, MIDI-Map.
 
 ---
 
@@ -84,25 +90,25 @@ Under it, one line:
   `FACTORY 13  MIDI MOD PAN   PRESS LOAD`, `USER 07  SINGLE DELAY   RUNNING`,
   `USER 01  EMPTY` (the number is the row and column run together, so `13` is the
   firmware's `1.3`);
-* for four seconds after you touch a parameter knob, that parameter with the
+* for four seconds after you touch a parameter cell, that parameter with the
   firmware's printed value (`1.1  RT MID  1.2 S`);
 * for three seconds after a refused LOAD or STORE, why it was refused.
 
-On the right the **HEADROOM** bar (0, −6, −12, −18, −24 dB of the converter's
+At the right of that line the **HEADROOM** bar (0, −6, −12, −18, −24 dB of the converter's
 full scale, from the same peak detector the firmware's gates read). If the
 firmware ever fails to come back from one of the module's calls the well says
 `FIRMWARE STALLED` and the call is abandoned.
 
 ### Presets
 
-One detented selector and one switch.
+The strip under the display: PRESET, BANK, LOAD, STORE and BYPASS.
 
-**PRESET** picks a slot, 0 upward. The **FACTORY | USER** switch says what a slot
-is:
+**PRESET** picks a slot, 0 upward -- click it for the list of slots by name, or
+drag through them. **BANK** (FACTORY | USER) says what a slot is:
 
 * **FACTORY** — the machine's own programs, the effects: Chorus, Concert Hall,
   Gated Room … Ten to a row, slot = 10 × row + column, so slot 13 is the
-  firmware's `1.3`. PRESET is a pair of step buttons (up for the next slot, down for the previous, hold to repeat). It stops at the last program the firmware has
+  firmware's `1.3`. PRESET stops at the last program the firmware has
   (both versions have rows 0 to 6, with fewer than ten in most), and the
   names come from the machine itself: a few seconds after power-up a scratch
   machine reads every slot's name, off the audio thread, so the well can say what
@@ -126,23 +132,23 @@ bypassed and silent-looking; the module now always powers up live.
 
 ### Parameters
 
-Five rows by nine knobs: **the machine's own parameter cells**, row and column as
-the hardware's PARAM mode counts them, whatever the running program is. Each knob
-has a plate under it showing the firmware's name for that cell (`MIX % WET`,
-`HC`, `RT MID S`, `DLY MST` …); for two seconds after you touch a knob the plate
-shows the printed value instead (`5.75 KHZ`, `1.2 S`, `17.7 M`). A knob the
-program does not have is dimmed with `--`.
+Five rows by nine cells on the read-out: **the machine's own parameter
+matrix**, row and column as the hardware's PARAM mode counts them, whatever the
+running program is -- which is the shape the real unit's front panel has. Each
+cell shows the firmware's name for it (`MIX % WET`, `HC`, `RT MID S`, `DLY MST`
+…) over its printed value (`5.75 KHZ`, `1.2 S`, `17.7 M`); the cell you last
+touched lights. A cell the program does not have shows `--`.
 
-* A knob's range is the parameter's own range, which the firmware reports; a few
-  limits move with the program (pre-delay, the delay taps), and the knob follows.
-* Turning a knob asks the firmware to move the parameter; the firmware clamps and
-  applies it exactly as it would for its soft knob, and **the knob follows the
+* A cell's range is the parameter's own range, which the firmware reports; a few
+  limits move with the program (pre-delay, the delay taps), and the cell follows.
+* Dragging a cell asks the firmware to move the parameter; the firmware clamps and
+  applies it exactly as it would for its soft knob, and **the cell follows the
   firmware's word back** — when a program loads, when a *master* parameter moves
   its children, when a limit clamps. It never moves under your hand.
 * **Cell 0.2 is SOFT KNOB**, the parameter MIDI patches use as a source; cell 0.0
   is MIX and 0.1 FX ADJ on every program.
 * Some programs use fewer cells (Concert Hall 29); the most any program uses is 36.
-* The tooltip of every knob is the firmware's name and value.
+* The tooltip of every cell is the firmware's name and value.
 
 ### No CV lanes
 
@@ -165,7 +171,7 @@ own Dynamic MIDI patches, driven from MOD, AT, NOTE and the rest.
 | **GATE** | rising edge sends a note on (velocity = voltage, 10 V = 127) with the NOTE jack's note, falling edge a note off |
 | **SUST** | gate above 1 V → CC 64 (sustain pedal) |
 | **SOFT** | 0 to 10 V adds to cell 0.2, SOFT KNOB, over its whole range |
-| **CLOCK** | clock edges, at the rate **CLK /** (the small knob below the left-hand controls) selects: 1, 2, 4, 8 or 24 per quarter note, 24 being the hardware's own; *V3 firmware only* |
+| **CLOCK** | clock edges, at the rate **CLK /** (on the setup strip) selects: 1, 2, 4, 8 or 24 per quarter note, 24 being the hardware's own; *V3 firmware only* |
 | **RUN** | rising edge restarts the firmware's tempo measurement (MIDI start); *V3 only* |
 | **PGM** | 0.1 V per register (0 to 4.9 V = registers 0 to 49); turns **program change** on while it is patched |
 | **BYP** | rising edge toggles bypass |
@@ -177,9 +183,10 @@ channel (see the menu to change both together).
 
 ### Levels
 
-**INPUT** is the input knob (full up = the converter's full scale). **IN +4 −20**
-takes 15 dB off the input as the hardware's switch does; **OUT +4 −20** takes
-24.7 dB off the output. **VOLT TRIM** sets the voltage that means converter full
+The setup strip under the matrix. **INPUT** is the input level (full up = the
+converter's full scale). **IN +4 / −20** takes 15 dB off the input as the
+hardware's switch does; **OUT +4 / −20** takes
+24.7 dB off the output. **FULL SCALE** sets the voltage that means converter full
 scale (default 5 V peak; the hardware's is 10 V at its jack), so a full-scale
 reverb is a full-scale Rack signal. The dry path and the wet path keep the
 hardware's relative level (dry and wet are equal at equal mix codes).

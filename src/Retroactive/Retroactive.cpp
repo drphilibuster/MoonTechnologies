@@ -20,6 +20,9 @@ static const float kTimeDefLog2 = -2.f;         // log2(0.25 s)
 static const char* kModeShort[] = {
 	"IDENT", "REV", "BLK REV", "BLK INT", "SHUF", "SWAP", "STUT", "SCAT"
 };
+static const char* kDivShort[kNumDivs] = {
+	"x1/16", "x1/8", "x1/4", "x1/3", "x1/2", "x1", "x2", "x3", "x4", "x8", "x16"
+};
 
 /** SUBDIV provably cannot change these two: REVERSE composes block-reverse with
     internal-reverse into exactly f(i) = N-1-i for any S, and IDENTITY is f(i) = i. */
@@ -297,14 +300,18 @@ struct Retroactive : Module {
 // Nothing about the look is written here, which is what keeps this module,
 // Uncertainty Policy and PatchAudit on one design language.
 
-// TIME and CLK DIV are one matched pair. Custom knob art replaces this alias.
+// TIME's knob. Custom knob art replaces this alias.
 typedef RoundLargeBlackKnob TimingKnob;
 typedef RoundBlackKnob      PanelKnob;
 
 
 // ---------------------------------------------------------------------------
-// Panel display: window length and latency. Rack 2 has no latency-reporting API,
-// so this and the manual are the only disclosure that the output is N+L early.
+// Panel display: window length and latency, and every setting that cuts the
+// window up, each one a control. The cells are the FIELD_* rectangles the spec
+// cut the glass into (src/Retroactive/Panel.hpp); the fields that take the mouse
+// sit on the same rectangles, so a value is grabbed exactly where it is printed.
+// Rack 2 has no latency-reporting API, so this and the manual are the only
+// disclosure that the output is N+L early.
 //
 // Numerals are DSEG7 (seven-segment); words stay monospace. DSEG7's cmap is
 // missing most punctuation, and Rack chains NotoSansJP as a fallback onto every
@@ -318,8 +325,22 @@ struct RetroactiveDisplay : LedDisplay {
 	/** Splits into a segment-safe numeric part and a unit that stays in the text
 	    face -- panel::segValue draws the pair. */
 	static void splitTime(float sec, std::string& num, std::string& unit) {
-		if (sec < 1.f) { num = string::f("%.0f", sec * 1000.f); unit = "ms"; }
-		else           { num = string::f("%.3f", sec);          unit = "s"; }
+		if (sec < 1.f)       { num = string::f("%.0f", sec * 1000.f); unit = "ms"; }
+		else if (sec < 10.f) { num = string::f("%.3f", sec);          unit = "s"; }
+		else                 { num = string::f("%.1f", sec);          unit = "s"; }
+	}
+
+	static float baseOf(const Rect& c) { return c.pos.y + c.size.y * 0.76f; }
+
+	/** A small caption at the left of a cell and its value at the right. */
+	static void pair(NVGcontext* vg, const Rect& c, const char* tag,
+	                 const std::string& value, NVGcolor ink) {
+		const panel::TextStyle TAG(panel::Face::Mono, 7.5f, panel::SAGE,
+			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
+		const panel::TextStyle VAL(panel::Face::Mono, 9.f, ink,
+			NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE);
+		panel::text(vg, TAG, c.pos.x + 3.f, baseOf(c), tag);
+		panel::text(vg, VAL, c.pos.x + c.size.x - 3.f, baseOf(c), value);
 	}
 
 	void drawLayer(const DrawArgs& args, int layer) override {
@@ -327,42 +348,65 @@ struct RetroactiveDisplay : LedDisplay {
 			LedDisplay::drawLayer(args, layer);
 			return;
 		}
+		NVGcontext* vg = args.vg;
 		float win = module ? module->dispWindowSec : 0.25f;
 		float lat = module ? module->dispLatencySec : 0.25f;
 		int mode = module ? module->dispMode : WindowPermuter::MODE_REVERSE;
 		int sub = module ? module->dispSubdiv : 1;
 		bool clocked = module ? module->dispClocked : false;
 		bool overdraft = module ? module->dispOverdraft : false;
-
-		const float pad = 5.f;
-		const float rightX = box.size.x - pad;
+		auto param = [&](int id, float dflt) {
+			return module ? module->params[id].getValue() : dflt;
+		};
+		const int div = clamp((int) std::round(param(Retroactive::DIV_PARAM, (float) kDivUnity)), 0, kNumDivs - 1);
+		const bool overlap = param(Retroactive::CHAR_PARAM, 0.f) > 0.5f;
+		const bool latched = param(Retroactive::FREEZE_PARAM, 0.f) > 0.5f;
+		const bool frozen = module && module->lights[Retroactive::FREEZE_LIGHT].getBrightness() > 0.5f;
+		const float fade = param(Retroactive::FADE_PARAM, 3.f);
+		const float mix = param(Retroactive::MIX_PARAM, 1.f);
 
 		std::string num, unit;
-
 		const NVGcolor dim = panel::alpha(panel::LIME, 0.55f);
 		// Every run goes through panel::text, so no style a row sets can leak into
 		// the row after it -- the segment face in particular used to inherit
 		// whatever letter spacing the mode word left behind.
 		const panel::TextStyle MODE(panel::Face::Mono, 10.f, panel::MINT,
 			NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, -0.5f);
-		const panel::TextStyle TAG(panel::Face::Mono, 8.f, dim,
+		const panel::TextStyle TAG(panel::Face::Mono, 7.5f, panel::SAGE,
 			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
-		const panel::TextStyle SUB(panel::Face::Mono, 8.f, dim,
-			NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE);
 
-		// Row 1: window length, and the mode it is running.
+		// Line 1: window length (TIME), and the mode it is running.
+		const Rect t = panel::inGlass(panel::FIELD_TIME_FIELD);
 		splitTime(win, num, unit);
-		panel::segValue(args.vg, pad, 12.f, 11.f, num, unit, panel::LIME);
-		panel::text(args.vg, MODE, rightX, 12.f, kModeShort[mode]);
+		panel::segValue(vg, t.pos.x + 3.f, baseOf(t), 11.f, num, unit, panel::LIME);
+		const Rect m = panel::inGlass(panel::FIELD_MODE);
+		panel::text(vg, MODE, m.pos.x + m.size.x - 3.f, baseOf(m), kModeShort[mode]);
 
-		// Row 2: the inherent latency, and the sub-block count -- shown as "--"
-		// where SUBDIV provably has no effect, so that is visible, not mysterious.
-		float x = panel::text(args.vg, TAG, pad, 24.f, clocked ? "CLK" : "LAT");
+		// Line 2: the inherent latency -- read only, in the cells left of
+		// SUBDIV -- then the sub-block count, shown as "--" where SUBDIV provably
+		// has no effect, so that is visible, not mysterious, and lime while the
+		// fade is overdrawn; then the clock ratio, dim while nothing is clocking.
+		const Rect sd = panel::inGlass(panel::FIELD_SUBDIV);
+		float x = panel::text(vg, TAG, t.pos.x + 3.f, baseOf(sd), clocked ? "CLK" : "LAT");
 		splitTime(clocked ? win : lat, num, unit);
-		panel::segValue(args.vg, x + 2.5f, 24.f, 8.f, num, unit, dim);
+		panel::segValue(vg, x + 2.5f, baseOf(sd), 8.f, num, unit, dim);
+		pair(vg, sd, "SUB", subdivMatters(mode) ? string::f("%d", sub) : std::string("--"),
+		     overdraft ? panel::LIME : dim);
+		pair(vg, panel::inGlass(panel::FIELD_DIV), "DIV", kDivShort[div],
+		     clocked ? panel::LIME : dim);
 
-		panel::text(args.vg, SUB.inked(overdraft ? panel::LIME : dim), rightX, 24.f,
-			subdivMatters(mode) ? string::f("SUB %d", sub) : std::string("SUB --"));
+		// Line 3: the character of the seams, and FREEZE -- latched here, or
+		// held by the gate at the FREEZE jack.
+		pair(vg, panel::inGlass(panel::FIELD_CHAR), "CHAR", overlap ? "OVERLAP" : "XFADE",
+		     panel::MINT);
+		pair(vg, panel::inGlass(panel::FIELD_FREEZE), "FREEZE",
+		     latched ? "ON" : (frozen ? "GATE" : "OFF"), frozen ? panel::PAPER : dim);
+
+		// Line 4: FADE, lime with SUB while it is overdrawn, and MIX.
+		pair(vg, panel::inGlass(panel::FIELD_FADE_FIELD), "FADE", string::f("%.1fms", fade),
+		     overdraft ? panel::LIME : dim);
+		pair(vg, panel::inGlass(panel::FIELD_MIX_FIELD), "MIX", string::f("%.0f%%", mix * 100.f),
+		     panel::LIME);
 	}
 };
 
@@ -381,17 +425,19 @@ struct RetroactiveWidget : ModuleWidget {
 		display->box.size = panel::mm(panel::GLASS_W, panel::GLASS_H);
 		addChild(display);
 
+		// The read-out's fields, over the cells it draws them in.
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_TIME_FIELD, module, Retroactive::TIME_PARAM));
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_MODE, module, Retroactive::MODE_PARAM));
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_SUBDIV, module, Retroactive::SUBDIV_PARAM));
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_DIV, module, Retroactive::DIV_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_CHAR, module, Retroactive::CHAR_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_FREEZE, module, Retroactive::FREEZE_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_FADE_FIELD, module, Retroactive::FADE_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_MIX_FIELD, module, Retroactive::MIX_PARAM));
+
 		addParam(createParamCentered<TimingKnob>(panel::mm(panel::TIME_POS.x, panel::TIME_POS.y), module, Retroactive::TIME_PARAM));
-		addParam(createParamCentered<TimingKnob>(panel::mm(panel::DIV_POS.x, panel::DIV_POS.y), module, Retroactive::DIV_PARAM));
-
-		addParam(createParamCentered<PanelKnob>(panel::mm(panel::MODE_POS.x, panel::MODE_POS.y), module, Retroactive::MODE_PARAM));
-		addParam(createParamCentered<PanelKnob>(panel::mm(panel::SUBDIV_POS.x, panel::SUBDIV_POS.y), module, Retroactive::SUBDIV_PARAM));
 		addParam(createParamCentered<PanelKnob>(panel::mm(panel::FADE_POS.x, panel::FADE_POS.y), module, Retroactive::FADE_PARAM));
-
 		addParam(createParamCentered<PanelKnob>(panel::mm(panel::MIX_POS.x, panel::MIX_POS.y), module, Retroactive::MIX_PARAM));
-		addParam(createParamCentered<CKSS>(panel::mm(panel::CHAR_POS.x, panel::CHAR_POS.y), module, Retroactive::CHAR_PARAM));
-		addParam(createLightParamCentered<VCVLightBezelLatch<panel::PaperLight> >(
-		             panel::mm(panel::FREEZE_POS.x, panel::FREEZE_POS.y), module, Retroactive::FREEZE_PARAM, Retroactive::FREEZE_LIGHT));
 
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::TIME_CV_POS.x, panel::TIME_CV_POS.y), module, Retroactive::TIME_CV_PARAM));
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::MODE_CV_POS.x, panel::MODE_CV_POS.y), module, Retroactive::MODE_CV_PARAM));

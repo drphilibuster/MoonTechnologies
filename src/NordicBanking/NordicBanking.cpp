@@ -385,14 +385,18 @@ namespace {
     segment as bright as the multiplex drives it, and the lamps the unit answers its selector
     buttons with, grouped by the button that steps them. LED indices are nb::LEDS order.
     Segment bits as the firmware writes them: 7 top, 1 middle, 4 bottom, 2 upper left, 6 upper
-    right, 3 lower left, 5 lower right, 0 point. */
+    right, 3 lower left, 5 lower right, 0 point.
+
+    Every group but WHEEL is drawn in the FIELD_* cell (src/NordicBanking/Panel.hpp) of the button
+    that steps it, and that button's field sits on the same rectangle: click a group, press its
+    button. The digits are PROGRAM UP over DOWN, the octave group OCT - beside OCT +. */
 struct DisplayWidget : widget::Widget {
 	NordicBanking* module = nullptr;
 
 	struct Lamp { const char* text; int led; };
 	struct Group { const char* label; int n; Lamp lamps[5]; };
 
-	// Four columns of three, in the order the panel's buttons stand. The unit's selectors light
+	// Four columns of three, in the order the panel's buttons stood. The unit's selectors light
 	// one LED, or a pair of neighbours for the setting between them (LFO 1's square wave is the top
 	// two lit); the two lamps no multiplex position answers for (SIN, 2/3) stay dark, as on the unit.
 	static const Group* groups() {
@@ -407,10 +411,29 @@ struct DisplayWidget : widget::Widget {
 			{ "FILTER", 3, { { "HP 24", 11 }, { "LP 24", 12 }, { "LP 12", 13 } } },
 			{ "KBD TRACK", 2, { { "2/3", 15 }, { "1/3", 16 } } },
 			{ "PLAY", 3, { { "POLY", 33 }, { "LEGATO", 34 }, { "MONO", 35 } } },
-			{ "WHEEL", 3, { { "MORPH", 30 }, { "OSC 2", 31 }, { "FILTER", 32 } } },
+			{ "WHEEL · SHIFT", 3, { { "MORPH", 30 }, { "OSC 2", 31 }, { "FILTER", 32 } } },
 			{ "OCT", 5, { { "-2", 38 }, { "-1", 39 }, { "0", 40 }, { "+1", 41 }, { "+2", 42 } } },
 		};
 		return g;
+	}
+
+	/** Where each group is drawn, in groups() order, in the display's pixels. WHEEL has no field
+	    (SHIFT steps it), so its cell is PLAY's column on LFO 1 DEST's line; OCT spans its two. */
+	static Rect cell(int i) {
+		static const Rect* const F[12] = { &panel::FIELD_B_OSC1, &panel::FIELD_B_OSC2, &panel::FIELD_B_RINGSYNC,
+			&panel::FIELD_B_LFO1WAVE, &panel::FIELD_B_LFO1DEST, &panel::FIELD_B_LFO2DEST,
+			&panel::FIELD_B_MODENV, &panel::FIELD_B_FTYPE, &panel::FIELD_B_FKBD,
+			&panel::FIELD_B_PLAY, nullptr, &panel::FIELD_B_OCTDN };
+		if (i == 10) {
+			const Rect x = panel::inGlass(panel::FIELD_B_PLAY), y = panel::inGlass(panel::FIELD_B_LFO1DEST);
+			return Rect(Vec(x.pos.x, y.pos.y), Vec(x.size.x, y.size.y));
+		}
+		Rect r = panel::inGlass(*F[i]);
+		if (i == 11) {
+			const Rect up = panel::inGlass(panel::FIELD_B_OCTUP);
+			r.size.x = up.pos.x + up.size.x - r.pos.x;
+		}
+		return r;
 	}
 
 	void drawDigits(NVGcontext* vg, const Snapshot& s, float x, float y, float width, float height) {
@@ -435,6 +458,18 @@ struct DisplayWidget : widget::Widget {
 		}
 	}
 
+	/** A small arrow at the digits' right edge: which way the half under it steps the program. */
+	static void arrow(NVGcontext* vg, const Rect& c, int dir) {
+		const float cx = c.pos.x + c.size.x - 6.f, cy = c.pos.y + c.size.y / 2.f, a = 2.6f;
+		nvgBeginPath(vg);
+		nvgMoveTo(vg, cx, cy - dir * a);
+		nvgLineTo(vg, cx + a, cy + dir * a * 0.7f);
+		nvgLineTo(vg, cx - a, cy + dir * a * 0.7f);
+		nvgClosePath(vg);
+		nvgFillColor(vg, panel::alpha(panel::SAGE, 0.45f));
+		nvgFill(vg);
+	}
+
 	void drawLayer(const DrawArgs& args, int layer) override {
 		if (layer != 1) return;
 		NVGcontext* vg = args.vg;
@@ -448,41 +483,56 @@ struct DisplayWidget : widget::Widget {
 			booting = module->booting;
 		}
 		const float s = box.size.x / panel::GLASS_W;                 // pixels per mm
-		// Millimetres across a glass GLASS_W wide: the digits at the left, then four columns of lamps.
-		const float digitsW = 22.f, digitsH = 9.f, x0 = 4.f, colGap = 3.f, pitch = 3.2f, y0 = 3.9f;
-		drawDigits(vg, snap, x0 * s, (panel::GLASS_H - digitsH) / 2 * s, digitsW * s, digitsH * s);
 
-		const float lx = x0 + digitsW + 4.f;
-		const float colW = (panel::GLASS_W - lx - 3.f - 3 * colGap) / 4.f;
+		// The digits fill PROGRAM UP over DOWN: the half of the number you press is the way it goes.
+		const Rect up = panel::inGlass(panel::FIELD_B_UP), dn = panel::inGlass(panel::FIELD_B_DOWN);
+		const Rect dig(up.pos, Vec(up.size.x, dn.pos.y + dn.size.y - up.pos.y));
+		const float digitsH = dig.size.y * 0.72f, digitsW = std::min(dig.size.x - 6.f * s, digitsH * 1.9f);
+		drawDigits(vg, snap, dig.pos.x + (dig.size.x - digitsW) / 2 - 2.f * s, dig.pos.y + (dig.size.y - digitsH) / 2,
+			digitsW, digitsH);
+		arrow(vg, up, +1);
+		arrow(vg, dn, -1);
+
+		// The lamp area: every cell from OSC 1's to OCT +'s.
+		const Rect first = panel::inGlass(panel::FIELD_B_OSC1), last = panel::inGlass(panel::FIELD_B_OCTUP);
 		if (module && (!status.empty() || module->noPrograms)) {
-			const panel::TextStyle word(panel::Face::Mono, 7.5f, panel::CLAY, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
-			const float cx = (lx + (panel::GLASS_W - 3.f - lx) / 2) * s;
+			const panel::TextStyle word(panel::Face::Mono, 9.f, panel::CLAY, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+			const float cx = (first.pos.x + last.pos.x + last.size.x) / 2;
+			const float top = first.pos.y, h = last.pos.y + last.size.y - top;
 			// A status (booting, loading, no OS) first; a unit with an erased flash has no programs to play.
 			const bool ours = status.empty();
-			panel::text(vg, word, cx, panel::GLASS_H * 0.36f * s, ours ? "NO PROGRAMS LOADED" : status);
-			panel::text(vg, word.inked(panel::SAGE), cx, panel::GLASS_H * 0.68f * s,
+			panel::text(vg, word, cx, top + h * 0.36f, ours ? "NO PROGRAMS LOADED" : status);
+			panel::text(vg, word.inked(panel::SAGE), cx, top + h * 0.68f,
 				ours ? "RIGHT-CLICK: LOAD PROGRAM BANKS" : (booting || status.rfind("LOADING", 0) == 0) ? "PLEASE WAIT" : "RIGHT-CLICK: LOAD OS");
 			return;
 		}
-		const panel::TextStyle st(panel::Face::Mono, 7.f, panel::SAGE, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
+
+		// Each group on two lines of its cell: what the button is, then its lamps.
+		const panel::TextStyle tag(panel::Face::Mono, 6.5f, panel::PAPER, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
+		const panel::TextStyle st(panel::Face::Mono, 8.f, panel::SAGE, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
+		const float pad = 1.4f * s, gap = 2.2f * s;
 		const Group* g = groups();
-		for (int c = 0; c < 4; c++) {
-			// The lamps follow the widest label of their column, so the words line up under one another.
-			float labelW = 0.f;
-			for (int r = 0; r < 3; r++) labelW = std::max(labelW, panel::textWidth(vg, st, g[c * 3 + r].label) / s);
-			labelW += 1.8f;
-			const float gx = lx + c * (colW + colGap);
-			for (int r = 0; r < 3; r++) {
-				const Group& grp = g[c * 3 + r];
-				const float gy = y0 + r * pitch;   // columns run down: three groups, then the next column
-				panel::text(vg, st.inked(panel::PAPER), gx * s, gy * s, grp.label);
-				float x = gx + labelW;
-				for (int k = 0; k < grp.n; k++) {
-					const float b = module ? module->lights[NordicBanking::LED_LIGHT + grp.lamps[k].led].getBrightness() : 0.f;
-					const NVGcolor ink = b > 0.05f ? panel::alpha(panel::LIME, 0.35f + 0.65f * b) : panel::alpha(panel::SAGE, 0.55f);
-					x = panel::text(vg, st.inked(ink), x * s, gy * s, grp.lamps[k].text) / s + 1.8f;
-				}
+		for (int i = 0; i < 12; i++) {
+			const Group& grp = g[i];
+			const Rect c = cell(i);
+			const float ty = c.pos.y + c.size.y * 0.42f, ly = c.pos.y + c.size.y * 0.88f;
+			auto ink = [&](int k) {
+				const float b = module ? module->lights[NordicBanking::LED_LIGHT + grp.lamps[k].led].getBrightness() : 0.f;
+				return b > 0.05f ? panel::alpha(panel::LIME, 0.35f + 0.65f * b) : panel::alpha(panel::SAGE, 0.55f);
+			};
+			if (i == 11) {
+				// OCT - is the left half, OCT + the right: the lamps spread evenly across both.
+				panel::text(vg, tag, c.pos.x + pad, ty, "OCT -");
+				panel::text(vg, tag.aligned(NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE), c.pos.x + c.size.x - pad, ty, "OCT +");
+				const panel::TextStyle mid = st.aligned(NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+				for (int k = 0; k < grp.n; k++)
+					panel::text(vg, mid.inked(ink(k)), c.pos.x + c.size.x * (k + 0.5f) / grp.n, ly, grp.lamps[k].text);
+				continue;
 			}
+			panel::text(vg, tag.inked(i == 10 ? panel::SAGE : panel::PAPER), c.pos.x + pad, ty, grp.label);
+			float x = c.pos.x + pad;
+			for (int k = 0; k < grp.n; k++)
+				x = panel::text(vg, st.inked(ink(k)), x, ly, grp.lamps[k].text) + gap;
 		}
 	}
 };
@@ -510,19 +560,28 @@ struct NordicBankingWidget : ModuleWidget {
 		for (int i = 0; i < 26; i++)
 			addParam(createParamCentered<RoundBlackKnob>(panel::mm(knobs[i].x, knobs[i].y), module, NordicBanking::KNOB_PARAM + i));
 
-		// In nb::BUTTONS order.
-		const Vec buttons[28] = { panel::B_OSC1_POS, panel::B_OSC2_POS, panel::B_KBD2_POS, panel::B_RINGSYNC_POS,
-			panel::B_FTYPE_POS, panel::B_VELO_POS, panel::B_FKBD_POS, panel::B_DIST_POS, panel::B_LFO1WAVE_POS,
-			panel::B_LFO1DEST_POS, panel::B_ARP_POS, panel::B_LFO2DEST_POS, panel::B_MODENV_POS, panel::B_SHIFT_POS,
-			panel::B_PLAY_POS, panel::B_UNISON_POS, panel::B_AUTO_POS, panel::B_OCTDN_POS, panel::B_OCTUP_POS,
-			panel::B_UP_POS, panel::B_DOWN_POS, panel::B_STORE_POS, panel::B_SLOTA_POS, panel::B_SLOTB_POS,
-			panel::B_SLOTC_POS, panel::B_SLOTD_POS, panel::B_VELMORPH_POS, panel::B_PERF_POS };
+		// In nb::BUTTONS order. A null entry is a button on the glass rather than the face: a
+		// field over its lamp group (or the digits), pressing the same param once per click.
+		const Vec* const buttons[28] = { nullptr, nullptr, &panel::B_KBD2_POS, nullptr,
+			nullptr, &panel::B_VELO_POS, nullptr, &panel::B_DIST_POS, nullptr,
+			nullptr, &panel::B_ARP_POS, nullptr, nullptr, &panel::B_SHIFT_POS,
+			nullptr, &panel::B_UNISON_POS, &panel::B_AUTO_POS, nullptr, nullptr,
+			nullptr, nullptr, &panel::B_STORE_POS, &panel::B_SLOTA_POS, &panel::B_SLOTB_POS,
+			&panel::B_SLOTC_POS, &panel::B_SLOTD_POS, &panel::B_VELMORPH_POS, &panel::B_PERF_POS };
+		const Rect* const fields[28] = { &panel::FIELD_B_OSC1, &panel::FIELD_B_OSC2, nullptr, &panel::FIELD_B_RINGSYNC,
+			&panel::FIELD_B_FTYPE, nullptr, &panel::FIELD_B_FKBD, nullptr, &panel::FIELD_B_LFO1WAVE,
+			&panel::FIELD_B_LFO1DEST, nullptr, &panel::FIELD_B_LFO2DEST, &panel::FIELD_B_MODENV, nullptr,
+			&panel::FIELD_B_PLAY, nullptr, nullptr, &panel::FIELD_B_OCTDN, &panel::FIELD_B_OCTUP,
+			&panel::FIELD_B_UP, &panel::FIELD_B_DOWN, nullptr, nullptr, nullptr,
+			nullptr, nullptr, nullptr, nullptr };
 		for (int i = 0; i < 28; i++) {
-			if (i == NordicBanking::SHIFT_BUTTON)   // latching, and lit while it is down: a mouse cannot hold SHIFT and click
-				addParam(createLightParamCentered<VCVLightBezelLatch<panel::LimeLight> >(panel::mm(buttons[i].x, buttons[i].y), module,
+			if (fields[i])
+				addParam(panel::createField<panel::ScreenButton>(*fields[i], module, NordicBanking::BUTTON_PARAM + i));
+			else if (i == NordicBanking::SHIFT_BUTTON)   // latching, and lit while it is down: a mouse cannot hold SHIFT and click
+				addParam(createLightParamCentered<VCVLightBezelLatch<panel::LimeLight> >(panel::mm(buttons[i]->x, buttons[i]->y), module,
 					NordicBanking::BUTTON_PARAM + i, NordicBanking::SHIFT_LIGHT));
 			else
-				addParam(createParamCentered<VCVButton>(panel::mm(buttons[i].x, buttons[i].y), module, NordicBanking::BUTTON_PARAM + i));
+				addParam(createParamCentered<VCVButton>(panel::mm(buttons[i]->x, buttons[i]->y), module, NordicBanking::BUTTON_PARAM + i));
 		}
 
 		// The lamps that stay lamps: one beside each button that has a light of its own. The rest of

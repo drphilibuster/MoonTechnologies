@@ -13,10 +13,11 @@ The read-out is most of the panel because most of what this module has to say is
 text: which source, what size, what rate, and above all the path to paste into
 TouchDesigner. A jack cannot say any of that.
 
-Three controls under the well and nothing else. SOURCE picks what is being sent;
-SIZE and RATE describe the stream, and both are stepped rather than continuous
-because ffmpeg is told them once on its command line and changing either has to
-restart it. SEND is the transport.
+There are no controls on the face any more: the read-out is the whole panel and
+every setting is a line on it. Click SRC, SIZE or RATE to pick from the list (or
+drag through them); click the state line to start or stop sending. SIZE and RATE
+are stepped rather than continuous because ffmpeg is told them once on its
+command line and changing either has to restart it.
 """
 
 import os
@@ -28,28 +29,27 @@ from panelkit import *   # noqa: E402
 P = Panel(
     slug="Transmittal",
     title="TRANSMITTAL",
+    what="VIDEO OUTPUT",
     form="FORM W-3",
     density="compact",
-    # The read-out takes every millimetre the three control rows and the footer
-    # band can spare, because everything this module has to say is text and the
-    # playlist path -- the longest string it ever shows, and the one that has to
-    # be read character by character to be pasted into TouchDesigner -- wants
-    # the room more than a fourth knob would.
-    glass=Glass(h=52.0),
+    # Pinned: a video module's screen only ever grows. The rows would let the
+    # narrow masthead take this to 9 HP, and the read-out would lose 5 mm of
+    # the width the playlist path is read across.
+    hp=10,
+    # The read-out takes the whole face down to the footer band, because
+    # everything this module has to say is text -- above all the playlist path,
+    # which has to be read character by character to be pasted into
+    # TouchDesigner, and now has room to wrap instead of being ellipsized.
+    # Twelve lines; the first three hold the fields, the rest the route and path.
+    glass=Glass(h=99.0, grid=(12, 2), fields=[
+        Field("source", cell=(0, 0), span=(1, 2), kind="select"),
+        Field("size",   cell=(1, 0), kind="select"),
+        Field("rate",   cell=(1, 1), kind="select"),
+        Field("send",   cell=(2, 0), span=(1, 2), kind="button"),
+    ]),
 )
 
-P.sections = [
-    # SOURCE is stepped over however many sources have registered, so its
-    # detents are decided at run time and the panel only reserves the seat. The
-    # light beside the caption is the transport state: dark idle, lime running,
-    # clay when ffmpeg has gone away.
-    Section("FILING", caption_light="state", rows=[
-        Row([Knob("source", "SOURCE", steps=8),
-             Knob("size", "SIZE", steps=4),
-             Knob("rate", "RATE", steps=4)]),
-        Row([Button("send", "SEND")]),
-    ]),
-]
+P.sections = []
 
 # Video does not leave through a jack -- it leaves through the playlist ffmpeg
 # writes. What is on the band is the patchable part of the transport: a gate in

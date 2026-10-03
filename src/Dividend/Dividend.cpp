@@ -320,9 +320,18 @@ typedef RoundLargeBlackKnob PayoutKnob;
 typedef RoundBlackKnob      PanelKnob;
 
 
-// Panel read-out: the fundamental and the formant, in Hz, plus the duty ratio
-// d/p that the two of them and CYCLES add up to. Numerals are DSEG7 (restricted
-// to [0-9 . : -]), words stay in the mono face -- see panel::segValue.
+// Panel read-out: every setting, each one a control. The cells are the FIELD_*
+// rectangles the spec cut the glass into (src/Dividend/Panel.hpp); the fields
+// that take the mouse sit on the same rectangles, so a value is grabbed exactly
+// where it is printed. Numerals are DSEG7 (restricted to [0-9 . : -]), words
+// stay in the mono face -- see panel::segValue.
+static const char* kWaveShort[dividend::NUM_WAVES] = {
+	"SINE", "SINC", "SAW", "SQUARE", "TRI", "BURST",
+};
+static const char* kWindowShort[dividend::NUM_WINDOWS] = {
+	"RECT", "GAUSS", "HANN", "EXP", "REXP", "LIN",
+};
+
 struct DividendDisplay : LedDisplay {
 	Dividend* module = NULL;
 
@@ -331,41 +340,98 @@ struct DividendDisplay : LedDisplay {
 		else             { num = string::f("%.3f", hz / 1000.f); unit = "kHz"; }
 	}
 
+	static float baseOf(const Rect& c) { return c.pos.y + c.size.y * 0.78f; }
+
+	/** A small caption at the left of a cell and its value at the right. */
+	static void pair(NVGcontext* vg, const Rect& c, const char* tag,
+	                 const std::string& value, NVGcolor ink = panel::LIME) {
+		const panel::TextStyle TAG(panel::Face::Mono, 6.5f, panel::SAGE,
+			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
+		const panel::TextStyle VAL(panel::Face::Mono, 8.5f, ink,
+			NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE);
+		panel::text(vg, TAG, c.pos.x + 2.f, baseOf(c), tag);
+		panel::text(vg, VAL, c.pos.x + c.size.x - 2.f, baseOf(c), value);
+	}
+
+	/** A word alone, centred in its cell: a switch's position. */
+	static void word(NVGcontext* vg, const Rect& c, const std::string& w, NVGcolor ink) {
+		const panel::TextStyle W(panel::Face::Mono, 8.5f, ink,
+			NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+		panel::text(vg, W, c.pos.x + c.size.x * 0.5f, baseOf(c), w);
+	}
+
 	void drawLayer(const DrawArgs& args, int layer) override {
 		if (layer != 1) {
 			LedDisplay::drawLayer(args, layer);
 			return;
 		}
+		NVGcontext* vg = args.vg;
 		float f0 = module ? module->dispF0 : dsp::FREQ_C4;
 		float fmt = module ? module->dispFormant : 4.f * dsp::FREQ_C4;
 		float duty = module ? module->dispDuty : 0.25f;
 		bool track = module ? module->dispTrack : true;
 		bool stereo = module ? module->dispStereo : false;
+		auto param = [&](int id, float dflt) {
+			return module ? module->params[id].getValue() : dflt;
+		};
+		const bool linear = param(Dividend::FM_MODE_PARAM, 0.f) > 0.5f;
+		const int wave = clamp((int) std::round(param(Dividend::WAVE_PARAM, 0.f)), 0, dividend::NUM_WAVES - 1);
+		const int window = clamp((int) std::round(param(Dividend::WINDOW_PARAM, 1.f)), 0, dividend::NUM_WINDOWS - 1);
+		const float cycles = param(Dividend::CYCLES_PARAM, 1.f);
+		const int on = (int) std::round(param(Dividend::BURST_ON_PARAM, 1.f));
+		const int off = (int) std::round(param(Dividend::BURST_OFF_PARAM, 0.f));
+		const float fine = param(Dividend::FINE_PARAM, 0.f);
+		const float prob = param(Dividend::PROB_PARAM, 1.f);
+		const float held = module ? module->lights[Dividend::HELD_LIGHT].getBrightness() : 0.f;
 
-		const float pad = 5.f;
-		const float rightX = box.size.x - pad;
 		const NVGcolor dim = panel::alpha(panel::LIME, 0.55f);
-		const panel::TextStyle TAG(panel::Face::Mono, 8.f, dim,
+		const panel::TextStyle TAG(panel::Face::Mono, 7.5f, panel::SAGE,
 			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
-		const panel::TextStyle NOTE(panel::Face::Mono, 8.f, panel::MINT,
-			NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE);
-
 		std::string num, unit;
 
-		// Row 1: the fundamental, and whether the formant rides on it.
-		float x = panel::text(args.vg, TAG, pad, 12.f, "FUND");
+		// Line 1: the fundamental, and whether the formant rides on it.
+		const Rect f = panel::inGlass(panel::FIELD_FREQ_FIELD);
+		float x = panel::text(vg, TAG, f.pos.x + 2.f, baseOf(f), "FUND");
 		splitHz(f0, num, unit);
-		panel::segValue(args.vg, x + 3.f, 12.f, 11.f, num, unit, panel::LIME);
-		panel::text(args.vg, NOTE, rightX, 12.f, track ? "TRACK" : "ABS");
+		panel::segValue(vg, x + 3.f, baseOf(f), 10.f, num, unit, panel::LIME);
+		word(vg, panel::inGlass(panel::FIELD_TRACK), track ? "TRACK" : "ABS", panel::MINT);
 
-		// Row 2: the formant, and the duty ratio it makes against the period.
-		x = panel::text(args.vg, TAG, pad, 24.f, "FMT ");
+		// Line 2: the formant and the duty ratio it makes against the period,
+		// and the FM law.
+		const Rect m = panel::inGlass(panel::FIELD_FORMANT_FIELD);
+		x = panel::text(vg, TAG, m.pos.x + 2.f, baseOf(m), "FMT");
 		splitHz(fmt, num, unit);
-		x = panel::segValue(args.vg, x + 3.f, 24.f, 8.f, num, unit, dim);
-		x = panel::text(args.vg, TAG, x + 8.f, 24.f, "D/P");
-		panel::segValue(args.vg, x + 3.f, 24.f, 8.f, string::f("%.2f", std::min(duty, 99.99f)),
-		                std::string(), dim);
-		panel::text(args.vg, NOTE.inked(dim), rightX, 24.f, stereo ? "L/R" : "MONO");
+		panel::segValue(vg, x + 3.f, baseOf(m), 8.f, num, unit, panel::LIME);
+		const panel::TextStyle DP(panel::Face::Mono, 6.5f, dim,
+			NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE);
+		panel::text(vg, DP, m.pos.x + m.size.x - 2.f, baseOf(m),
+		            string::f("D/P %.2f", std::min(duty, 99.99f)));
+		word(vg, panel::inGlass(panel::FIELD_FM_MODE), linear ? "FM LIN" : "FM EXP", panel::MINT);
+
+		// Line 3: what each pulsaret is made of.
+		pair(vg, panel::inGlass(panel::FIELD_WAVE), "WAV", kWaveShort[wave]);
+		pair(vg, panel::inGlass(panel::FIELD_WINDOW), "ENV", kWindowShort[window]);
+		pair(vg, panel::inGlass(panel::FIELD_CYCLES), "CYC", string::f("%.2f", cycles));
+
+		// Line 4: the burst mask, and whether L and R take turns.
+		pair(vg, panel::inGlass(panel::FIELD_BURST_ON), "ON", string::f("%d", on));
+		pair(vg, panel::inGlass(panel::FIELD_BURST_OFF), "OFF", string::f("%d", off));
+		word(vg, panel::inGlass(panel::FIELD_STEREO), stereo ? "L/R" : "MONO", panel::MINT);
+
+		// Line 5: FINE and PROB, and the HELD lamp in the cell beside them --
+		// the column the switches stand in above it.
+		pair(vg, panel::inGlass(panel::FIELD_FINE), "FINE", string::f("%+.2f", fine));
+		pair(vg, panel::inGlass(panel::FIELD_PROB), "PROB", string::f("%.0f%%", prob * 100.f));
+		const Rect col = panel::inGlass(panel::FIELD_STEREO);
+		const Rect row = panel::inGlass(panel::FIELD_PROB);
+		const float r = 1.9f;
+		const float cx = col.pos.x + col.size.x - 2.f - r;
+		nvgBeginPath(vg);
+		nvgCircle(vg, cx, row.pos.y + row.size.y * 0.5f, r);
+		nvgFillColor(vg, panel::alpha(panel::LIME, 0.15f + 0.85f * clamp(held, 0.f, 1.f)));
+		nvgFill(vg);
+		panel::text(vg, TAG.aligned(NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE),
+		            cx - r - 2.f, baseOf(row), "HELD");
 	}
 };
 
@@ -384,22 +450,23 @@ struct DividendWidget : ModuleWidget {
 		display->box.size = panel::mm(panel::GLASS_W, panel::GLASS_H);
 		addChild(display);
 
+		// The read-out's fields, over the cells it draws them in.
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_FREQ_FIELD, module, Dividend::FREQ_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_TRACK, module, Dividend::TRACK_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_FORMANT_FIELD, module, Dividend::FORMANT_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_FM_MODE, module, Dividend::FM_MODE_PARAM));
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_WAVE, module, Dividend::WAVE_PARAM));
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_WINDOW, module, Dividend::WINDOW_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_CYCLES, module, Dividend::CYCLES_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_BURST_ON, module, Dividend::BURST_ON_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_BURST_OFF, module, Dividend::BURST_OFF_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_STEREO, module, Dividend::STEREO_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_FINE, module, Dividend::FINE_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_PROB, module, Dividend::PROB_PARAM));
+
+		// PAYOUT: the two knobs you play.
 		addParam(createParamCentered<PayoutKnob>(panel::mm(panel::FREQ_POS.x, panel::FREQ_POS.y), module, Dividend::FREQ_PARAM));
-		addParam(createParamCentered<PanelKnob>(panel::mm(panel::FINE_POS.x, panel::FINE_POS.y), module, Dividend::FINE_PARAM));
 		addParam(createParamCentered<PayoutKnob>(panel::mm(panel::FORMANT_POS.x, panel::FORMANT_POS.y), module, Dividend::FORMANT_PARAM));
-		addParam(createParamCentered<CKSS>(panel::mm(panel::TRACK_POS.x, panel::TRACK_POS.y), module, Dividend::TRACK_PARAM));
-		addParam(createParamCentered<CKSS>(panel::mm(panel::FM_MODE_POS.x, panel::FM_MODE_POS.y), module, Dividend::FM_MODE_PARAM));
-
-		addParam(createParamCentered<PanelKnob>(panel::mm(panel::WAVE_POS.x, panel::WAVE_POS.y), module, Dividend::WAVE_PARAM));
-		addParam(createParamCentered<PanelKnob>(panel::mm(panel::WINDOW_POS.x, panel::WINDOW_POS.y), module, Dividend::WINDOW_PARAM));
-		addParam(createParamCentered<PanelKnob>(panel::mm(panel::CYCLES_POS.x, panel::CYCLES_POS.y), module, Dividend::CYCLES_PARAM));
-		addParam(createParamCentered<CKSS>(panel::mm(panel::STEREO_POS.x, panel::STEREO_POS.y), module, Dividend::STEREO_PARAM));
-
-		addParam(createParamCentered<PanelKnob>(panel::mm(panel::BURST_ON_POS.x, panel::BURST_ON_POS.y), module, Dividend::BURST_ON_PARAM));
-		addParam(createParamCentered<PanelKnob>(panel::mm(panel::BURST_OFF_POS.x, panel::BURST_OFF_POS.y), module, Dividend::BURST_OFF_PARAM));
-		addParam(createParamCentered<PanelKnob>(panel::mm(panel::PROB_POS.x, panel::PROB_POS.y), module, Dividend::PROB_PARAM));
-		addChild(createLightCentered<MediumLight<panel::LimeLight> >(
-		             panel::mm(panel::HELD_POS.x, panel::HELD_POS.y), module, Dividend::HELD_LIGHT));
 
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::FM_CV_POS.x, panel::FM_CV_POS.y), module, Dividend::FM_CV_PARAM));
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::FMT_CV_POS.x, panel::FMT_CV_POS.y), module, Dividend::FMT_CV_PARAM));

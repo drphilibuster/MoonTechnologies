@@ -1,6 +1,6 @@
-# Repossession
+# Repossession — video sampler
 
-**FORM 1099-A — acquisition or abandonment of secured property.** 34 HP.
+**FORM 1099-A — acquisition or abandonment of secured property.** 21 HP.
 
 A YouTube sampler. Paste a link into the box on the panel, and the module seizes
 the media: it downloads it, decodes the audio to disk and the video into a small
@@ -236,7 +236,7 @@ is a coloured span, mint while it is the one playing.
 | drag a region's left or right edge | trims it |
 | drag a region's middle | slides it, keeping its length |
 | click the notch at the top of a region | releases it — the slot goes empty |
-| click anywhere on a region | selects it, so the LIENS knobs edit it |
+| click anywhere on a region | selects it, so the LIENS strip edits it |
 | scroll | zooms about the pointer |
 | shift-scroll | pans |
 
@@ -290,22 +290,28 @@ The light beside the caption is the fetch/decode indicator.
 
 ### LIENS — the terms charged against the selected region
 
-These seven controls edit **whichever region is selected**. Turning the REGION
-knob (or pressing a slot button, or sending REGION CV) loads that region's
-values into the knobs; from then on the knobs write back into it.
+The LIENS strip is the row of cells between the video and the timeline. Every
+cell is a control: **hold a value and drag up or down** (the pointer turns into
+up/down arrows; Ctrl drags fine, Shift coarse), **click a choice** to pick from
+its list, and **click a switch** to flip it. Right-click any cell for the
+param's own menu -- typed entry, reset, MIDI-Map.
+
+The first five edit **whichever region is selected**. Choosing a REGION (or
+pressing a slot button, or sending REGION CV) loads that region's values into
+the strip; from then on the strip writes back into it.
 
 | control | range | what it does |
 |---|---|---|
-| **REGION** | 1–8 | which slot the knobs edit. Snaps. |
+| **REGION** | 1–8 | which slot the strip edits. Click to pick, or drag |
 | **SPEED** | 0.25× – 4× | playback rate of the selected region, in octaves either side of 1× |
 | **GAIN** | 0 – 200 % | level of the selected region |
 | **LOOP** | on / off | on, the region repeats until the next clock; off, it plays once and holds |
-| **REV** | fwd / rev | plays the region backwards |
-| **MODE** | 4 positions | how the clock walks the slots: FORWARD, RANDOM, PING-PONG, CV ONLY |
-| **TEMPO** | 30 – 300 BPM | the internal clock. Silent while CLOCK is patched |
-| **RUN** | 3 positions | the transport: **RUN** up, **STOP** middle, **LATCH** down |
+| **DIR** | fwd / rev | plays the region backwards |
+| **SEQUENCE** | 4 choices | how the clock walks the slots: FORWARD, RANDOM, PING-PONG, CV ONLY |
+| **BPM** | 30 – 300 | the internal clock. Silent while CLOCK is patched |
+| **TRANSPORT** | 3 choices | RUN, STOP or LATCH |
 
-**MODE** in detail:
+**SEQUENCE** in detail:
 
 * **Forward** — each clock advances to the next slot that holds a region, wrapping.
 * **Random** — each clock picks a random slot that holds a region.
@@ -313,23 +319,23 @@ values into the knobs; from then on the knobs write back into it.
 * **CV only** — the clock never advances the slot; it only re-fires the current
   one. Use it with REGION CV.
 
-**RUN** in detail — three states, because the transport has three things to say:
+**TRANSPORT** in detail — three states, because the transport has three things to say:
 
-* **RUN** (up) — the clock walks the slots per MODE and plays them.
-* **STOP** (middle) — nothing plays on its own. The step buttons still do:
+* **RUN** — the clock walks the slots per SEQUENCE and plays them.
+* **STOP** — nothing plays on its own. The step buttons still do:
   tapping one fires it, holding one loops it. This is the module as an
   instrument rather than as a sequencer.
-* **LATCH** (down) — whichever step is *selected* loops continuously, and the
+* **LATCH** — whichever step is *selected* loops continuously, and the
   clock never advances. Selecting another step moves the loop to it.
 
 Latching used to be reachable only by accident: patch a clock, stop it, and
-whichever step you landed on looped forever. It is a position on a switch now.
+whichever step you landed on looped forever. It is a choice of its own now.
 
 ### The clock
 
 **TEMPO** runs an internal clock, 30 to 300 BPM, one pulse per beat. Patching
 **CLOCK** silences it — an external clock is always the authority, and pulling
-the cable hands the tempo knob back. The light beside CLOCK follows whichever
+the cable hands BPM back. The light beside CLOCK follows whichever
 clock is actually in charge, so it is never ambiguous which one you are hearing.
 
 The internal clock keeps running while latched even though nothing advances, so
@@ -344,7 +350,7 @@ unlatching lands in time rather than wherever the finger left it.
 | **REGION** | 0–10 V | picks the slot outright, 1.25 V per slot. While this is patched the clock re-fires rather than advancing, in every mode |
 | **SCAN** | 0–10 V | takes the playhead over: 0 V is the region's start, 10 V its end. The region becomes a window you scrub rather than something played through |
 | **FIRE** | trigger | re-fires the current region from its start without advancing |
-| **SPEED** | ±5 V, poly | added to the SPEED knob at 0.4 octaves per volt, so ±5 V is ±2 octaves. The sum is clamped to ±3 octaves |
+| **SPEED** | ±5 V, poly | added to SPEED at 0.4 octaves per volt, so ±5 V is ±2 octaves. The sum is clamped to ±3 octaves |
 | **GAIN** | ±5 V, poly | scales the region's gain: +5 V doubles it, −5 V silences it |
 | **START** | ±5 V, poly | shifts the window's start, ±5 V being a tenth of the clip either way, keeping its length |
 | **LENGTH** | ±5 V, poly | scales the window's length from its start: +5 V doubles, −5 V halves |

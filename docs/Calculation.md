@@ -1,8 +1,8 @@
-# Calculation — WORKSHEET
+# Calculation — phrase counter · WORKSHEET
 
 **A phrase counter for arranging a patch.** You set one base length, N, at the
 top. Each of the six lines below it falls due at N times its own ratio, from ÷8
-to ×32, and each line has its own trigger, gate and counter. 16 HP, monophonic.
+to ×32, and each line has its own trigger, gate and counter. 9 HP, monophonic.
 
 ## Why it exists
 
@@ -45,31 +45,39 @@ already passed, the line falls due on the next clock.
 
 ## Controls
 
-| | |
-|---|---|
-| **Glass** | Shows N, the phrase's state (READY, ARMED, RUN, HOLD, DONE) and how many clocks have passed. **Click the glass to type a number for N** and press Enter. Cmd+Z undoes it. |
-| **STEPS** | N, from 1 to 9999. The knob moves about one step per four pixels, so it is for nudging. For a big change, type the number into the glass or into the knob's right-click field. |
-| **− / +** | Change N by one. |
-| **START** | Starts the phrase. After a STOP, it resumes from where the phrase stopped, without a new downbeat. Once the phrase is DONE, START does nothing until RESET, unless *Retrigger* is on. |
-| **STOP** | Pauses. The count is kept. |
-| **RESET** | Sets the count back to zero, clears every gate and stops. RESET and START together restart the phrase. |
-
-Each line, read left to right:
+Everything you set is on the glass, and every value on it is a control. Values
+are held and dragged up or down (Ctrl for fine, Shift for coarse); a choice
+from a list opens the list when you click it, or steps through it as you drag;
+a word you press acts while the mouse is down. Right-click any of them for the
+usual parameter menu: typed entry, MIDI-Map, reset.
 
 | | |
 |---|---|
-| **MULT** | The line's ratio of N: ÷8 ÷4 ÷3 ÷2 ×1 ×2 … ×32. The defaults are ×1 to ×6. |
-| **RATIO** | Shows the ratio the line is actually using, including any CV. |
-| **CV** | Added to MULT at 1 V per step. |
-| **DUE IN** | How many clocks until the line next falls due. |
+| **N** | The top line, from 1 to 9999. Drag it to nudge -- about one step per four pixels. For a big change, **right-click it and type the number**, then press Enter. Cmd+Z undoes either. |
+| **State** | Beside N: what the phrase is doing (READY, ARMED, RUN, HOLD, DONE) and how many clocks have passed. |
+| **START** | Click to start the phrase. After a STOP, it resumes from where the phrase stopped, without a new downbeat. Once the phrase is DONE, START does nothing until RESET, unless *Retrigger* is on. The word is lit while the phrase runs, dimmer while it waits for the downbeat. |
+| **STOP** | Click to pause. The count is kept. |
+| **RESET** | Click to set the count back to zero, clear every gate and stop. RESET and START together restart the phrase. |
+
+Under those, a table of the six lines -- 1 to 3 down the left, 4 to 6 down the
+right. Each entry is the line's number, its ratio and its count:
+
+| | |
+|---|---|
+| **Ratio** | The line's ratio of N: ÷8 ÷4 ÷3 ÷2 ×1 ×2 … ×32 (shown as /8 … x32). Click it to pick one, or drag through them. It shows the ratio the line is actually using, CV included. The defaults are ×1 to ×6. |
+| **Count** | How many clocks until the line next falls due. |
+
+Below the glass, one row per line, 1 to 6 top to bottom:
+
+| | |
+|---|---|
+| **CV** | Added to the line's ratio at 1 V per step. |
 | **TRIG** | A 1 ms trigger when the line falls due. The light beside it flashes. |
 | **GATE** | Goes high when the line falls due and stays high until RESET, the same as Countdown's END gate. On a repeating line it toggles instead (see below). |
 
-Footer jacks:
-
-- **CLOCK**, **START**, **STOP** and **RESET** are inputs that work the same as
-  the buttons.
-- **RUN** is high while the phrase is counting.
+**RUN**, under the last GATE, is high while the phrase is counting. On the
+footer, **CLOCK**, **START**, **STOP** and **RESET** are inputs that work the
+same as the words on the glass.
 
 ## Right-click menu
 

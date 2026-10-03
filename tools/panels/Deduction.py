@@ -12,8 +12,11 @@ where the cutoff sits, how much comes back round, and how hard the stage is
 pushed. WITHHOLDING is what the CV inputs are allowed to take off each of
 those, each trimpot over its own jack.
 
-The read-out under the masthead names the model and shows the cutoff. The
-light beside DRIVE is the stage reporting that it is clipping.
+The read-out under the masthead is where the filter is set. Everything it
+shows is a control: drag the cutoff, RES or DRV up and down, click the model to
+pick one of the six, click NRM/INV to flip the cutoff CV's sense. Only CUTOFF
+keeps a knob on the face as well, because it is the one you play. DRV turns
+clay when the stage is clipping.
 """
 
 import os
@@ -25,24 +28,25 @@ from panelkit import *   # noqa: E402
 P = Panel(
     slug="Deduction",
     title="DEDUCTION",
+    what="MULTIMODE FILTER",
     form="SCHEDULE A",
     density="regular",
-    glass=Glass(h=9.2),
+    # Two lines, and every value on them is a field. The top line is the cutoff
+    # and the model; the bottom one is what the model does with it.
+    glass=Glass(h=17.0, grid=(2, 6), fields=[
+        Field("freq_field", cell=(0, 0), span=(1, 4), kind="value"),
+        Field("model",      cell=(0, 4), span=(1, 2), kind="select"),
+        Field("res",        cell=(1, 0), span=(1, 2), kind="value"),
+        Field("drive",      cell=(1, 2), span=(1, 2), kind="value"),
+        Field("response",   cell=(1, 4), span=(1, 2), kind="toggle"),
+    ]),
 )
 
 P.sections = [
-    # The filter. CUTOFF is the one control you reach for, so it wears the seal;
-    # MODEL is the six-position selector beside it, and wears the detent ring
-    # that says so. The two big knobs take the outer columns of the three the
-    # row below stands in, so the block reads as one grid rather than two.
+    # The filter. CUTOFF is the one control you reach for, so it keeps a knob
+    # and wears the seal; the rest of the filter lives on the read-out above it.
     Section("DEDUCTIONS", rows=[
-        Row([BigKnob("freq", "CUTOFF", primary=True, col=0),
-             BigKnob("model", "MODEL", steps=6, col=2)]),
-        Row([Knob("res", "RES"),
-             # DRIVE means something different in every model -- input drive,
-             # bias, clip depth -- and the light says when it is doing it.
-             Knob("drive", "DRIVE", light="sat"),
-             Switch("response", "NRM/INV")]),
+        Row([BigKnob("freq", "CUTOFF", primary=True)]),
     ]),
 
     # What the CV inputs may take off each control. Each trimpot sits directly

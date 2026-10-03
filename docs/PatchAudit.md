@@ -1,4 +1,4 @@
-# PatchAudit
+# PatchAudit — patch browser
 
 A VCV Rack 2 module that browses [Patchstorage](https://patchstorage.com) from
 inside Rack, audits patches against the modules you actually have, and imports

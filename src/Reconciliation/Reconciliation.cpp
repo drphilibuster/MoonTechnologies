@@ -456,53 +456,126 @@ typedef RoundBlackKnob      PanelKnob;
 
 /** The read-out. A just-intonation quantizer whose display shows cents is
     telling you the least interesting true thing about itself: the ratio is the
-    fact, and "11/8" is a different statement from "551 cents". */
+    fact, and "11/8" is a different statement from "551 cents".
+
+    Five lines on the grid the spec cut the glass into (src/Reconciliation/
+    Panel.hpp). The middle three are FIELD_* cells, and the module places a
+    field over each, so a setting is grabbed exactly where it is printed. The
+    top line (the ratio) and the bottom one (the pitch count and the two lamps)
+    are only read; they are the grid's first and last rows, found from the
+    fields' own pitch so they cannot drift from them. */
 struct ReconciliationDisplay : LedDisplay {
 	Reconciliation* module = NULL;
+
+	/** A small caption at the left of a cell and its value at the right. */
+	static void pair(NVGcontext* vg, const Rect& c, const char* tag,
+	                 const std::string& value) {
+		const float base = c.pos.y + c.size.y * 0.78f;
+		const panel::TextStyle TAG(panel::Face::Mono, 7.f, panel::SAGE,
+			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
+		const panel::TextStyle VAL(panel::Face::Mono, 8.5f, panel::LIME,
+			NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE);
+		panel::text(vg, TAG, c.pos.x + 2.f, base, tag);
+		panel::text(vg, VAL, c.pos.x + c.size.x - 2.f, base, value);
+	}
+
+	/** A lamp drawn on the glass: a dot that lights, and its name before it. */
+	static float lamp(NVGcontext* vg, float right, float base, float mid,
+	                  const char* name, float bright) {
+		const float r = 1.9f;
+		nvgBeginPath(vg);
+		nvgCircle(vg, right - r, mid, r);
+		nvgFillColor(vg, panel::alpha(panel::LIME, 0.15f + 0.85f * clamp(bright, 0.f, 1.f)));
+		nvgFill(vg);
+		const panel::TextStyle TAG(panel::Face::Mono, 7.f, panel::SAGE,
+			NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE);
+		panel::text(vg, TAG, right - 2.f * r - 2.f, base, name);
+		return right - 2.f * r - 2.f - panel::textWidth(vg, TAG, name);
+	}
 
 	void drawLayer(const DrawArgs& args, int layer) override {
 		if (layer != 1) {
 			LedDisplay::drawLayer(args, layer);
 			return;
 		}
+		NVGcontext* vg = args.vg;
 		const Ratio r = module ? module->dispRatio : Ratio(1u, 1u);
 		const float c = module ? module->dispCents : 0.f;
 		const float dev = module ? module->dispDetune : 0.f;
-		const int set = module ? module->dispSet : 0;
-		const int rule = module ? module->dispRule : 0;
-		const int nexus = module ? module->dispNexus : 0;
+		const int set = clamp(module ? module->dispSet : 0, 0, tuning::NUM_SETS - 1);
+		const int rule = clamp(module ? module->dispRule : 0, 0, tuning::NUM_RULES - 1);
+		const int nexus = clamp(module ? module->dispNexus : 0, 0, tuning::NUM_IDENTITIES - 1);
 		const bool utonal = module ? module->dispUtonal : false;
 		const int count = module ? module->dispCount : 29;
+		auto param = [&](int id, float dflt) {
+			return module ? module->params[id].getValue() : dflt;
+		};
+		const int prime = clamp((int) std::round(param(Reconciliation::PRIME_PARAM, 3.f)), 0, 3);
+		const int degree = (int) std::round(param(Reconciliation::DEGREE_PARAM, 0.f));
+		const float hyst = param(Reconciliation::HYST_PARAM, 0.3f) * MAX_HYST;
+		const float slew = param(Reconciliation::SLEW_PARAM, 0.f) * MAX_SLEW_SEC;
 
-		const float pad = 5.f;
-		const float rightX = box.size.x - pad;
-		const NVGcolor dim = panel::alpha(panel::LIME, 0.55f);
-		const panel::TextStyle TAG(panel::Face::Mono, 8.f, dim,
-			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
+		// The grid's rows: the fields give rows 1 to 3, and their pitch gives
+		// the read-only lines above and below.
+		const Rect set1 = panel::inGlass(panel::FIELD_SET);
+		const Rect rule1 = panel::inGlass(panel::FIELD_RULE);
+		const float pitch = panel::inGlass(panel::FIELD_PRIME).pos.y - set1.pos.y;
+		const float left = set1.pos.x + 2.f;
+		const float right = rule1.pos.x + rule1.size.x - 2.f;
+		const float h = set1.size.y;
+		const float top = set1.pos.y - pitch;
+		const float foot = panel::inGlass(panel::FIELD_HYST).pos.y + pitch;
+
+		// Top line: the ratio, its size in cents, and how far that is from the
+		// twelve-tone pitch it is nearest -- the number that says what this
+		// module is for.
 		const panel::TextStyle RATIO(panel::Face::Mono, 11.f, panel::LIME,
 			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
 		const panel::TextStyle NOTE(panel::Face::Mono, 8.f, panel::MINT,
 			NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE);
+		const panel::TextStyle TAG(panel::Face::Mono, 7.f, panel::SAGE,
+			NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE);
+		const float b0 = top + h * 0.85f;
+		float x = panel::text(vg, RATIO, left, b0, string::f("%u/%u", r.n, r.d));
+		panel::segValue(vg, x + 4.f, b0, 9.f, string::f("%.1f", c), "c", panel::LIME);
+		const float tagX = right - panel::textWidth(vg, NOTE, string::f("%+.1f", dev)) - 2.f;
+		panel::text(vg, NOTE, right, b0, string::f("%+.1f", dev));
+		panel::text(vg, TAG, tagX, b0, "ET");
 
-		// Row 1: the ratio, its size in cents, and how far that is from the
-		// twelve-tone pitch it is nearest -- the number that says what this
-		// module is for.
-		float x = panel::text(args.vg, RATIO, pad, 12.f,
-		                      string::f("%u/%u", r.n, r.d));
-		x = panel::segValue(args.vg, x + 6.f, 12.f, 10.f,
-		                    string::f("%.1f", c), "c", panel::LIME);
-		panel::text(args.vg, NOTE, rightX, 12.f,
-		            string::f("%+.1f vs 12TET", dev));
+		// Line 2: BASIS and the rule -- which structure, its polarity, which
+		// identity it stands on, and which rule is choosing.
+		const panel::TextStyle WORD(panel::Face::Mono, 8.5f, panel::LIME,
+			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
+		const float b1 = set1.pos.y + h * 0.78f;
+		panel::text(vg, WORD, set1.pos.x + 2.f, b1, kSetNames[set]);
+		const Rect u = panel::inGlass(panel::FIELD_UTONAL);
+		panel::text(vg, WORD.inked(panel::MINT).aligned(NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE),
+		            u.pos.x + u.size.x * 0.5f, b1, utonal ? "U" : "O");
+		const Rect n = panel::inGlass(panel::FIELD_NEXUS);
+		panel::text(vg, WORD.inked(panel::MINT).aligned(NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE),
+		            n.pos.x + n.size.x * 0.5f, b1,
+		            string::f("%u", tuning::IDENTITIES[nexus]));
+		panel::text(vg, WORD.aligned(NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE),
+		            rule1.pos.x + rule1.size.x - 2.f, b1, kRuleNames[rule]);
 
-		// Row 2: which structure, how many pitches survived the prime filter,
-		// which identity it stands on, and which rule is choosing.
-		x = panel::text(args.vg, TAG, pad, 24.f, kSetNames[clamp(set, 0, tuning::NUM_SETS - 1)]);
-		x = panel::text(args.vg, TAG, x + 6.f, 24.f, string::f("%d", count));
-		panel::text(args.vg, TAG, x + 8.f, 24.f,
-		            string::f("%c%u", utonal ? 'U' : 'O',
-		                      tuning::IDENTITIES[clamp(nexus, 0, tuning::NUM_IDENTITIES - 1)]));
-		panel::text(args.vg, NOTE.inked(dim), rightX, 24.f,
-		            kRuleNames[clamp(rule, 0, tuning::NUM_RULES - 1)]);
+		// Lines 3 and 4: what prunes and tunes it.
+		pair(vg, panel::inGlass(panel::FIELD_PRIME), "LIMIT", string::f("%u", kPrimes[prime]));
+		pair(vg, panel::inGlass(panel::FIELD_DEGREE), "DEGREE", string::f("%+d", degree));
+		pair(vg, panel::inGlass(panel::FIELD_HYST), "HYST", string::f("%.0f%%", hyst * 100.f));
+		pair(vg, panel::inGlass(panel::FIELD_SLEW), "SLEW",
+		     slew <= 0.f ? std::string("OFF") : string::f("%.2fs", slew));
+
+		// Bottom line: how many pitches survived the prime filter, and the
+		// lamps that used to sit by the TRIG and DRIFT jacks -- the note
+		// changing, and the tonal centre wandering off the root.
+		const float b4 = foot + h * 0.78f;
+		const panel::TextStyle COUNT(panel::Face::Mono, 7.f, panel::SAGE,
+			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
+		panel::text(vg, COUNT, left, b4, string::f("%d PITCHES", count));
+		const float trig = module ? module->lights[Reconciliation::TRIG_LIGHT].getBrightness() : 0.f;
+		const float drift = module ? module->lights[Reconciliation::DRIFT_LIGHT].getBrightness() : 0.f;
+		x = lamp(vg, right, b4, foot + h * 0.5f, "DRIFT", drift);
+		lamp(vg, x - 5.f, b4, foot + h * 0.5f, "TRIG", trig);
 	}
 };
 
@@ -521,29 +594,22 @@ struct ReconciliationWidget : ModuleWidget {
 		display->box.size = panel::mm(panel::GLASS_W, panel::GLASS_H);
 		addChild(display);
 
-		// BASIS.
-		addParam(createParamCentered<PanelKnob>(
-		             panel::mm(panel::SET_POS.x, panel::SET_POS.y), module, Reconciliation::SET_PARAM));
-		addParam(createParamCentered<PanelKnob>(
-		             panel::mm(panel::NEXUS_POS.x, panel::NEXUS_POS.y), module, Reconciliation::NEXUS_PARAM));
-		addParam(createParamCentered<CKSS>(
-		             panel::mm(panel::UTONAL_POS.x, panel::UTONAL_POS.y), module, Reconciliation::UTONAL_PARAM));
-		addParam(createParamCentered<PanelKnob>(
-		             panel::mm(panel::PRIME_POS.x, panel::PRIME_POS.y), module, Reconciliation::PRIME_PARAM));
+		// The read-out's fields, over the cells it draws them in: BASIS and
+		// the rule on the second line, the settings that tune it below.
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_SET, module, Reconciliation::SET_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_UTONAL, module, Reconciliation::UTONAL_PARAM));
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_NEXUS, module, Reconciliation::NEXUS_PARAM));
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_RULE, module, Reconciliation::RULE_PARAM));
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_PRIME, module, Reconciliation::PRIME_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_DEGREE, module, Reconciliation::DEGREE_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_HYST, module, Reconciliation::HYST_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_SLEW, module, Reconciliation::SLEW_PARAM));
 
-		// RECONCILE.
-		addParam(createParamCentered<PanelKnob>(
-		             panel::mm(panel::RULE_POS.x, panel::RULE_POS.y), module, Reconciliation::RULE_PARAM));
+		// RECONCILE: the two you play.
 		addParam(createParamCentered<BigKnob>(
 		             panel::mm(panel::BIAS_POS.x, panel::BIAS_POS.y), module, Reconciliation::BIAS_PARAM));
 		addParam(createParamCentered<PanelKnob>(
 		             panel::mm(panel::WINDOW_POS.x, panel::WINDOW_POS.y), module, Reconciliation::WINDOW_PARAM));
-		addParam(createParamCentered<PanelKnob>(
-		             panel::mm(panel::DEGREE_POS.x, panel::DEGREE_POS.y), module, Reconciliation::DEGREE_PARAM));
-		addParam(createParamCentered<PanelKnob>(
-		             panel::mm(panel::HYST_POS.x, panel::HYST_POS.y), module, Reconciliation::HYST_PARAM));
-		addParam(createParamCentered<PanelKnob>(
-		             panel::mm(panel::SLEW_POS.x, panel::SLEW_POS.y), module, Reconciliation::SLEW_PARAM));
 
 		// ALLOWANCES: a trimpot directly over its jack.
 #define RECONCILIATION_CV(TRIM, JACK, PARAM, INPUT) \
@@ -558,25 +624,23 @@ struct ReconciliationWidget : ModuleWidget {
 		RECONCILIATION_CV(DEGREE_CV_POS, DEGREE_IN_POS, DEGREE_CV_PARAM, DEGREE_INPUT)
 #undef RECONCILIATION_CV
 
-		// The footer band.
+		// The footer band: the inputs.
 		addInput(createInputCentered<panel::PortInMain>(
 		             panel::mm(panel::PITCH_IN_POS.x, panel::PITCH_IN_POS.y), module, Reconciliation::PITCH_INPUT));
 		addInput(createInputCentered<panel::PortIn>(
 		             panel::mm(panel::ROOT_IN_POS.x, panel::ROOT_IN_POS.y), module, Reconciliation::ROOT_INPUT));
 		addInput(createInputCentered<panel::PortIn>(
 		             panel::mm(panel::RESET_IN_POS.x, panel::RESET_IN_POS.y), module, Reconciliation::RESET_INPUT));
+
+		// The rail: the outputs. Their lamps are drawn on the read-out.
 		addOutput(createOutputCentered<panel::PortOutMain>(
 		             panel::mm(panel::PITCH_OUT_POS.x, panel::PITCH_OUT_POS.y), module, Reconciliation::PITCH_OUTPUT));
 		addOutput(createOutputCentered<panel::PortOut>(
 		             panel::mm(panel::TRIG_OUT_POS.x, panel::TRIG_OUT_POS.y), module, Reconciliation::TRIG_OUTPUT));
-		addChild(createLightCentered<SmallLight<panel::LimeLight> >(
-		             panel::mm(panel::TRIG_LED_POS.x, panel::TRIG_LED_POS.y), module, Reconciliation::TRIG_LIGHT));
 		addOutput(createOutputCentered<panel::PortOut>(
 		             panel::mm(panel::PURITY_OUT_POS.x, panel::PURITY_OUT_POS.y), module, Reconciliation::PURITY_OUTPUT));
 		addOutput(createOutputCentered<panel::PortOut>(
 		             panel::mm(panel::DRIFT_OUT_POS.x, panel::DRIFT_OUT_POS.y), module, Reconciliation::DRIFT_OUTPUT));
-		addChild(createLightCentered<SmallLight<panel::LimeLight> >(
-		             panel::mm(panel::DRIFT_LED_POS.x, panel::DRIFT_LED_POS.y), module, Reconciliation::DRIFT_LIGHT));
 	}
 
 	void appendContextMenu(Menu* menu) override {

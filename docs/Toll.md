@@ -1,10 +1,10 @@
-# Toll — FORM 2290
+# Toll — struck-metal voice · FORM 2290
 
 **A struck-metal voice.** Sixteen modal partials over a membrane, a bar, a bell
 or a bare harmonic series, with the parameters that decide *what kind of object
 is being hit* brought out onto the panel: where it is struck, with what, how
 fast its upper partials die, and how far its partials are stretched from where
-they belong. 12 HP, monophonic.
+they belong. 10 HP, monophonic.
 
 Form 2290 is the IRS's *Heavy Highway Vehicle Use Tax* — the toll, filed.
 

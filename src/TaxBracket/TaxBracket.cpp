@@ -156,7 +156,10 @@ struct TaxBracket : Module {
 // ../panelkit/README.md. Nothing about the look is written here.
 
 /** The read-out: what the ladder adds up to at I/O, and the 8-bit word it is
-    being handed (MSB first; '-' is a floating jack). */
+    being handed (MSB first; '-' is a floating jack). Each half is a control,
+    drawn in the FIELD_* cell the spec cut for it (src/TaxBracket/Panel.hpp):
+    the voltage is SCALE, held and dragged; the word is GROUND, clicked. Under
+    each, what it is set to. */
 struct TaxBracketDisplay : LedDisplay {
 	TaxBracket* module = NULL;
 
@@ -165,22 +168,36 @@ struct TaxBracketDisplay : LedDisplay {
 			LedDisplay::drawLayer(args, layer);
 			return;
 		}
+		NVGcontext* vg = args.vg;
 		float volts = module ? module->dispVolts : 0.f;
 		const char* word = module ? module->dispWord : "--------";
+		float scale = module ? module->params[TaxBracket::SCALE_PARAM].getValue() : 1.f;
+		bool grounded = module && module->params[TaxBracket::GROUND_PARAM].getValue() > 0.5f;
 
-		const float pad = 5.f;
-		const float base = 13.f;
+		const float pad = 3.f;
 		const NVGcolor dim = panel::alpha(panel::LIME, 0.55f);
-		const panel::TextStyle TAG(panel::Face::Mono, 8.f, dim,
+		const panel::TextStyle TAG(panel::Face::Mono, 7.f, panel::SAGE,
 			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
-		const panel::TextStyle WORD(panel::Face::Mono, 9.f, panel::MINT,
-			NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, 1.f);
+		const panel::TextStyle SET(panel::Face::Mono, 7.5f, panel::LIME,
+			NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE);
+		const panel::TextStyle WORD(panel::Face::Mono, 11.f, panel::MINT,
+			NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 1.f);
 
-		// The segment face carries only [0-9 . : -], which "%.2f" honours.
-		float x = panel::text(args.vg, TAG, pad, base, "DUE");
-		panel::segValue(args.vg, x + 2.5f, base, 10.f, string::f("%.2f", volts), "V",
-		                panel::LIME);
-		panel::text(args.vg, WORD, box.size.x - pad, base, word);
+		// Left: the sum at I/O, and the SCALE it is filed at. The segment face
+		// carries only [0-9 . : -], which "%.2f" honours.
+		const Rect v = panel::inGlass(panel::FIELD_SCALE);
+		panel::segValue(vg, v.pos.x + pad, v.pos.y + v.size.y * 0.48f, 13.f,
+		                string::f("%.2f", volts), "V", panel::LIME);
+		const float low = v.pos.y + v.size.y * 0.86f;
+		panel::text(vg, TAG, v.pos.x + pad, low, "SCALE");
+		panel::text(vg, SET, v.pos.x + v.size.x - pad, low, string::f("%.0f%%", scale * 100.f));
+
+		// Right: the word, and what an unplugged jack is.
+		const Rect w = panel::inGlass(panel::FIELD_GROUND);
+		panel::text(vg, WORD, w.pos.x + w.size.x * 0.5f, w.pos.y + w.size.y * 0.48f, word);
+		panel::text(vg, TAG, w.pos.x + pad, low, "OPEN");
+		panel::text(vg, SET.inked(grounded ? panel::LIME : dim), w.pos.x + w.size.x - pad, low,
+		            grounded ? "GROUNDED" : "FLOATING");
 	}
 };
 
@@ -220,10 +237,10 @@ struct TaxBracketWidget : ModuleWidget {
 		addOutput(createOutputCentered<panel::PortOut>(
 			panel::mm(panel::IO_OUT_POS.x, panel::IO_OUT_POS.y), module, TaxBracket::IO_OUTPUT));
 
-		addParam(createParamCentered<CKSS>(
-			panel::mm(panel::GROUND_POS.x, panel::GROUND_POS.y), module, TaxBracket::GROUND_PARAM));
-		addParam(createParamCentered<Trimpot>(
-			panel::mm(panel::SCALE_POS.x, panel::SCALE_POS.y), module, TaxBracket::SCALE_PARAM));
+		// The read-out's two halves are the two controls: the voltage is SCALE,
+		// the word GROUND.
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_SCALE, module, TaxBracket::SCALE_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_GROUND, module, TaxBracket::GROUND_PARAM));
 	}
 
 	void appendContextMenu(Menu* menu) override {

@@ -11,6 +11,7 @@ static const char* kCoreNames[] = {
 
 
 struct SixFigures : Module {
+	float dispHz[6] = {};      // what the read-out prints: each voice's running frequency
 	enum ParamId {
 		CORE1_PARAM, CORE2_PARAM, CORE3_PARAM, CORE4_PARAM, CORE5_PARAM, CORE6_PARAM,
 		RANGE_PARAM,
@@ -195,6 +196,7 @@ struct SixFigures : Module {
 			}
 
 			freq = clamp(freq, 0.001f, args.sampleRate * 0.45f);
+			dispHz[i] = freq;
 			float dt = freq * args.sampleTime;
 
 			float prevPhase = v.phase;
@@ -271,6 +273,40 @@ typedef RoundBlackKnob      PanelKnob;    // CORE and CAPTURE
 typedef RoundLargeBlackKnob RateKnob;     // RATE, one per voice
 
 
+/** The read-out: each voice's core by name over the frequency it is running at,
+ *  and RANGE at the end. The names and RANGE are fields. */
+struct SixFiguresDisplay : LedDisplay {
+	SixFigures* module = NULL;
+
+	void drawLayer(const DrawArgs& args, int layer) override {
+		if (layer != 1) {
+			LedDisplay::drawLayer(args, layer);
+			return;
+		}
+		NVGcontext* vg = args.vg;
+		static const Rect CORE[6] = { panel::FIELD_CORE1, panel::FIELD_CORE2, panel::FIELD_CORE3,
+		                             panel::FIELD_CORE4, panel::FIELD_CORE5, panel::FIELD_CORE6 };
+		static const char* const SHORT[] = {"40106", "4069", "4046", "AVAL"};
+		const panel::TextStyle NAME(panel::Face::Mono, 8.f, panel::MINT, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+		const panel::TextStyle HZ(panel::Face::Mono, 7.f, panel::LIME, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+		for (int i = 0; i < 6; i++) {
+			const int core = module ? clamp((int)std::lround(module->params[SixFigures::CORE1_PARAM + i].getValue()), 0, 3) : 0;
+			const Rect c = panel::inGlass(CORE[i]);
+			const float cx = c.pos.x + c.size.x / 2.f;
+			panel::text(vg, NAME, cx, c.pos.y + c.size.y * 0.75f, SHORT[core]);
+			const float hz = module ? module->dispHz[i] : 0.f;
+			std::string f = !module ? "--" : hz < 1.f ? string::f("%.2fHz", hz)
+			              : hz < 1000.f ? string::f("%.0fHz", hz) : string::f("%.2fk", hz / 1000.f);
+			panel::text(vg, HZ, cx, c.pos.y + c.size.y * 1.95f, f);
+		}
+		const bool audio = !module || module->params[SixFigures::RANGE_PARAM].getValue() > 0.5f;
+		const Rect r = panel::inGlass(panel::FIELD_RANGE);
+		const panel::TextStyle TAG(panel::Face::Mono, 6.f, panel::SAGE, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+		panel::text(vg, TAG, r.pos.x + r.size.x / 2.f, r.pos.y + r.size.y * 0.38f, "RANGE");
+		panel::text(vg, NAME.inked(panel::LIME), r.pos.x + r.size.x / 2.f, r.pos.y + r.size.y * 0.78f, audio ? "AUDIO" : "LFO");
+	}
+};
+
 struct SixFiguresWidget : ModuleWidget {
 	SixFiguresWidget(SixFigures* module) {
 		setModule(module);
@@ -282,9 +318,14 @@ struct SixFiguresWidget : ModuleWidget {
 		// Six identical voice columns. A macro rather than a loop because each
 		// column's positions are distinct compile-time constants (CORE3_POS is not
 		// CORE1_POS plus an offset) -- see src/SixFigures/Panel.hpp.
+		SixFiguresDisplay* display = new SixFiguresDisplay;
+		display->module = module;
+		display->box.pos = panel::mm(panel::GLASS_X, panel::GLASS_Y);
+		display->box.size = panel::mm(panel::GLASS_W, panel::GLASS_H);
+		addChild(display);
+
 #define SIXFIGURES_VOICE(N) \
-		addParam(createParamCentered<PanelKnob>( \
-		             panel::mm(panel::CORE##N##_POS.x, panel::CORE##N##_POS.y), \
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_CORE##N, \
 		             module, SixFigures::CORE1_PARAM + (N - 1))); \
 		addParam(createParamCentered<RateKnob>( \
 		             panel::mm(panel::RATE##N##_POS.x, panel::RATE##N##_POS.y), \
@@ -314,8 +355,7 @@ struct SixFiguresWidget : ModuleWidget {
 #undef SIXFIGURES_VOICE
 
 		// The totals column.
-		addParam(createParamCentered<CKSS>(
-		             panel::mm(panel::RANGE_POS.x, panel::RANGE_POS.y), module, SixFigures::RANGE_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_RANGE, module, SixFigures::RANGE_PARAM));
 		addParam(createParamCentered<PanelKnob>(
 		             panel::mm(panel::CAPTURE_POS.x, panel::CAPTURE_POS.y), module, SixFigures::CAPTURE_PARAM));
 		addChild(createLightCentered<SmallLight<panel::LimeLight> >(

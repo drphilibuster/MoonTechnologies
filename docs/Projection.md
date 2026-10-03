@@ -1,4 +1,4 @@
-# Projection
+# Projection — video generator
 
 A video generator for VCV Rack 2, driven by audio and CV. FORM 1120-W is the
 estimated tax worksheet — a projection — and it is also the other kind.
@@ -16,7 +16,11 @@ Part of the [Moon Technologies](../README.md) plugin.
 
 ## The three pictures
 
-**MODE** picks one. It has a CV jack, so a sequencer can cut between them.
+**MODE** picks one. It is the label in the bottom-left corner of the picture:
+click it to step to the next mode (Ctrl-click for the previous one), or
+right-click it for the usual parameter menu. It has a CV jack, so a sequencer
+can cut between them; with a cable in, the label names the mode the CV has
+chosen.
 
 | Mode | What it draws |
 |---|---|
@@ -31,7 +35,7 @@ Part of the [Moon Technologies](../README.md) plugin.
 | **L**, **R** (inputs) | What it listens to. R is normalled to L, so a mono source still works — the scope then draws a diagonal, which is correct and is what a mono signal looks like on an oscilloscope. |
 | **SENS** | Input gain into the analysis, not a threshold. The spectrum is the instrument here and it wants to be driven. Also sets the onset detector's threshold, inversely. |
 | **TILT** | Leans the weighting up the spectrum. Music is roughly pink — power falls about 3 dB per octave — so at 0 the bass end of the picture is permanently lit and the top never moves. Centre is the weighting that flattens pink; full clockwise over-corrects and favours the top. |
-| **MODE** | Scope / Bars / Field, with CV. |
+| **MODE** (on the picture) | Scope / Bars / Field: click the label in the picture's corner to step it. **MODE** (input) is its CV. |
 | **SCALE** | Zoom in SCOPE, bar height in BARS, spatial frequency in FIELD. With CV. |
 | **WARP** | Hue spread across the bands in BARS, and how hard the bands bend the field in FIELD. With CV. |
 | **HUE** | Where on the wheel the picture sits. With CV, so the colour can be sequenced. |

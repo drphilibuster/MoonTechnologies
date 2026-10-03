@@ -12,8 +12,12 @@ little less each time.
 
 The read-out well holds the unit's two seven-segment digits, driven segment by
 segment from the firmware's own multiplex, and a line for the module's status.
-FRONT PANEL is the MIDIverb's: its -12 dB and 0 dB level LEDs, its four
-buttons, and the MIX pot that is on the unit's back.
+The unit's four buttons live on the read-out now: the top half of the digits is
+UP and the bottom half DOWN, the word beside them is DEFEAT, and the channel
+number on the other side is CHANNEL. Each is the param its panel button was, so
+the firmware sees the same presses at the same times. FRONT PANEL keeps what a
+screen cannot be: the MIDIverb's -12 dB and 0 dB level LEDs and the MIX pot
+that is on the unit's back.
 """
 
 import os
@@ -25,34 +29,27 @@ from panelkit import *   # noqa: E402
 P = Panel(
     slug="Rebate",
     title="REBATE",
-    subtitle="MIDI REVERB",
+    what="MIDIVERB DIGITAL REVERB",
     form="FORM 843",
-    hp=12,
-    glass=Glass(h=20.0),
+    # Five lines, six columns. The digits take the middle four columns of the
+    # first four lines -- the top two are UP, the bottom two DOWN, so you press
+    # the half of the number you want it to go -- with CHANNEL down the left
+    # column and DEFEAT down the right. The last line is the status, which is
+    # not a field: it says to right-click the module, and a field there would
+    # answer that click with its own param menu instead.
+    glass=Glass(h=26.0, grid=(5, 6), fields=[
+        Field("channel", cell=(0, 0), span=(4, 1), kind="select"),
+        Field("up",      cell=(0, 1), span=(2, 4), kind="button"),
+        Field("down",    cell=(2, 1), span=(2, 4), kind="button"),
+        Field("defeat",  cell=(0, 5), span=(4, 1), kind="button"),
+    ]),
 )
 
-W = P.w                          # 60.96 mm at 12 HP
-M = 6.5
-
-# --- inside the read-out well -------------------------------------------------
-# The two digits at about the MAN4710's own proportions, the status line below.
-DIG_W, DIG_H = 22.0, 11.6
-DIG_X, DIG_Y = (W - DIG_W) / 2, 10.9
-TXT_X, TXT_Y, TXT_W, TXT_H = M, 23.3, W - 2 * M, 5.2
-
-P.plates = [
-    Plate("digits", DIG_X, DIG_Y, DIG_W, DIG_H, r=0.8),
-    Plate("status", TXT_X, TXT_Y, TXT_W, TXT_H, r=0.8, fill=BAND),
-]
-
 P.sections = [
-    # The unit's own controls. CHANNEL is a stepper: on the unit it is held while UP or DOWN is pressed,
-    # which a mouse cannot do, so each click holds CHANNEL and presses the one key for you. DEFEAT mutes the effect (the display shows --). The level
-    # LEDs watch the signal on its way into the converter.
+    # What the screen cannot be: the unit's level LEDs, which watch the signal
+    # on its way into the converter, and the MIX pot from the unit's back.
     Section("FRONT PANEL", rows=[
         Row([Light("meter_green", "-12 dB", ink="LIME"), Light("meter_red", "0 dB", ink="CLAY")], own_grid=True),
-        Row([Stepper("channel", "CHANNEL"), Button("up", "UP"),
-             Button("down", "DOWN"), Button("defeat", "DEFEAT")], own_grid=True),
         Row([BigKnob("mix", "MIX", primary=True)], own_grid=True),
     ]),
 ]
@@ -62,13 +59,6 @@ P.footer = [
          Jack("out_l", "OUT L", ink="MINT"), Jack("out_r", "OUT R", ink="MINT")],
         y=118.6),
 ]
-
-# Echoed into src/Rebate/Panel.hpp so the live display and the artwork cannot
-# disagree about where a field is.
-P.metrics = dict(
-    DIG_X=DIG_X, DIG_Y=DIG_Y, DIG_W=DIG_W, DIG_H=DIG_H,
-    TXT_X=TXT_X, TXT_Y=TXT_Y, TXT_W=TXT_W, TXT_H=TXT_H,
-)
 
 if __name__ == "__main__":
     raise SystemExit(build(P, root=os.path.abspath(

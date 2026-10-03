@@ -377,44 +377,116 @@ typedef RoundLargeBlackKnob LoopKnob;
 typedef RoundBlackKnob      PanelKnob;
 
 
-// The chip's condition: the delay it is running, and the sample rate it has
-// dropped to in order to run it. Numerals in the segment face, which carries
-// only [0-9 . : -]; units and words stay in the mono face.
+// The read-out, and every value on it a control. The cells are the FIELD_*
+// rectangles the spec cut the glass into (src/Racketeer/Panel.hpp); the fields
+// that take the mouse sit on the same rectangles, so a value is grabbed exactly
+// where it is printed. Top line: the chip's condition -- the delay it is running
+// (TIME), the sample rate it has dropped to in order to run it, and RANGE.
+// Middle: the chopper and the two mini switches, then the three pushbuttons,
+// lit while they or their gate jacks press. Bottom: the six set-and-leave
+// controls. Numerals in the segment face, which carries only [0-9 . : -];
+// units and words stay in the mono face.
 struct RacketeerDisplay : LedDisplay {
 	Racketeer* module = NULL;
+
+	float param(int id, float def) const {
+		return module ? module->params[id].getValue() : def;
+	}
+	float light(int id) const {
+		return module ? module->lights[id].getBrightness() : 0.f;
+	}
+
+	/** A small cell: its name small at the top, its setting under it. */
+	static void cell(NVGcontext* vg, const Rect& c, const char* tag,
+	                 const std::string& value, NVGcolor ink) {
+		const panel::TextStyle TAG(panel::Face::Mono, 5.5f, panel::SAGE,
+			NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+		const panel::TextStyle VAL(panel::Face::Mono, 7.f, ink,
+			NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+		const float cx = c.pos.x + c.size.x * 0.5f;
+		panel::text(vg, TAG, cx, c.pos.y + c.size.y * 0.40f, tag);
+		panel::text(vg, VAL, cx, c.pos.y + c.size.y * 0.88f, value);
+	}
+
+	/** A pushbutton: its name in a key, filled while it is pressed. */
+	static void key(NVGcontext* vg, const Rect& c, const char* name, float lit, NVGcolor ink) {
+		const float m = 1.5f;
+		nvgBeginPath(vg);
+		nvgRoundedRect(vg, c.pos.x + m, c.pos.y + m, c.size.x - 2 * m, c.size.y - 2 * m, 1.6f);
+		nvgFillColor(vg, panel::alpha(ink, 0.30f * lit));
+		nvgFill(vg);
+		nvgStrokeColor(vg, panel::alpha(lit > 0.5f ? ink : panel::SAGE, 0.6f));
+		nvgStrokeWidth(vg, 0.7f);
+		nvgStroke(vg);
+		const panel::TextStyle NAME(panel::Face::Mono, 7.f, lit > 0.5f ? ink : panel::SAGE,
+			NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+		panel::text(vg, NAME, c.pos.x + c.size.x * 0.5f, c.pos.y + c.size.y * 0.5f, name);
+	}
 
 	void drawLayer(const DrawArgs& args, int layer) override {
 		if (layer != 1) {
 			LedDisplay::drawLayer(args, layer);
 			return;
 		}
+		NVGcontext* vg = args.vg;
 		float sec = module ? module->dispDelaySec : 0.3f;
 		float fsInt = module ? module->dispFsInt : 146700.f;
-				bool longRange = module ? module->dispLong : true;
+		bool longRange = module ? module->dispLong : true;
 
-		const float pad = 5.f;
-		const float rightX = box.size.x - pad;
 		const NVGcolor dim = panel::alpha(panel::LIME, 0.55f);
-		const panel::TextStyle TAG(panel::Face::Mono, 8.f, dim,
+		const panel::TextStyle TAG(panel::Face::Mono, 6.5f, panel::SAGE,
 			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
-		const panel::TextStyle RIGHT(panel::Face::Mono, 8.f, panel::MINT,
+		const panel::TextStyle RIGHT(panel::Face::Mono, 9.f, panel::MINT,
 			NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE);
 
-		// Row 1: the delay, and which range the switch is on.
+		// Top line: the delay (TIME), the chip's bit clock, and RANGE.
+		const Rect t = panel::inGlass(panel::FIELD_TIME_VAL);
+		const float base = t.pos.y + t.size.y * 0.74f;
 		std::string num, unit;
 		if (sec < 1.f) { num = string::f("%.0f", sec * 1000.f); unit = "ms"; }
 		else           { num = string::f("%.2f", sec);          unit = "s"; }
-		panel::segValue(args.vg, pad, 12.f, 11.f, num, unit, panel::LIME);
-		panel::text(args.vg, RIGHT, rightX, 12.f, longRange ? "LONG" : "SHORT");
+		panel::segValue(vg, t.pos.x + 3.f, base, 11.f, num, unit, panel::LIME);
 
-		// Row 2: the chip's bit clock, which is what TIME sets.
-		float x = panel::text(args.vg, TAG, pad, 24.f, "CLK");
+		// The clock has no field: it is what TIME sets, not a control of its own.
+		const Rect clk = panel::inGlass(panel::FIELD_FILT);
+		float x = panel::text(vg, TAG, clk.pos.x + 2.f, base, "CLK");
 		if (fsInt >= 1e6f) { num = string::f("%.2f", fsInt / 1e6f); unit = "MHz"; }
 		else if (fsInt >= 10000.f) { num = string::f("%.1f", fsInt / 1000.f); unit = "kHz"; }
 		else if (fsInt >= 1000.f) { num = string::f("%.2f", fsInt / 1000.f); unit = "kHz"; }
 		else { num = string::f("%.0f", fsInt); unit = "Hz"; }
-		panel::segValue(args.vg, x + 2.5f, 24.f, 8.f, num, unit, dim);
-		panel::text(args.vg, RIGHT.inked(dim), rightX, 24.f, "1 BIT");
+		panel::segValue(vg, x + 2.f, base, 8.f, num, unit, dim);
+
+		const Rect r = panel::inGlass(panel::FIELD_RANGE);
+		panel::text(vg, TAG, r.pos.x + 3.f, base, "RANGE");
+		panel::text(vg, RIGHT, r.pos.x + r.size.x - 3.f, base, longRange ? "LONG" : "SHORT");
+
+		// Middle line: the chopper (its word ticking with the LFO that presses
+		// MUTE), the two mini switches, and the three pushbuttons.
+		bool chopOn = param(Racketeer::CHOP_PARAM, 0.f) > 0.5f;
+		cell(vg, panel::inGlass(panel::FIELD_CHOP), "CHOP", chopOn ? "ON" : "OFF",
+		     chopOn ? panel::alpha(panel::MINT, 0.45f + 0.55f * light(Racketeer::CHOP_LIGHT)) : dim);
+		cell(vg, panel::inGlass(panel::FIELD_POL), "POL",
+		     param(Racketeer::POL_PARAM, 1.f) > 0.5f ? "NRM" : "INV", panel::LIME);
+		cell(vg, panel::inGlass(panel::FIELD_FILT), "FILTER",
+		     param(Racketeer::FILT_PARAM, 1.f) > 0.5f ? "LOOP" : "POST", panel::LIME);
+		key(vg, panel::inGlass(panel::FIELD_NOISE), "NOISE", light(Racketeer::NOISE_LIGHT), panel::PAPER);
+		key(vg, panel::inGlass(panel::FIELD_BOOST), "BOOST", light(Racketeer::BOOST_LIGHT), panel::CLAY);
+		key(vg, panel::inGlass(panel::FIELD_MUTE), "MUTE", light(Racketeer::MUTE_LIGHT), panel::PAPER);
+
+		// Bottom line: the six controls that are set and left.
+		cell(vg, panel::inGlass(panel::FIELD_LAG), "LAG",
+		     string::f("%.0f%%", param(Racketeer::LAG_PARAM, 0.3f) * 100.f), panel::LIME);
+		cell(vg, panel::inGlass(panel::FIELD_DRIVE), "DRIVE",
+		     string::f("+%.0fdB", param(Racketeer::DRIVE_PARAM, 0.f) * 24.f), panel::LIME);
+		cell(vg, panel::inGlass(panel::FIELD_SEED), "SEED",
+		     string::f("%.0f%%", param(Racketeer::SEED_PARAM, 0.15f) * 100.f), panel::LIME);
+		float hz = std::pow(2.f, param(Racketeer::RATE_PARAM, kRateDefLog2));
+		cell(vg, panel::inGlass(panel::FIELD_RATE), "RATE",
+		     hz < 10.f ? string::f("%.1fHz", hz) : string::f("%.0fHz", hz), panel::LIME);
+		cell(vg, panel::inGlass(panel::FIELD_RES), "RES",
+		     string::f("%.0f%%", param(Racketeer::RES_PARAM, 0.f) * 100.f), panel::LIME);
+		cell(vg, panel::inGlass(panel::FIELD_THRESH), "THRESH",
+		     string::f("%.1fV", param(Racketeer::THRESH_PARAM, 0.5f) * 10.f), panel::LIME);
 	}
 };
 
@@ -433,21 +505,26 @@ struct RacketeerWidget : ModuleWidget {
 		display->box.size = panel::mm(panel::GLASS_W, panel::GLASS_H);
 		addChild(display);
 
+		// The read-out's fields, over the cells it draws them in. TIME keeps its
+		// knob as well; everything else here has no other place on the face.
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_TIME_VAL, module, Racketeer::TIME_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_RANGE, module, Racketeer::RANGE_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_CHOP, module, Racketeer::CHOP_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_POL, module, Racketeer::POL_PARAM));
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_FILT, module, Racketeer::FILT_PARAM));
+		addParam(panel::createField<panel::ScreenButton>(panel::FIELD_NOISE, module, Racketeer::NOISE_PARAM));
+		addParam(panel::createField<panel::ScreenButton>(panel::FIELD_BOOST, module, Racketeer::BOOST_PARAM));
+		addParam(panel::createField<panel::ScreenButton>(panel::FIELD_MUTE, module, Racketeer::MUTE_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_LAG, module, Racketeer::LAG_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_DRIVE, module, Racketeer::DRIVE_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_SEED, module, Racketeer::SEED_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_RATE, module, Racketeer::RATE_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_RES, module, Racketeer::RES_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_THRESH, module, Racketeer::THRESH_PARAM));
+
 		addParam(createParamCentered<LoopKnob>(panel::mm(panel::TIME_POS.x, panel::TIME_POS.y), module, Racketeer::TIME_PARAM));
 		addParam(createParamCentered<LoopKnob>(panel::mm(panel::ECHO_POS.x, panel::ECHO_POS.y), module, Racketeer::ECHO_PARAM));
 		addParam(createParamCentered<LoopKnob>(panel::mm(panel::CUTOFF_POS.x, panel::CUTOFF_POS.y), module, Racketeer::CUTOFF_PARAM));
-
-		addParam(createParamCentered<Trimpot>(panel::mm(panel::LAG_POS.x, panel::LAG_POS.y), module, Racketeer::LAG_PARAM));
-		addParam(createParamCentered<Trimpot>(panel::mm(panel::DRIVE_POS.x, panel::DRIVE_POS.y), module, Racketeer::DRIVE_PARAM));
-		addParam(createParamCentered<Trimpot>(panel::mm(panel::SEED_POS.x, panel::SEED_POS.y), module, Racketeer::SEED_PARAM));
-		addParam(createParamCentered<Trimpot>(panel::mm(panel::RES_POS.x, panel::RES_POS.y), module, Racketeer::RES_PARAM));
-		addParam(createParamCentered<Trimpot>(panel::mm(panel::THRESH_POS.x, panel::THRESH_POS.y), module, Racketeer::THRESH_PARAM));
-
-		addParam(createParamCentered<CKSS>(panel::mm(panel::POL_POS.x, panel::POL_POS.y), module, Racketeer::POL_PARAM));
-		addParam(createParamCentered<CKSS>(panel::mm(panel::FILT_POS.x, panel::FILT_POS.y), module, Racketeer::FILT_PARAM));
-		addParam(createParamCentered<CKSS>(panel::mm(panel::RANGE_POS.x, panel::RANGE_POS.y), module, Racketeer::RANGE_PARAM));
-		addParam(createParamCentered<Trimpot>(panel::mm(panel::RATE_POS.x, panel::RATE_POS.y), module, Racketeer::RATE_PARAM));
-		addParam(createParamCentered<CKSS>(panel::mm(panel::CHOP_POS.x, panel::CHOP_POS.y), module, Racketeer::CHOP_PARAM));
 
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::TIME_CV_POS.x, panel::TIME_CV_POS.y), module, Racketeer::TIME_CV_PARAM));
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::ECHO_CV_POS.x, panel::ECHO_CV_POS.y), module, Racketeer::ECHO_CV_PARAM));
@@ -455,13 +532,6 @@ struct RacketeerWidget : ModuleWidget {
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::RATE_CV_POS.x, panel::RATE_CV_POS.y), module, Racketeer::RATE_CV_PARAM));
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::RES_CV_POS.x, panel::RES_CV_POS.y), module, Racketeer::RES_CV_PARAM));
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::LAG_CV_POS.x, panel::LAG_CV_POS.y), module, Racketeer::LAG_CV_PARAM));
-
-		addParam(createLightParamCentered<VCVLightBezel<panel::PaperLight> >(
-		             panel::mm(panel::NOISE_POS.x, panel::NOISE_POS.y), module, Racketeer::NOISE_PARAM, Racketeer::NOISE_LIGHT));
-		addParam(createLightParamCentered<VCVLightBezel<panel::ClayLight> >(
-		             panel::mm(panel::BOOST_POS.x, panel::BOOST_POS.y), module, Racketeer::BOOST_PARAM, Racketeer::BOOST_LIGHT));
-		addParam(createLightParamCentered<VCVLightBezel<panel::PaperLight> >(
-		             panel::mm(panel::MUTE_POS.x, panel::MUTE_POS.y), module, Racketeer::MUTE_PARAM, Racketeer::MUTE_LIGHT));
 
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::TIME_IN_POS.x, panel::TIME_IN_POS.y), module, Racketeer::TIME_INPUT));
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::ECHO_IN_POS.x, panel::ECHO_IN_POS.y), module, Racketeer::ECHO_INPUT));
@@ -481,8 +551,6 @@ struct RacketeerWidget : ModuleWidget {
 
 		addChild(createLightCentered<SmallLight<panel::LimeLight> >(
 		             panel::mm(panel::LOOP_POS.x, panel::LOOP_POS.y), module, Racketeer::LOOP_LIGHT));
-		addChild(createLightCentered<SmallLight<panel::MintLight> >(
-		             panel::mm(panel::CHOP_LED_POS.x, panel::CHOP_LED_POS.y), module, Racketeer::CHOP_LIGHT));
 	}
 
 	void appendContextMenu(Menu* menu) override {

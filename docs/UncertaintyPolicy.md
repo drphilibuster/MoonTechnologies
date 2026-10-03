@@ -1,4 +1,4 @@
-# Uncertainty Policy
+# Uncertainty Policy — smart randomizer
 
 A signal-aware knob and cable randomizer for VCV Rack 2.
 
@@ -139,8 +139,8 @@ since turning the master down is the most boring way to kill a patch.
 | **VARIANCE** | How far each knob may travel, as a share of its full range |
 | **SPREAD** | How many of the eligible knobs move at all |
 | **TRANSFERS** | How many cable edits per filing (0–8) |
-| **BASIS** | What the review listens for: wind-down / neutral / going concern |
-| **SAFE HARBOR** | How much of the patch's timing is off limits |
+| **BASIS** (on the glass) | What the review listens for: wind-down / neutral / going concern. Click it to pick from the three |
+| **SAFE HARBOR** (on the glass) | How much of the patch's timing is off limits. Hold it and drag up or down |
 | **AMEND: CONTROLS / BOTH / CABLES** | File a change touching only controls, only cables, or both |
 | **RESCIND** | Withdraw the last filing (and only a filing — it will not eat your own edits) |
 | **OPINION** | Green when the last filing was accepted, amber when it was withdrawn |
@@ -168,7 +168,11 @@ a filter type, an algorithm) are held out of the roll most of the time, since
 flipping one dwarfs any amount of knob travel.
 
 The glass reports the verdict, the evidence it rested on, and the mandate the
-next filing will be made under.
+next filing will be made under -- and the mandate line is where the mandate is
+set. BASIS is a click that lists the three bases (or hold it and drag to step
+through them); SAFE HARBOR is a value you hold and drag (Ctrl fine, Shift
+coarse). There is no switch or trimpot for either on the face. Right-click
+either for the usual parameter menu: typed entry, MIDI-Map, reset.
 
 Right-click for the five filing postures — conservative, standard, aggressive,
 wind-down, total reconstruction, which set everything at once — and then, if you

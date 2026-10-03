@@ -149,24 +149,50 @@ typedef RoundLargeBlackKnob PrimaryKnob;
 typedef RoundBlackKnob      PanelKnob;
 
 
-// The read-out: which algorithm is live and what its clock is doing. Numerals
-// in DSEG7, whose cmap carries only [0-9 . : -], so the segment strings below
-// stay inside that; words in the mono face.
+// The read-out: which algorithm is live and what its clock is doing, and the
+// three pots. The cells are the FIELD_* rectangles the spec cut the glass into
+// (src/Amortization/Panel.hpp); the fields that take the mouse sit on the same
+// rectangles. Numerals in DSEG7, whose cmap carries only [0-9 . : -], so the
+// segment strings below stay inside that; words in the mono face.
 struct AmortizationDisplay : LedDisplay {
 	Amortization* module = NULL;
+
+	/** A pot's field: its name small at the top, its value under it. */
+	static void pot(NVGcontext* vg, const Rect& c, const char* tag, const std::string& value) {
+		const panel::TextStyle TAG(panel::Face::Mono, 6.5f, panel::SAGE,
+			NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+		const panel::TextStyle VAL(panel::Face::Mono, 9.f, panel::LIME,
+			NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+		const float cx = c.pos.x + c.size.x * 0.5f;
+		panel::text(vg, TAG, cx, c.pos.y + c.size.y * 0.40f, tag);
+		panel::text(vg, VAL, cx, c.pos.y + c.size.y * 0.88f, value);
+	}
 
 	void drawLayer(const DrawArgs& args, int layer) override {
 		if (layer != 1) {
 			LedDisplay::drawLayer(args, layer);
 			return;
 		}
+		NVGcontext* vg = args.vg;
 		float delay = module ? module->dispDelayMs : 60.2f;
 		float clock = module ? module->dispClockMHz : 11.4f;
 		bool isTronic = module ? module->dispTronic : false;
 		bool limit = module ? module->dispLimit : false;
+		// The toggle at Tronic while Verb runs: the gate has pulled it down.
+		bool gated = module && !isTronic
+			&& module->params[Amortization::MODE_PARAM].getValue() > 0.5f;
+		float fb = module ? module->params[Amortization::FEEDBACK_PARAM].getValue() : 0.5f;
+		float tilt = module ? module->params[Amortization::TILT_PARAM].getValue() : 0.f;
+		float mix = module ? module->params[Amortization::MIX_PARAM].getValue() : 0.5f;
 
-		const float pad = 5.f;
-		const float rightX = box.size.x - pad;
+		const Rect mode = panel::inGlass(panel::FIELD_MODE);
+		const Rect fbC = panel::inGlass(panel::FIELD_FEEDBACK_VAL);
+		const Rect mixC = panel::inGlass(panel::FIELD_MIX_VAL);
+		const float left = fbC.pos.x + 3.f;
+		const float right = mixC.pos.x + mixC.size.x - 3.f;
+		const float row0 = mode.pos.y + mode.size.y * 0.72f;
+		// The middle line has no field; it sits half way between the two that do.
+		const float row1 = row0 + (fbC.pos.y - mode.pos.y) * 0.5f;
 		const NVGcolor dim = panel::alpha(panel::LIME, 0.55f);
 
 		const panel::TextStyle MODE(panel::Face::Mono, 10.f, panel::MINT,
@@ -175,17 +201,27 @@ struct AmortizationDisplay : LedDisplay {
 			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
 		const panel::TextStyle FLAG(panel::Face::Mono, 8.f, dim,
 			NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE);
+		const panel::TextStyle NOTE(panel::Face::Mono, 6.f, panel::CLAY,
+			NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE);
 
-		// Row 1: the first chip's delay, and the algorithm.
+		// Top line: the first chip's delay, and the algorithm -- a click on it
+		// flips the MODE toggle. A small GATE under it while the gate holds Verb.
 		std::string num = delay < 100.f ? string::f("%.1f", delay) : string::f("%.0f", delay);
-		panel::segValue(args.vg, pad, 12.f, 11.f, num, "ms", panel::LIME);
-		panel::text(args.vg, MODE, rightX, 12.f, isTronic ? "TRONIC" : "VERB");
+		panel::segValue(vg, left, row0, 11.f, num, "ms", panel::LIME);
+		panel::text(vg, MODE, mode.pos.x + mode.size.x - 3.f, row0, isTronic ? "TRONIC" : "VERB");
+		if (gated)
+			panel::text(vg, NOTE, mode.pos.x + mode.size.x - 3.f, mode.pos.y + mode.size.y - 0.5f, "GATE");
 
-		// Row 2: that chip's PT2399 clock, and whether the limiter is working.
-		float x = panel::text(args.vg, TAG, pad, 24.f, "CLK");
-		panel::segValue(args.vg, x + 2.5f, 24.f, 8.f, string::f("%.1f", clock), "MHz", dim);
-		panel::text(args.vg, FLAG.inked(limit ? panel::LIME : dim), rightX, 24.f,
+		// Middle line: that chip's PT2399 clock, and whether the limiter is working.
+		float x = panel::text(vg, TAG, left, row1, "CLK");
+		panel::segValue(vg, x + 2.5f, row1, 8.f, string::f("%.1f", clock), "MHz", dim);
+		panel::text(vg, FLAG.inked(limit ? panel::LIME : dim), right, row1,
 			limit ? "LIMIT" : "CLEAR");
+
+		// Bottom line: the three pots, each one a field to hold and drag.
+		pot(vg, fbC, "FEEDBACK", string::f("%.0f%%", fb * 100.f));
+		pot(vg, panel::inGlass(panel::FIELD_TILT_VAL), "TILT", string::f("%+.0f%%", tilt * 100.f));
+		pot(vg, mixC, "MIX", string::f("%.0f%%", mix * 100.f));
 	}
 };
 
@@ -204,14 +240,18 @@ struct AmortizationWidget : ModuleWidget {
 		display->box.size = panel::mm(panel::GLASS_W, panel::GLASS_H);
 		addChild(display);
 
+		// The read-out's fields, over the cells it draws them in. MODE has no
+		// switch on the face any more; FEEDBACK, TILT and MIX keep their knobs.
+		addParam(panel::createField<panel::ScreenSwitch>(panel::FIELD_MODE, module, Amortization::MODE_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_FEEDBACK_VAL, module, Amortization::FEEDBACK_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_TILT_VAL, module, Amortization::TILT_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_MIX_VAL, module, Amortization::MIX_PARAM));
+
 		addParam(createParamCentered<PrimaryKnob>(panel::mm(panel::FEEDBACK_POS.x, panel::FEEDBACK_POS.y), module, Amortization::FEEDBACK_PARAM));
 		addChild(createLightCentered<SmallLight<panel::LimeLight> >(
 		             panel::mm(panel::LIMIT_POS.x, panel::LIMIT_POS.y), module, Amortization::LIMIT_LIGHT));
 
 		addParam(createParamCentered<PanelKnob>(panel::mm(panel::TILT_POS.x, panel::TILT_POS.y), module, Amortization::TILT_PARAM));
-		addParam(createParamCentered<CKSS>(panel::mm(panel::MODE_POS.x, panel::MODE_POS.y), module, Amortization::MODE_PARAM));
-		addChild(createLightCentered<SmallLight<panel::MintLight> >(
-		             panel::mm(panel::TRONIC_LED_POS.x, panel::TRONIC_LED_POS.y), module, Amortization::TRONIC_LIGHT));
 		addParam(createParamCentered<PanelKnob>(panel::mm(panel::MIX_POS.x, panel::MIX_POS.y), module, Amortization::MIX_PARAM));
 
 		addParam(createParamCentered<Trimpot>(panel::mm(panel::MIX_CV_POS.x, panel::MIX_CV_POS.y), module, Amortization::MIX_CV_PARAM));

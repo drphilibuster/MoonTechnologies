@@ -1,9 +1,9 @@
-# Gross
+# Gross — distortion
 
 Schedule C: profit or loss from business. A black-box / gray-box distortion for
-VCV Rack 2 -- a Wiener–Hammerstein chain with every block on the panel: input
+VCV Rack 2 -- a Wiener–Hammerstein chain with every block on the panel or its read-out: input
 EQ, drive, a static and a dynamic bias shift, a parametric mapping function,
-dry/wet, post gain and output EQ. 21 HP, stereo.
+dry/wet, post gain and output EQ. 14 HP, stereo.
 
 Part of the [Moon Technologies](../README.md) plugin.
 
@@ -74,19 +74,19 @@ the gains run at the engine rate.
 | MID | Peaking band, ±12 dB, Q 0.8. |
 | MID F | The peaking band's centre, 100 Hz – 5 kHz. |
 | HIGH | High shelf at 3 kHz, ±12 dB. |
-| **DRIVE** | `g_pre`, −12 to +36 dB. The primary control. With the DRIVE CV at full trim, 10 V adds 24 dB (the sum is clamped to −24…+48 dB). |
+| **DRIVE** | `g_pre`, −12 to +36 dB. The primary control: a knob, and also a value on the read-out. With the DRIVE CV at full trim, 10 V adds 24 dB (the sum is clamped to −24…+48 dB). |
 
 ### ADJUSTMENTS -- the nonlinear block
 
 | Control | What it does |
 |---|---|
-| OFFSET | Static bias, −1 to +1 knee units, added to the driven signal before the mapping. Comunità's static offset. The BIAS CV adds to it (10 V at full trim = 1 unit). |
+| OFFSET (read-out) | Static bias, −1 to +1 knee units, added to the driven signal before the mapping. Comunità's static offset. The BIAS CV adds to it (10 V at full trim = 1 unit). |
 | DYN | Dynamic bias, −100 to +100 %: how much of the input envelope is added to the operating point. Negative is Eichas's feed-forward subtraction; positive follows Comunità's fuzz offsets. The light beside the label shows the envelope. |
 | ATTACK | Envelope attack, 1 ms – 1 s. |
 | RELEASE | Envelope release, 1 ms – 3 s. The Eichas 5 Hz low-pass corresponds to 32 ms both ways, which is the default. |
-| CURVE | Which mapping (see below). Snaps to five positions. |
-| KNEE+ / KNEE− | `kp` / `kn`, 0.05 – 3: where the curve leaves tanh on the positive and negative side. Unequal knees make the clipping asymmetric. |
-| SHAPE+ / SHAPE− | `gp` / `gn`, 0.1 – 10: the slope factor beyond each knee. Large is a flat ceiling; small is a long, nearly linear tail (the mapping's ceiling is `tanh(k) + (1 − tanh²k)/g`, so below about 0.3 the tail runs well past unity -- WET and POST are the remedy, and the output is clamped at ±12 V regardless). |
+| CURVE (read-out) | Which mapping (see below). Click it to pick one of the five from a list, or hold and drag to step through them. |
+| KNEE+ / KNEE− (read-out) | `kp` / `kn`, 0.05 – 3: where the curve leaves tanh on the positive and negative side. Unequal knees make the clipping asymmetric. |
+| SHAPE+ / SHAPE− (read-out) | `gp` / `gn`, 0.1 – 10: the slope factor beyond each knee. Large is a flat ceiling; small is a long, nearly linear tail (the mapping's ceiling is `tanh(k) + (1 − tanh²k)/g`, so below about 0.3 the tail runs well past unity -- WET and POST are the remedy, and the output is clamped at ±12 V regardless). |
 
 The envelope is taken from the equalised input *before* DRIVE. Eichas takes it
 after `g_pre`, but with `g_bias` a free parameter the two differ only by a
@@ -104,14 +104,14 @@ doing.
 | CUBIC | `x − x³/3`, held at 2/3 beyond ±1. SHAPE has no effect. |
 
 For the four non-Eichas curves KNEE+ / KNEE− scale the half-curve so it
-saturates at +kp / −kn, and SHAPE+ / SHAPE− set its hardness; all four trims do
+saturates at +kp / −kn, and SHAPE+ / SHAPE− set its hardness; all four do
 something on every curve except the two noted.
 
 ### NET -- the Hammerstein tail
 
 | Control | What it does |
 |---|---|
-| WET | `g_wet`, 0 – 100 %; dry is `1 − wet`. The WET CV adds to it. |
+| WET (read-out) | `g_wet`, 0 – 100 %; dry is `1 − wet`. The WET CV adds to it. |
 | POST | `g_post`, ±24 dB. |
 | TONE | A tilt about 1 kHz: −6 dB on one shelf and +6 dB on the other at either extreme. The TONE CV adds to it. |
 | LO CUT | 12 dB/oct high-pass, 10 Hz – 1 kHz. A fixed 5 Hz DC blocker follows it whatever it is set to. |
@@ -136,14 +136,24 @@ side; there is filter and resampler state in every block.
 
 The display draws the transfer curve as it stands -- DRIVE, OFFSET and the live
 dynamic bias included, the dry blend included, before POST and the output EQ --
-over an input of ±5 V, so a knob move is visible before it is audible and the
-curve slides sideways as the envelope pushes the operating point. Beside it: the
-preset name (or CUSTOM once any knob has moved), the curve family, DRIVE in
-dB, the operating point BIAS as it stands, and the envelope and wet fraction.
+over an input of ±5 V, so a move is visible before it is audible and the curve
+slides sideways as the envelope pushes the operating point.
+
+Beside it, every number is a control:
+
+* top line: the preset name (or CUSTOM once anything has moved; the presets are
+  in the context menu) and **CURVE** -- click it for the list of five;
+* middle line: **DRIVE** in dB and **WET** as they stand once their CV is added,
+  **OFFSET**, and the envelope (a read-out only);
+* bottom line: **KNEE+**, **KNEE−**, **SHAPE+** and **SHAPE−**, the mapping's
+  own four numbers.
+
+Hold a value and drag up or down to set it (Ctrl fine, Shift coarse). Right-click
+any of them for the usual parameter menu: typed entry, MIDI-Map, reset.
 
 ## Context menu
 
-* **Filing status** -- the presets. Applying one sets every knob on the panel;
+* **Filing status** -- the presets. Applying one sets every control, knob or read-out field;
   the read-out names it until something moves.
   * *Diode Clipper* -- Eichas Fig. 7a. Symmetric, vertical at the origin, flat
     past the knee, no dry; the 7.2 kHz RC before the diodes is the HIGH shelf.

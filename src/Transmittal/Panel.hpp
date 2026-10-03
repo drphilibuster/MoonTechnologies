@@ -17,6 +17,8 @@ namespace panel {
 static const int   HP = 10;
 static const float W  = 50.8000f;  // mm
 static const float H  = 128.5000f;  // mm
+//: What the module is, as the masthead's second line says it.
+static const char* const WHAT = "VIDEO OUTPUT";
 
 // --- the read-out well: the spec's numbers, not the widget's ---------------
 // A display used to be positioned by hand in the module's C++, in the same
@@ -25,21 +27,32 @@ static const float H  = 128.5000f;  // mm
 static const float GLASS_X = 3.6000f;
 static const float GLASS_Y = 9.8000f;
 static const float GLASS_W = 43.6000f;
-static const float GLASS_H = 52.0000f;
+static const float GLASS_H = 99.0000f;
+
+// --- controls on the glass: where each is drawn and where it is grabbed --
+// One rectangle per Field in the spec, in panel mm. Place the widget with
+// createField<Screen...>(FIELD_X, ...) -- or createMenuField for a "menu" --
+// and draw the value in
+// inGlass(FIELD_X), the same rectangle in the display's own pixels.
+static const Rect FIELD_SOURCE = Rect(Vec(4.4000f, 10.6000f), Vec(42.0000f, 7.6583f));  // select: ScreenSelect
+static const Rect FIELD_SIZE = Rect(Vec(4.4000f, 18.7583f), Vec(20.7500f, 7.6583f));  // select: ScreenSelect
+static const Rect FIELD_RATE = Rect(Vec(25.6500f, 18.7583f), Vec(20.7500f, 7.6583f));  // select: ScreenSelect
+static const Rect FIELD_SEND = Rect(Vec(4.4000f, 26.9167f), Vec(42.0000f, 7.6583f));  // button: ScreenButton
+
+/** A field's rectangle in the display's pixels, for a display placed on the glass. */
+static inline Rect inGlass(const Rect& f) {
+	return mmRect(f.pos.x - GLASS_X, f.pos.y - GLASS_Y, f.size.x, f.size.y);
+}
 
 // --- silkscreen ------------------------------------------------------------
 static const Label LABELS[] = {
-	{ 25.4000f,   5.5000f, 10.24f, 1.50f, PAPER    , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRANSMITTAL"},
-	{ 11.5600f,   8.2500f,  7.40f, 0.00f, LIME     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, true,  "$"},
-	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
-	{ 46.6000f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM W-3"},
-	{ 25.4000f,  65.3000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FILING"},
-	{  9.1250f,  81.0154f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SOURCE"},
-	{ 25.4000f,  81.0154f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SIZE"},
-	{ 41.6750f,  81.0154f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RATE"},
-	{  9.1250f,  94.3772f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SEND"},
-	{ 18.6250f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SEND"},
-	{ 32.1750f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LIVE"},
+	{ 25.4000f,   5.5000f, 10.24f, 1.50f, PAPER    , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "TRANSMITTAL"},
+	{  1.4000f,   8.2500f,  7.40f, 0.00f, LIME     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, 1,     "$"},
+	{ 25.4000f,   8.0000f,  5.40f, 0.40f, LIME     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "VIDEO OUTPUT"},
+	{  2.1717f,  60.0500f,  4.60f, 0.40f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 2,     "MOON TECHNOLOGIES"},
+	{ 48.6283f,  60.0500f,  4.60f, 0.40f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 3,     "FORM W-3"},
+	{ 18.6250f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "SEND"},
+	{ 32.1750f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "LIVE"},
 };
 
 /** Draws this panel's silkscreen. `static` so each module keeps its own,
@@ -50,11 +63,6 @@ static inline void addLabels(app::ModuleWidget* mw) {
 
 // --- widget positions, by the names used in tools/panels/Transmittal.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
-static const Vec STATE_POS = Vec(32.3072, 64.5685);
-static const Vec SOURCE_POS = Vec(9.1250, 72.9085);
-static const Vec SIZE_POS = Vec(25.4000, 72.9085);
-static const Vec RATE_POS = Vec(41.6750, 72.9085);
-static const Vec SEND_POS = Vec(9.1250, 88.2154);
 static const Vec SEND_IN_POS = Vec(18.6250, 118.6000);
 static const Vec SENDING_OUT_POS = Vec(32.1750, 118.6000);
 

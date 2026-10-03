@@ -1,4 +1,4 @@
-# Dependents — FORM 8812
+# Dependents — chord waveshaper · FORM 8812
 
 **A chord claimed as the harmonics of a note you cannot hear.**
 
@@ -87,6 +87,13 @@ That is a feature and it is not defended against.
 
 ## Controls
 
+The read-out at the top holds the root, its scale, HOLD, the two chords by name
+and the twelve harmonics as drawbars, and every one of them is a control: hold a
+value and drag up or down (the pointer turns into up/down arrows), click a chord
+or the scale to pick it from the list, click QUANT or HOLD to flip it.
+Right-click any of them for the param's own menu. ROOT keeps a knob as well,
+because it is the one you play.
+
 | Control | What it does |
 |---|---|
 | **ROOT** | The note nobody hears. Default is two octaves under the chord; V/OCT adds to it. Reads out in Hz, or as a note name when QUANT is on. |
@@ -117,14 +124,18 @@ That is a feature and it is not defended against.
 | ADD 9 | 4:5:6:9 | |
 | DOM 9 | 4:5:6:7:9 | |
 | STACK | 1:2:3:4:5 | not a chord — the plain harmonic series, for using it as an exciter |
-| CUSTOM | -- | reads ITEMIZED HARMONICS' twelve trims instead of a fixed ratio |
+| CUSTOM | -- | reads the twelve drawbars instead of a fixed ratio |
 
 These are just ratios, not equal temperament, because that is what falls out of
 a harmonic series. It is the sound of the thing, not a compromise in it.
 
 ## Itemized harmonics
 
-Twelve trims, one per harmonic (1st through 12th), read whenever CHORD A or
+Twelve drawbars on the read-out, one per harmonic (1st through 12th) -- drag a
+bar up or down to set it. Behind each bar, in mint, is the weight that harmonic
+is actually sounding at (both sides of the morph, CV included, scaled to the
+loudest), so a named chord can be read off the bars and copied onto them. The
+bars are read whenever CHORD A or
 CHORD B is set to CUSTOM. The presets above are shorthand for particular
 settings of these twelve; morph a named triad against your own spectrum (put
 CHORD B on CUSTOM and turn MORPH) and the difference is audible as a chord

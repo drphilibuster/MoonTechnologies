@@ -36,6 +36,7 @@ from panelkit import *   # noqa: E402
 P = Panel(
     slug="PaymentSchedule",
     title="PAYMENT SCHEDULE",
+    what="8-STEP SEQUENCER",
     subtitle="INSTALMENT VOUCHER",
     form="FORM 1040-V",
     density="compact",

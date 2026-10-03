@@ -14,9 +14,11 @@
 namespace panel {
 
 // --- identity --------------------------------------------------------------
-static const int   HP = 33;
-static const float W  = 167.6400f;  // mm
+static const int   HP = 18;
+static const float W  = 91.4400f;  // mm
 static const float H  = 128.5000f;  // mm
+//: What the module is, as the masthead's second line says it.
+static const char* const WHAT = "PCM 70 DIGITAL REVERB";
 
 // --- the read-out well: the spec's numbers, not the widget's ---------------
 // A display used to be positioned by hand in the module's C++, in the same
@@ -24,44 +26,110 @@ static const float H  = 128.5000f;  // mm
 // they drifted. The widget takes them from here now.
 static const float GLASS_X = 3.6000f;
 static const float GLASS_Y = 9.8000f;
-static const float GLASS_W = 160.4400f;
-static const float GLASS_H = 15.5000f;
+static const float GLASS_W = 84.2400f;
+static const float GLASS_H = 70.4000f;
+
+// --- controls on the glass: where each is drawn and where it is grabbed --
+// One rectangle per Field in the spec, in panel mm. Place the widget with
+// createField<Screen...>(FIELD_X, ...) -- or createMenuField for a "menu" --
+// and draw the value in
+// inGlass(FIELD_X), the same rectangle in the display's own pixels.
+static const Rect FIELD_SLOT = Rect(Vec(5.4000f, 25.4000f), Vec(26.6133f, 5.6000f));  // select: ScreenSelect
+static const Rect FIELD_REGMODE = Rect(Vec(32.4133f, 25.4000f), Vec(13.1067f, 5.6000f));  // toggle: ScreenSwitch
+static const Rect FIELD_LOAD = Rect(Vec(45.9200f, 25.4000f), Vec(13.1067f, 5.6000f));  // button: ScreenButton
+static const Rect FIELD_STORE = Rect(Vec(59.4267f, 25.4000f), Vec(13.1067f, 5.6000f));  // button: ScreenButton
+static const Rect FIELD_BYPASS = Rect(Vec(72.9333f, 25.4000f), Vec(13.1067f, 5.6000f));  // button: ScreenButton
+static const Rect FIELD_P00 = Rect(Vec(5.4000f, 32.6000f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P01 = Rect(Vec(14.4044f, 32.6000f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P02 = Rect(Vec(23.4089f, 32.6000f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P03 = Rect(Vec(32.4133f, 32.6000f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P04 = Rect(Vec(41.4178f, 32.6000f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P05 = Rect(Vec(50.4222f, 32.6000f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P06 = Rect(Vec(59.4267f, 32.6000f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P07 = Rect(Vec(68.4311f, 32.6000f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P08 = Rect(Vec(77.4356f, 32.6000f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P10 = Rect(Vec(5.4000f, 40.3600f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P11 = Rect(Vec(14.4044f, 40.3600f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P12 = Rect(Vec(23.4089f, 40.3600f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P13 = Rect(Vec(32.4133f, 40.3600f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P14 = Rect(Vec(41.4178f, 40.3600f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P15 = Rect(Vec(50.4222f, 40.3600f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P16 = Rect(Vec(59.4267f, 40.3600f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P17 = Rect(Vec(68.4311f, 40.3600f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P18 = Rect(Vec(77.4356f, 40.3600f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P20 = Rect(Vec(5.4000f, 48.1200f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P21 = Rect(Vec(14.4044f, 48.1200f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P22 = Rect(Vec(23.4089f, 48.1200f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P23 = Rect(Vec(32.4133f, 48.1200f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P24 = Rect(Vec(41.4178f, 48.1200f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P25 = Rect(Vec(50.4222f, 48.1200f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P26 = Rect(Vec(59.4267f, 48.1200f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P27 = Rect(Vec(68.4311f, 48.1200f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P28 = Rect(Vec(77.4356f, 48.1200f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P30 = Rect(Vec(5.4000f, 55.8800f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P31 = Rect(Vec(14.4044f, 55.8800f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P32 = Rect(Vec(23.4089f, 55.8800f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P33 = Rect(Vec(32.4133f, 55.8800f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P34 = Rect(Vec(41.4178f, 55.8800f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P35 = Rect(Vec(50.4222f, 55.8800f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P36 = Rect(Vec(59.4267f, 55.8800f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P37 = Rect(Vec(68.4311f, 55.8800f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P38 = Rect(Vec(77.4356f, 55.8800f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P40 = Rect(Vec(5.4000f, 63.6400f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P41 = Rect(Vec(14.4044f, 63.6400f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P42 = Rect(Vec(23.4089f, 63.6400f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P43 = Rect(Vec(32.4133f, 63.6400f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P44 = Rect(Vec(41.4178f, 63.6400f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P45 = Rect(Vec(50.4222f, 63.6400f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P46 = Rect(Vec(59.4267f, 63.6400f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P47 = Rect(Vec(68.4311f, 63.6400f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_P48 = Rect(Vec(77.4356f, 63.6400f), Vec(8.6044f, 7.3600f));  // value: ScreenKnob
+static const Rect FIELD_INPUT = Rect(Vec(5.4000f, 72.4000f), Vec(13.1067f, 6.6000f));  // value: ScreenKnob
+static const Rect FIELD_TRIM = Rect(Vec(18.9067f, 72.4000f), Vec(13.1067f, 6.6000f));  // value: ScreenKnob
+static const Rect FIELD_IN_PAD = Rect(Vec(32.4133f, 72.4000f), Vec(13.1067f, 6.6000f));  // toggle: ScreenSwitch
+static const Rect FIELD_OUT_PAD = Rect(Vec(45.9200f, 72.4000f), Vec(13.1067f, 6.6000f));  // toggle: ScreenSwitch
+static const Rect FIELD_CLK_DIV = Rect(Vec(59.4267f, 72.4000f), Vec(13.1067f, 6.6000f));  // select: ScreenSelect
+static const Rect FIELD_OUT_LEVEL = Rect(Vec(72.9333f, 72.4000f), Vec(13.1067f, 6.6000f));  // value: ScreenKnob
+
+/** A field's rectangle in the display's pixels, for a display placed on the glass. */
+static inline Rect inGlass(const Rect& f) {
+	return mmRect(f.pos.x - GLASS_X, f.pos.y - GLASS_Y, f.size.x, f.size.y);
+}
+
+// --- panel metrics, mirrored from tools/panels/Depreciation.py ---
+static const float DIG_H          = 9.0000f;
+static const float DIG_Y          = 10.6000f;
+static const float IW             = 81.4400f;
+static const float MAT_H          = 39.2000f;
+static const float MAT_W          = 81.4400f;
+static const float MAT_X          = 5.0000f;
+static const float MAT_Y          = 32.2000f;
+static const float STAT_Y         = 23.6000f;
+static const float X0             = 5.0000f;
 
 // --- silkscreen ------------------------------------------------------------
 static const Label LABELS[] = {
-	{ 11.5600f,   5.5000f, 10.50f, 1.50f, PAPER    , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "DEPRECIATION"},
-	{156.0800f,   5.5000f,  6.00f, 0.00f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "REVERB"},
-	{ 11.5600f,   8.2500f,  7.40f, 0.00f, LIME     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, true,  "$"},
-	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
-	{163.4400f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 4562"},
-	{ 83.8200f,  29.5000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PARAMETERS AND CONTROL"},
-	{  9.8008f,  44.8069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PRESET"},
-	{ 28.4936f,  44.8069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FACTORY  USER"},
-	{140.6771f,  37.3559f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOD"},
-	{159.2006f,  37.3559f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "AT"},
-	{  9.8008f,  59.1318f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LOAD"},
-	{ 28.4936f,  59.1318f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "STORE"},
-	{140.6771f,  52.3259f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "NOTE"},
-	{159.2006f,  52.3259f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "GATE"},
-	{  9.8008f,  75.1969f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BYPASS"},
-	{ 28.4936f,  75.1969f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "INPUT"},
-	{140.6771f,  67.7459f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "SUST"},
-	{159.2006f,  67.7459f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "SOFT"},
-	{  9.8008f,  91.5879f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "VOLT TRIM"},
-	{ 28.4936f,  91.5879f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN +4 -20"},
-	{140.6771f,  84.1369f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "CLOCK"},
-	{159.2006f,  84.1369f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "RUN"},
-	{  9.8008f, 107.0079f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT +4 -20"},
-	{ 28.4936f, 107.0079f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CLK /"},
-	{135.0871f, 107.0079f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT LEVEL"},
-	{ 33.8610f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN"},
-	{ 48.1350f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN R"},
-	{ 62.4090f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PGM"},
-	{ 76.6830f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BYP"},
-	{ 90.9570f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT L"},
-	{105.2310f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT R"},
-	{119.5050f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "WET L"},
-	{133.7790f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "WET R"},
+	{ 45.7200f,   5.5000f, 10.50f, 1.50f, PAPER    , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "DEPRECIATION"},
+	{  1.4000f,   8.2500f,  7.40f, 0.00f, LIME     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, 1,     "$"},
+	{ 45.7200f,   8.0000f,  5.40f, 0.40f, LIME     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "PCM 70 DIGITAL REVERB"},
+	{  2.1717f,  60.0491f,  4.60f, 0.40f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 2,     "MOON TECHNOLOGIES"},
+	{ 89.2683f,  60.0491f,  4.60f, 0.40f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 3,     "FORM 4562"},
+	{ 24.3090f,  84.9118f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "MOD"},
+	{ 38.5830f,  84.9118f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "AT"},
+	{ 52.8570f,  84.9118f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "NOTE"},
+	{ 67.1310f,  84.9118f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "GATE"},
+	{ 24.3090f,  97.5036f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "SUST"},
+	{ 38.5830f,  97.5036f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "SOFT"},
+	{ 52.8570f,  97.5036f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "CLOCK"},
+	{ 67.1310f,  97.5036f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "RUN"},
+	{  6.4900f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "IN"},
+	{ 17.6986f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "IN R"},
+	{ 28.9071f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "PGM"},
+	{ 40.1157f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "BYP"},
+	{ 51.3243f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "OUT L"},
+	{ 62.5329f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "OUT R"},
+	{ 73.7414f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "WET L"},
+	{ 84.9500f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "WET R"},
 };
 
 /** Draws this panel's silkscreen. `static` so each module keeps its own,
@@ -72,123 +140,21 @@ static inline void addLabels(app::ModuleWidget* mw) {
 
 // --- widget positions, by the names used in tools/panels/Depreciation.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
-static const Vec SLOT_POS = Vec(9.8008, 36.6000);
-static const Vec REGMODE_POS = Vec(28.4936, 36.6000);
-static const Vec P00_POS = Vec(42.7470, 36.6000);
-static const Vec P01_POS = Vec(52.7313, 36.6000);
-static const Vec P02_POS = Vec(62.7157, 36.6000);
-static const Vec P03_POS = Vec(72.7001, 36.6000);
-static const Vec P04_POS = Vec(82.6844, 36.6000);
-static const Vec P05_POS = Vec(92.6688, 36.6000);
-static const Vec P06_POS = Vec(102.6532, 36.6000);
-static const Vec P07_POS = Vec(112.6375, 36.6000);
-static const Vec P08_POS = Vec(122.6219, 36.6000);
-static const Vec MOD_POS = Vec(135.0871, 36.6000);
-static const Vec AT_POS = Vec(153.6106, 36.6000);
-static const Vec CAP00_POS = Vec(42.7470, 43.1700);
-static const Vec CAP01_POS = Vec(52.7313, 43.1700);
-static const Vec CAP02_POS = Vec(62.7157, 43.1700);
-static const Vec CAP03_POS = Vec(72.7001, 43.1700);
-static const Vec CAP04_POS = Vec(82.6844, 43.1700);
-static const Vec CAP05_POS = Vec(92.6688, 43.1700);
-static const Vec CAP06_POS = Vec(102.6532, 43.1700);
-static const Vec CAP07_POS = Vec(112.6375, 43.1700);
-static const Vec CAP08_POS = Vec(122.6219, 43.1700);
-static const Vec LOAD_POS = Vec(9.8008, 51.5700);
-static const Vec STORE_POS = Vec(28.4936, 51.5700);
-static const Vec P10_POS = Vec(42.7470, 51.5700);
-static const Vec P11_POS = Vec(52.7313, 51.5700);
-static const Vec P12_POS = Vec(62.7157, 51.5700);
-static const Vec P13_POS = Vec(72.7001, 51.5700);
-static const Vec P14_POS = Vec(82.6844, 51.5700);
-static const Vec P15_POS = Vec(92.6688, 51.5700);
-static const Vec P16_POS = Vec(102.6532, 51.5700);
-static const Vec P17_POS = Vec(112.6375, 51.5700);
-static const Vec P18_POS = Vec(122.6219, 51.5700);
-static const Vec NOTE_POS = Vec(135.0871, 51.5700);
-static const Vec GATE_POS = Vec(153.6106, 51.5700);
-static const Vec CAP10_POS = Vec(42.7470, 58.1400);
-static const Vec CAP11_POS = Vec(52.7313, 58.1400);
-static const Vec CAP12_POS = Vec(62.7157, 58.1400);
-static const Vec CAP13_POS = Vec(72.7001, 58.1400);
-static const Vec CAP14_POS = Vec(82.6844, 58.1400);
-static const Vec CAP15_POS = Vec(92.6688, 58.1400);
-static const Vec CAP16_POS = Vec(102.6532, 58.1400);
-static const Vec CAP17_POS = Vec(112.6375, 58.1400);
-static const Vec CAP18_POS = Vec(122.6219, 58.1400);
-static const Vec BYPASS_POS = Vec(9.8008, 66.9900);
-static const Vec INPUT_POS = Vec(28.4936, 66.9900);
-static const Vec P20_POS = Vec(42.7470, 66.9900);
-static const Vec P21_POS = Vec(52.7313, 66.9900);
-static const Vec P22_POS = Vec(62.7157, 66.9900);
-static const Vec P23_POS = Vec(72.7001, 66.9900);
-static const Vec P24_POS = Vec(82.6844, 66.9900);
-static const Vec P25_POS = Vec(92.6688, 66.9900);
-static const Vec P26_POS = Vec(102.6532, 66.9900);
-static const Vec P27_POS = Vec(112.6375, 66.9900);
-static const Vec P28_POS = Vec(122.6219, 66.9900);
-static const Vec SUSTAIN_POS = Vec(135.0871, 66.9900);
-static const Vec SOFT_POS = Vec(153.6106, 66.9900);
-static const Vec BYPASS_LED_POS = Vec(16.2203, 74.4410);
-static const Vec CAP20_POS = Vec(42.7470, 73.5600);
-static const Vec CAP21_POS = Vec(52.7313, 73.5600);
-static const Vec CAP22_POS = Vec(62.7157, 73.5600);
-static const Vec CAP23_POS = Vec(72.7001, 73.5600);
-static const Vec CAP24_POS = Vec(82.6844, 73.5600);
-static const Vec CAP25_POS = Vec(92.6688, 73.5600);
-static const Vec CAP26_POS = Vec(102.6532, 73.5600);
-static const Vec CAP27_POS = Vec(112.6375, 73.5600);
-static const Vec CAP28_POS = Vec(122.6219, 73.5600);
-static const Vec TRIM_POS = Vec(9.8008, 83.3810);
-static const Vec IN_PAD_POS = Vec(28.4936, 83.3810);
-static const Vec P30_POS = Vec(42.7470, 83.3810);
-static const Vec P31_POS = Vec(52.7313, 83.3810);
-static const Vec P32_POS = Vec(62.7157, 83.3810);
-static const Vec P33_POS = Vec(72.7001, 83.3810);
-static const Vec P34_POS = Vec(82.6844, 83.3810);
-static const Vec P35_POS = Vec(92.6688, 83.3810);
-static const Vec P36_POS = Vec(102.6532, 83.3810);
-static const Vec P37_POS = Vec(112.6375, 83.3810);
-static const Vec P38_POS = Vec(122.6219, 83.3810);
-static const Vec CLOCK_POS = Vec(135.0871, 83.3810);
-static const Vec RUN_POS = Vec(153.6106, 83.3810);
-static const Vec CAP30_POS = Vec(42.7470, 89.9510);
-static const Vec CAP31_POS = Vec(52.7313, 89.9510);
-static const Vec CAP32_POS = Vec(62.7157, 89.9510);
-static const Vec CAP33_POS = Vec(72.7001, 89.9510);
-static const Vec CAP34_POS = Vec(82.6844, 89.9510);
-static const Vec CAP35_POS = Vec(92.6688, 89.9510);
-static const Vec CAP36_POS = Vec(102.6532, 89.9510);
-static const Vec CAP37_POS = Vec(112.6375, 89.9510);
-static const Vec CAP38_POS = Vec(122.6219, 89.9510);
-static const Vec OUT_PAD_POS = Vec(9.8008, 98.8010);
-static const Vec CLK_DIV_POS = Vec(28.4936, 98.8010);
-static const Vec P40_POS = Vec(42.7470, 98.8010);
-static const Vec P41_POS = Vec(52.7313, 98.8010);
-static const Vec P42_POS = Vec(62.7157, 98.8010);
-static const Vec P43_POS = Vec(72.7001, 98.8010);
-static const Vec P44_POS = Vec(82.6844, 98.8010);
-static const Vec P45_POS = Vec(92.6688, 98.8010);
-static const Vec P46_POS = Vec(102.6532, 98.8010);
-static const Vec P47_POS = Vec(112.6375, 98.8010);
-static const Vec P48_POS = Vec(122.6219, 98.8010);
-static const Vec OUT_LEVEL_POS = Vec(135.0871, 98.8010);
-static const Vec CAP40_POS = Vec(42.7470, 105.3710);
-static const Vec CAP41_POS = Vec(52.7313, 105.3710);
-static const Vec CAP42_POS = Vec(62.7157, 105.3710);
-static const Vec CAP43_POS = Vec(72.7001, 105.3710);
-static const Vec CAP44_POS = Vec(82.6844, 105.3710);
-static const Vec CAP45_POS = Vec(92.6688, 105.3710);
-static const Vec CAP46_POS = Vec(102.6532, 105.3710);
-static const Vec CAP47_POS = Vec(112.6375, 105.3710);
-static const Vec CAP48_POS = Vec(122.6219, 105.3710);
-static const Vec IN_POS = Vec(33.8610, 118.6000);
-static const Vec IN_R_POS = Vec(48.1350, 118.6000);
-static const Vec PGM_POS = Vec(62.4090, 118.6000);
-static const Vec BYPASS_CV_POS = Vec(76.6830, 118.6000);
-static const Vec OUT_L_POS = Vec(90.9570, 118.6000);
-static const Vec OUT_R_POS = Vec(105.2310, 118.6000);
-static const Vec WET_L_POS = Vec(119.5050, 118.6000);
-static const Vec WET_R_POS = Vec(133.7790, 118.6000);
+static const Vec MOD_POS = Vec(24.3090, 90.2018);
+static const Vec AT_POS = Vec(38.5830, 90.2018);
+static const Vec NOTE_POS = Vec(52.8570, 90.2018);
+static const Vec GATE_POS = Vec(67.1310, 90.2018);
+static const Vec SUSTAIN_POS = Vec(24.3090, 102.7936);
+static const Vec SOFT_POS = Vec(38.5830, 102.7936);
+static const Vec CLOCK_POS = Vec(52.8570, 102.7936);
+static const Vec RUN_POS = Vec(67.1310, 102.7936);
+static const Vec IN_POS = Vec(6.4900, 118.6000);
+static const Vec IN_R_POS = Vec(17.6986, 118.6000);
+static const Vec PGM_POS = Vec(28.9071, 118.6000);
+static const Vec BYPASS_CV_POS = Vec(40.1157, 118.6000);
+static const Vec OUT_L_POS = Vec(51.3243, 118.6000);
+static const Vec OUT_R_POS = Vec(62.5329, 118.6000);
+static const Vec WET_L_POS = Vec(73.7414, 118.6000);
+static const Vec WET_R_POS = Vec(84.9500, 118.6000);
 
 } // namespace panel

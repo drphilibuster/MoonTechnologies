@@ -46,6 +46,7 @@ from panelkit import *   # noqa: E402
 P = Panel(
     slug="Kickback",
     title="KICKBACK",
+    what="DRUM MACHINE",
     form="FORM 1099-NEC",
     density="compact",
     # The OUT jacks carry the section's own column indices, so they should sit

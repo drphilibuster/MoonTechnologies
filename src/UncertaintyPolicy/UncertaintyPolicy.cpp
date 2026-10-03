@@ -1041,17 +1041,17 @@ struct PolicyDisplay : widget::Widget {
 	UncertaintyPolicy* module = nullptr;
 	RollEngine* engine = nullptr;
 
-	/** The terms in force, for the third line of the read-out. */
-	std::string mandate() const {
+	panel::FittedText fitTop, fitBot;
+
+	/** The basis in force, for the mandate line. */
+	std::string basisName() const {
 		if (!module)
-			return "no mandate on file";
-		const char* b = "neutral";
+			return "going concern";
 		switch (module->basis()) {
-			case Basis::WindDown: b = "wind-down"; break;
-			case Basis::GoingConcern: b = "going concern"; break;
-			default: break;
+			case Basis::WindDown: return "wind-down";
+			case Basis::GoingConcern: return "going concern";
+			default: return "neutral";
 		}
-		return rack::string::f("%s / harbor %.0f%%", b, module->safeHarbor() * 100.f);
 	}
 
 	void drawLayer(const DrawArgs& args, int layer) override {
@@ -1099,22 +1099,37 @@ struct PolicyDisplay : widget::Widget {
 		}
 
 		// The family read-out idiom: words in the mono face, headline over
-		// subline. Both runs go through panel::text so neither can leave state
-		// behind for the other.
-		static const panel::TextStyle HEAD(panel::Face::Mono, 9.f, panel::SAGE,
+		// subline. Every run goes through panel::text so none can leave state
+		// behind for another. The lines are the rows of the grid the spec cut
+		// the glass into; the third is BASIS and SAFE HARBOR, each a field
+		// (FIELD_BASIS / FIELD_SPINE in src/UncertaintyPolicy/Panel.hpp).
+		static const panel::TextStyle HEAD(panel::Face::Mono, 10.f, panel::SAGE,
 			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
-		static const panel::TextStyle SUB(panel::Face::Mono, 6.4f, panel::SAGE,
+		static const panel::TextStyle SUB(panel::Face::Mono, 7.5f, panel::SAGE,
 			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
-		// The mandate line is dimmer than the verdict above it on purpose: it is
-		// standing state rather than news, and it is there so the terms the next
-		// filing will be made under can be read without decoding a switch
-		// position and a trimpot angle.
-		static const panel::TextStyle FOOT(panel::Face::Mono, 5.8f, panel::SAGE,
+		// The mandate line is standing state rather than news: its captions are
+		// dim, and its values lit, because they are what you set here.
+		static const panel::TextStyle TAG(panel::Face::Mono, 6.f, panel::SAGE,
 			NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
+		static const panel::TextStyle VAL(panel::Face::Mono, 8.f, panel::LIME,
+			NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE);
 
-		panel::text(args.vg, HEAD.inked(col), mm2px(2.2f), mm2px(5.0f), top);
-		panel::text(args.vg, SUB, mm2px(2.2f), mm2px(9.0f), bot);
-		panel::text(args.vg, FOOT, mm2px(2.2f), mm2px(13.0f), mandate());
+		const Rect basis = panel::inGlass(panel::FIELD_BASIS);
+		const Rect harbor = panel::inGlass(panel::FIELD_SPINE);
+		const float pitch = basis.pos.y * 0.5f;          // two lines stand above it
+		const float left = basis.pos.x + mm2px(1.0f);
+		const float width = harbor.pos.x + harbor.size.x - left - mm2px(1.0f);
+
+		panel::text(args.vg, HEAD.inked(col), left, pitch * 0.72f,
+		            fitTop.get(args.vg, HEAD, top, width));
+		panel::text(args.vg, SUB, left, pitch * 1.70f, fitBot.get(args.vg, SUB, bot, width));
+
+		const float base = basis.pos.y + basis.size.y * 0.68f;
+		panel::text(args.vg, TAG, left, base, "BASIS");
+		panel::text(args.vg, VAL, basis.pos.x + basis.size.x - mm2px(1.0f), base, basisName());
+		panel::text(args.vg, TAG, harbor.pos.x + mm2px(1.0f), base, "HARBOR");
+		panel::text(args.vg, VAL, harbor.pos.x + harbor.size.x - mm2px(1.0f), base,
+		            rack::string::f("%.0f%%", (module ? module->safeHarbor() : 0.75f) * 100.f));
 
 		Widget::drawLayer(args, layer);
 	}
@@ -1142,6 +1157,10 @@ struct UncertaintyPolicyWidget : ModuleWidget {
 		display->box.size = panel::mm(panel::GLASS_W, panel::GLASS_H);
 		addChild(display);
 
+		// The mandate line's two terms, over the cells the display draws them in.
+		addParam(panel::createField<panel::ScreenSelect>(panel::FIELD_BASIS, module, UncertaintyPolicy::BASIS_PARAM));
+		addParam(panel::createField<panel::ScreenKnob>(panel::FIELD_SPINE, module, UncertaintyPolicy::SPINE_PARAM));
+
 		addParam(createParamCentered<PolicyKnob>(panel::mm(panel::KNOB_AMOUNT_POS.x, panel::KNOB_AMOUNT_POS.y),
 		                                        module, UncertaintyPolicy::KNOB_AMOUNT_PARAM));
 		addParam(createParamCentered<PolicyKnob>(panel::mm(panel::SPREAD_POS.x, panel::SPREAD_POS.y),
@@ -1153,12 +1172,8 @@ struct UncertaintyPolicyWidget : ModuleWidget {
 		                                        module, UncertaintyPolicy::ROLL_CONTROLS_PARAM));
 		addParam(createParamCentered<VCVButton>(panel::mm(panel::ROLL_CABLES_POS.x, panel::ROLL_CABLES_POS.y),
 		                                        module, UncertaintyPolicy::ROLL_CABLES_PARAM));
-		addParam(createParamCentered<CKSSThree>(panel::mm(panel::BASIS_POS.x, panel::BASIS_POS.y),
-		                                        module, UncertaintyPolicy::BASIS_PARAM));
 		addParam(createParamCentered<VCVBezel>(panel::mm(panel::ROLL_ALL_POS.x, panel::ROLL_ALL_POS.y),
 		                                        module, UncertaintyPolicy::ROLL_ALL_PARAM));
-		addParam(createParamCentered<Trimpot>(panel::mm(panel::SPINE_POS.x, panel::SPINE_POS.y),
-		                                        module, UncertaintyPolicy::SPINE_PARAM));
 		addParam(createParamCentered<VCVButton>(panel::mm(panel::REVERT_POS.x, panel::REVERT_POS.y),
 		                                        module, UncertaintyPolicy::REVERT_PARAM));
 
@@ -1245,7 +1260,7 @@ struct UncertaintyPolicyWidget : ModuleWidget {
 				        },
 				        [=]() {
 					        applyPreset(mod->policy, q);
-					        // The three panel controls travel with the posture.
+					        // The three controls (SPREAD, and the mandate line's two) travel with the posture.
 					        mod->getParamQuantity(UncertaintyPolicy::BASIS_PARAM)
 					                ->setValue((float) (int) q.basis);
 					        mod->getParamQuantity(UncertaintyPolicy::SPINE_PARAM)

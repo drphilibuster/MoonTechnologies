@@ -1,6 +1,6 @@
-# Audit Logic
+# Audit Logic — logic, switches & divider
 
-29 HP. FORM 886-A, the IRS's "Explanation of Items" -- the form an examiner
+16 HP. FORM 886-A, the IRS's "Explanation of Items" -- the form an examiner
 attaches a finding to. Audit Logic consolidates three *Modular in a Week*
 boards into one panel, laid out as three felt blocks read top to bottom:
 
@@ -17,6 +17,18 @@ Quad Logic Module, 4066 Quad Gated Switch), and Emiz Instruments (the CV2
 clock divider). Every function here is a reinterpretation for VCV Rack, not a
 1:1 port -- see "What was approximated" below for exactly where and why.
 
+## The read-out
+
+Every setting on the panel is a word on the glass under the masthead, and the
+word is the control. The top line is the four gates' functions -- **GATE 1**
+to **GATE 4** -- each a choice from a list: click it to pick one of the seven,
+or hold and drag to step through them. The bottom line is the four switches the
+whole panel shares, each showing its state: **POLARITY** (HI ON / LO ON),
+**REF V** (0 V / 12 V), **ROUTE** (A-B / A-B/A-C) and **MODE** (BINARY /
+MUSICAL). Click one to flip it (Ctrl-click flips it back the other way, which
+on a two-way switch is the same thing). Right-click any of them for the usual
+parameter menu -- MIDI-Map, reset, and the setting's full name.
+
 ## FINDINGS
 
 Four independent two-input logic gates, each polyphonic (up to 16 channels,
@@ -30,11 +42,8 @@ Per gate:
   that chip is literally what the original Hex Inverter board built its gates
   from) reads anything above 2 V as true and anything below 0.1 V as false,
   with the last state held in between.
-* **FN** -- the gate's function: Invert A, AND, OR, XOR, NAND, NOR, XNOR.
-  The knob is unlabelled and wears a small lit plate instead, which the module
-  writes the current function into -- NOT A, AND, XOR and so on. Seven meanings
-  cannot be engraved on one knob, and "FN" told you the knob's job but never
-  its setting.
+* **Function** -- on the glass, as that gate's word on the top line: Invert
+  A, AND, OR, XOR, NAND, NOR, XNOR (shown as NOT A, AND, XOR and so on).
   Invert A ignores B entirely. Default per gate is Invert A / AND / OR / XOR,
   left to right -- the order the plugin's own registered description lists
   them in, which is the closest thing the surviving Quad Logic Module
@@ -43,28 +52,29 @@ Per gate:
   extension, not a claim about which diode network the original board used.
 * **OUT** -- 0/10 V gate output (mint-inked).
 
+Gates 1 and 2 share the first row of jacks, 3 and 4 the second, each reading
+A, B, OUT.
+
 Between **A** and **B** sits that gate's own status light, lit MINT while its
 output is currently high -- the per-gate counterpart to VERDICT below.
 
-An unpatched A or B does not float: it reads **REF V**, the switch in
-REFERRAL (between **POLARITY** and **ROUTE**, described below), 0 V or 12 V,
+An unpatched A or B does not float: it reads **REF V**, on the glass
+(between **POLARITY** and **ROUTE**, described below), 0 V or 12 V,
 exactly as the original Quad Inverter's own "Trigger Voltage" switch set the
 reference for its unpatched "in a" pins.
 
 The **VERDICT** light beside the section caption is lit whenever any gate's
 channel 0 is currently true.
 
-### Why it is 25 HP and not narrower
+### Why it is the width it is
 
-Laid out vertically -- one gate per row rather than four side by side, and the
-two switch channels stacked -- this panel measures **18 HP**. It is not built
-that way because it does not fit: vertical needs eight section rows and a 3U
-face holds about six, so it overruns by 44 mm. The width only drops if both
-FINDINGS and REFERRAL go from eight columns to four, and that is precisely what
-costs the rows.
-
-The module is height-bound, not width-bound. 25 HP is close to its floor for
-this much content.
+The panel used to be height-bound: four gates side by side, each with a function
+knob and its plate under it, and a row of switches over REFERRAL, filled the
+face, and laying the gates out one per row needed more rows than a 3U face
+holds. With the functions and the switches on the glass, the knob row and the
+switch row are gone, and that height is what lets the gates fold into two rows
+of two and the switch channels into one row each. The width is now set by the
+FINDINGS rows and the six divider taps.
 
 ## REFERRAL
 
@@ -82,10 +92,10 @@ INSTALLMENTS have panel room. Per channel:
 has its own toggle) chooses whether the channel is on while its gate
 is high (**Hi On**) or low (**Lo On**).
 
-**REF V**, centred between **POLARITY** and **ROUTE**, is not part of either
+**REF V**, between **POLARITY** and **ROUTE** on the glass, is not part of either
 gated switch: it is FINDINGS' reference for an unpatched A or B input, 0 V or
 12 V, exactly as the original Quad Inverter's own "Trigger Voltage" switch set
-the reference for its unpatched "in a" pins. It lives on this block because it
+the reference for its unpatched "in a" pins. It stands with them because it
 is one setting shared across all four FINDINGS gates, the same way POLARITY
 and ROUTE are each one setting shared across both REFERRAL channels.
 
@@ -115,7 +125,7 @@ falling edge") say, so the first /2 gate goes high after the first clock has com
 not on its rising edge. **RESET** is a level: while it is high the counter is held at zero
 and the clock is ignored. Six gate outputs tap it, Q1..Q6 (the chip's Q7, /128, has no jack): **/2 /4 /8 /16 /32 /64**, each lit MINT while high.
 
-**MODE**, at the end of the tap row past **/64**, chooses the division set. In
+**MODE**, the last word on the glass, chooses the division set. In
 **BINARY** mode (its default) each tap is one bit of the counter, which is why
 the duty cycle is exactly 50 % on every one of them: a single bit toggles at
 exactly half its own period, always.
@@ -141,15 +151,15 @@ CLOCK.
 
 **CLOCK**, **RESET** -- the divider's own transport, shared with nothing else
 on the panel. Everything else the panel needs shared across sections --
-**REF V** and **MODE** -- lives in REFERRAL and INSTALLMENTS respectively,
-described above.
+**POLARITY**, **REF V**, **ROUTE** and **MODE** -- is on the glass, described
+above.
 
 ## What was approximated or left out
 
 * **REFERRAL is two channels, not four.** The original 4066 Quad Gated
   Switch board used one quad-bilateral IC for four independent channels
   (silkscreened 1A/1B .. 4A/4B, Gate 1..4). This panel keeps two so FINDINGS
-  and INSTALLMENTS both fit at 29 HP; POLARITY and ROUTE are one setting shared by
+  and INSTALLMENTS both fit the panel; POLARITY and ROUTE are one setting shared by
   both channels. **That is a panel economy, not the board's way:** the Day 10 schematic
   ("Quad gate controlled switch", 2020-03-16) gives each of the four channels its own
   Hi/Lo polarity toggle (L1-L4). Each channel is a TL074 comparator (the gate against about

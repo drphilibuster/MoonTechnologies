@@ -14,9 +14,11 @@
 namespace panel {
 
 // --- identity --------------------------------------------------------------
-static const int   HP = 12;
-static const float W  = 60.9600f;  // mm
+static const int   HP = 10;
+static const float W  = 50.8000f;  // mm
 static const float H  = 128.5000f;  // mm
+//: What the module is, as the masthead's second line says it.
+static const char* const WHAT = "MIDIVERB DIGITAL REVERB";
 
 // --- the read-out well: the spec's numbers, not the widget's ---------------
 // A display used to be positioned by hand in the module's C++, in the same
@@ -24,38 +26,39 @@ static const float H  = 128.5000f;  // mm
 // they drifted. The widget takes them from here now.
 static const float GLASS_X = 3.6000f;
 static const float GLASS_Y = 9.8000f;
-static const float GLASS_W = 53.7600f;
-static const float GLASS_H = 20.0000f;
+static const float GLASS_W = 43.6000f;
+static const float GLASS_H = 26.0000f;
 
-// --- panel metrics, mirrored from tools/panels/Rebate.py ---
-static const float DIG_H          = 11.6000f;
-static const float DIG_W          = 22.0000f;
-static const float DIG_X          = 19.4800f;
-static const float DIG_Y          = 10.9000f;
-static const float TXT_H          = 5.2000f;
-static const float TXT_W          = 47.9600f;
-static const float TXT_X          = 6.5000f;
-static const float TXT_Y          = 23.3000f;
+// --- controls on the glass: where each is drawn and where it is grabbed --
+// One rectangle per Field in the spec, in panel mm. Place the widget with
+// createField<Screen...>(FIELD_X, ...) -- or createMenuField for a "menu" --
+// and draw the value in
+// inGlass(FIELD_X), the same rectangle in the display's own pixels.
+static const Rect FIELD_CHANNEL = Rect(Vec(4.4000f, 10.6000f), Vec(6.5833f, 19.4200f));  // select: ScreenSelect
+static const Rect FIELD_UP = Rect(Vec(11.4833f, 10.6000f), Vec(27.8333f, 9.4600f));  // button: ScreenButton
+static const Rect FIELD_DOWN = Rect(Vec(11.4833f, 20.5600f), Vec(27.8333f, 9.4600f));  // button: ScreenButton
+static const Rect FIELD_DEFEAT = Rect(Vec(39.8167f, 10.6000f), Vec(6.5833f, 19.4200f));  // button: ScreenButton
+
+/** A field's rectangle in the display's pixels, for a display placed on the glass. */
+static inline Rect inGlass(const Rect& f) {
+	return mmRect(f.pos.x - GLASS_X, f.pos.y - GLASS_Y, f.size.x, f.size.y);
+}
 
 // --- silkscreen ------------------------------------------------------------
 static const Label LABELS[] = {
-	{ 11.5600f,   5.5000f, 10.50f, 1.50f, PAPER    , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "REBATE"},
-	{ 49.4000f,   5.5000f,  6.00f, 0.00f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "MIDI REVERB"},
-	{ 11.5600f,   8.2500f,  7.40f, 0.00f, LIME     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, true,  "$"},
-	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
-	{ 56.7600f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 843"},
-	{ 30.4800f,  34.0000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FRONT PANEL"},
-	{ 25.9390f,  42.3143f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "-12 dB"},
-	{ 36.1996f,  42.3143f,  5.80f, 0.00f, CLAY_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "0 dB"},
-	{ 11.1750f,  61.1212f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CHANNEL"},
-	{ 25.0734f,  61.1212f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "UP"},
-	{ 37.9434f,  61.1212f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DOWN"},
-	{ 50.8134f,  61.1212f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DEFEAT"},
-	{ 30.4800f,  85.1280f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MIX"},
-	{  9.0690f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN L"},
-	{ 23.3430f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN R"},
-	{ 37.6170f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT L"},
-	{ 51.8910f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT R"},
+	{ 25.4000f,   5.5000f, 10.50f, 1.50f, PAPER    , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "REBATE"},
+	{  1.4000f,   8.2500f,  7.40f, 0.00f, LIME     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, 1,     "$"},
+	{ 25.4000f,   8.0000f,  5.40f, 0.40f, LIME     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "MIDIVERB DIGITAL REVERB"},
+	{  2.1717f,  60.0491f,  4.60f, 0.40f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 2,     "MOON TECHNOLOGIES"},
+	{ 48.6283f,  60.0491f,  4.60f, 0.40f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 3,     "FORM 843"},
+	{ 25.4000f,  40.0000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "FRONT PANEL"},
+	{ 20.8590f,  48.3143f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "-12 dB"},
+	{ 31.1196f,  48.3143f,  5.80f, 0.00f, CLAY_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "0 dB"},
+	{ 25.4000f,  72.3212f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "MIX"},
+	{  6.4900f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "IN L"},
+	{ 19.0967f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "IN R"},
+	{ 31.7033f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "OUT L"},
+	{ 44.3100f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "OUT R"},
 };
 
 /** Draws this panel's silkscreen. `static` so each module keeps its own,
@@ -66,16 +69,12 @@ static inline void addLabels(app::ModuleWidget* mw) {
 
 // --- widget positions, by the names used in tools/panels/Rebate.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
-static const Vec METER_GREEN_POS = Vec(25.9390, 37.7500);
-static const Vec METER_RED_POS = Vec(36.1996, 37.7500);
-static const Vec CHANNEL_POS = Vec(11.1750, 52.9143);
-static const Vec UP_POS = Vec(25.0734, 52.9143);
-static const Vec DOWN_POS = Vec(37.9434, 52.9143);
-static const Vec DEFEAT_POS = Vec(50.8134, 52.9143);
-static const Vec MIX_POS = Vec(30.4800, 74.3212);
-static const Vec IN_L_POS = Vec(9.0690, 118.6000);
-static const Vec IN_R_POS = Vec(23.3430, 118.6000);
-static const Vec OUT_L_POS = Vec(37.6170, 118.6000);
-static const Vec OUT_R_POS = Vec(51.8910, 118.6000);
+static const Vec METER_GREEN_POS = Vec(20.8590, 43.7500);
+static const Vec METER_RED_POS = Vec(31.1196, 43.7500);
+static const Vec MIX_POS = Vec(25.4000, 61.5143);
+static const Vec IN_L_POS = Vec(6.4900, 118.6000);
+static const Vec IN_R_POS = Vec(19.0967, 118.6000);
+static const Vec OUT_L_POS = Vec(31.7033, 118.6000);
+static const Vec OUT_R_POS = Vec(44.3100, 118.6000);
 
 } // namespace panel

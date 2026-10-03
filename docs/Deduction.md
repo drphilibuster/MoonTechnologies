@@ -1,8 +1,8 @@
-# Deduction
+# Deduction — multimode filter
 
 Schedule A: itemised deductions. Six well-known filter/distortion circuits from
 the *Modular in a Week* (MiaW) course, one model at a time behind a single set
-of controls. 13 HP, polyphonic.
+of controls. 10 HP, polyphonic.
 
 Part of the [Moon Technologies](../README.md) plugin.
 
@@ -49,12 +49,18 @@ neither.
 
 ### DEDUCTIONS -- the filter itself
 
+CUTOFF is the knob. Everything else is set on the read-out, where its value is
+printed: **hold a value and drag up or down** (the pointer turns into up/down
+arrows; Ctrl drags fine, Shift coarse), **click the model** to pick one from the
+list, and **click NRM/INV** to flip it. The cutoff on the read-out drags too.
+Right-click any of them for the param's own menu: typed entry, reset, MIDI-Map.
+
 | Control | What it does |
 |---|---|
 | **CUTOFF** | 20 Hz - 20 kHz, exponential. The primary control. |
-| MODEL | Which of the six circuits is running: PAiA, Q&D, Korg35, MS-20, EFM or DIRT. A 6-position snap control; changing it while a cable is patched still lands on a whole step. Switching models crossfades over about 20 ms so nothing clicks. |
+| MODEL | Which of the six circuits is running: PAiA, Q&D, Korg35, MS-20, EFM or DIRT. Click it on the read-out to pick from the list, or drag through them; under CV it still lands on a whole step. Switching models crossfades over about 20 ms so nothing clicks. |
 | RES | Resonance / feedback. Meaning per model: PAiA is the board's R11 gain trimmer (1k at zero down to 1 ohm at full: the loop gain, so the peak's height; it never self-oscillates); Q&D, Korg35 and MS-20 raise the loop gain toward self-oscillation; EFM raises the ladder's feedback toward self-oscillation; DIRT raises the amount of output fed back to the input. |
-| DRIVE | Level into the nonlinear stage. Meaning per model: PAiA and Q&D's input gain (for the PAiA, the level into R1, 1/8 to 8 of 5 V); Korg35's saturation amount; MS-20's diode threshold (inverted -- higher DRIVE means an *earlier*, harder knee); EFM's ladder input level; DIRT's operating-point BIAS, which can choke the signal to silence at either extreme, as the real CMOS inverter's transfer curve does. The light beside it reports the stage is driven past its own clipping knee. |
+| DRIVE | Level into the nonlinear stage. Meaning per model: PAiA and Q&D's input gain (for the PAiA, the level into R1, 1/8 to 8 of 5 V); Korg35's saturation amount; MS-20's diode threshold (inverted -- higher DRIVE means an *earlier*, harder knee); EFM's ladder input level; DIRT's operating-point BIAS, which can choke the signal to silence at either extreme, as the real CMOS inverter's transfer curve does. The DRV value on the read-out turns clay when the stage is driven past its own clipping knee. |
 | NRM/INV | Flips which way CUTOFF's CV drives the frequency: NRM raises cutoff on a rising CV, INV lowers it. From the Q&D's own CV Response switch, applied here to the whole module rather than to one circuit. |
 
 ### WITHHOLDING -- what the CV inputs may take off each control

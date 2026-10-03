@@ -34,9 +34,9 @@ struct Unit {
 
 } // namespace
 
-/** A control that has no end: its tooltip says what its buttons do rather than a number of detents. */
+/** A control that has no end: its tooltip says what the field does rather than a number of detents. */
 struct ChannelQuantity : ParamQuantity {
-	std::string getDisplayValueString() override { return "down / up: one channel a click"; }
+	std::string getDisplayValueString() override { return "drag, or click to pick"; }
 	std::string getUnit() override { return ""; }
 };
 
@@ -62,7 +62,7 @@ struct Rebate : Module {
 
 	midi::InputQueue midiInput;
 	bool pressed[4] = {};
-	long chanSeen = 0;                           // the channel stepper's count at the last look
+	long chanSeen = 0;                           // the CHANNEL field's count at the last look
 	bool chanInit = false;
 	int housekeeping = 0;
 
@@ -74,7 +74,7 @@ struct Rebate : Module {
 
 	Rebate() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-		// On the unit CHANNEL is held while UP or DOWN is pressed, which a mouse cannot do: each click of this holds CHANNEL
+		// On the unit CHANNEL is held while UP or DOWN is pressed, which a mouse cannot do: each step of this holds CHANNEL
 		// and presses the one key, and the digits show the channel while it does.
 		configParam<ChannelQuantity>(CHANNEL_PARAM, -INFINITY, INFINITY, 0.f, "MIDI receive channel");
 		configButton(UP_PARAM, "Up");
@@ -204,11 +204,12 @@ struct Rebate : Module {
 			carryLen = 0;
 			for (bool& p : pressed) p = false;
 		}
-		// The channel stepper's clicks since the last sample (not a jump when a patch loads with it somewhere).
+		// CHANNEL's steps since the last sample (not a jump when a patch loads with it somewhere). At most
+		// fifteen: a pick from the screen's channel list is one jump across the whole range.
 		int chanClicks = 0;
 		{
 			const long v = long(std::floor(double(params[CHANNEL_PARAM].getValue()) + 0.5));
-			if (chanInit) chanClicks = int(std::max(-8L, std::min(8L, v - chanSeen)));
+			if (chanInit) chanClicks = int(std::max(-15L, std::min(15L, v - chanSeen)));
 			chanSeen = v;
 			chanInit = true;
 		}
@@ -225,7 +226,7 @@ struct Rebate : Module {
 		// buttons are the module's; a press then would only fight it.
 		for (int c = 0; c < std::abs(chanClicks); c++) m.stepChannel(chanClicks > 0 ? 1 : -1);
 		if (!m.replaying())
-			for (int i = 1; i < 4; i++) {   // UP, DOWN, DEFEAT: CHANNEL is the stepper's, not a button
+			for (int i = 1; i < 4; i++) {   // UP, DOWN, DEFEAT: CHANNEL is a count, not a button
 				const bool down = params[CHANNEL_PARAM + i].getValue() > 0.5f;
 				if (down != pressed[i]) { m.button(mv::Machine::Button(i), down); pressed[i] = down; }
 			}
@@ -326,19 +327,18 @@ struct Rebate : Module {
 
 namespace {
 
-/** The MIDIverb's two seven-segment digits, segment by segment as the firmware lights them. */
-struct DigitDisplay : widget::Widget {
+/** The read-out: the MIDIverb's two seven-segment digits, segment by segment as the firmware
+ *  lights them, with CHANNEL and DEFEAT beside them and the module's status line below. The
+ *  digits, CHANNEL and DEFEAT are the FIELD_* cells (src/Rebate/Panel.hpp), and the fields that
+ *  take the mouse sit on the same rectangles: the top half of the digits is UP, the bottom half
+ *  DOWN. Text goes through panel:: only. */
+struct RebateDisplay : widget::Widget {
 	Rebate* module = nullptr;
 
-	void drawLayer(const DrawArgs& args, int layer) override {
-		if (layer != 1) return;
-		uint8_t seg[2] = { 0, 0 };
-		if (module) { seg[0] = module->digits[0]; seg[1] = module->digits[1]; }
-		else { seg[0] = 0x5b; seg[1] = 0x5b; }   // "22", the unit's power-on program
-		NVGcontext* vg = args.vg;
+	static void digits(NVGcontext* vg, const Rect& box, const uint8_t seg[2]) {
 		const float dw = box.size.x * 0.27f, dh = box.size.y * 0.70f, t = dw * 0.17f;
 		for (int dig = 0; dig < 2; dig++) {
-			const float x0 = box.size.x * (dig ? 0.56f : 0.17f), y0 = box.size.y * 0.15f;
+			const float x0 = box.pos.x + box.size.x * (dig ? 0.56f : 0.17f), y0 = box.pos.y + box.size.y * 0.15f;
 			// a b c d e f g, each as (x, y, w, h) in the digit's box
 			const float r[7][4] = {
 				{ t, 0, dw - 2 * t, t }, { dw - t, t, t, dh / 2 - 1.5f * t }, { dw - t, dh / 2 + 0.5f * t, t, dh / 2 - 1.5f * t },
@@ -354,23 +354,103 @@ struct DigitDisplay : widget::Widget {
 			}
 		}
 	}
-};
 
-/** One line: what the module needs, or which EPROM it is running. */
-struct StatusLine : widget::Widget {
-	Rebate* module = nullptr;
+	/** A small arrow at the digits' right edge: which way the half under it steps. */
+	static void arrow(NVGcontext* vg, const Rect& c, int dir) {
+		const float cx = c.pos.x + c.size.x - 6.f, cy = c.pos.y + c.size.y / 2.f, a = 2.6f;
+		nvgBeginPath(vg);
+		nvgMoveTo(vg, cx, cy - dir * a);
+		nvgLineTo(vg, cx + a, cy + dir * a * 0.7f);
+		nvgLineTo(vg, cx - a, cy + dir * a * 0.7f);
+		nvgClosePath(vg);
+		nvgFillColor(vg, panel::alpha(panel::SAGE, 0.45f));
+		nvgFill(vg);
+	}
 
 	void drawLayer(const DrawArgs& args, int layer) override {
 		if (layer != 1) return;
-		std::string s = "ALESIS MIDIVERB", label;
+		NVGcontext* vg = args.vg;
+		uint8_t seg[2] = { 0x5b, 0x5b };   // "22", the unit's power-on program
+		std::string s = "ALESIS MIDIVERB";
 		NVGcolor ink = panel::SAGE;
+		int channel = 0;
+		bool defeat = false;
 		if (module) {
+			seg[0] = module->digits[0];
+			seg[1] = module->digits[1];
 			std::lock_guard<std::mutex> lock(module->snapMutex);
 			if (!module->status.empty()) { s = module->status + " - RIGHT-CLICK"; ink = panel::CLAY; }
 			else s = module->romLabel;
+			channel = module->saved.channel;
+			defeat = module->saved.defeat;
 		}
-		const panel::TextStyle st(panel::Face::Mono, box.size.y * 0.55f, ink, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
-		panel::text(args.vg, st, box.size.x / 2, box.size.y / 2, s);
+
+		// The digits span UP over DOWN: one number, pressed on the half you want it to go.
+		const Rect up = panel::inGlass(panel::FIELD_UP), down = panel::inGlass(panel::FIELD_DOWN);
+		const Rect dig(up.pos, Vec(up.size.x, down.pos.y + down.size.y - up.pos.y));
+		digits(vg, dig, seg);
+		arrow(vg, up, +1);
+		arrow(vg, down, -1);
+
+		// CHANNEL: its caption over the MIDI receive channel, 1 to 16.
+		const panel::TextStyle TAG(panel::Face::Mono, 7.f, panel::SAGE, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+		const panel::TextStyle VAL(panel::Face::Mono, 10.f, panel::LIME, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+		const Rect ch = panel::inGlass(panel::FIELD_CHANNEL);
+		panel::text(vg, TAG, ch.pos.x + ch.size.x / 2, ch.pos.y + ch.size.y * 0.36f, "CH");
+		panel::text(vg, VAL, ch.pos.x + ch.size.x / 2, ch.pos.y + ch.size.y * 0.72f, string::f("%d", channel + 1));
+
+		// DEFEAT: lit clay while the effect is defeated, as the digits' "--" says too.
+		const Rect df = panel::inGlass(panel::FIELD_DEFEAT);
+		const panel::TextStyle DEF(panel::Face::Mono, 7.f, defeat ? panel::CLAY : panel::SAGE,
+			NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+		panel::text(vg, DEF, df.pos.x + df.size.x / 2, df.pos.y + df.size.y * 0.36f, "DEF");
+		panel::text(vg, DEF, df.pos.x + df.size.x / 2, df.pos.y + df.size.y * 0.72f, defeat ? "ON" : "OFF");
+
+		// The status line: the glass's last row, under the fields and not one of them -- it
+		// says to right-click the module, which a field would answer with a param menu.
+		const Rect cl = panel::inGlass(panel::FIELD_CHANNEL), de = panel::inGlass(panel::FIELD_DEFEAT);
+		const float top = cl.pos.y + cl.size.y + mm2px(0.5f), bottom = box.size.y - mm2px(0.8f);
+		const float left = cl.pos.x, right = de.pos.x + de.size.x;
+		const panel::TextStyle st(panel::Face::Mono, (bottom - top) * 0.55f, ink, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+		panel::text(vg, st, (left + right) / 2, (top + bottom) / 2, s);
+	}
+};
+
+/** CHANNEL on the screen. The param is the old stepper's endless count, which the module turns
+ *  into one CHANNEL-held UP or DOWN per step; dragging walks it a channel at a time, and a click
+ *  lists the sixteen channels and steps the count by the difference, so the firmware still sees
+ *  only the unit's own presses. */
+struct ChannelField : panel::ScreenSelect {
+	void click() override {
+		Rebate* m = dynamic_cast<Rebate*>(module);
+		engine::ParamQuantity* pq = getParamQuantity();
+		if (!m || !pq) return;
+		int cur;
+		{
+			std::lock_guard<std::mutex> lock(m->snapMutex);
+			cur = m->saved.channel;
+		}
+		ui::Menu* menu = createMenu();
+		menu->addChild(createMenuLabel("MIDI receive channel"));
+		const int id = paramId;
+		const int64_t moduleId = m->id;
+		for (int i = 0; i < 16; i++)
+			menu->addChild(createCheckMenuItem(string::f("Channel %d", i + 1), "",
+				[=]() { return i == cur; },
+				[=]() {
+					engine::Module* mod = APP->engine->getModule(moduleId);
+					if (!mod || i == cur) return;
+					engine::ParamQuantity* q = mod->paramQuantities[id];
+					const float before = q->getValue();
+					q->setValue(std::round(before) + float(i - cur));
+					history::ParamChange* h = new history::ParamChange;
+					h->name = "select MIDI receive channel";
+					h->moduleId = moduleId;
+					h->paramId = id;
+					h->oldValue = before;
+					h->newValue = q->getValue();
+					APP->history->push(h);
+				}));
 	}
 };
 
@@ -383,21 +463,20 @@ struct RebateWidget : ModuleWidget {
 		panel::addScrews(this);
 		panel::addLabels(this);
 
-		DigitDisplay* d = new DigitDisplay;
+		RebateDisplay* d = new RebateDisplay;
 		d->module = module;
-		d->box = panel::mmRect(panel::DIG_X, panel::DIG_Y, panel::DIG_W, panel::DIG_H);
+		d->box = panel::mmRect(panel::GLASS_X, panel::GLASS_Y, panel::GLASS_W, panel::GLASS_H);
 		addChild(d);
-		StatusLine* s = new StatusLine;
-		s->module = module;
-		s->box = panel::mmRect(panel::TXT_X, panel::TXT_Y, panel::TXT_W, panel::TXT_H);
-		addChild(s);
+
+		// The unit's four buttons, on the read-out over the cells it draws them in. Each is the
+		// param its panel button was, so the firmware's key path is unchanged.
+		addParam(panel::createField<ChannelField>(panel::FIELD_CHANNEL, module, Rebate::CHANNEL_PARAM));
+		addParam(panel::createField<panel::ScreenButton>(panel::FIELD_UP, module, Rebate::UP_PARAM));
+		addParam(panel::createField<panel::ScreenButton>(panel::FIELD_DOWN, module, Rebate::DOWN_PARAM));
+		addParam(panel::createField<panel::ScreenButton>(panel::FIELD_DEFEAT, module, Rebate::DEFEAT_PARAM));
 
 		addChild(createLightCentered<MediumLight<panel::LimeLight> >(panel::mm(panel::METER_GREEN_POS.x, panel::METER_GREEN_POS.y), module, Rebate::METER_GREEN_LIGHT));
 		addChild(createLightCentered<MediumLight<panel::ClayLight> >(panel::mm(panel::METER_RED_POS.x, panel::METER_RED_POS.y), module, Rebate::METER_RED_LIGHT));
-		addParam(createParamCentered<panel::StepPair>(panel::mm(panel::CHANNEL_POS.x, panel::CHANNEL_POS.y), module, Rebate::CHANNEL_PARAM));
-		const Vec buttons[3] = { panel::UP_POS, panel::DOWN_POS, panel::DEFEAT_POS };
-		for (int i = 0; i < 3; i++)
-			addParam(createParamCentered<VCVButton>(panel::mm(buttons[i].x, buttons[i].y), module, Rebate::UP_PARAM + i));
 		addParam(createParamCentered<RoundLargeBlackKnob>(panel::mm(panel::MIX_POS.x, panel::MIX_POS.y), module, Rebate::MIX_PARAM));
 
 		addInput(createInputCentered<panel::PortInMain>(panel::mm(panel::IN_L_POS.x, panel::IN_L_POS.y), module, Rebate::IN_L_INPUT));

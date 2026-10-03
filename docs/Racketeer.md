@@ -1,8 +1,8 @@
-# Racketeer — FORM 211
+# Racketeer — noise voice · FORM 211
 
 **Electric Intonarumori.** A PT2399 delay chip run as a self-sustaining noise
 voice: feedback echo past unity, a low-pass in or after the loop, a chopper, and
-a delay time that bends under CV through an optocoupler's lag. 18 HP, mono.
+a delay time that bends under CV through an optocoupler's lag. 14 HP, mono.
 
 Form 211 is the IRS's *Application for Award for Original Information* — the
 whistleblower form. A racketeer is what it is filed against.
@@ -60,17 +60,21 @@ follows the loop's envelope.
 
 | control | what it does |
 |---|---|
-| **TIME** | Delay time, exponential over the range the RANGE switch selects: 30–340 ms (SHORT) or 30 ms–1.2 s (LONG). Passes through LAG. The read-out shows the resulting delay. |
+| **TIME** | Delay time, exponential over the range RANGE selects: 30–340 ms (SHORT) or 30 ms–1.2 s (LONG). Passes through LAG. The read-out shows the resulting delay, and that number is TIME too: hold it and drag. |
 | **ECHO** (primary) | Feedback, 0–150 %. Past 100 % the loop self-oscillates; the `tanh` keeps it bounded. This is the knob the module is about. |
-| **CUTOFF** | Low-pass cutoff, 40 Hz–18 kHz. In the loop or after it, per the FILTER switch. |
-| **LAG** (trim) | The optocoupler's slew on TIME and its CV. 0 is instant; up to a 2 s time constant. Like the TLP521, it moves faster toward *shorter* delays (the LED lights faster than it dims), so sweeps are asymmetric. |
-| **DRIVE** (trim) | Input gain, 0–24 dB, ahead of the loop. |
-| **SEED** (trim) | White noise injected into the loop, 0–100 % (square law: nothing at zero, an audible floor at the top). This is what a self-oscillating loop grows from when nothing is plugged in. |
-| **RATE** (trim) | Chopper rate, 0.1–60 Hz. |
-| **RES** (trim) | Resonance of the low-pass, 0–100 %, clamped just below self-oscillation. The original has none. |
-| **THRESH** (trim) | The level, 0–10 V on the ENV output, at which the GATE output fires. Releases at 80 % of it. |
+| **CUTOFF** | Low-pass cutoff, 40 Hz–18 kHz. In the loop or after it, per FILTER. |
+| **LAG** (read-out) | The optocoupler's slew on TIME and its CV. 0 is instant; up to a 2 s time constant. Like the TLP521, it moves faster toward *shorter* delays (the LED lights faster than it dims), so sweeps are asymmetric. |
+| **DRIVE** (read-out) | Input gain, 0–24 dB, ahead of the loop. |
+| **SEED** (read-out) | White noise injected into the loop, 0–100 % (square law: nothing at zero, an audible floor at the top). This is what a self-oscillating loop grows from when nothing is plugged in. |
+| **RATE** (read-out) | Chopper rate, 0.1–60 Hz. |
+| **RES** (read-out) | Resonance of the low-pass, 0–100 %, clamped just below self-oscillation. The original has none. |
+| **THRESH** (read-out) | The level, 0–10 V on the ENV output, at which the GATE output fires. Releases at 80 % of it. |
 
-### ENFORCEMENT — buttons and switches
+### ENFORCEMENT — buttons and switches, on the read-out
+
+The middle line of the read-out. The switches are clicks (Ctrl-click steps back);
+the buttons are held while the mouse is down, and their keys light while they or
+their gate jacks are pressing.
 
 | control | what it does |
 |---|---|
@@ -80,7 +84,7 @@ follows the loop's envelope.
 | **POL** | Feedback polarity. Inverted feedback favours odd harmonics and a different set of pitches when the loop sings. |
 | **FILTER** | Low-pass *in the loop* (each pass through the memory is filtered again — the loop darkens as it recirculates) or *after* it (only the output is filtered; the loop stays bright). |
 | **RANGE** | TIME's range: SHORT (datasheet, 30–340 ms) or LONG (30 ms–1.2 s, as far as the PB701's pot pushes the chip). |
-| **CHOP** | Chopper on/off. A square LFO at RATE presses MUTE inside the loop for you — half on, half off — with a 0.3 ms edge. Its light ticks with the LFO. |
+| **CHOP** | Chopper on/off. A square LFO at RATE presses MUTE inside the loop for you — half on, half off — with a 0.3 ms edge. Its ON ticks with the LFO. |
 
 The three mini switches on the PB701 are unlabelled bus/function selectors set at
 build time; Racketeer gives them the three functions that matter in a patch.
@@ -98,19 +102,23 @@ attenuverter (−100 % to +100 %).
 | **RATE** | 1 V/oct on the chopper, scaled by the trim. |
 | **RES** | ±10 V spans 0–100 % at 100 %. Swept against a high ECHO this is what turns the delay into a voice. |
 | **LAG** | ±10 V spans 0–100 % at 100 %. Modulating the optocoupler's slew smears the pitch of whatever the loop is whistling. |
-| **NOISE / BOOST / MUTE** | Gates that press the button of the same name, in the footer band with the rest of what comes in from outside. High above 1 V, low below 0.1 V (Schmitt). Button and gate are ORed. |
+| **NOISE / BOOST / MUTE** | Gates that press the button of the same name, in the footer band with IN. High above 1 V, low below 0.1 V (Schmitt). Button and gate are ORed. |
 
-### Footer
+### Footer and OUT rail
+
+The band holds what comes in; everything that leaves stands in the OUT rail down
+the right-hand edge.
 
 | jack | signal |
 |---|---|
 | **IN** | Audio in, ±5 V nominal (a polyphonic cable is summed). Through DRIVE, into the loop. Nothing need be plugged in. |
+| **NOISE / BOOST / MUTE** | The button gates (see SKIM). |
+| **GATE** | See below. |
 | **ENV** | The loop's envelope, 0–10 V. 5 ms attack, 100 ms release. |
 | **DIRTY** | The loop's pre-filter tap: the memory's output after reconstruction and DC blocking, before the low-pass. ±5 V nominal. |
 | **OUT** | The filtered output, ±5 V nominal, clamped to ±12 V. |
 
-**GATE** is not on the footer: it stands in RACKET, beside the THRESH trim that sets the level
-it fires at. 0/10 V, high while ENV is above THRESH. With a self-oscillating loop this is a
+**GATE** is 0/10 V, high while ENV is above THRESH. With a self-oscillating loop this is a
 chaotic gate.
 
 Audio is ±5 V; ECHO at 150 % with BOOST will run into the clamp. Bypass routes
@@ -118,8 +126,15 @@ IN to OUT.
 
 ### Read-out
 
-Top line: the delay actually running (after LAG), and SHORT or LONG. Bottom line:
-the chip's bit clock at that delay (what TIME is actually setting) and the converter's width, 1 BIT.
+Every value on it is a control. Values (the delay, and LAG to THRESH) are held
+and dragged up or down -- Ctrl fine, Shift coarse; choices (RANGE, CHOP, POL,
+FILTER) are clicked; NOISE, BOOST and MUTE are held. Right-click any of them for
+the usual parameter menu: typed entry, MIDI-Map, reset.
+
+Top line: the delay actually running (after LAG) -- the TIME control -- then the
+chip's bit clock at that delay (what TIME is actually setting; not a control),
+and RANGE, SHORT or LONG. Middle line: ENFORCEMENT, above. Bottom line: LAG,
+DRIVE, SEED, RATE, RES and THRESH, the set-and-leave controls of RACKET.
 
 ## Context menu
 

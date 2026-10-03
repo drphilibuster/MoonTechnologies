@@ -13,6 +13,12 @@ run at, and the split between principal and interest) and PAYMENTS what CV may
 adjust on the way in, with the gate that flips Tronic to Verb. The LIMIT light
 beside the TERM caption is the feedback zener, or any stage of the loop,
 clipping. Nothing here is added to the original: no SIZE, no stereo, no freeze.
+
+The read-out is where MODE lives now: the original's toggle is the TRONIC/VERB
+word at the top right, a click flipping it. It shows the mode that is running
+once the gate has had its say, so a gate pulling Tronic down to Verb is seen
+there too. FEEDBACK, TILT and MIX are printed on its bottom line, each a value
+you hold and drag; their knobs stay, because they are what you play.
 """
 
 import os
@@ -24,9 +30,17 @@ from panelkit import *   # noqa: E402
 P = Panel(
     slug="Amortization",
     title="AMORTIZATION",
+    what="TRIPLE-PT2399 REVERB",
     form="PUB 535",
     density="compact",
-    glass=Glass(h=9.2),
+    # Three lines. The top is the first chip's delay and the mode (a click); the
+    # middle its clock and the limiter; the bottom the three pots, each a field.
+    glass=Glass(h=24.0, grid=(3, 6), fields=[
+        Field("mode",         cell=(0, 4), span=(1, 2), kind="toggle"),
+        Field("feedback_val", cell=(2, 0), span=(1, 2), kind="value"),
+        Field("tilt_val",     cell=(2, 2), span=(1, 2), kind="value"),
+        Field("mix_val",      cell=(2, 4), span=(1, 2), kind="value"),
+    ]),
 )
 
 P.sections = [
@@ -36,13 +50,11 @@ P.sections = [
         Row([BigKnob("feedback", "FEEDBACK", primary=True)]),
     ]),
 
-    # The character of the repayments. The MODE switch's lit label shows which
-    # of the two clock settings is actually running once the gate has had its
-    # say; MIX is the split between principal (dry) and interest (wet) at MIX OUT.
+    # The character of the repayments. MIX is the split between principal (dry)
+    # and interest (wet) at MIX OUT. Which of the two clock settings runs is the
+    # MODE word on the read-out.
     Section("SCHEDULE", rows=[
-        Row([Knob("tilt", "TILT"),
-             Switch("mode", "TRONIC", light="tronic_led"),
-             Knob("mix", "MIX")]),
+        Row([Knob("tilt", "TILT"), Knob("mix", "MIX")]),
     ]),
 
     # What CV may take off the mix on the way in, and the gate that flips

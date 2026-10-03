@@ -52,123 +52,119 @@ spectrum and a warped field, driven by audio and CV.
 
 *(Every panel below is rendered by Rack itself, not mocked up.)*
 
-| <img src="tools/previews/PatchAudit.png" width="218"> | <img src="tools/previews/Retroactive.png" width="118"> | <img src="tools/previews/UncertaintyPolicy.png" width="92"> | <img src="tools/previews/Dividend.png" width="118"> |
+| <img src="tools/previews/PatchAudit.png" width="218"> | <img src="tools/previews/Retroactive.png" width="101"> | <img src="tools/previews/UncertaintyPolicy.png" width="92"> | <img src="tools/previews/Dividend.png" width="92"> |
 |---|---|---|---|
-| **[Patch Audit](docs/PatchAudit.md)** | **[Retroactive](docs/Retroactive.md)** | **[Uncertainty Policy](docs/UncertaintyPolicy.md)** | **[Dividend](docs/Dividend.md)** |
+| **[Patch Audit](docs/PatchAudit.md)**<br>patch browser | **[Retroactive](docs/Retroactive.md)**<br>sample permuter | **[Uncertainty Policy](docs/UncertaintyPolicy.md)**<br>smart randomizer | **[Dividend](docs/Dividend.md)**<br>pulsar VCO |
 
-| <img src="tools/previews/TaxBracket.png" width="101"> | <img src="tools/previews/Racketeer.png" width="134"> | <img src="tools/previews/Gross.png" width="168"> | <img src="tools/previews/Amortization.png" width="84"> |
+| <img src="tools/previews/TaxBracket.png" width="92"> | <img src="tools/previews/Racketeer.png" width="118"> | <img src="tools/previews/Gross.png" width="118"> | <img src="tools/previews/Amortization.png" width="76"> |
 |---|---|---|---|
-| **[Tax Bracket](docs/TaxBracket.md)** | **[Racketeer](docs/Racketeer.md)** | **[Gross](docs/Gross.md)** | **[Amortization](docs/Amortization.md)** |
+| **[Tax Bracket](docs/TaxBracket.md)**<br>R2R DAC & mixer | **[Racketeer](docs/Racketeer.md)**<br>noise voice | **[Gross](docs/Gross.md)**<br>distortion | **[Amortization](docs/Amortization.md)**<br>triple-PT2399 reverb |
 
-| <img src="tools/previews/Apportionment.png" width="336"> |
-|---|
-| **[Apportionment](docs/Apportionment.md)** |
+| <img src="tools/previews/Apportionment.png" width="218"> | <img src="tools/previews/Contagion.png" width="529"> |
+|---|---|
+| **[Apportionment](docs/Apportionment.md)**<br>DP/4 parallel effects | **[Contagion](docs/Contagion.md)**<br>Virus C synthesizer |
 
-| <img src="tools/previews/Contagion.png" width="529"> |
-|---|
-| **[Contagion](docs/Contagion.md)** |
-
-| <img src="tools/previews/NordicBanking.png" width="353"> | <img src="tools/previews/Rebate.png" width="101"> | <img src="tools/previews/Depreciation.png" width="277"> |
-|---|---|---|
-| **[Nordic Banking](docs/NordicBanking.md)** | **[Rebate](docs/Rebate.md)** | **[Depreciation](docs/Depreciation.md)** |
-
-| <img src="tools/previews/Repossession.png" width="286"> | <img src="tools/previews/Collusion.png" width="151"> | <img src="tools/previews/Reconciliation.png" width="151"> | <img src="tools/previews/Dependents.png" width="134"> |
+| <img src="tools/previews/NordicBanking.png" width="302"> | <img src="tools/previews/Rebate.png" width="84"> | <img src="tools/previews/Depreciation.png" width="151"> | <img src="tools/previews/Repossession.png" width="176"> |
 |---|---|---|---|
-| **[Repossession](docs/Repossession.md)** | **[Collusion](docs/Collusion.md)** | **[Reconciliation](docs/Reconciliation.md)** | **[Dependents](docs/Dependents.md)** |
+| **[Nordic Banking](docs/NordicBanking.md)**<br>Nord Lead 2X synthesizer | **[Rebate](docs/Rebate.md)**<br>MIDIverb digital reverb | **[Depreciation](docs/Depreciation.md)**<br>PCM 70 digital reverb | **[Repossession](docs/Repossession.md)**<br>video sampler |
 
-| <img src="tools/previews/Calculation.png" width="126"> | <img src="tools/previews/Ledger.png" width="445"> | <img src="tools/previews/SixFigures.png" width="202"> |
-|---|---|---|
-| **[Calculation](docs/Calculation.md)** | **[Ledger](docs/Ledger.md)** | **[Six Figures](docs/SixFigures.md)** |
-
-| <img src="tools/previews/Garnishment.png" width="143"> | <img src="tools/previews/Consolidation.png" width="118"> | <img src="tools/previews/Bailout.png" width="210"> | <img src="tools/previews/Projection.png" width="101"> |
+| <img src="tools/previews/Collusion.png" width="143"> | <img src="tools/previews/Reconciliation.png" width="92"> | <img src="tools/previews/Dependents.png" width="118"> | <img src="tools/previews/Calculation.png" width="76"> |
 |---|---|---|---|
-| **[Garnishment](docs/Garnishment.md)** | **[Consolidation](docs/Consolidation.md)** | **[Bailout](docs/Bailout.md)** | **[Projection](docs/Projection.md)** |
+| **[Collusion](docs/Collusion.md)**<br>coupled LFO swarm | **[Reconciliation](docs/Reconciliation.md)**<br>just-intonation quantizer | **[Dependents](docs/Dependents.md)**<br>chord waveshaper | **[Calculation](docs/Calculation.md)**<br>phrase counter |
 
-| <img src="tools/previews/Transmittal.png" width="84"> | <img src="tools/previews/Installment.png" width="134"> | <img src="tools/previews/Volatility.png" width="84"> | <img src="tools/previews/Deduction.png" width="92"> |
+| <img src="tools/previews/Ledger.png" width="294"> | <img src="tools/previews/SixFigures.png" width="202"> | <img src="tools/previews/Garnishment.png" width="143"> | <img src="tools/previews/Consolidation.png" width="118"> |
 |---|---|---|---|
-| **[Transmittal](docs/Transmittal.md)** | **[Installment](docs/Installment.md)** | **[Volatility](docs/Volatility.md)** | **[Deduction](docs/Deduction.md)** |
+| **[Ledger](docs/Ledger.md)**<br>generative sequencer | **[Six Figures](docs/SixFigures.md)**<br>oscillator bank | **[Garnishment](docs/Garnishment.md)**<br>VCA / low-pass gate | **[Consolidation](docs/Consolidation.md)**<br>mixer & multiples |
 
-| <img src="tools/previews/AuditLogic.png" width="202"> | <img src="tools/previews/Kickback.png" width="252"> | <img src="tools/previews/PaymentSchedule.png" width="185"> | <img src="tools/previews/SignHere.png" width="168"> |
+| <img src="tools/previews/Bailout.png" width="210"> | <img src="tools/previews/Projection.png" width="101"> | <img src="tools/previews/Transmittal.png" width="84"> | <img src="tools/previews/Installment.png" width="134"> |
 |---|---|---|---|
-| **[Audit Logic](docs/AuditLogic.md)** | **[Kickback](docs/Kickback.md)** | **[Payment Schedule](docs/PaymentSchedule.md)** | **[Sign Here](docs/SignHere.md)** |
+| **[Bailout](docs/Bailout.md)**<br>8-channel mixer & mults | **[Projection](docs/Projection.md)**<br>video generator | **[Transmittal](docs/Transmittal.md)**<br>video output | **[Installment](docs/Installment.md)**<br>function generator |
 
-| <img src="tools/previews/Diversified.png" width="176"> | <img src="tools/previews/Toll.png" width="84"> | <img src="tools/previews/Obfuscation.png" width="118"> | <img src="tools/previews/ScheduleA.png" width="118"> |
+| <img src="tools/previews/Volatility.png" width="76"> | <img src="tools/previews/Deduction.png" width="84"> | <img src="tools/previews/AuditLogic.png" width="134"> | <img src="tools/previews/Kickback.png" width="252"> |
 |---|---|---|---|
-| **[Diversified](docs/Diversified.md)** | **[Toll](docs/Toll.md)** | **[Obfuscation](docs/Obfuscation.md)** | **[Schedule A](docs/ScheduleA.md)** |
+| **[Volatility](docs/Volatility.md)**<br>noise, S&H & random | **[Deduction](docs/Deduction.md)**<br>multimode filter | **[Audit Logic](docs/AuditLogic.md)**<br>logic, switches & divider | **[Kickback](docs/Kickback.md)**<br>drum machine |
+
+| <img src="tools/previews/PaymentSchedule.png" width="185"> | <img src="tools/previews/SignHere.png" width="143"> | <img src="tools/previews/Diversified.png" width="118"> | <img src="tools/previews/Toll.png" width="84"> |
+|---|---|---|---|
+| **[Payment Schedule](docs/PaymentSchedule.md)**<br>8-step sequencer | **[Sign Here](docs/SignHere.md)**<br>controllers | **[Diversified](docs/Diversified.md)**<br>multi-effects | **[Toll](docs/Toll.md)**<br>struck-metal voice |
+
+| <img src="tools/previews/Obfuscation.png" width="101"> | <img src="tools/previews/ScheduleA.png" width="118"> |
+|---|---|
+| **[Obfuscation](docs/Obfuscation.md)**<br>dispersion filter | **[Schedule A](docs/ScheduleA.md)**<br>Repossession expander |
 
 ## Built for this plugin
 
-### [Patch Audit](docs/PatchAudit.md) — 26 HP · *Utility, Visual*
+### [Patch Audit](docs/PatchAudit.md) — **patch browser** · 26 HP · *Utility, Visual*
 
 Browse [Patchstorage](https://patchstorage.com) without leaving Rack. Search the published VCV patches, and before you open one, get an audit of it against the modules you actually have: what is installed, what is available in the Library, and what is genuinely gone. Import straight into your rack, or save to disk.
 
-### [Retroactive](docs/Retroactive.md) — 14 HP · *Effect, Delay, Granular*
+### [Retroactive](docs/Retroactive.md) — **sample permuter** · 12 HP · *Effect, Delay, Granular*
 
 A windowed sample-permutation effect. Take a window of consecutive samples and emit them in a different order, leaving the windows themselves in time order — so the melody, rhythm and phrasing play forward while every micro-chunk is rearranged. Short windows are a timbral effect; long ones give the familiar "reversed but still moving forward" sound. Clock-syncable, with a choice of permutation modes and a freeze.
 
-### [Uncertainty Policy](docs/UncertaintyPolicy.md) — 11 HP · *Utility, Random*
+### [Uncertainty Policy](docs/UncertaintyPolicy.md) — **smart randomizer** · 11 HP · *Utility, Random*
 
 A knob and cable randomizer that reads the patch before it rolls. It knows what each port carries and where the audio goes, auditions every roll, and quietly withdraws the ones that killed the sound — so you are not spending the session on roll → silence → undo → roll.
 
-### [Dividend](docs/Dividend.md) — 14 HP · *Oscillator, Synth voice*
+### [Dividend](docs/Dividend.md) — **pulsar VCO** · 11 HP · *Oscillator, Synth voice*
 
 *After Curtis Roads' pulsar synthesis.*
 
 Trains of pulsarets whose formant is set independently of the fundamental, a choice of pulsaret waveforms and windows, burst, stochastic and channel masking, an overlap voice pool, and a read-out of fundamental and formant.
 
-### [Tax Bracket](docs/TaxBracket.md) — 12 HP · *Utility, Mixer, Attenuator*
+### [Tax Bracket](docs/TaxBracket.md) — **R2R DAC & mixer** · 11 HP · *Utility, Mixer, Attenuator*
 
 *After the Olegtron R2R.*
 
 The R2R as a genuine resistor network. Every jack is an in/out pair on a passive 8-bit ladder, so it is a DAC, a weighted mixer, a programmable attenuator and a labile multiple at once; checked against the manual's attenuator table.
 
-### [Racketeer](docs/Racketeer.md) — 16 HP · *Noise, Delay, Synth voice*
+### [Racketeer](docs/Racketeer.md) — **noise voice** · 14 HP · *Noise, Delay, Synth voice*
 
 *After Wolfgang Spahn's PB701 Electric Intonarumori.*
 
 A PT2399 delay run as a self-sustaining noise voice, with the chip's clock and word length falling as the delay grows, an optocoupler lag on TIME, a chopper, three enforcement buttons with gate inputs, and DIRTY, ENV and GATE outputs.
 
-### [Gross](docs/Gross.md) — 20 HP · *Distortion, Waveshaper, Effect*
+### [Gross](docs/Gross.md) — **distortion** · 14 HP · *Distortion, Waveshaper, Effect*
 
 *After Eichas–Zölzer and Comunità–Steinmetz–Reiss.*
 
 A Wiener–Hammerstein distortion built from the piecewise-tanh mapping and a dynamic bias: input EQ, drive, static and dynamic bias, knees and slopes per polarity, several curve families, output EQ, device presets, and a live transfer-curve read-out.
 
-### [Amortization](docs/Amortization.md) — 10 HP · *Reverb, Effect, Hardware clone*
+### [Amortization](docs/Amortization.md) — **triple-PT2399 reverb** · 9 HP · *Reverb, Effect, Hardware clone*
 
 *After the Pittsburgh Modular Verbtronic.*
 
 The module's public-domain schematic, solved: three PT2399 echo chips (a 1-bit delta modulator and 44 kbit of RAM each) in a recirculating network, a tone shelf, a zener feedback limiter, and a linearised VCA mixer. VERB and TRONIC change the chips' clocks, so a mode change replays what is stored at a new rate.
 
-### [Repossession](docs/Repossession.md) — 34 HP · *Sampler, Sequencer, Visual*
+### [Repossession](docs/Repossession.md) — **video sampler** · 21 HP · *Sampler, Sequencer, Visual*
 
 Paste a YouTube link. The module fetches it with yt-dlp and ffmpeg, shows the video on the panel, lets you drag regions on the timeline, and sequences those regions — audio and picture together — by clock, CV, scan and fire, with position, gate, end-of-region and region outputs. The picture is not just a thumbnail: it decodes up to 720p and hands every frame to [Transmittal](docs/Transmittal.md), so the video you are sequencing is the video going to the projector.
 
-### [Collusion](docs/Collusion.md) — 18 HP · *Low-frequency oscillator, Oscillator, Random*
+### [Collusion](docs/Collusion.md) — **coupled LFO swarm** · 17 HP · *Low-frequency oscillator, Oscillator, Random*
 
 *After Kuramoto, and Mirollo–Strogatz.*
 
 LFOs that listen to each other. Each has its own natural rate; COUPLING says how hard each is pulled toward the rest, and past a threshold set entirely by SPREAD the population stops drifting and locks — a phase transition on one knob and six lamps. Four wirings (all-to-all, ring, one-way cascade, and pulse coupling), a phase lag that buys partial order, LFO and audio ranges, and a Benjolin rungler whose bits are written from how much the swarm currently agrees, so the melody it plays *is* the phase transition.
 
-### [Reconciliation](docs/Reconciliation.md) — 18 HP · *Quantizer, Polyphonic, Utility*
+### [Reconciliation](docs/Reconciliation.md) — **just-intonation quantizer** · 11 HP · *Quantizer, Polyphonic, Utility*
 
 *After Partch, Wilson, Tenney, Barlow and Sethares.*
 
 A polyphonic just-intonation quantizer that splits "which note?" into two questions and puts a knob on each. Which pitches exist: Partch's eleven-limit tonality diamond, his 43-tone scale, one Otonality or Utonality hexad, Wilson's hexany and eikosany, or the raw harmonic series — transposed onto any of Partch's six identities and pruned by prime limit. How one gets chosen: Euler's *gradus suavitatis*, Tenney's harmonic distance, Barlow's harmonicity, sensory dissonance against an assumed timbre, or adaptive tuning from the last note played, which tunes every interval pure and lets the tonal centre drift by the comma it costs. The read-out names the ratio.
 
-### [Dependents](docs/Dependents.md) — 16 HP · *Distortion, Waveshaper, Oscillator, Synth voice, Effect*
+### [Dependents](docs/Dependents.md) — **chord waveshaper** · 14 HP · *Distortion, Waveshaper, Oscillator, Synth voice, Effect*
 
 *After [Astrobear Music](https://www.youtube.com/watch?v=O0QLnR406pQ) and Aspen Instruments' Black Diamond Distortion.*
 
 A chord made by distorting one sine you cannot hear. Chebyshev polynomials of the first kind satisfy Tₙ(cos x) = cos(nx), so a unit-amplitude sine through the nth of them comes out as exactly the nth harmonic — which makes a waveshaper a harmonic recipe, and harmonic numbers in small whole ratios are chords. 4:5:6 is a just major triad, 10:12:15 a minor. Put the root two octaves below hearing and the only thing audible is the chord. Two chord slots and a MORPH that interpolates the *weights* between them, so major to minor passes through spectra with no name; per-harmonic trims as a CUSTOM slot to morph against; and a HOLD that keeps the input at unity, because the identity is only true there — switch it off and the chord dissolves as the signal quietens. Feed it anything but a sine and it is chaos, which is not defended against.
 
-### [Calculation](docs/Calculation.md) — 15 HP · *Clock modulator, Sequencer, Utility*
+### [Calculation](docs/Calculation.md) — **phrase counter** · 9 HP · *Clock modulator, Sequencer, Utility*
 
 *After Count Modula's Event Timer (Countdown 3 and 5).*
 
 A phrase counter for arranging a patch. One base length N and six lines that each fall due at N times their own ratio, from ÷8 to ×32, with a trigger, a gate and a counter apiece. It does the work of a chain of countdown timers in one module. Every line counts from the same downbeat, and a START that arrives a cable's delay after its clock still claims that clock, so chained sections stay on the beat without setting anything to N−1. Lines can repeat instead of firing once, and a Countdown-compatible start mode is in the menu.
 
-### [Ledger](docs/Ledger.md) — 53 HP · *Sequencer, Random, Polyphonic, Clock generator*
+### [Ledger](docs/Ledger.md) — **generative sequencer** · 35 HP · *Sequencer, Random, Polyphonic, Clock generator*
 
 *After Ormer Modular's Shoal (MIT) and Squarp's Hermod+.*
 
@@ -176,31 +172,31 @@ An eight-track generative sequencer. Each track's melody is grown from a seed, n
 
 ## Hardware, running its own firmware
 
-### [Apportionment](docs/Apportionment.md) — 40 HP · *Effect, Reverb, Delay, Hardware clone*
+### [Apportionment](docs/Apportionment.md) — **DP/4 parallel effects** · 26 HP · *Effect, Reverb, Delay, Hardware clone*
 
 *An Ensoniq DP/4, running its own firmware. EPROMs not included.*
 
 ESP effect units under the DP/4's real operating system and DSP code -- every algorithm, preset and Config is Ensoniq's -- on an emulated 68B03 and four ES5510s. The DP/4's own front panel is here button for button, and the thing the hardware hid in its menus is on the panel: every Config parameter that routes the four units (source count, A-B and C-D serial/parallel/feedback, AB into CD, amounts, mono/stereo inputs, output selects) is a control, and moving one makes the module work the Config pages for you. Per-unit stereo taps for patching the units into the rest of the rack.
 
-### [Contagion](docs/Contagion.md) — 63 HP · *Synth voice, Polyphonic, Effect, Hardware clone*
+### [Contagion](docs/Contagion.md) — **Virus C synthesizer** · 63 HP · *Synth voice, Polyphonic, Effect, Hardware clone*
 
 *An Access Virus C, running all of its own firmware. OS image not included.*
 
 Both processors run the unit's own OS: the 80C515 that owns the front panel, the LCD, MIDI and preset memory -- which every other Virus emulation replaces with C++ -- and the DSP56362 it boots and drives, on the dsp56300 core gearmulator uses. Every knob reaches the firmware through the microcontroller's own A/D converter and every control that is not a pot through its key matrix -- the unit's button pairs and cycles are endless and detented knobs here, each a press of the real key with the real LEDs read back; the dot-matrix LCD shows what the unit shows. Played over MIDI, or from cables: polyphonic pitch, gate and velocity, wheels, clock and run turn into MIDI, eight CV inputs move any knob and gates press the navigation buttons. The patch keeps the battery RAM.
 
-### [Nordic Banking](docs/NordicBanking.md) — 42 HP · *Synth voice, Polyphonic, Hardware clone*
+### [Nordic Banking](docs/NordicBanking.md) — **Nord Lead 2X synthesizer** · 36 HP · *Synth voice, Polyphonic, Hardware clone*
 
 *A Clavia Nord Lead 2X, running its own firmware. OS image not included.*
 
 The real MC68331 operating system, instruction by instruction, driving two emulated DSP56362s on the dsp56300 core -- the whole Nord Lead 2X from its 512 KB OS image. The front panel is the unit's: every knob on the 68331's converter, every button on its key lines, and the LED multiplex and three-digit display drawn at the brightness the firmware drives them, LED pairs and all. Played over MIDI, with Clavia's factory programs loaded as SysEx; the patch keeps the program flash.
 
-### [Rebate](docs/Rebate.md) — 12 HP · *Effect, Reverb, Delay, Hardware clone*
+### [Rebate](docs/Rebate.md) — **MIDIverb digital reverb** · 10 HP · *Effect, Reverb, Delay, Hardware clone*
 
 *An Alesis MIDIverb (or MIDIFEX), running its own firmware. EPROMs not included.*
 
 Keith Barr's 1986 discrete-logic reverb: the real microcode on an emulation of the TTL signal processor, verified sample for sample against MAME's, and the real 80C31 firmware behind the real front panel -- two digits, UP, DOWN, CHANNEL, DEFEAT, MIDI program change. The analog board is from the schematic, down to the "Clipping?" diode on the converter's input filter, the sample-and-hold, and the DAC's hold capacitors. A patch keeps program, channel and defeat, and plays them back into the firmware after power-on.
 
-### [Depreciation](docs/Depreciation.md) — 33 HP · *Effect, Reverb, Delay, Hardware clone*
+### [Depreciation](docs/Depreciation.md) — **PCM 70 digital reverb** · 18 HP · *Effect, Reverb, Delay, Hardware clone*
 
 *A Lexicon PCM 70, running its own firmware. ROMs not included.*
 
@@ -208,11 +204,11 @@ The 1986 reverb, chorus, delay and resonant-chord machine on an emulated pair of
 
 ## About the picture
 
-### [Projection](docs/Projection.md) — 12 HP · *Utility, Visual, Envelope follower*
+### [Projection](docs/Projection.md) — **video generator** · 12 HP · *Utility, Visual, Envelope follower*
 
 Video made out of what the rack is already doing. An XY scope, a banded spectrum, or a field warped by those bands — driven by audio and by CV on every control, with a gate for flash and one for freeze. Band envelopes and an onset trigger leave on the footer, so it earns its space as an analyser even when nothing is watching the picture.
 
-### [Transmittal](docs/Transmittal.md) — 10 HP · *Utility, Visual*
+### [Transmittal](docs/Transmittal.md) — **video output** · 10 HP · *Utility, Visual*
 
 The plugin's video output. Takes frames from another module here — Repossession, so far — and publishes them as a GPU texture over **Syphon**, which TouchDesigner reads with a Syphon Spout In TOP. No encoder and no player in the path, so the latency is one Rack frame plus one TouchDesigner frame: fast enough to perform to, which is the whole point of it. An **HLS** transport is there as well, for capture and for platforms without texture sharing, at the two or three seconds that format costs. Standalone Rack only — video does not work in VST for anyone, LZX included.
 
@@ -220,67 +216,67 @@ The plugin's video output. Takes frames from another module here — Repossessio
 
 Marked with the day each came from, and how far it has moved since.
 
-### [Six Figures](docs/SixFigures.md) — 24 HP · *Oscillator, Polyphonic*
+### [Six Figures](docs/SixFigures.md) — **oscillator bank** · 24 HP · *Oscillator, Polyphonic*
 
 *Day 1, consolidated.*
 
 Voices, each a 40106 Schmitt square, a 4069 triangle core, a 4046 PLL that locks to the SIGNAL input, or a reverse-avalanche saw, with sync, capture, drift and a mix. The four cores are the four oscillator builds of that day, selectable per voice.
 
-### [Garnishment](docs/Garnishment.md) — 17 HP · *Voltage-controlled amplifier, Low-pass gate, Dual*
+### [Garnishment](docs/Garnishment.md) — **VCA / low-pass gate** · 17 HP · *Voltage-controlled amplifier, Low-pass gate, Dual*
 
 *Day 2, consolidated.*
 
 Dual VCA channels, each an LM13700 OTA, a vactrol low-pass gate or the I-AM-O JFET multiplier, with bias, lag and CV amount. One build per MODE position.
 
-### [Consolidation](docs/Consolidation.md) — 14 HP · *Mixer, Multiple, Utility*
+### [Consolidation](docs/Consolidation.md) — **mixer & multiples** · 14 HP · *Mixer, Multiple, Utility*
 
 *Day 3, consolidated.*
 
 The ASMR four-channel mixer with normal and inverted sums, and two 1:3 buffered multiples with B normalled to A.
 
-### [Installment](docs/Installment.md) — 16 HP · *Envelope generator, Low-frequency oscillator, Function generator, Dual*
+### [Installment](docs/Installment.md) — **function generator** · 16 HP · *Envelope generator, Low-frequency oscillator, Function generator, Dual*
 
 *Days 4, 5 and 12, consolidated.*
 
 Two function generators, each LFO, AR or AD with loop, range, bias and CV, plus the tape-motor PWM driver with duty CV riding on channel one.
 
-### [Volatility](docs/Volatility.md) — 10 HP · *Noise, Sample and hold, Random*
+### [Volatility](docs/Volatility.md) — **noise, S&H & random** · 9 HP · *Noise, Sample and hold, Random*
 
 *Day 6, consolidated.*
 
 An 18-bit 4006-style shift-register noise source, the YASH sample and hold, and the PHObos random gate — three separate builds put on one shared clock.
 
-### [Deduction](docs/Deduction.md) — 11 HP · *Filter, Distortion*
+### [Deduction](docs/Deduction.md) — **multimode filter** · 10 HP · *Filter, Distortion*
 
 *Day 7, consolidated.*
 
 Filters under one MODEL knob with CV — PAiA 2720-3L, Escobedo Q&D, Korg35, MS-20 OTA, EFM Moog-type high-pass, Synthrotek DIRT — with LP and HP inputs, a CV response switch and a read-out.
 
-### [Audit Logic](docs/AuditLogic.md) — 24 HP · *Logic, Switch, Clock modulator*
+### [Audit Logic](docs/AuditLogic.md) — **logic, switches & divider** · 16 HP · *Logic, Switch, Clock modulator*
 
 *Day 8, plus the 4066 and the Emiz CV2.*
 
 Four logic gates with selectable functions and the 0 V / 12 V reference, gated analogue switches, and a clock divider. Separate boards, separate blocks, read top to bottom.
 
-### [Kickback](docs/Kickback.md) — 30 HP · *Drum, Synth voice, Sequencer, Clock generator*
+### [Kickback](docs/Kickback.md) — **drum machine** · 30 HP · *Drum, Synth voice, Sequencer, Clock generator*
 
 *Day 9 — and a long way past it.*
 
 Started as the six drum voices of that folder and is now a drum machine. The voices are modal banks struck by a real contact pulse: the BaSnaHi kick with the SmurfDrum as its second model, a snare switching between XORbell, the percussive noise voice and Karplus–Strong, a hi-hat whose one knob sweeps metal to noise to the Tiny Dazzler, and all three TomTomTom rings at once as three differently-sized drums. **None of the rest is in the original:** its own clock, a ranked pattern engine (a metric spine plus Euclidean necklaces, with per-voice lengths and an EVOLVE that moves the loop pass to pass), per-voice clock ratios, a BURST mode that hands each voice's steps to its own ratio, velocity-scaled gate outputs, and a SEED that swaps patterns on the bar line. The physics is out of the literature rather than the schematic — Bilbao's contact force, Bessel-zero mode ratios, Karplus–Strong's drum recurrence.
 
-### [Payment Schedule](docs/PaymentSchedule.md) — 22 HP · *Sequencer, Switch, Quantizer*
+### [Payment Schedule](docs/PaymentSchedule.md) — **8-step sequencer** · 22 HP · *Sequencer, Switch, Quantizer*
 
 *Day 10, consolidated.*
 
 The Baby8 with the 4017 sequential switch falling out of the same counter in both directions, the 4031 tap looper, and the varimode quantizer.
 
-### [Sign Here](docs/SignHere.md) — 20 HP · *Controller, Utility*
+### [Sign Here](docs/SignHere.md) — **controllers** · 17 HP · *Controller, Utility*
 
 *Day 11, consolidated.*
 
 The button and pedal, the offset-scaler joystick as an XY pad, and four touch pads. Gesture controllers that share nothing electrically in the original.
 
-### [Diversified](docs/Diversified.md) — 21 HP · *Effect, Delay, Reverb, Chorus, Distortion*
+### [Diversified](docs/Diversified.md) — **multi-effects** · 14 HP · *Effect, Delay, Reverb, Chorus, Distortion*
 
 *Days 12 and 13, consolidated.*
 
@@ -288,25 +284,25 @@ A stereo multi-effect with a long program list — the DSP99 board's categories 
 
 ## Grown out of the family
 
-### [Bailout](docs/Bailout.md) — 25 HP · *Mixer, Multiple, Polyphonic, Utility, Voltage-controlled amplifier*
+### [Bailout](docs/Bailout.md) — **8-channel mixer & mults** · 25 HP · *Mixer, Multiple, Polyphonic, Utility, Voltage-controlled amplifier*
 
 *Day 3, doubled.*
 
 Consolidation's mixer at eight channels, grouped as two banks of four with their own mixes and a main that sums whichever banks are free — one 8-into-1 mixer, two independent 4s, or eight VCAs, depending only on what is patched. Two 1:7 multiples instead of two 1:3.
 
-### [Toll](docs/Toll.md) — 10 HP · *Drum, Synth voice, Physical modeling*
+### [Toll](docs/Toll.md) — **struck-metal voice** · 10 HP · *Drum, Synth voice, Physical modeling*
 
 *Grew out of Kickback's bell.*
 
 BaSnaHi's snare stage was always a better bell than a snare, so it has a module of its own: modal partials over a membrane, a bar, a tuned bell or a bare harmonic series, with strike position, mallet hardness, per-partial damping, an inharmonicity stretch, a buzzing second layer and a choke. No clock and no patterns — Kickback has those.
 
-### [Obfuscation](docs/Obfuscation.md) — 14 HP · *Filter, Effect, Distortion*
+### [Obfuscation](docs/Obfuscation.md) — **dispersion filter** · 12 HP · *Filter, Effect, Distortion*
 
 *After Kilohearts' Disperser.*
 
 A three-band dispersion matrix in the manner of Disperser: each band runs through up to ninety-six second-order allpass stages in series, with FREQ, PINCH (the stage Q) and STAGES, then the bands are summed, saturated, tilted, clipped and boosted. RANDOM redraws every stage's cutoff and pinch on a clock or on the input's peaks, and the RANDOM gate also freezes the current set while it is held.
 
-### [Schedule A](docs/ScheduleA.md) — 14 HP · *Expander, Sampler, Sequencer*
+### [Schedule A](docs/ScheduleA.md) — **Repossession expander** · 14 HP · *Expander, Sampler, Sequencer*
 
 *The Repossession expander.*
 

@@ -17,6 +17,8 @@ namespace panel {
 static const int   HP = 11;
 static const float W  = 55.8800f;  // mm
 static const float H  = 128.5000f;  // mm
+//: What the module is, as the masthead's second line says it.
+static const char* const WHAT = "SMART RANDOMIZER";
 
 // --- the read-out well: the spec's numbers, not the widget's ---------------
 // A display used to be positioned by hand in the module's C++, in the same
@@ -25,29 +27,40 @@ static const float H  = 128.5000f;  // mm
 static const float GLASS_X = 3.6000f;
 static const float GLASS_Y = 9.8000f;
 static const float GLASS_W = 48.6800f;
-static const float GLASS_H = 15.0000f;
+static const float GLASS_H = 32.0000f;
+
+// --- controls on the glass: where each is drawn and where it is grabbed --
+// One rectangle per Field in the spec, in panel mm. Place the widget with
+// createField<Screen...>(FIELD_X, ...) -- or createMenuField for a "menu" --
+// and draw the value in
+// inGlass(FIELD_X), the same rectangle in the display's own pixels.
+static const Rect FIELD_BASIS = Rect(Vec(4.4000f, 31.2000f), Vec(31.2200f, 9.8000f));  // select: ScreenSelect
+static const Rect FIELD_SPINE = Rect(Vec(36.1200f, 31.2000f), Vec(15.3600f, 9.8000f));  // value: ScreenKnob
+
+/** A field's rectangle in the display's pixels, for a display placed on the glass. */
+static inline Rect inGlass(const Rect& f) {
+	return mmRect(f.pos.x - GLASS_X, f.pos.y - GLASS_Y, f.size.x, f.size.y);
+}
 
 // --- silkscreen ------------------------------------------------------------
 static const Label LABELS[] = {
-	{ 27.9400f,   5.5000f,  6.68f, 1.50f, PAPER    , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "UNCERTAINTY POLICY"},
-	{ 11.5600f,   8.2500f,  7.40f, 0.00f, LIME     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, true,  "$"},
-	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
-	{ 51.6800f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "SCHEDULE UTP"},
-	{ 27.9400f,  28.3000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EXPOSURE"},
-	{ 10.4000f,  45.6069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "VARIANCE"},
-	{ 27.9400f,  45.6069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SPREAD"},
-	{ 45.4800f,  45.6069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRANSFERS"},
-	{ 27.9400f,  52.5219f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MANDATE"},
-	{ 13.1962f,  67.0337f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BASIS"},
-	{ 38.9347f,  67.0337f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SAFE HARBOR"},
-	{ 27.9400f,  73.9488f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "AMEND"},
-	{ 13.8775f,  88.7581f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CONTROLS"},
-	{ 29.0294f,  88.7581f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BOTH"},
-	{ 43.0919f,  88.7581f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CABLES"},
-	{ 27.9400f,  95.6732f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LAST FILING"},
-	{ 21.4907f, 106.6850f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RESCIND"},
-	{ 34.3893f, 106.6850f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OPINION"},
-	{ 27.9400f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRIG"},
+	{ 27.9400f,   5.5000f,  6.68f, 1.50f, PAPER    , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "UNCERTAINTY POLICY"},
+	{  1.4000f,   8.2500f,  7.40f, 0.00f, LIME     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, 1,     "$"},
+	{ 27.9400f,   8.0000f,  5.40f, 0.40f, LIME     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "SMART RANDOMIZER"},
+	{  2.1717f,  70.6966f,  4.60f, 0.40f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 2,     "MOON TECHNOLOGIES"},
+	{ 53.7083f,  68.0211f,  4.60f, 0.40f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 3,     "SCHEDULE UTP"},
+	{ 27.9400f,  45.3000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "EXPOSURE"},
+	{ 10.4000f,  62.6069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "VARIANCE"},
+	{ 27.9400f,  62.6069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "SPREAD"},
+	{ 45.4800f,  62.6069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "TRANSFERS"},
+	{ 27.9400f,  69.8069f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "AMEND"},
+	{ 13.8775f,  84.6162f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "CONTROLS"},
+	{ 29.0294f,  84.6162f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "BOTH"},
+	{ 43.0919f,  84.6162f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "CABLES"},
+	{ 27.9400f,  91.8162f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "LAST FILING"},
+	{ 21.4907f, 102.8280f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "RESCIND"},
+	{ 34.3893f, 102.8280f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "OPINION"},
+	{ 27.9400f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, 0,     "TRIG"},
 };
 
 /** Draws this panel's silkscreen. `static` so each module keeps its own,
@@ -58,16 +71,14 @@ static inline void addLabels(app::ModuleWidget* mw) {
 
 // --- widget positions, by the names used in tools/panels/UncertaintyPolicy.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
-static const Vec KNOB_AMOUNT_POS = Vec(10.4000, 36.2000);
-static const Vec SPREAD_POS = Vec(27.9400, 36.2000);
-static const Vec CABLE_COUNT_POS = Vec(45.4800, 36.2000);
-static const Vec BASIS_POS = Vec(13.1962, 59.1219);
-static const Vec SPINE_POS = Vec(38.9347, 59.1219);
-static const Vec ROLL_CONTROLS_POS = Vec(13.8775, 80.6488);
-static const Vec ROLL_ALL_POS = Vec(29.0294, 80.6488);
-static const Vec ROLL_CABLES_POS = Vec(43.0919, 80.6488);
-static const Vec REVERT_POS = Vec(21.4907, 100.5232);
-static const Vec VERDICT_POS = Vec(34.3893, 100.5232);
+static const Vec KNOB_AMOUNT_POS = Vec(10.4000, 53.2000);
+static const Vec SPREAD_POS = Vec(27.9400, 53.2000);
+static const Vec CABLE_COUNT_POS = Vec(45.4800, 53.2000);
+static const Vec ROLL_CONTROLS_POS = Vec(13.8775, 76.5069);
+static const Vec ROLL_ALL_POS = Vec(29.0294, 76.5069);
+static const Vec ROLL_CABLES_POS = Vec(43.0919, 76.5069);
+static const Vec REVERT_POS = Vec(21.4907, 96.6662);
+static const Vec VERDICT_POS = Vec(34.3893, 96.6662);
 static const Vec TRIG_POS = Vec(27.9400, 118.6000);
 
 } // namespace panel

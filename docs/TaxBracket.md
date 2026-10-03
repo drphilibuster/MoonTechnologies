@@ -1,6 +1,6 @@
-# Tax Bracket
+# Tax Bracket — R2R DAC & mixer
 
-*TAX RATE SCHEDULE X — Moon Technologies, 12 HP*
+*TAX RATE SCHEDULE X — Moon Technologies, 11 HP*
 
 An emulation of the **Olegtron R2R**, the passive "true multi-function utility
 module": a string of resistors with jacks hanging off it, and nothing else. It
@@ -59,7 +59,7 @@ bit's binary weight — read the result at **I/O**. With all eight inputs
 connected, I/O = (b₀·1 + b₁·2 + … + b₇·128) / 256 of the gate voltage: 10 V
 gates give 0 … 9.96 V in 256 steps. Bits you leave unconnected float rather
 than reading as zero, which biases the conversion upward (the manual's point
-about only-plugged jacks having real weights); switch **GROUND** on to have
+about only-plugged jacks having real weights); click the word on the read-out to turn **GROUND** on and have
 them count as LOW. Reading from a lower jack instead of I/O gives the same
 sequence at a smaller, differently-shaped scale.
 
@@ -88,8 +88,8 @@ manual says. Everything affects everything else; that is the instrument.
 
 | control | what it does |
 |---|---|
-| **GROUND** (switch) | The official Olegtron mod. Down: unplugged jacks 1 … 128 float, as the stock unit does. Up: they are normalized to ground through their branch resistor, which tames the module, makes a DAC read a reliable 0 V with all bits low, and makes the jack numbers the true weights. A jack with a cable in *either* of its ports counts as plugged, as on the hardware. |
-| **SCALE** (trim) | Output gain for every output, 0 – 200 %, default 100 %. Not on the original: the passive ladder cannot make up what it divides away. |
+| **GROUND** (click the 8-bit word on the read-out) | The official Olegtron mod. FLOATING: unplugged jacks 1 … 128 float, as the stock unit does. GROUNDED: they are normalized to ground through their branch resistor, which tames the module, makes a DAC read a reliable 0 V with all bits low, and makes the jack numbers the true weights. A jack with a cable in *either* of its ports counts as plugged, as on the hardware. |
+| **SCALE** (hold and drag the voltage on the read-out) | Output gain for every output, 0 – 200 %, default 100 %. Not on the original: the passive ladder cannot make up what it divides away. |
 
 ## Jacks
 
@@ -105,9 +105,19 @@ own output.
 
 ## Read-out
 
-**DUE** is the voltage at I/O (channel 1, after SCALE). To its right is the
-8-bit word the ladder is being handed, MSB first: `1`/`0` for a driven jack
-above or below 1 V, `0` for a grounded one, `-` for one left floating.
+The read-out is also where the module is set; there are no knobs or switches on
+the face.
+
+The left half is the voltage at I/O (channel 1, after SCALE), with SCALE under
+it. Hold the voltage and drag up or down to set SCALE (Ctrl fine, Shift coarse).
+
+The right half is the 8-bit word the ladder is being handed, MSB first: `1`/`0`
+for a driven jack above or below 1 V, `0` for a grounded one, `-` for one left
+floating. Under it, OPEN says what an unplugged jack is. Click the word to flip
+GROUND between FLOATING and GROUNDED.
+
+Right-click either half for the usual parameter menu: typed entry, MIDI-Map,
+reset.
 
 ## Context menu
 
