@@ -8,13 +8,15 @@ CXXFLAGS := -std=c++11 -O2 -Wall -Wextra -g
 SAN := -fsanitize=address,undefined -fno-omit-frame-pointer
 
 IAMO := ../../src/Garnishment/IAmO.hpp ../../src/Mna.hpp
-CORE := ../../src/Garnishment/Vca.hpp $(IAMO)
+OTA := ../../src/Garnishment/OtaVca.hpp ../../src/Lm13700.hpp
+CORE := ../../src/Garnishment/Vca.hpp ../../src/Vactrol.hpp $(IAMO) $(OTA)
 
-all: test_vca test_iamo
+all: test_vca test_iamo test_ota
 
-test: test_vca test_iamo
+test: test_vca test_iamo test_ota
 	./test_vca
 	./test_iamo
+	./test_ota
 
 test_vca: test_vca.cpp $(CORE)
 	$(CXX) $(CXXFLAGS) $(SAN) -o $@ test_vca.cpp
@@ -22,7 +24,10 @@ test_vca: test_vca.cpp $(CORE)
 test_iamo: test_iamo.cpp $(IAMO)
 	$(CXX) $(CXXFLAGS) $(SAN) -o $@ test_iamo.cpp
 
+test_ota: test_ota.cpp $(OTA)
+	$(CXX) $(CXXFLAGS) $(SAN) -o $@ test_ota.cpp
+
 clean:
-	rm -rf test_vca test_iamo *.dSYM
+	rm -rf test_vca test_iamo test_ota *.dSYM
 
 .PHONY: all test clean

@@ -10,10 +10,25 @@
 #include <cmath>
 
 #include "IAmO.hpp"
+#include "../Vactrol.hpp"
+#include "OtaVca.hpp"
 
 enum GarnishmentMode { MODE_OTA = 0, MODE_VACTROL = 1, MODE_JFET_AM = 2 };
 
 static const int MAX_POLY = 16;
+
+/** VACTROL mode: the Day 2 schematic's CV In -> 330 ohm -> LED, and the cell it lights in series with
+    the audio, against an assumed 100 kohm downstream input (R12 has no partner on the sheet).
+    `volts` is the LED's drive (BIAS + CV AMOUNT * CV, volts); returns the signal gain and leaves
+    the cell's state advanced by one sample. Clamped to the LED's 40 mA absolute maximum. */
+static inline float vactrolGain(vactrol::Vactrol& cell, float volts, float sampleTime) {
+	const double RSERIES = 330.0, RLOAD = 100e3;
+	cell.setSampleTime(sampleTime);
+	double i = vactrol::ledCurrent((double) volts, RSERIES);
+	if (i > vactrol::kMaxLedCurrent) i = vactrol::kMaxLedCurrent;
+	double g = cell.step(i);          // siemens
+	return (float) (1.0 / (1.0 + 1.0 / (g * RLOAD)));    // RLOAD / (RLOAD + 1/g)
+}
 
 /** Asymmetric exponential slew -- separate time constants rising and falling.
     This is the vactrol's own fast-attack/slow-decay behaviour (~2 ms up, 50-200
@@ -45,11 +60,21 @@ struct OnePoleLP {
 struct VcaBus {
 	float ctrl[MAX_POLY] = {};   // slewed control voltage, 0..1 -- all three modes
 	OnePoleLP lpg[MAX_POLY];
+	vactrol::Vactrol ldr[MAX_POLY];            // VACTROL mode: the VTL5C3 cell, with its memory
 	garnishment::IAmO jfet[MAX_POLY];          // the I AM O circuit, solved; C1 is its own DC blocker
+	garnishment::OtaVca ota[MAX_POLY];         // the Day 2 13700 board, solved
+	float cvv[MAX_POLY] = {};                  // OTA: the CV at the 22k, volts, slewed by LAG
+	float open[MAX_POLY] = {};                 // how open the channel is, 0..1, for the read-out (every mode)
+	float dcLp[MAX_POLY] = {};                 // OTA: the DC the optional blocker takes off Out
 
 	void reset() {
 		for (int i = 0; i < MAX_POLY; i++) {
 			ctrl[i] = 0.f;
+			cvv[i] = 0.f;
+			open[i] = 0.f;
+			dcLp[i] = 0.f;
+			ota[i].reset();
+			ldr[i].reset();
 			lpg[i].reset();
 			jfet[i].reset();
 		}

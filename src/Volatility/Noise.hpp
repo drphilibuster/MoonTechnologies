@@ -108,38 +108,55 @@ struct NoiseColours {
 };
 
 // ---------------------------------------------------------------------------
-// THE REGISTER. One CD4006B wired as an 18-stage shift register, with two of its
-// pins XORed back into its input.
+// THE REGISTER. One CD4006B wired as an 18-stage shift register, closed into a
+// ring through a 4070 XOR pair and one transistor inverter: the noise source of
+// Yves Usson's "Random Eight Pole Gate Switch" (Yusynth, Sept. 2005,
+// https://yusynth.net/Modular/Commun/RANDOM/RANDOMGATE-sch.pdf). Only the
+// register is taken from that board; its 4051 router and gate outputs are not.
 //
-// The textbook two-tap solution for 18 stages is stages 18 and 11, and it cannot
-// be built on one chip: a 4006 brings out only the end of each section, so the
-// pins it has are, at most, stages 4, 5, 8, 9, 12, 13, 14, 17 and 18 once the
-// sections are chained, in an order that picks six of those. There is no pin on
-// stage 11, or on stage 7, the reciprocal. No 18-stage trinomial is reachable at
-// all, and the nearest a single 4006 comes is 17: stages 17 and 12, a maximal
-// sequence of 2^17 - 1 = 131071 clocks. That is what this is. (The TR-909's noise
-// source reaches 2^31 - 1 with two 4006s and taps 31 and 13: 18 + 13, and 13.)
+// THE WIRING, read off the schematic (U1 = 4006, U3a/U3b = 4070, Q2 = BC547):
 //
-// The chain, section by section, is D1 -> D3 -> D2 -> D4, which numbers the
-// stages
+//     D4 (pin 6)  <- U3a pin 3          (the only input fed by logic)
+//     D3 (pin 5)  <- Q18 (pin 9)        D4+5
+//     D2 (pin 4)  <- Q13 (pin 10)       D3+4
+//     D1 (pin 1)  <- Q9  (pin 12)       D2+5
+//     U3b  = pin 9 XOR pin 13           (pin 13 = D1+4, the last stage)
+//     Q2   = inverter on U3b's output   (R7 22k base, R6 4.7k collector pull-up)
+//     U3a  = Q2 XOR pin 10
 //
-//     1..4   section 1   (pin 13 is stage 4)
-//     5..8   section 3   (pin 10 is stage 8)
-//     9..13  section 2   (pin 11 is stage 12, pin 12 is stage 13)
-//     14..18 section 4   (pin 8 is stage 17, pin 9 is stage 18)
+// So the chain, in the order the bit travels, is D4 -> D3 -> D2 -> D1, and
+// numbering the stages from the input
 //
-// and the XOR takes pins 11 and 8. Stage 18 comes out as a delayed copy of 17,
-// as the TR-909's 36th does.
+//      1.. 5   section 4   (pin 8 is stage 4, pin 9 is stage 5)
+//      6.. 9   section 3   (pin 10 is stage 9)
+//     10..14   section 2   (pin 11 is stage 13, pin 12 is stage 14)
+//     15..18   section 1   (pin 13 is stage 18)
 //
-// An XOR register locks up on all zeros. The real circuit has a start-up network
-// that holds the input high for 20-30 ms; here an all-zero register is fed a one,
-// which is what that network is for.
+// the new bit entering stage 1 is
+//
+//     NOT( s18 XOR s5 ) XOR s9
+//
+// -- taps at stages 5, 9 and 18 and an inversion. Three taps and an inverter
+// is what makes all 18 stages usable on one chip: the two-tap textbook pair
+// (18, 11) needs a pin on stage 11, which the 4006 does not have, but this
+// ring does not need a trinomial. Its feedback is invertible (the oldest bit
+// enters linearly), so every state lies on a cycle: one of 2^18 - 4 = 262140
+// clocks, and one of 4 clocks (001100110011001100 and its shifts) that is
+// not reached from the main one and in practice is never entered (the
+// sequence only lands there from those four states themselves). All zeros is
+// NOT a lock-up here: the inverter makes the XOR of nothing a one. That is
+// why the Yusynth board has no start-up network, and why this has no rule.
+// Shifting is on the clock's falling edge, as the datasheet has it.
+//
+// Pin-backed stages are 4, 5, 9, 13, 14 and 18; the rest of the register, and
+// so most of the DAC window, is inside the chip with no pin.
 
 static const int kRegisterStages = 18;
-static const int kFeedbackStageA = 12;     // D2+4, pin 11
-static const int kFeedbackStageB = 17;     // D4+4, pin 8
+static const int kTapStageA = 5;        // D4+5, pin 9
+static const int kTapStageB = 9;        // D3+4, pin 10
+static const int kTapStageC = 18;       // D1+4, pin 13
 static const uint32_t kRegisterMask = 0x0003FFFFu;
-static const uint32_t kRegisterSeed = 0x00015555u;   // any nonzero 18-stage fill
+static const uint32_t kRegisterSeed = 0x00015555u;   // any state on the long cycle
 
 struct Register4006 {
 	cd4006::Cd4006 chip;
@@ -151,33 +168,33 @@ struct Register4006 {
 	/** The register as one number: bit k-1 is stage k, counting from the input. */
 	uint32_t stages() const {
 		uint32_t v = 0;
-		for (int i = 0; i < 4; i++) v |= (uint32_t) chip.s1[i] << i;          // 1-4
-		for (int i = 0; i < 4; i++) v |= (uint32_t) chip.s3[i] << (4 + i);    // 5-8
-		for (int i = 0; i < 5; i++) v |= (uint32_t) chip.s2[i] << (8 + i);    // 9-13
-		for (int i = 0; i < 5; i++) v |= (uint32_t) chip.s4[i] << (13 + i);   // 14-18
+		for (int i = 0; i < 5; i++) v |= (uint32_t) chip.s4[i] << i;          // 1-5
+		for (int i = 0; i < 4; i++) v |= (uint32_t) chip.s3[i] << (5 + i);    // 6-9
+		for (int i = 0; i < 5; i++) v |= (uint32_t) chip.s2[i] << (9 + i);    // 10-14
+		for (int i = 0; i < 4; i++) v |= (uint32_t) chip.s1[i] << (14 + i);   // 15-18
 		return v;
 	}
 
 	void setStages(uint32_t v) {
-		for (int i = 0; i < 4; i++) chip.s1[i] = (v >> i) & 1u;
-		for (int i = 0; i < 4; i++) chip.s3[i] = (v >> (4 + i)) & 1u;
-		for (int i = 0; i < 5; i++) chip.s2[i] = (v >> (8 + i)) & 1u;
-		for (int i = 0; i < 5; i++) chip.s4[i] = (v >> (13 + i)) & 1u;
+		for (int i = 0; i < 5; i++) chip.s4[i] = (v >> i) & 1u;
+		for (int i = 0; i < 4; i++) chip.s3[i] = (v >> (5 + i)) & 1u;
+		for (int i = 0; i < 5; i++) chip.s2[i] = (v >> (9 + i)) & 1u;
+		for (int i = 0; i < 4; i++) chip.s1[i] = (v >> (14 + i)) & 1u;
 	}
 
-	/** What the XOR gate is putting on pin 1 now. */
+	/** What U3a is putting on pin 6 now: NOT(pin 9 XOR pin 13) XOR pin 10. */
 	bool feedback() const {
-		if (stages() == 0u)
-			return true;                           // the start-up network
-		return chip.pin11() != chip.pin8();        // stage 12 XOR stage 17
+		bool u3b = chip.pin9() != chip.pin13();    // U3b
+		bool q2 = !u3b;                            // the inverter
+		return q2 != chip.pin10();                 // U3a
 	}
 
 	/** One negative-going clock edge. Returns the bit that went in. */
 	bool clockFalling() {
 		bool fb = feedback();
-		// Section 1 takes the feedback; each later section takes the pin of the one
-		// before it in the chain, read before the edge.
-		chip.clockFalling(fb, chip.pin10(), chip.pin13(), chip.pin12());
+		// D4 takes the feedback; D3, D2 and D1 each take the pin of the section
+		// before them in the chain, read before the edge.
+		chip.clockFalling(chip.pin12(), chip.pin10(), chip.pin9(), fb);
 		return fb;
 	}
 };

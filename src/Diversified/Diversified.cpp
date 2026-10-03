@@ -147,6 +147,8 @@ struct Diversified : Module {
 	int crushGain;
 	bool crushUnipolar;
 	bool ringSmooth;
+	int springGain;
+	int springTank;
 
 	// Published for the read-out. Written from the audio thread at control rate,
 	// read by the UI: all scalars and pointers into the static program table.
@@ -160,6 +162,7 @@ struct Diversified : Module {
 	                tapCount(0), tapSec(0.f), sinceTap(1e6f), wetMeter(0.f),
 	                crushSwap(false), crushLpf(true), crushDiv(1), crushGain(1),
 	                crushUnipolar(false), ringSmooth(false),
+	                springGain(4), springTank(0),
 	                dispProgram(0), dispName("SMALL HALL"), dispClocked(false) {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 
@@ -367,6 +370,8 @@ struct Diversified : Module {
 			tmpl.crushGain = crushGain;
 			tmpl.crushUnipolar = crushUnipolar;
 			tmpl.ringSmooth = ringSmooth;
+			tmpl.springGain = springGain;
+			tmpl.springTank = springTank;
 
 			float m[divfx::kMacros];
 			for (int i = 0; i < divfx::kMacros; i++)
@@ -483,6 +488,8 @@ struct Diversified : Module {
 		json_object_set_new(root, "crushOutputGain", json_integer(crushGain));
 		json_object_set_new(root, "crushUnipolarInput", json_boolean(crushUnipolar));
 		json_object_set_new(root, "smoothRing", json_boolean(ringSmooth));
+		json_object_set_new(root, "springPickupGain", json_integer(springGain));
+		json_object_set_new(root, "springTank", json_integer(springTank));
 		return root;
 	}
 
@@ -500,6 +507,10 @@ struct Diversified : Module {
 		if (j) crushUnipolar = json_boolean_value(j);
 		j = json_object_get(root, "smoothRing");
 		if (j) ringSmooth = json_boolean_value(j);
+		j = json_object_get(root, "springPickupGain");
+		if (j) springGain = clamp((int) json_integer_value(j), 0, 5);
+		j = json_object_get(root, "springTank");
+		if (j) springTank = clamp((int) json_integer_value(j), 0, 1);
 	}
 };
 
@@ -670,6 +681,16 @@ struct DiversifiedWidget : ModuleWidget {
 			return;
 		menu->addChild(new MenuSeparator);
 		menu->addChild(createMenuLabel("Diversified"));
+
+		menu->addChild(createMenuLabel("101 Spring tank"));
+		menu->addChild(createIndexSubmenuItem("Pickup gain (RP2)",
+			{"1x", "11x", "26x", "51x", "76x", "101x"},
+			[=]() { return m->springGain; },
+			[=](int v) { m->springGain = v; }));
+		menu->addChild(createIndexSubmenuItem("Tank",
+			{"Leem KA-1210 (3 springs)", "Olson X-82 (2 springs)"},
+			[=]() { return m->springTank; },
+			[=](int v) { m->springTank = v; }));
 
 		menu->addChild(createMenuLabel("104 Bitcrusher"));
 		menu->addChild(createBoolMenuItem("Swap MSB and LSB", "",

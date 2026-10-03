@@ -5,7 +5,7 @@ Running this file regenerates the artwork, the shared hardware, src/PanelTheme.h
 and the previews. See ../../panelkit/README.md for the pipeline.
 
 Volatility consolidates Modular in a Week's Day 6 random trio onto one FORM
-SCHEDULE D: the 4006 shift-register noise generator, Rene Schmitz's YASH
+SCHEDULE D: the 4006 shift-register noise generator, Rene Schmitz's YASH (an LF398)
 sample and hold, and the PHObos random gate -- three circuits that all want a
 clock, so they share one. RATE and CLOCK IN live in NOISE because NOISE is the
 one whose character actually depends on it (a bitstream reads as noise at

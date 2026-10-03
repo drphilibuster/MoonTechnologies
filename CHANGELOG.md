@@ -5,6 +5,50 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Changed: chip-level models for the Modular-in-a-Week banks (2026-10-03 batch)
+
+MiaW is a starting point, not ground truth: where a datasheet or a better source disagrees with the course board, the
+module follows the better source and the doc says so. Everything below has tests with negative controls.
+
+* **AuditLogic**: FINDINGS gains a *Quad Logic board* mode (context menu, saved in the patch, off by default): eight TL074
+  comparators against 1.09 V, 1N4448/2k7/LED level shifting, a CD4071B OR and BC547C followers; outputs about 5.7 V when true,
+  and Yn = An OR Bn (the board crosses the lower two pairs; the module does not). REFERRAL models the Day 10 board: a single
+  1.0909 V gate threshold with no hysteresis, and an HEF4066BT on 0..12 V with Ron by signal level, clamp diodes (the negative
+  half of a bipolar signal is clipped), 0.5 pF feedthrough, enable-edge charge and enable timing. The menu item *REFERRAL:
+  HEF4066 board* is on by default; off gives the ideal bipolar switch.
+* **Volatility**: the noise register is now the Yusynth Random Gate 4006 ring (taps 5, 9, 18 plus an inverter; period 262,140
+  instead of 131,071; no lock-up state, so the start-up rule is gone). RND and DAC sequences differ. SAMPLE & HOLD is Schmitz's
+  YASH around an LF398: the trigger becomes a ~3.4 us CD4093 pulse, the input is read at its true sub-sample time through the
+  chip's 5 mA-limited acquisition and aperture, and the held value carries the datasheet's hold step, offset, gain error and
+  feedthrough. The droop option is now the LF398's leakage (linear, 30 pA typical) rather than a 4 s exponential. New menu
+  items: chip grade, droop direction, and the YASH oscillator as the source when TRIG is empty.
+* **SixFigures**: the 4046 core's oscillator is the CD4046B VCO law (linear in VCOIN; centre frequency from the datasheet's
+  Fig. 7 for R1 = 100k, C1 = 10 nF / 5 uF); the exponential RATE taper no longer applies to this core. *SIGNAL also on the 4046
+  R1 pin* patches SIGNAL onto pin 11 as the board's RingMod jack does (linear FM). The 40106 core is the CD40106B astable
+  itself (datasheet thresholds, output resistance and delay), with a *40106 supply (VDD)* menu; CV on those voices is the
+  board's In jack (1N4448 + 1k), and *1 V/oct tracking* scales the pot. The avalanche core strikes at a random voltage each
+  cycle (about 3 % rms period jitter; RATE still sets the median pitch).
+* **Garnishment**: OTA mode is the Day 2 LM13700 board as a circuit (linearizing diodes, BIAS trimmer, 22k into Iabc, 33k and
+  buffer). CV is volts at the 22k, so 0 V is half open and a fresh channel passes signal; Out is DC coupled at -1.4 V with a
+  menu item to remove it. VACTROL mode drives the new vactrol cell from BIAS + CV AMOUNT x CV through 330 ohm (LAG no longer
+  acts in this mode; the LED has a 1.4 V knee).
+* **Op-amps** (`src/OpAmp.hpp`, `docs/OpAmps.md`): datasheet TL07x/LM741/LM358 model. Consolidation and Bailout gain *TL07x
+  op-amps* and *Output networks* menu options (off by default). Diversified 102 (Distortion+) now solves the 741 network as
+  drawn (1 MHz GBW, 0.5 V/us slew, load-dependent rail); Diversified 104 (bitcrusher) runs its two LM358s with slew, a
+  load-dependent swing and class-B crossover.
+* **Diversified**: 100 Little Angel is Rick Holt's PT2399 chorus as Jack Orman drew it: the clock is held at its shortest by a
+  J112 and the LFO modulates the chip's REF pin; first-order 1.6 kHz and 531 Hz filters, fixed dry/wet, the drawn Schmitt/RC
+  LFO. `Pt2399` gains a REF-aware delay and per-chip integrator constants (other modules unchanged). 101 Spring is rebuilt: the
+  Day 12 board (2N2222 into a Visaton K 50 SQ, piezo into an NE5532 with RP2) is solved with the nodal solver, and the tank is
+  Parker and Bilbao's helical-spring dispersion relation (rising LF chirp, falling HF chirp, echo spacing from the spring);
+  Leem KA-1210 and Olson X-82 as dimensions. New menus: *Pickup gain (RP2)* and *Tank*. Output is mono and wet.
+* **Kickback** (non-kick voices only): the XOR snare's oscillators are 40106 astables with XORbell's 0.1 uF caps; the vactrol
+  snare uses the VTL5C3 cell in place of a one-pole (BEND no longer sets the lag speed) and microplasma avalanche noise
+  (Haitz 1964) with a Tiny Dazzler variant. The TomTomTom circuit is built and tested (`src/Kickback/TomCircuit.hpp`, on
+  `Mna.hpp`'s new MOSFET element and `src/Cd4069.hpp`) but not wired: at datasheet gains it oscillates rather than rings down.
+* New shared parts: `Cd4071`, `Cd4093`, `Cd40106`, `Cd4046`, `Cd4069`, `Hef4066`, `Lf398`, `Lm13700`, `Vactrol`, `Microplasma`,
+  `Tl074Comparator`, `OpAmp`, `SpringTank`.
+
 ### Added: the hardware emulations' two-handed gestures, as controls
 
 A mouse has one pointer, so what the original units ask of two hands (hold one button, press another; press two together)

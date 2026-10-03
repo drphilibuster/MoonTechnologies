@@ -74,6 +74,10 @@ static void testDc() {
 	check("ok flag", n.ok);
 }
 
+// NOTE (2026-10-03): the circuit's default noise is now the microplasma model (test_microplasma.cpp).
+// Everything below that compares against a linear small-signal solve or a Gaussian runs the
+// shot-noise-only model (`microplasma = false`), which is the part of the physics that IS linear.
+
 // the circuit's own small-signal transfer from the junction's noise current to a node, solved here
 static void transfer(const N& n, double f, cx& hB1, cx& hC2) {
 	const double* v = n.ckt.v;
@@ -121,6 +125,7 @@ static void transfer(const N& n, double f, cx& hB1, cx& hC2) {
 static void testSpectrum() {
 	printf("spectrum\n");
 	N n;
+	n.microplasma = false;                     // the linear, shot-noise-only model: the small-signal oracle applies to it
 	n.seed(12345);
 	n.start(192000.0);
 	for (int i = 0; i < 40000; i++) n.step();
@@ -171,6 +176,7 @@ static void testSpectrum() {
 static void testNoiseCurrent() {
 	printf("the noise current\n");
 	N n;
+	n.microplasma = false;
 	n.seed(99);
 	n.start(192000.0);
 	for (int i = 0; i < 20000; i++) n.step();
@@ -199,7 +205,7 @@ static void testSource() {
 	double rms[5];
 	double rates[5] = { 44100.0, 48000.0, 88200.0, 96000.0, 192000.0 };
 	for (int r = 0; r < 5; r++) {
-		AvalancheSource s;
+		AvalancheSource s(0x5EAF00Du, N::PERCUSSIVE, false);     // the shot-noise-only source
 		s.setRate(rates[r]);
 		for (int i = 0; i < (int)rates[r] / 2; i++) s.next();
 		double acc = 0, m = 0, m4 = 0;

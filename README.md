@@ -244,7 +244,7 @@ Two function generators, each LFO, AR or AD with loop, range, bias and CV, plus 
 
 *Day 6, consolidated.*
 
-An 18-bit 4006-style shift-register noise source, the YASH sample and hold, and the PHObos random gate — three separate builds put on one shared clock.
+An 18-bit 4006-style shift-register noise source, the YASH sample and hold (an LF398 with its 3 µs trigger-pulse circuit), and the PHObos random gate — three separate builds put on one shared clock.
 
 ### [Deduction](docs/Deduction.md) — **multimode filter** · 10 HP · *Filter, Distortion*
 

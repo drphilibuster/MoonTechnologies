@@ -90,6 +90,17 @@ voltage.
   rather than the hard clip a starved rail would not actually produce. Off by
   default, in which case the sum is honest and only the ±12 V output clamp
   catches it.
+- **TL07x op-amps (datasheet: rails, slew, GBW, caps)** — off by default; replaces
+  the soft clip above. Each bank is the Consolidation pair of stages (a summer of
+  four 10 kΩ inputs with 27 pF, an inverter with 47 pF), and **MAIN is modelled as a
+  bank of its own** summing the free banks' outputs through two more 10 kΩ inputs
+  (assumed: the Bailout board is not in the reference folder, only that MAIN "sums
+  the banks still free and clips again"). The rails are the TL07x's, load-dependent
+  (about 10.3 V from a summer, 10.6 V into 10 kΩ), the multiples' followers are
+  solved once per channel and fanned out to the seven legs. See `docs/OpAmps.md`.
+- **Output networks (100 Ω; mixer 10 µF) into 100 kΩ** — off by default; MIX A, MIX B
+  and MAIN through 100 Ω and 10 µF into an assumed 100 kΩ (a 0.16 Hz DC block), the
+  multiples' legs through 100 Ω. Takes effect with the op-amp option.
 - **Multiples: passive-style loading droop** — knocks about a percent off per
   patched leg. A bare-wire multiple has no source impedance of its own to sag
   under load, so this is faithful to the folklore rather than to the physics.

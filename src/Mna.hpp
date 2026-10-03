@@ -65,13 +65,32 @@ inline double jfetId(double vgs, double vds, double beta, double vto, double lam
     return beta * vov * vov * cl;
 }
 
+/** An enhancement MOSFET's drain current for vgs, vds >= 0 and its slopes (level-1 square law
+    with mobility degradation 1/(1+theta*vov) and channel-length modulation, the threshold
+    smoothed over kMosSmooth volts so Newton sees a continuous slope through turn-on). */
+static const double kMosSmooth = 0.12;
+inline double mosId(double vgs, double vds, double beta, double vt, double lambda, double theta,
+                    double& gm, double& gds) {
+    double z = (vgs - vt) / kMosSmooth, sig, vov;
+    if (z > 30.0) { vov = vgs - vt; sig = 1.0; }
+    else { double e = std::exp(z); vov = kMosSmooth * std::log1p(e); sig = e / (1.0 + e); }
+    double cl = 1.0 + lambda * vds, den = 1.0 + theta * vov;
+    double f, fv, fd;                                      // f(vov, vds) and its two slopes
+    if (vds < vov) { f = vds * (2.0 * vov - vds); fv = 2.0 * vds; fd = 2.0 * (vov - vds); }
+    else { f = vov * vov; fv = 2.0 * vov; fd = 0.0; }
+    double id = beta * f * cl / den;
+    gm = beta * cl * (fv / den - f * theta / (den * den)) * sig;
+    gds = beta * (fd * cl + f * lambda) / den;
+    return id;
+}
+
 struct Circuit {
     int n = 0;                          // unknown nodes
     double fixedV[kMaxFixed] = {};
     double v[kMaxNodes] = {};           // node voltages (the solution)
     double gmin = 1e-12;                // to ground at every node, so a floating one is defined
 
-    enum Kind { RES, CAP, DIODE, NPN, NJFET, ZENER, ISRC };
+    enum Kind { RES, CAP, DIODE, NPN, NJFET, ZENER, ISRC, MOS };
     struct Elem {
         Kind kind;
         int a, b, c;                    // terminals (NPN: collector, base, emitter)
@@ -92,6 +111,12 @@ struct Circuit {
     }
     int addJfet(int d, int g, int src, double beta, double vto, double lambda) {
         return add({ NJFET, d, g, src, beta, vto, lambda, 0, 0, 0, 0 });
+    }
+    /** An enhancement MOSFET, level-1 with mobility degradation and a smooth threshold:
+        `pol` +1 is N-channel, -1 is P-channel (mirrored: a P device conducts when its gate is
+        below its source by more than vt, vt is given positive). See mosId(). */
+    int addMosfet(int d, int g, int src, double beta, double vt, double lambda, double theta, int pol) {
+        return add({ MOS, d, g, src, beta, vt, lambda, theta, (double)pol, 0, 0 });
     }
     /** A diode whose reverse current is Ibv * exp(-(v + BV) / nVtBr) (SPICE's breakdown: the
         junction passes `ibv` amps at -BV volts and gains an e-fold every nVtBr). */
@@ -300,6 +325,36 @@ private:
                     if (col(g) >= 0) J[sn][col(g)] -= dVg;
                     if (col(d) >= 0) J[sn][col(d)] -= dVd;
                     if (col(sn) >= 0) J[sn][col(sn)] -= dVs;
+                }
+                break;
+            }
+            case MOS: {
+                // Mirror a P device into an N one (u = pol * v); the current and its slopes
+                // come back with the signs that cancel, so only the current is flipped.
+                int d = el.a, g = el.b, sn = el.c;
+                double pol = el.p4;
+                double ud = pol * volt(d), ug = pol * volt(g), us = pol * volt(sn);
+                double gm, gds, I;                 // I flows drain -> source (mirrored)
+                double dUg, dUd, dUs;
+                if (ud >= us) {
+                    I = mosId(ug - us, ud - us, el.p0, el.p1, el.p2, el.p3, gm, gds);
+                    dUg = gm; dUd = gds; dUs = -gm - gds;
+                } else {                           // symmetric channel: swap the ends
+                    I = -mosId(ug - ud, us - ud, el.p0, el.p1, el.p2, el.p3, gm, gds);
+                    dUg = -gm; dUs = -gds; dUd = gm + gds;
+                }
+                I *= pol;
+                if (d >= 0) {
+                    J[d][n] -= I;
+                    if (col(g) >= 0) J[d][col(g)] += dUg;
+                    if (col(d) >= 0) J[d][col(d)] += dUd;
+                    if (col(sn) >= 0) J[d][col(sn)] += dUs;
+                }
+                if (sn >= 0) {
+                    J[sn][n] += I;
+                    if (col(g) >= 0) J[sn][col(g)] -= dUg;
+                    if (col(d) >= 0) J[sn][col(d)] -= dUd;
+                    if (col(sn) >= 0) J[sn][col(sn)] -= dUs;
                 }
                 break;
             }

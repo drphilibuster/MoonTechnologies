@@ -1,6 +1,7 @@
 #include "../plugin.hpp"
 #include "Panel.hpp"
 #include "Cores.hpp"
+#include "Cd4046.hpp"
 
 using sixfigures::Voice;
 using sixfigures::Core;
@@ -47,6 +48,11 @@ struct SixFigures : Module {
 	// response every RC core in the family actually has; on is a proper 1 V/oct
 	// exponential converter, which none of the originals had but Rack makes cheap.
 	bool voltPerOct = false;
+	// The board's SIGIN/Sync/RingMod jack goes to the 4046's R1 pin (11). Off (default): SIGNAL is only the
+	// PLL reference, as before. On: SIGNAL is also patched onto pin 11 of every 4046 voice (docs/SixFigures.md).
+	bool signalOnR1 = false;
+	// The 40106 core's supply (VDD = VCC on the board). Its thresholds are a function of it (Cd40106.hpp).
+	float vdd = (float) sixfigures::schmitt::kVddDefault;
 
 	SixFigures() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -59,6 +65,7 @@ struct SixFigures : Module {
 			configSwitch(CORE1_PARAM + i, 0.f, (float)(sixfigures::NUM_CORES - 1), 0.f,
 			             string::f("Voice %d core", i + 1), coreLabels);
 			getParamQuantity(CORE1_PARAM + i)->snapEnabled = true;
+			voices[i].strike = sixfigures::avalanche::Strike(0x57121CEu + 7919u * (uint32_t)i);   // each voice's own jitter
 
 			configParam(RATE1_PARAM + i, 0.f, 1.f, 0.5f, string::f("Voice %d rate", i + 1));
 
@@ -156,6 +163,23 @@ struct SixFigures : Module {
 			float freq = voltPerOct ? sixfigures::voltOctFreq(knob, cv, cvAmt, lo, hi)
 			                        : sixfigures::potFreq(knob, cv, cvAmt, lo, hi);
 
+			// 4046: the CD4046B's own VCO law (Cd4046.hpp). RATE and CV make VCOIN (the board feeds it from
+			// an LM358 stage); the range switch picks C1; R1 is the board's 100k. The old exponential
+			// RATE taper does not apply: the chip's response is linear in VCOIN, zero at 0 V.
+			if (core == sixfigures::CORE_PLL) {
+				namespace cd = sixfigures::cd4046;
+				const double c1 = lfoRange ? cd::kC1Lfo : cd::kC1Audio;
+				double vcoin;
+				if (voltPerOct)
+					vcoin = cd::vcoinFor(freq, cd::kVdd, cd::kR1, c1);  // an exponential converter ahead of VCOIN
+				else
+					vcoin = cd::kVdd * clamp(knob + cv * 0.1f * cvAmt, 0.f, 1.f);
+				cd::Jack jack;
+				if (signalOnR1 && signalConnected)
+					jack = cd::Jack(inputs[SIGNAL_INPUT].getVoltage(), 1000.0);  // a module output: 1k, assumed
+				freq = (float) cd::freq(vcoin, cd::kVdd, cd::kR1, c1, jack);
+			}
+
 			// Reverse avalanche: a slow random wander on top of the RATE knob,
 			// modelling the vactrol's LDR never quite settling. One-pole low-pass
 			// of white noise, so the wander is smooth rather than stepped.
@@ -201,16 +225,28 @@ struct SixFigures : Module {
 
 			float prevPhase = v.phase;
 			v.phase += dt;
-			if (v.phase >= 1.f)
-				v.phase -= 1.f;
+			// the avalanche core's cycle ends where this cycle's junction struck (Avalanche.hpp `Strike`)
+			float wrapAt = core == sixfigures::CORE_AVALANCHE ? v.strike.theta : 1.f;
+			if (v.phase >= wrapAt) {
+				v.phase -= wrapAt;
+				if (core == sixfigures::CORE_AVALANCHE)
+					v.strike.draw(freq);
+			}
 			bool wrapped = v.phase < prevPhase;
 
 			float outSample = 0.f, auxSample = 0.f;
 			switch (core) {
 				case sixfigures::CORE_SCHMITT: {
-					outSample = sixfigures::blepSquare(v.phase, dt);
-					float tri = v.tri.process(outSample, freq, args.sampleTime);
-					auxSample = sixfigures::rcBend(clamp(tri, -1.f, 1.f), 0.5f) * 5.f;
+					// The astable itself (Cd40106.hpp): RATE is the pot, the CV the In jack's 1N4448 + 1k
+					// (or, with 1 V/oct on, an exponential converter scaling the pot), the range the cap.
+					const sixfigures::schmitt::Setting st =
+						sixfigures::schmitt::setting(knob, lfoRange, lo, hi, voltPerOct, cv * cvAmt);
+					outSample = v.schmitt.process(args.sampleTime, st.r, st.c, vdd, cd40106::CORNER_TYP, st.vin);
+					dispHz[i] = (float) v.schmitt.a.frequency();
+					v.phase = v.schmitt.a.high ? 0.25f : 0.75f;       // the LED follows the output
+					// AUX: the capacitor itself, centred on the hysteresis window and scaled to +-5 V at the thresholds.
+					const cd40106::Thresholds th = cd40106::thresholds(vdd);
+					auxSample = clamp((float) ((v.schmitt.a.v - 0.5 * (th.vp + th.vn)) / (0.5 * (th.vp - th.vn))), -1.5f, 1.5f) * 5.f;
 					break;
 				}
 				case sixfigures::CORE_AAC: {
@@ -226,7 +262,7 @@ struct SixFigures : Module {
 				}
 				case sixfigures::CORE_AVALANCHE:
 				default: {
-					outSample = sixfigures::avalancheSaw(v.phase, dt);
+					outSample = sixfigures::avalancheSaw(v.phase, dt, v.strike.theta, v.strike.warp);
 					if (wrapped)
 						v.avalanchePulse.trigger(0.001f);
 					auxSample = v.avalanchePulse.process(args.sampleTime) ? 10.f : 0.f;
@@ -253,6 +289,8 @@ struct SixFigures : Module {
 	json_t* dataToJson() override {
 		json_t* root = json_object();
 		json_object_set_new(root, "voltPerOct", json_boolean(voltPerOct));
+		json_object_set_new(root, "signalOnR1", json_boolean(signalOnR1));
+		json_object_set_new(root, "vdd", json_real(vdd));
 		return root;
 	}
 
@@ -260,6 +298,12 @@ struct SixFigures : Module {
 		json_t* j = json_object_get(root, "voltPerOct");
 		if (j)
 			voltPerOct = json_boolean_value(j);
+		j = json_object_get(root, "signalOnR1");
+		if (j)
+			signalOnR1 = json_boolean_value(j);
+		j = json_object_get(root, "vdd");
+		if (j && json_is_number(j))
+			vdd = clamp((float) json_number_value(j), 3.f, 18.f);
 	}
 };
 
@@ -380,6 +424,16 @@ struct SixFiguresWidget : ModuleWidget {
 		menu->addChild(createBoolMenuItem("1 V/oct tracking (all voices)", "",
 			[=]() { return m->voltPerOct; },
 			[=](bool v) { m->voltPerOct = v; }));
+		menu->addChild(createBoolMenuItem("SIGNAL also on the 4046 R1 pin (board's RingMod jack)", "",
+			[=]() { return m->signalOnR1; },
+			[=](bool v) { m->signalOnR1 = v; }));
+		menu->addChild(createSubmenuItem("40106 supply (VDD)", string::f("%.0f V", m->vdd), [=](Menu* sub) {
+			static const float VDDS[] = {5.f, 9.f, 12.f, 15.f};
+			for (float vv : VDDS)
+				sub->addChild(createCheckMenuItem(string::f("%.0f V", vv), "",
+					[=]() { return m->vdd == vv; },
+					[=]() { m->vdd = vv; }));
+		}));
 	}
 };
 

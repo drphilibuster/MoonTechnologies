@@ -12,11 +12,12 @@ SAN := -fsanitize=address,undefined -fno-omit-frame-pointer
 CORE := ../../src/Volatility/Noise.hpp \
         ../../src/Cd4006.hpp
 
-all: test_noise test_register
+all: test_noise test_register test_yash
 
-test: test_noise test_register
+test: test_noise test_register test_yash
 	./test_noise
 	./test_register
+	./test_yash
 
 test_noise: test_noise.cpp $(CORE)
 	$(CXX) $(CXXFLAGS) $(SAN) -o $@ test_noise.cpp
@@ -24,7 +25,15 @@ test_noise: test_noise.cpp $(CORE)
 test_register: test_register.cpp $(CORE)
 	$(CXX) $(CXXFLAGS) $(SAN) -o $@ test_register.cpp
 
+# SAMPLE & HOLD: the YASH circuit around its LF398. Every header it reads is listed.
+YASH := ../../src/Volatility/Yash.hpp \
+        ../../src/Lf398.hpp \
+        ../../src/Cd4093.hpp
+
+test_yash: test_yash.cpp $(YASH)
+	$(CXX) $(CXXFLAGS) $(SAN) -o $@ test_yash.cpp
+
 clean:
-	rm -rf test_noise test_register *.dSYM
+	rm -rf test_noise test_register test_yash *.dSYM
 
 .PHONY: all test clean

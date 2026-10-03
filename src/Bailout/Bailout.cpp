@@ -1,6 +1,7 @@
 #include "../plugin.hpp"
 #include "Panel.hpp"
 #include "Bus.hpp"
+#include "../MixerStages.hpp"
 
 #include <cmath>
 
@@ -72,6 +73,18 @@ struct Bailout : Module {
 	// Options: neither schematic had a front-panel switch for either.
 	bool softClip = false;     // MIXER: soft-clamp at the op-amp rails, ~11 V
 	bool passiveMult = false;  // MULTIPLES: sag a little as more legs are patched
+	bool opamps = false;       // both: the TL07x datasheet model (replaces softClip)
+	bool outputNet = false;    // both: the schematic's output resistor and mixer cap
+
+	// The TL07x stages, per polyphony channel: a summer-and-inverter per bank, and
+	// MAIN's own pair (ASSUMED: MAIN is built like a bank, summing the two bank
+	// outputs through the same 10k resistors; the Bailout schematic is not in the
+	// course folder). The multiples' follower is solved once per channel and fanned
+	// out to the legs.
+	mixstage::Bank bank[NUM_BANK][mixstage::kMaxPoly], mainBank[mixstage::kMaxPoly];
+	mixstage::Leg legA[mixstage::kMaxPoly], legB[mixstage::kMaxPoly];
+	int bankReady = 0, legAReady = 0, legBReady = 0;
+	bool wasOpamps = false, wasNet = false;
 
 	Bailout() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -127,7 +140,7 @@ struct Bailout : Module {
 			meter[i] = 0.f;
 	}
 
-	void processMixer() {
+	void processMixer(float dt) {
 		int channels = 1;
 		for (int i = 0; i < NUM_CH; i++)
 			channels = std::max(channels, inputs[IN1_INPUT + i].getChannels());
@@ -135,6 +148,23 @@ struct Bailout : Module {
 		outputs[MIX_A_OUT_OUTPUT].setChannels(channels);
 		outputs[MIX_B_OUT_OUTPUT].setChannels(channels);
 		outputs[MAIN_OUT_OUTPUT].setChannels(channels);
+
+		if (opamps) {
+			if (!wasOpamps || outputNet != wasNet) {
+				bankReady = 0; legAReady = 0; legBReady = 0;
+				wasOpamps = true;
+				wasNet = outputNet;
+			}
+			for (; bankReady < channels; bankReady++) {
+				for (int b = 0; b < NUM_BANK; b++) {
+					bank[b][bankReady].init(bailout::kPerBank);
+					bank[b][bankReady].coupled = outputNet;
+				}
+				mainBank[bankReady].init(NUM_BANK);
+				mainBank[bankReady].coupled = outputNet;
+			}
+		}
+		else wasOpamps = false;
 
 		float level[NUM_CH];
 		bool direct[NUM_CH];
@@ -165,7 +195,22 @@ struct Bailout : Module {
 			}
 
 			bailout::Routing r;
-			bailout::route(v, direct, mixPatched, softClip, r);
+			bailout::route(v, direct, mixPatched, softClip && !opamps, r);
+
+			if (opamps) {
+				// Each bank's summer and inverter; MAIN sums the banks still
+				// free, through a pair of its own. The direct outs are the
+				// strips' wipers and never saw an op-amp.
+				double mainSum = 0.0, inv;
+				for (int b = 0; b < NUM_BANK; b++) {
+					double pin = bank[b][c].process(r.mix[b], dt, inv);
+					r.mix[b] = (float) bank[b][c].jack(pin, dt);
+					if (!mixPatched[b])
+						mainSum += pin;
+				}
+				double mpin = mainBank[c].process(mainSum, dt, inv);
+				r.main = (float) mainBank[c].jack(mpin, dt);
+			}
 
 			for (int i = 0; i < NUM_CH; i++)
 				if (direct[i])
@@ -177,8 +222,20 @@ struct Bailout : Module {
 	}
 
 	/** One 1-in-7-out multiple. `first` is the id of its first leg. */
-	void processMult(Input& in, int first) {
+	void processMult(Input& in, int first, mixstage::Leg* leg, int& ready, float dt) {
 		int channels = std::max(1, in.getChannels());
+		if (opamps) {
+			for (; ready < channels; ready++) {
+				leg[ready].init();
+				leg[ready].withR = outputNet;
+			}
+		}
+		// One input, one load, seven identical op-amps: one follower per
+		// channel, fanned out to the legs.
+		float opOut[mixstage::kMaxPoly];
+		if (opamps)
+			for (int c = 0; c < channels; c++)
+				opOut[c] = (float) leg[c].process(in.getPolyVoltage(c), dt);
 
 		// A bare-wire multiple has no source impedance of its own to sag under
 		// load, but the folklore about a passive mult "loading down" as you
@@ -198,30 +255,32 @@ struct Bailout : Module {
 			outputs[first + i].setChannels(channels);
 			for (int c = 0; c < channels; c++)
 				outputs[first + i].setVoltage(
-					clamp(in.getPolyVoltage(c) * droop, -12.f, 12.f), c);
+					clamp((opamps ? opOut[c] : in.getPolyVoltage(c)) * droop, -12.f, 12.f), c);
 		}
 	}
 
 	void process(const ProcessArgs& args) override {
-		processMixer();
+		processMixer(args.sampleTime);
 
 		// The fall, once per sample rather than once per polyphony channel.
 		for (int i = 0; i < NUM_CH; i++)
 			meter[i] = std::fmax(0.f, meter[i] - args.sampleTime * 1.6f);
 
-		processMult(inputs[MULT_A_IN_INPUT], MULT_A_OUT1_OUTPUT);
+		processMult(inputs[MULT_A_IN_INPUT], MULT_A_OUT1_OUTPUT, legA, legAReady, args.sampleTime);
 
 		// B normals from A's raw input, not from A's already-multed legs, so an
 		// unpatched B is indistinguishable from more legs on A.
 		Input& bSource = inputs[MULT_B_IN_INPUT].isConnected()
 		                 ? inputs[MULT_B_IN_INPUT] : inputs[MULT_A_IN_INPUT];
-		processMult(bSource, MULT_B_OUT1_OUTPUT);
+		processMult(bSource, MULT_B_OUT1_OUTPUT, legB, legBReady, args.sampleTime);
 	}
 
 	json_t* dataToJson() override {
 		json_t* root = json_object();
 		json_object_set_new(root, "softClip", json_boolean(softClip));
 		json_object_set_new(root, "passiveMult", json_boolean(passiveMult));
+		json_object_set_new(root, "opamps", json_boolean(opamps));
+		json_object_set_new(root, "outputNet", json_boolean(outputNet));
 		return root;
 	}
 
@@ -231,6 +290,10 @@ struct Bailout : Module {
 		if (j) softClip = json_boolean_value(j);
 		j = json_object_get(root, "passiveMult");
 		if (j) passiveMult = json_boolean_value(j);
+		j = json_object_get(root, "opamps");
+		if (j) opamps = json_boolean_value(j);
+		j = json_object_get(root, "outputNet");
+		if (j) outputNet = json_boolean_value(j);
 	}
 };
 
@@ -328,6 +391,14 @@ struct BailoutWidget : ModuleWidget {
 		menu->addChild(createBoolMenuItem("Mixer: soft-clip at the op-amp rails", "",
 			[=]() { return m->softClip; },
 			[=](bool v) { m->softClip = v; }));
+
+		menu->addChild(createBoolMenuItem("TL07x op-amps (datasheet: rails, slew, GBW, caps)", "",
+			[=]() { return m->opamps; },
+			[=](bool v) { m->opamps = v; }));
+
+		menu->addChild(createBoolMenuItem("Output networks (100 ohm; mixer 10 uF) into 100 k", "",
+			[=]() { return m->outputNet; },
+			[=](bool v) { m->outputNet = v; }));
 
 		menu->addChild(createBoolMenuItem("Multiples: passive-style loading droop", "",
 			[=]() { return m->passiveMult; },

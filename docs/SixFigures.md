@@ -32,10 +32,48 @@ same oscillator, six different ones, or anything between.
 
 | Core | Original circuit | Main output (`OUT`) | Auxiliary output (`AUX`) |
 |---|---|---|---|
-| **40106 Schmitt** | 40106 hex Schmitt-trigger astable (six voices sharing one IC in the original) | band-limited square | the RC timing cap's charge/discharge ramp, bent toward its true exponential shape |
+| **40106 Schmitt** | 40106 hex Schmitt-trigger astable (six voices sharing one IC in the original) | the astable's output, band-limited: a slightly lopsided square (about 49 % high at 12 V), edges placed between samples | the timing capacitor itself, centred on the hysteresis window and scaled so the thresholds sit at ±5 V (it overshoots a little by the propagation delay) |
 | **4069 AAC** | All About Circuits' 4069-integrator VCO (`SQU` and `TRI` in the original schematic) | band-limited square | band-limited triangle, from a leaky integration of the same square |
 | **4046 PLL** | 4046 phase-locked-loop VCO | band-limited square, free-running or pulled toward `SIGNAL` | the raw XOR phase-comparator bit, as a 0/10 V logic signal — exactly what the 4046's `PC1` pin actually outputs |
 | **Avalanche** | Kassutronics reverse-avalanche oscillator (a BC337 run in reverse breakdown, charging a cap through the vactrol's LDR) | band-limited saw: the capacitor's own exponential charge between the junction's release and strike voltages (see below) | a 1 ms, 10 V pulse once per cycle — the avalanche breakdown pulse itself |
+
+**The 40106 core is the chip.** `src/Cd40106.hpp` (the CD40106B and its astable) with
+`src/SixFigures/Schmitt.hpp` (this module's pot, capacitors and supply), tested in
+`tests/SixFigures/test_cd40106.cpp`. The board (Day 1, "40106 Hex Oscillator Bank") is six
+inverters, each with a "Value N" pot from output to input, a "Value N" capacitor from input to ground
+and an "In N" jack through a 1N4448 and 1k into that same node. The voice is that circuit stepped, not
+a phase counter:
+
+- **Thresholds are the datasheet's** (TI CD40106B, SCHS097F, 25 C, typical): VP = 2.9 / 5.9 / 8.8 V and
+  VN = 1.9 / 3.9 / 5.8 V at VDD = 5 / 10 / 15 V, interpolated in between (7.06 V and 4.66 V at the
+  assumed +12 V). The astable law is T = R C [ ln((VDD - VN)/(VDD - VP)) + ln(VP/VN) ]. Because both
+  thresholds scale with VDD, the frequency hardly moves with the supply (the constant is 0.812 at 5 V,
+  0.811 at 12 V, 0.812 at 15 V); what moves is the duty cycle (48 % high at 5 V, 49 % at 15 V), the
+  capacitor's swing, and, on fast settings, the chip's output resistance (datasheet: 0.4 V at 1 mA,
+  0.5 V at 2.6 mA, 1.5 V at 6.8 mA at 5 / 10 / 15 V) and propagation delay (140 / 70 / 60 ns), which
+  lengthen the period. All three are in the model.
+- **RATE keeps its dial.** At 12 V, typical thresholds, the pot is the resistor for which the ideal law
+  gives the frequency the knob has always printed (an exponential sweep over the range); the chip's
+  own output resistance and delay then pull it off by a few percent at the top, and the display shows the
+  frequency actually measured from the output. **Assumed:** the schematic leaves the capacitors to the
+  course, so the range switch picks 68 nF (AUDIO: the pot runs 4.5 k at 4 kHz to 0.9 M at 20 Hz) or
+  47 uF (LFO: 3.3 k at 8 Hz to 0.52 M at 0.05 Hz); the pot taper is exponential; the supply is the
+  board's VCC, taken as +12 V. **40106 supply (VDD)** in the context menu offers 5, 9, 12 and 15 V
+  (default 12).
+- **CV is the In jack.** In the default response the voice's CV (after its trim) goes through the 1N4448
+  and the 1k into the timing node. The diode only conducts once the jack is within about a diode
+  drop of the node, which swings between VN and VP, so a CV below about VN does nothing at all; above
+  that it fights the discharge, lengthens the low phase (a few volts higher it holds the oscillator
+  stopped with its output low); with a signal it is the board's sync/gate input, not a pitch CV. Negative
+  voltages are blocked by the diode. **1 V/oct tracking** (context menu) is not on the board: it scales
+  the pot by 2^-CV with nothing injected, and is the setting to use for pitch.
+- **Not modelled:** temperature, the corner (typical thresholds only in the module; the library header
+  has the datasheet's min and max rows), the other five inverters sharing the die and the TL07x
+  followers and 100 ohm output resistors (the output is the logic level, bipolar ±5 V as for the other
+  cores). The LED follows the output. **One sample of latency:** the band-limiting correction at an
+  edge reaches the sample before it.
+- **SYNC** restarts the astable at the trough of its steady-state cycle, the same instant the old
+  phase counter started its cycle.
 
 **On the 4046 core.** The course's 4046 board (Day 1, "4046 Simple VCO") uses the chip as a VCO
 alone: the inhibit pin is grounded, a 10 nF capacitor is across CX, R1 (pin 11) is 100k to ground,
@@ -45,9 +83,47 @@ LM358 stage into VCOIN (pin 9). The jack the schematic calls "Signal In / Sync /
 `SIGNAL` input, `CAPT`, `LOCK` and the PC1 bit on `AUX` are this module's addition**, built on the same
 chip's two sections rather than taken from the board.
 
-All four are band-limited with polyBLEP. The RC "bend" applied to the Schmitt core's `AUX` is a
-cosmetic reshaping applied after band-limiting, a deliberate approximation. The avalanche core's
-`OUT` is not: see "The avalanche core" below.
+**The 4046 core's VCO is the CD4046B's.** `src/SixFigures/Cd4046.hpp`, tested in
+`tests/SixFigures/test_cd4046.cpp`. For a 4046 voice `RATE` and `CV` make **VCOIN** (0 V to the
+assumed 12 V supply; the board makes it with an LM358 stage) and the frequency is the chip's law
+with the board's parts: R1 = 100k, R2 not fitted, C1 = 10 nF in the AUDIO range and 5 uF in the LFO
+range (the range switch is the module's; the board has one C1).
+
+- f(VCOIN) is a straight line, zero at 0 V, `f0` at VDD/2 and `2 f0` at VDD (the data sheet's design
+  rule f0 = 0.5 fmax, "VCO without offset"). It is *linear*, not the old exponential `RATE` taper:
+  `RATE` at 0 stops the oscillator; with 100k / 10 nF at 12 V the middle of the knob is about 1.01 kHz
+  and the top about 2.03 kHz (LFO range: 2.1 Hz and 4.3 Hz). The 20 Hz to 4 kHz audio and 0.05 Hz to
+  8 Hz LFO spans the other cores share do not apply to this one.
+- f0 is the nine lines of Fig. 7 of the Nexperia HEF4046B data sheet (centre frequency against C1 for
+  R1 = 10k / 100k / 1M and VDD = 5 / 10 / 15 V), read from the PDF's vector graphic. At 100k / 10 nF
+  it is about 884 Hz at 10 V and about 1.2 kHz at 15 V; at 12 V it is interpolated between them.
+  The speed limit (1.0 / 2.0 / 2.7 MHz at 5 / 10 / 15 V) never bites at audio rates.
+- **Interpolated, not read:** between the nine lines (log-linear in VDD and R1: the board's 100k is
+  on a line, 12 V is not) and past the lines' ends (the LFO's 5 uF is beyond the last knot at about
+  1 uF; the last segment is continued, slope -1). Part-to-part spread (+-30 to 50 % in the data
+  sheet) and temperature are not modelled, and neither is the 1 % linearity error.
+- **The R1 pin.** The board's "SIGIN / Sync / RingMod" jack is wired straight to pin 11, no series
+  resistor. The VCO's frequency follows the current the chip drives out of that pin, so a signal
+  patched there is a **current modulation**: frequency is exactly *linear* in the patched voltage
+  (linear FM, not exponential), a signal above VCOIN stops the VCO, and a signal below the node's own
+  voltage speeds it up, without bound but for the speed limit. A low-impedance source makes R1
+  irrelevant. The data sheets say nothing about the pin's impedance: the model's 2.2 kohm drive
+  resistance is an **estimate** (it explains why the 10 kohm lines of Fig. 7 sit about 15 % under the
+  100 kohm and 1 Mohm lines), the patched source is taken as 1 kohm, the drive is taken as
+  source-only and the node cannot go below -0.6 V. Treat injected behaviour as shaped like the chip,
+  not calibrated to it. The context menu's **SIGNAL also on the 4046 R1 pin** (off by default)
+  patches `SIGNAL` there for every 4046 voice; with it off `SIGNAL` is only the PLL reference.
+- **Kept as the module's addition:** the PLL (`SIGNAL` as comparator reference, `CAPT`, `LOCK`, the
+  PC1 bit on `AUX`). It pulls the frequency the chip law gives, in octaves, as before. It was not
+  changed: nothing in the VCO law makes it wrong, it is documented as an addition, and it is off
+  the board's signal path.
+- In **1 V/oct** mode a 4046 voice's wanted frequency is turned into the VCOIN that produces it (an
+  exponential converter ahead of the chip), so tracking is exact within the chip's range
+  (0 to about 2 kHz audio) and clips at the rails.
+
+All four are band-limited with polyBLEP (the 40106 core by the same correction at each edge of the
+circuit's own output, at the edge's exact position within the sample). The 4069 core's triangle is
+still a leaky integral of its square.
 
 **The avalanche core.** The board's circuit is a relaxation oscillator: the capacitor charges through
 the rate resistance toward the supply less the LED until the reversed BC337 junction strikes, the
@@ -64,12 +140,33 @@ lower. With the board's 12 V supply the circuit stops oscillating (the supply al
 on) below about 580 ohms; the module's 4 kHz audio top at 1 µF needs 673 ohms, just above it. The
 flyback, the junction's on-resistance times the capacitor, is taken as instantaneous.
 
+**Strike jitter (added 2026-10-03).** The junction does not strike at a fixed voltage: it breaks
+down through microplasmas whose turn-on rate climbs exponentially with the voltage across them
+(Haitz 1964; see Microplasma.hpp and the Kickback manual), so each cycle's strike voltage is the first
+passage of a Poisson process whose rate rises as the capacitor charges. Every cycle draws its own
+strike voltage (`Strike` in Avalanche.hpp, by inverting the cumulative hazard
+`Lambda(V) = r0 RC G(V)`), and with it the cycle's length and height: a late strike is a longer cycle
+that peaks higher. The rate is pinned by the published measurement (median strike 8.2 V at the
+measured 1 k x 1 mF); the e-fold, 20 mV, is **assumed**. Results: about 3 % rms cycle-to-cycle jitter
+in period at every pitch, a tail of early strikes (the mean cycle is a little shorter than the
+median), and a median strike that moves with the pitch (8.29 V at a 10 ms time constant, 8.20 V at 1 s,
+8.11 V at 100 s: charging faster, the junction strikes later). The cycle length is normalised to the
+median, so RATE still sets the median pitch. DRIFT is unchanged and is the slower wander. The per-cycle
+randomness is seeded per voice and is deterministic from the module's creation.
+
+**The board's output stage.** The TL072 "buffered, amplified output" is non-inverting with gain
+1 + 220k/1k = 221, AC-coupled by C3 1 µF into R4 100k (a 1.6 Hz high-pass), with the part's 3 MHz
+gain-bandwidth putting a pole at 13.6 kHz. The oscillator's 0.9 V swing times 221 is far past the
+rails, so on the real board that output is a clipped, nearly square wave, not a saw.
+`Tl072Stage` in Avalanche.hpp models it (rail ASSUMED at +-10.5 V on +-12 V supplies) and is tested,
+but this module has no output for it (the `OUT` is the node's own saw), so it is not routed.
+
 ## Per-voice controls (×6)
 
 | Control | Type | Description |
 |---|---|---|
 | **CORE** | name on the read-out | Which of the four cores this voice runs. Click the voice's name on the read-out to pick one; the frequency it is running at is printed under it |
-| **RATE** | knob | The voice's frequency, RC-pot style by default (see [CV response](#cv-response) below) |
+| **RATE** | knob | The voice's frequency. For a 40106 voice it is the timing pot of the astable; for the other cores RC-pot style by default (see [CV response](#cv-response) below) |
 | **CV** | trim, paired with the jack below it | How much the `CV` jack affects `RATE` |
 | **CV** (jack) | input | CV for this voice's rate |
 | **OUT** | output, footer | The core's main waveform, ±5 V |
@@ -90,7 +187,11 @@ flyback, the junction's on-resistance times the capacitor, is taken as instantan
 
 ## CV response
 
-By default every voice's CV response is the "crude" one every circuit here
+(**40106 voices** do not use the response described in this paragraph: their CV is the board's In jack,
+through a 1N4448 and 1k into the timing node, or, in 1 V/oct mode, an exponential converter on the pot;
+see [the 40106 core](#the-four-cores).)
+
+By default every other voice's CV response is the "crude" one every circuit here
 actually has: the CV jack (attenuated by that voice's trim) is summed directly
 into the `RATE` knob's own 0–1 travel, *before* the knob's exponential taper —
 matching the "CV summing mixer" landing on the frequency pot's wiper in the
@@ -133,17 +234,28 @@ while genuinely tracking `SIGNAL`, dark while beating against it or free-running
 
 - **1 V/oct tracking (all voices)** — off by default. See
   [CV response](#cv-response).
+- **40106 supply (VDD)** — 5, 9, 12 (default) or 15 V: the supply of the 40106 voices.
+  See [the 40106 core](#the-four-cores).
+- **SIGNAL also on the 4046 R1 pin (board's RingMod jack)** — off by default. See
+  [the 4046 core](#the-four-cores).
 
 ## What was approximated or left out
 
-- The 40106 "RC bend" is a post-hoc reshaping of a band-limited BLEP waveform, not the 40106's
-  actual threshold voltages. The avalanche core is the relaxation oscillator's own charge curve, but
-  its breakdown voltages are a 2N2222's, not a measured BC337's, the junction's cycle-to-cycle
-  jitter is not modelled (DRIFT is only the vactrol's slow wander) and the flyback is instantaneous.
+- The 40106 core is the circuit (above). Still assumed there: the capacitor values, the pot taper and
+  range, VDD = 12 V, typical thresholds, the on resistance as the secant to the datasheet's test points
+  (a little above the true small-signal value), the generic input-protection diodes (matter only when the
+  In jack drives the node outside the rails). The avalanche core is the relaxation oscillator's own charge curve, but
+  its breakdown voltages are a 2N2222's, not a measured BC337's, the strike jitter's e-fold (20 mV) is
+  an assumption of Haitz's microplasma shape (the rate itself is calibrated to the published strike), the TL072
+  x221 stage is modelled but not routed, and the flyback is instantaneous.
 - The PLL only locks to the fundamental, not to harmonics or subharmonics of
   `SIGNAL` the way a real 4046 can be coaxed into doing (the "or its harmonics
   or subharmonics" the brief mentions) — implementing genuine N:M lock was out
   of scope for this pass.
+- The 4046 core: the CD4046B VCO law is the data sheet's (see above). Assumed, not data-sheet:
+  VDD = 12 V, the R1-pin drive resistance (2.2 kohm), the patched source impedance (1 kohm), the
+  source-only drive and the -0.6 V node floor, and the LFO range's 5 uF. Not modelled: part spread,
+  temperature, the data sheet's linearity error, R2 (the board leaves it out) and the source follower.
 - `DRIFT` and `CAPT` are each one shared control across all six voices
   rather than per-voice, matching the panel's single totals column; every
   voice running that core gets its own independent noise generator or PLL

@@ -17,6 +17,9 @@
 #include "Primitives.hpp"
 #include "../Pt2399.hpp"
 #include "../Adc0809.hpp"
+#include "../OpAmp.hpp"
+#include "LittleAngel.hpp"
+#include "SpringBoard.hpp"
 
 namespace divfx {
 
@@ -51,12 +54,14 @@ struct MiawCtx {
 	int crushGain;       // 104: output stage's RP3, 0..3 = 1x 2x 4x 10x
 	bool crushUnipolar;  // 104: the ADC's own 0-5 V input, no offset ahead of it
 	bool ringSmooth;     // 105: analogue product instead of the gate array
+	int springGain;      // 101: RP2, the pickup's gain pot, 0..5 = 1x 11x 26x 51x 76x 101x
+	int springTank;      // 101: 0 Leem KA-1210 (three springs), 1 Olson X-82 (two)
 	float send;          // written by the circuit
 
 	MiawCtx() : sr(44100.f), aux(0.f), auxConnected(false), auxGate(false),
 	            tapSec(0.f), ret(0.f), retConnected(false), inRConnected(false),
 	            crushSwap(false), crushLpf(true), crushDiv(1), crushGain(1),
-	            crushUnipolar(false), ringSmooth(false), send(0.f) {
+	            crushUnipolar(false), ringSmooth(false), springGain(4), springTank(0), send(0.f) {
 		p[0] = p[1] = p[2] = 0.5f;
 	}
 };
@@ -88,10 +93,11 @@ inline float polyBlep(float t, float dt) {
 // more slope overload and granular hiss -- with nothing faked to say so.
 //
 // What is NOT from the datasheet or the chip model is the board around it, and
-// the two boards' schematics were not in the course folder this was built from
-// (only their panel numbers, 12.3 and 12.6, are on record). Everything that
-// stands in for them is here, in one place, so it can be replaced by the real
-// values rather than hunted down.
+// the Echomatic's schematic was not in the course folder this was built from
+// (only its panel number, 12.3, is on record). Everything that stands in for it
+// is here, in one place, so it can be replaced by the real values rather than
+// hunted down. The Little Angel is Rick Holt's published board and has its own
+// header, LittleAngel.hpp, with its own list of what is assumed.
 namespace miaw_assumed {
 	// Volts at the chip's pins per Rack volt. +-5 V audio is +-1 loop unit, and a
 	// unit is the chip's full scale (CHIP_CLIP, 2.4 V): a divider of about 0.48 in
@@ -101,16 +107,8 @@ namespace miaw_assumed {
 	// datasheet's application circuit puts them in the 6-10 kHz region; 7 kHz is
 	// a midpoint, not a reading. ASSUMED.
 	static const float ECHO_BOARD_FC = 7000.f;
-	// The Little Angel's roll-off, as documented before the chip replaced the old
-	// converter model (one pole each side). Kept as it was.
-	static const float ANGEL_FC = 5500.f;
 	// The datasheet's output noise floor, -90 dBV, at the comparator.
 	static const float CHIP_NOISE_V = 40e-6f;
-	// The fastest clock the Little Angel is allowed to ask for, as a delay. The
-	// measured delay law (Electric Druid) stops at 30 ms; a chorus runs the same
-	// part well below that, and how far is the board's business. ASSUMED, and
-	// bounded because the cost is the bit rate: 3 ms is ~15 Mbit/s.
-	static const float ANGEL_MIN_DELAY = 0.003f;
 }
 
 // ---------------------------------------------------------------------------
@@ -214,231 +212,71 @@ struct Echomatic {
 };
 
 // ---------------------------------------------------------------------------
-// 100  Little Angel -- PT2399 chorus
+// 100  Little Angel -- Rick Holt's PT2399 mini chorus (Jack Orman's NYE rev 2)
 //
-// The same chip, run short: 5 to 30 ms modulated. VIBE kills the dry path so
-// only the pitch modulation is left; WARBLE adds the second, slower and
-// irregular drift that makes the board sound like a tape motor rather than a
-// chorus pedal. The two switches are one macro here, because the panel has
-// three knobs and no room for a switch.
-//
-// The modulation is of the clock, as it is on the board, so the pitch shift is
-// the chip's own and not a moving read pointer. The board is mono; the second
-// chip, run a quarter cycle on, is this module's stereo addition.
-
-struct LittleAngel {
-	pt2399::Pt2399 chipL, chipR;
-	OnePole in1, lpL, lpR;
-	Lfo lfo;
-	Rng rng, noise;
-
-	float warble, warbleTarget, warblePhase;
-	float prevIn;
-	// control rate
-	float baseSec, depthSec, dryGain, wetGain, warbleSec;
-	int mode;
-
-	LittleAngel() : warble(0.f), warbleTarget(0.f), warblePhase(0.f), prevIn(0.f),
-	                baseSec(0.008f), depthSec(0.002f), dryGain(1.f),
-	                wetGain(1.f), warbleSec(0.f), mode(0) {}
-
-	void init() {}
-
-	void resetChips() {
-		chipL.reset(); chipR.reset();
-		chipL.setBitRate((double) pt2399::Pt2399::kBits / (double) baseSec);
-		chipR.setBitRate((double) pt2399::Pt2399::kBits / (double) baseSec);
-	}
-
-	void clear() {
-		in1.clear(); lpL.clear(); lpR.clear();
-		lfo.reset();
-		warble = warbleTarget = warblePhase = 0.f;
-		prevIn = 0.f;
-		resetChips();
-	}
-
-	void setSampleRate(float sr) {
-		chipL.setSampleRate((double) sr);
-		chipR.setSampleRate((double) sr);
-		in1.setCutoff(miaw_assumed::ANGEL_FC, sr);
-		lpL.setCutoff(miaw_assumed::ANGEL_FC, sr);
-		lpR.setCutoff(miaw_assumed::ANGEL_FC, sr);
-	}
-
-	void setParams(const MiawCtx& c) {
-		lfo.setFreq(0.05f + clamp(c.p[0], 0.f, 1.f) * 6.f, c.sr);   // SPEED
-		float depth = clamp(c.p[1], 0.f, 1.f);                      // DEPTH
-		baseSec = 0.005f + depth * 0.006f;
-		depthSec = depth * 0.010f;
-
-		// MODE: chorus/normal, chorus/warble, vibe/normal, vibe/warble.
-		mode = (int) clamp(std::floor(clamp(c.p[2], 0.f, 0.999f) * 4.f), 0.f, 3.f);
-		bool vibe = (mode >= 2);
-		bool wob = (mode == 1 || mode == 3);
-		dryGain = vibe ? 0.f : 1.f;
-		wetGain = vibe ? 1.f : 0.7f;
-		warbleSec = wob ? 0.008f : 0.f;
-	}
-
-	void process(const MiawCtx& c, float in, float& outL, float& outR) {
-		const float volts = (float) pt2399::assumed::CHIP_CLIP;
-		lfo.step();
-
-		// The warble: a random walk resampled a few times a second, smoothed, so
-		// it drifts rather than steps.
-		warblePhase += 3.5f / c.sr;
-		if (warblePhase >= 1.f) {
-			warblePhase -= 1.f;
-			warbleTarget = rng.bi();
-		}
-		warble += 0.002f * (warbleTarget - warble);
-		float wob = warble * warbleSec;
-
-		// The clocks. Delay in seconds is what the board's pin-6 network sets; the
-		// bit rate follows from it.
-		float dL = clamp(baseSec + depthSec * lfo.sine() + wob,
-		                 miaw_assumed::ANGEL_MIN_DELAY, 0.05f);
-		float dR = clamp(baseSec + depthSec * lfo.sine(0.25f) - wob,
-		                 miaw_assumed::ANGEL_MIN_DELAY, 0.05f);
-		chipL.setBitRate((double) pt2399::Pt2399::kBits / (double) dL);
-		chipR.setBitRate((double) pt2399::Pt2399::kBits / (double) dR);
-		chipL.begin();
-		chipR.begin();
-
-		// The input stage. No feedback around the chips, so each one's demodulator
-		// and modulator can run in the same pass, and the two chips together
-		// (Pt2399::demodModulate2, bit-identical to demod() then modulate() on each).
-		float v = clamp(in1.lp(clamp(in, -12.f, 12.f) / miaw_assumed::RACK_VOLTS_PER_UNIT),
-		                -1.f, 1.f);
-		float cur = volts * v
-		          + miaw_assumed::CHIP_NOISE_V * 1.7320508f * noise.bi();
-		float yL, yR;
-		pt2399::Pt2399::demodModulate2(chipL, chipR, prevIn, cur, yL, yR);
-		yL = (float) (yL / volts);
-		yR = (float) (yR / volts);
-		if (!std::isfinite(yL) || !std::isfinite(yR)) {
-			resetChips();
-			prevIn = 0.f;
-			yL = yR = 0.f;
-		}
-		else {
-			prevIn = cur;
-		}
-		float wL = lpL.lp(yL) * miaw_assumed::RACK_VOLTS_PER_UNIT;
-		float wR = lpR.lp(yR) * miaw_assumed::RACK_VOLTS_PER_UNIT;
-
-		outL = in * dryGain + wL * wetGain;
-		outR = in * dryGain + wR * wetGain;
-	}
-};
+// The board and its notes are in LittleAngel.hpp. It is a PT2399 held at its
+// shortest delay with the LFO on the chip's REF pin, not a swept clock; the
+// MODE macro is the board's Chorus/Vibe and Space/Warbler switches.
 
 // ---------------------------------------------------------------------------
-// 101  Spring reverb
+// 101  Spring reverb -- Kristian Blasol's Day 12 "Spring reverb with speaker and piezo"
 //
-// A spring is not a room: it is four lengths of wire, each of which disperses
-// high frequencies ahead of low ones, so an impulse comes back as a descending
-// chirp rather than as a copy. Four delay loops with an eight-stage allpass
-// chain inside each loop is the standard way to get that, and it is what makes
-// this sound like a tank instead of like a short hall.
+// The board is SpringBoard.hpp: a 2N2222 driving a small speaker (solved with the nodal
+// solver, speaker as a voice coil plus its motional impedance), a piezo into an NE5532
+// gain stage with RP2, and a follower. The drawing has no tank ("Put the spring here"),
+// so the tank is SpringTank.hpp: Parker & Bilbao's dispersion relation for a helical
+// spring, solved, with the springs' dimensions as Parker measured them off two real tanks.
+// Everything assumed is marked ASSUMED where it is declared.
 //
-// DRIVE is the driver transducer, which is the part that actually distorts on a
-// real tank. AUX is TWANG: the kick you give the box.
+// DRIVE is RP1, the input pot. DWELL is the tank's reverberation time (0.4 s to 6 s) and
+// TONE the loss in the loop (a 1 kHz to 6 kHz damping pole); neither is on the drawing,
+// they are the two tank properties a player would want. RP2 (the pickup's 1x-101x gain
+// pot) and the choice of tank are in the module's menu. AUX is a knock on the box.
+// The pickup is one piezo: the output is mono.
 
 struct Spring {
-	DelayLine line[4];
-	Ap1 disp[4][8];
-	OnePole damp[4];
-	OnePole hp;
-	Svf tone;
-	DCBlocker dc;
-	Rng rng;
+	springboard::Board board;
+	float lastSr;
+	bool built;
 
-	float twang;
-	bool prevGate;
-	// control rate
-	float dl[4], drive, fbGain, outGain;
-
-	Spring() : twang(0.f), prevGate(false), drive(1.f), fbGain(0.6f), outGain(1.f) {
-		for (int i = 0; i < 4; i++)
-			dl[i] = 1000.f;
-	}
+	Spring() : lastSr(0.f), built(false) {}
 
 	void init() {
-		for (int i = 0; i < 4; i++)
-			line[i].init((int) (0.06f * MAX_SR));
+		// Designs the springs (a one-off, shared by every instance) and sizes the buffers.
+		(void) springtank::tankPreset(0);
+		(void) springtank::tankPreset(1);
 	}
 
 	void clear() {
-		for (int i = 0; i < 4; i++) {
-			line[i].clear();
-			damp[i].clear();
-			for (int j = 0; j < 8; j++)
-				disp[i][j].clear();
-		}
-		hp.clear();
-		tone.clear();
-		dc.clear();
-		twang = 0.f;
-		prevGate = false;
+		if (built)
+			board.clear();
 	}
 
 	void setSampleRate(float sr) {
-		hp.setCutoff(120.f, sr);
-		dc.setSampleRate(sr);
+		if (built && sr == lastSr)
+			return;
+		lastSr = sr;
+		board.setSampleRate((double) sr);
+		built = true;
 	}
 
 	void setParams(const MiawCtx& c) {
-		// Four incommensurate loop lengths, so the tank does not ring on one note.
-		static const float len[4] = {0.0281f, 0.0331f, 0.0397f, 0.0451f};
-		for (int i = 0; i < 4; i++) {
-			dl[i] = clamp(len[i] * c.sr, 4.f, line[i].maxDelay());
-			damp[i].setCutoff(lerp(2200.f, 5200.f, clamp(c.p[2], 0.f, 1.f)), c.sr);
-			// The dispersion corner sits inside the tank's passband; spreading it
-			// across the four loops is what stops the chirp sounding like one
-			// filter sweeping.
-			for (int j = 0; j < 8; j++)
-				disp[i][j].setFreq(700.f + 220.f * (float) i + 90.f * (float) j, c.sr);
-		}
-		drive = 0.4f + clamp(c.p[0], 0.f, 1.f) * 8.f;             // DRIVE
-		fbGain = 0.45f + clamp(c.p[1], 0.f, 1.f) * 0.44f;         // DWELL
-		tone.set(lerp(1400.f, 6500.f, clamp(c.p[2], 0.f, 1.f)), 0.7f, c.sr);
-		// A tank is quiet, but not four times quieter than everything else in
-		// the bank; the makeup tracks the driver so DRIVE stays a tone control.
-		outGain = 6.4f / std::sqrt(drive);
+		if (!built)
+			return;
+		static const double rp2[6] = {0.0, 0.1, 0.25, 0.5, 0.75, 1.0};
+		board.setTank(c.springTank);
+		double dwell = clamp(c.p[1], 0.f, 1.f), tone = clamp(c.p[2], 0.f, 1.f);
+		int g = c.springGain < 0 ? 0 : (c.springGain > 5 ? 5 : c.springGain);
+		board.setParams(clamp(c.p[0], 0.f, 1.f), 0.4 * std::pow(15.0, dwell), 1000.0 * std::pow(6.0, tone), rp2[g]);
 	}
 
 	void process(const MiawCtx& c, float in, float& outL, float& outR) {
-		// TWANG: a gate edge kicks the tank the way a knuckle does.
-		if (c.auxGate && !prevGate)
-			twang = 1.f;
-		prevGate = c.auxGate;
-		twang *= 0.999f;
-		if (twang < 1e-4f)
-			twang = 0.f;
-
-		// The driver transducer: this is the stage that clips on a real tank.
-		float x = 2.5f * tanhApprox(hp.hp(clamp(in, -12.f, 12.f)) * drive * 0.2f);
-		if (twang > 0.f)
-			x += rng.bi() * twang * twang * 6.f;
-
-		float sum[2] = {0.f, 0.f};
-		for (int i = 0; i < 4; i++) {
-			float y = line[i].read(dl[i]);
-			float v = y;
-			for (int j = 0; j < 8; j++)
-				v = disp[i][j].process(v);
-			v = damp[i].lp(v);
-			line[i].write(sanitize(x * 0.25f + v * fbGain));
-			sum[i & 1] += (i & 2) ? -y : y;
+		if (!built) {
+			outL = outR = 0.f;
+			return;
 		}
-
-		tone.process(dc.process(0.5f * (sum[0] + sum[1])) * outGain);
-		float mono = tone.lp;
-		// A tank has two pickup positions at best; the stereo here is the two
-		// loop pairs, not a synthesised width.
-		outL = clamp(0.5f * (mono + sum[0] * 0.25f * outGain), -10.f, 10.f);
-		outR = clamp(0.5f * (mono + sum[1] * 0.25f * outGain), -10.f, 10.f);
+		double y = board.process((double) clamp(in, -12.f, 12.f), c.auxGate);
+		outL = outR = clamp(sanitize((float) y), -10.f, 10.f);
 	}
 };
 
@@ -449,62 +287,81 @@ struct Spring {
 // resistor in series with 47 nF, so the boost is 1 + Rf/4.7k above roughly
 // 720 Hz and unity below it -- that lift is the pedal's whole voice. The 1 nF
 // across the pot rolls the top of the boosted band off again, which is why a
-// Distortion+ is thick rather than fizzy. The op-amp then clips against its own
-// rails and a pair of germanium diodes clamps the output through 10 k.
+// Distortion+ is thick rather than fizzy. A pair of germanium diodes clamps the
+// output through 10 k.
 //
-// Two times oversampled around the clipper, because that is where the harmonics
-// that would alias are made.
+// The op-amp is the datasheet's 741 (src/OpAmp.hpp), in the network as drawn:
+// 1 MHz gain-bandwidth, which at a gain of 200 is a 5 kHz amplifier; 0.5 V/us, which
+// turns the clipper's edges into ramps; and a swing of the +-4.5 V rails less the
+// 741's 0.73 V and the 10 k's drop. The two corners are not first-order sections
+// stood in for the network, they are the network: the same nodal equations the
+// closed form comes from, solved a step at a time (tests/OpAmp checks them against
+// it). Sixteen times oversampled around the op-amp (1.3 us steps), because that is
+// what its loop needs; two times at the clipper, where the harmonics that would
+// alias are made.
 
 struct DistPlus {
-	OnePole inHp, boostHp, boostLp, toneLp;
+	OnePole inHp, toneLp;
 	DCBlocker dc;
 	dsp::Upsampler<2, 8> up;
 	dsp::Decimator<2, 8> down;
+	opamp::NonInvertingStage amp;
 
-	float boost, level;
+	float level;
+	double dtOs;           // seconds per oversampled (2x) sample
+	double prev;           // the last input to the op-amp, volts
+	static const int kSub = 8;
 
-	DistPlus() : boost(1.f), level(0.5f) {}
+	DistPlus() : level(0.5f), dtOs(1.0 / 96000.0), prev(0.0) { init(); }
 
-	void init() {}
+	void init() {
+		amp = opamp::NonInvertingStage();
+		amp.op.setSpec(opamp::lm741());
+		amp.op.setSupply(4.5, -4.5);        // 9 V battery, 4.5 V virtual ground
+		amp.op.setLoad(10e3, 0.0);          // the clamp's 10 k
+		amp.rg = 4700.0; amp.cg = 47e-9;
+		amp.rf = 1e6; amp.cf = 1e-9;
+		amp.reset(0.0);
+		prev = 0.0;
+	}
 
 	void clear() {
-		inHp.clear(); boostHp.clear(); boostLp.clear(); toneLp.clear();
+		inHp.clear(); toneLp.clear();
 		dc.clear();
 		up.reset();
 		down.reset();
+		amp.reset(0.0);
+		prev = 0.0;
 	}
 
 	void setSampleRate(float sr) {
 		inHp.setCutoff(30.f, sr);
 		dc.setSampleRate(sr);
+		dtOs = 1.0 / (2.0 * (double) sr);
 	}
 
 	void setParams(const MiawCtx& c) {
-		float sr2 = c.sr * 2.f;
 		// Rf, the 1 M pot, tapered so the useful half of the sweep is not all in
 		// the last eighth of the rotation.
 		float rf = 1000.f + 999000.f * std::pow(clamp(c.p[0], 0.f, 1.f), 2.2f);
-		boost = rf / 4700.f;
-		boostHp.setCutoff(720.f, sr2);                                   // 4k7 + 47n
-		boostLp.setCutoff(clamp(1.f / (2.f * (float) M_PI * rf * 1e-9f),
-		                        500.f, 18000.f), sr2);                   // 1n over Rf
+		amp.rf = (double) rf;
 		toneLp.setCutoff(lerp(1200.f, 12000.f, clamp(c.p[2], 0.f, 1.f)), c.sr);
 		level = clamp(c.p[1], 0.f, 1.f);
 	}
 
-	/** One pass of the gain stage, at twice the sample rate. Signals here are
-	    scaled so 1.0 is 5 V, which is what makes the 4.5 V rails and the 0.3 V
-	    germanium knee readable as the numbers they are on the schematic. */
+	/** One pass of the gain stage, at twice the sample rate: the op-amp in volts,
+	    the clamp in units of 5 V (so the 0.35 V germanium knee reads as 0.07). */
 	inline float stage(float v) {
-		float b = boostLp.lp(boostHp.hp(v)) * boost;
-		float o = v + b;
-		o = 0.9f * softClip(o / 0.9f);                 // +-4.5 V rails
+		double y = amp.stepRamp(prev, (double) v, dtOs, kSub);
+		prev = (double) v;
+		float o = (float) (y * 0.2);
 		const float knee = 0.07f;                      // 0.35 V of germanium
 		return tanhApprox(o / knee);                   // the clamp, normalised
 	}
 
 	void process(const MiawCtx& c, float in, float& out) {
-		float x = inHp.hp(clamp(in, -12.f, 12.f)) * 0.2f;
+		(void) c;
+		float x = inHp.hp(clamp(in, -12.f, 12.f));
 		float buf[2];
 		up.process(x, buf);
 		buf[0] = stage(buf[0]);
@@ -631,12 +488,23 @@ namespace miaw_assumed {
 	static const float BC_R28 = 2200.f;
 	// C1, 10 uF, into the next input. A Eurorack input is about 100k.
 	static const float BC_C1 = 10e-6f, BC_LOAD = 100000.f;
-	// The LM358's output swing on +-12 V: V+ - 1.5 V at the top, to within about
-	// 20 mV of V- at the bottom (datasheet typicals). ASSUMED: the schematic
+	// The LM358s (src/OpAmp.hpp: 0.7 MHz, 0.3 V/us, a class-B output with its
+	// crossover and a swing that depends on the load). ASSUMED: the schematic
 	// draws pin 4 on GND, but U7.1 inverts a positive current and so needs to
 	// swing negative; a single supply would leave it stuck at 0 V and the board
-	// silent. It is modelled as the +-12 V part it has to be.
-	static const float BC_VHI = 10.5f, BC_VLO = -11.98f;
+	// silent. They are modelled as running from +-12 V, as the part has to be.
+	static const double BC_VPOS = 12.0, BC_VNEG = -12.0;
+	// What each LM358 drives, ASSUMED from the schematic's parts. U7.1: its own
+	// 1k feedback resistor to the virtual ground, and SW1 (680 ohm into a 68 nF that
+	// is 780 ohm at 3 kHz) in parallel, 1k || 1360 at the filter's corner; with SW1
+	// out just the 1k. U7.2: its feedback and R28 (RP3 + 2k2) to ground, in
+	// parallel with C1 into 100 k.
+	static const double BC_U71_LOAD_LPF = 576.0, BC_U71_LOAD = 1000.0;
+	// Steps of the analogue half per audio sample. The converter's code changes land
+	// anywhere in a sample, and a 5 V step takes the LM358 17 us to slew, so the
+	// stages run at 8x and the output is the mean of the 8 (integrate and dump,
+	// which is the anti-alias filter the old per-sample average was).
+	static const int BC_SUB = 8;
 	// Offset ahead of the ADC for ordinary bipolar audio: +-5 V onto 0..5 V.
 	// The board itself has none (see crushUnipolar).
 	static const float BC_BIAS = 2.5f, BC_SCALE = 0.5f;
@@ -651,7 +519,10 @@ struct BitCrush {
 	adc0809::R2rDac dac;
 	float table[256];
 	OnePole lpf, ac;
+	opamp::InvertingStage u71;         // the ladder's sum
+	opamp::NonInvertingStage u72;      // the gain stage
 	double vPrev;
+	double subDt;
 	bool primed;
 	// control rate
 	double clocks;           // LTC1799 clock periods per audio sample
@@ -660,14 +531,31 @@ struct BitCrush {
 	bool swap, lpfOn, unipolar;
 	int builtBits;
 	bool builtSwap;
+	int crushGainIdx;
 
-	BitCrush() : vPrev(0.0), primed(false), clocks(1.0), level(1.f), gain(2.f),
+	BitCrush() : vPrev(0.0), subDt(1.0 / (48000.0 * miaw_assumed::BC_SUB)), primed(false),
+	             clocks(1.0), level(1.f), gain(2.f),
 	             bitsOn(8), swap(false), lpfOn(true), unipolar(false),
-	             builtBits(-1), builtSwap(false) {
+	             builtBits(-1), builtSwap(false), crushGainIdx(1) {
 		for (int i = 0; i < 256; i++) table[i] = 0.f;
+		init();
 	}
 
-	void init() {}
+	void init() {
+		u71 = opamp::InvertingStage();
+		u72 = opamp::NonInvertingStage();
+		u71.op.setSpec(opamp::lm358());
+		u72.op.setSpec(opamp::lm358());
+		u71.op.setSupply(miaw_assumed::BC_VPOS, miaw_assumed::BC_VNEG);
+		u72.op.setSupply(miaw_assumed::BC_VPOS, miaw_assumed::BC_VNEG);
+		u71.rf = miaw_assumed::BC_RF;
+		u71.gin = 1.0 / 1000.0;
+		u71.op.setLoad(miaw_assumed::BC_U71_LOAD_LPF, 0.0);
+		u72.rg = miaw_assumed::BC_R28;
+		u72.rf = 0.0;
+		u72.op.setLoad(2200.0, 0.0);
+		acPrimed = false;
+	}
 
 	void clear() {
 		adc.reset();
@@ -679,10 +567,24 @@ struct BitCrush {
 	}
 
 	void setSampleRate(float sr) {
+		double srSub = (double) sr * miaw_assumed::BC_SUB;
+		subDt = 1.0 / srSub;
 		float fc = 1.f / (2.f * (float) M_PI * miaw_assumed::BC_LPF_R * miaw_assumed::BC_LPF_C);
-		lpf.setCutoff(std::min(fc, sr * 0.45f), sr);
+		lpf.setCutoff(std::min(fc, (float) srSub * 0.45f), (float) srSub);
 		// C1 into its load: a corner under 1 Hz, which OnePole::setCutoff floors.
-		ac.a = 1.f - std::exp(-1.f / (miaw_assumed::BC_C1 * miaw_assumed::BC_LOAD * sr));
+		ac.a = (float) -std::expm1(-1.0 / ((double) miaw_assumed::BC_C1 * miaw_assumed::BC_LOAD * srSub));
+	}
+
+	/** The conductance the 1k/2k ladder presents to U7.1's summing node, looking
+	    into the string from the MSB end, with the legs in `driven` (bit j = data
+	    line j, LSB = 0) at 0 V: it sets U7.1's noise gain, 1 + Rf * gin. */
+	static double ladderConductance(unsigned driven) {
+		double y = 1.0 / 2000.0 + (((driven >> 0) & 1u) ? 1.0 / 2000.0 : 0.0);      // LSB node: leg + termination
+		for (int j = 1; j < 8; j++) {
+			double r = 1.0 / y;
+			y = (((driven >> j) & 1u) ? 1.0 / 2000.0 : 0.0) + 1.0 / (1000.0 + r);
+		}
+		return y;
 	}
 
 	void setParams(const MiawCtx& c) {
@@ -704,11 +606,29 @@ struct BitCrush {
 		lpfOn = c.crushLpf;
 		swap = c.crushSwap;
 
+		// U7.2: Rf is RP3, R28 is the leg to ground; with RP3 at 0 it is a follower
+		// and R28 just hangs on the output. Its load is (RP3 + R28) || C1 into 100k.
+		u72.rf = (double) miaw_assumed::BC_RP3[g];
+		double lf = (double) miaw_assumed::BC_RP3[g] + (double) miaw_assumed::BC_R28;
+		double ll = lf * miaw_assumed::BC_LOAD / (lf + miaw_assumed::BC_LOAD);
+		if (g != crushGainIdx || ll != u72.op.rl) {
+			crushGainIdx = g;
+			u72.op.setLoad(ll, 0.0);
+		}
+		double l1 = lpfOn ? miaw_assumed::BC_U71_LOAD_LPF : miaw_assumed::BC_U71_LOAD;
+		if (l1 != u71.op.rl)
+			u71.op.setLoad(l1, 0.0);
+
 		// A leg is open when its data line is not patched, which is what BITS
 		// does to the low bits. The table is the ladder solved for that.
 		if (bitsOn != builtBits || swap != builtSwap) {
 			unsigned connected = (0xFFu << (8 - bitsOn)) & 0xFFu;
 			dac.buildTable(miaw_assumed::BC_RF, connected, swap, table);
+			unsigned driven = 0;
+			for (int b = 0; b < 8; b++)
+				if ((connected >> b) & 1u)
+					driven |= 1u << (swap ? 7 - b : b);
+			u71.gin = ladderConductance(driven);
 			builtBits = bitsOn;
 			builtSwap = swap;
 		}
@@ -725,21 +645,36 @@ struct BitCrush {
 			vPrev = v;
 			primed = true;
 		}
-		// The ladder stage, averaged over this audio sample.
-		float v1 = adc.run(clocks, vPrev, v, table);
-		vPrev = v;
-		v1 = clamp(v1, miaw_assumed::BC_VLO, miaw_assumed::BC_VHI);
 
-		// C2 and C1 are charged to the DC the board sits at, so a program change
-		// does not open with the whole offset as a step.
-		if (!acPrimed) {
-			lpf.z = v1;
-			ac.z = clamp(v1 * gain, miaw_assumed::BC_VLO, miaw_assumed::BC_VHI);
-			acPrimed = true;
+		const int M = miaw_assumed::BC_SUB;
+		double acc = 0.0;
+		for (int k = 0; k < M; k++) {
+			double f0 = (double) k / (double) M, f1 = (double) (k + 1) / (double) M;
+			// The ladder stage over this eighth of the sample: the ideal virtual-
+			// ground output the codes make, then what U7.1 does of it.
+			float ideal = adc.run(clocks / (double) M, vPrev + (v - vPrev) * f0, vPrev + (v - vPrev) * f1, table);
+
+			// C2 and C1 are charged to the DC the board sits at, so a program
+			// change does not open with the whole offset as a step.
+			if (!acPrimed) {
+				u71.reset((double) ideal);
+				lpf.z = ideal;
+				double y2 = (double) ideal * (double) gain;
+				u72.op.update();
+				u72.reset(y2);
+				ac.z = (float) u72.op.y;
+				acPrimed = true;
+			}
+			// U7.1 is an inverting summer: the table is -Rf times the current the
+			// legs push in, so that current is -table / Rf.
+			double y1 = u71.step(-(double) ideal / miaw_assumed::BC_RF, subDt);
+			float v1f = lpfOn ? lpf.lp((float) y1) : (float) y1;       // SW1
+			double y2 = u72.step((double) v1f, subDt);                  // U7.2
+			float v2 = (float) y2;
+			acc += (double) v2 - (double) ac.lp(v2);
 		}
-		float v1f = lpfOn ? lpf.lp(v1) : v1;                          // SW1
-		float v2 = clamp(v1f * gain, miaw_assumed::BC_VLO, miaw_assumed::BC_VHI);   // U7.2
-		out = clamp(sanitize(v2 - ac.lp(v2)), -12.f, 12.f);
+		vPrev = v;
+		out = clamp(sanitize((float) (acc / (double) M)), -12.f, 12.f);
 	}
 
 	bool acPrimed = false;
@@ -892,7 +827,7 @@ struct MiawRack {
 	void setParams(int id, const MiawCtx& c) {
 		switch (id) {
 			case MW_ECHOMATIC:  echo.setParams(c); break;
-			case MW_ANGEL:      angel.setParams(c); break;
+			case MW_ANGEL:      angel.setParams(c.p[0], c.p[1], c.p[2]); break;
 			case MW_SPRING:     spring.setParams(c); break;
 			case MW_DISTPLUS:   dist.setParams(c); break;
 			case MW_TALKFUNNY:  talk.setParams(c); break;
@@ -911,7 +846,7 @@ struct MiawRack {
 				outL = outR = y;
 				break;
 			case MW_ANGEL:
-				angel.process(c, mono, outL, outR);
+				angel.process(mono, outL, outR);
 				break;
 			case MW_SPRING:
 				spring.process(c, mono, outL, outR);

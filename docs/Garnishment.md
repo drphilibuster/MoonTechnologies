@@ -7,8 +7,10 @@ Each of the six identical channels picks which circuit it is -- click the
 channel's name on the read-out (OTA, LPG, JFET) and choose:
 
 - **OTA** — Simple 13700 Dual VCA (Kristian Blåsol): an LM13700 operational
-  transconductance amplifier whose control current sets its gain. Clean and
-  linear.
+  transconductance amplifier whose control current sets its gain. Solved as the board
+  (`src/Garnishment/OtaVca.hpp` on `src/Lm13700.hpp`): linearizing diodes, the BIAS
+  trimmer, the 22k into the bias pin, the 33k and the buffer. Linear to 10 V of input,
+  then it clips; half open at 0 V CV.
 - **VACTROL** — Vactrol VCA (Kristian Blåsol): an LED driving a photoresistor
   in series with the audio. Slow, asymmetric, and the reason low-pass gates
   sound the way they do.
@@ -29,43 +31,67 @@ which cell is patched into it:
 
 | Control | OTA | VACTROL | JFET AM |
 |---|---|---|---|
-| BIAS | initial/manual gain | LED bias (base brightness) | JFET gate bias point |
-| CV IN + CV AMOUNT | adds to the gain | adds to the LED drive | adds to the gate drive |
-| LAG | response smoothing | the vactrol's own attack/decay | response smoothing |
+| BIAS | volts added to the CV at the 22k (0 V = half open) | LED drive volts, through the schematic's 330 ohm | JFET gate bias point |
+| CV IN + CV AMOUNT | volts at the 22k into the chip's bias pin | adds to the LED drive | adds to the gate drive |
+| LAG | smooths the control volts | none: the lag is the part's own (VTL5C3) | response smoothing |
 | IN | the audio being amplified | the audio being gated | the "AM" carrier being divided |
-| OUT | amplified/saturated audio | gated (and optionally filtered) audio | the drain through C1 |
+| OUT | the buffer pin: audio on a -1.4 V rest level (menu removes it) | gated (and optionally filtered) audio | the drain through C1 |
 
 In the original I AM O circuit the JFET's gate is driven by an "In" signal and
 the drain carries an "AM" carrier through a resistor; that gate drive is what
 BIAS/CV IN now supply, so IN keeps meaning "the audio this channel processes"
 across all three modes.
 
-BIAS and CV IN are combined as `(BIAS + CV_AMOUNT × CV) / 10`, clamped to
-0–1 — the unipolar 0–10 V CV convention, with CV AMOUNT as a bipolar
+For JFET AM, BIAS and CV IN are combined as `(BIAS + CV_AMOUNT × CV) / 10`, clamped to
+0–1; VACTROL takes the same sum as LED drive volts (0–15 V, below). This is the unipolar 0–10 V CV convention (the OTA takes the same sum as volts instead, see below), with CV AMOUNT as a bipolar
 attenuverter (the original vactrol schematic's "CV Amount" trimmer was a fixed
 positive divider; making it invert as well is the one liberty taken with that
 control).
 
 ## Per-circuit detail
 
-**OTA.** `gain = BIAS/CV combined, optionally squared (EXP CV menu)`; output is
-`5·tanh(in/5 · gain)`, a fixed-drive soft clip that gives unity small-signal
-gain at full open and increasing saturation as either the input level or the
-gain rises — a tanh shape that stands in for the LM13700's input stage. **It is not
-what the Day 2 schematic builds:** that board *does* use the linearizing diodes (the
-diode-bias pin 2 is fed from V+ through 12k), takes the signal through 470 nF and 27k to a
-1k BIAS trimmer that sets the differential input, sets the gain current from CV through 22k
-into the amplifier-bias pin (so Iabc is about (CV + 11.3 V) / 22k on a ±12 V supply, and the
-channel is half open at 0 V), and reads the output current across 33k into the chip's buffer
-with a 4k7 pull-down to V-. The shape here is a stand-in for that; the real network is a
-worklist item (see below).
+**OTA.** The Day 2 board, solved sample by sample (twice per sample at 48 kHz):
 
-**VACTROL.** The combined control drives an LED-brightness state, slewed with
-the LAG control's asymmetric attack (~2 ms, fixed) and decay (50–200 ms). LED
-brightness sets a modeled LDR resistance interpolated log-ish between 4.7 MΩ
-dark and 150 Ω lit, dividing against an assumed 100 kΩ downstream input
-impedance — the schematic's `R12` has no fixed divider partner, so whatever
-follows it supplies the other half. The **low-pass gate** menu option closes a
+- *Control.* BIAS plus CV x CV AMOUNT is **volts** at the 22k into pin 1 (no 0-10 V "how open"
+  convention). Pin 1 sits two junction drops above V- (datasheet Figure 10: 1.0 V at 0.1 uA,
+  1.5 V at 1 mA), so Iabc = (CV - V- - Vpin1) / 22k on the course's +-12 V: **0.48 mA at 0 V**
+  (small-signal gain 0.55 end to end), 0.93 mA at +10 V (gain 1.05), 0.1 uA at -11 V, and
+  nothing below -11.6 V. A BIAS knob at its 0 V default therefore leaves the channel half
+  open; closing it takes a negative CV (or CV AMOUNT inverted on a positive one). The
+  exponential-CV menu item squares Iabc against 1 mA.
+- *Input.* The audio goes through 470 nF and 27k to the (+) pin. The 1k BIAS trimmer's
+  **wiper is grounded**: its two ends are the (-) pin and the (+) pin, so it is a split of
+  the 1k to ground on each pin, not a gain control. The linearizing diodes (pin 2, 12k to V+,
+  about 0.92 mA between the two) carry the signal current, so the pair sees only ~19 mV at
+  10 V in where a bare pair would see ~180 mV, and the gain is flat to 1 % from 0.5 V to
+  10 V in. Past a signal current of Id/2 (about 12 V through 27k) the diodes run dry and
+  the stage clips. Corner: 12.3 Hz.
+- *Trimmer.* At the centre (the default; menu slider) both pins carry the same DC and the pair
+  is balanced, so Iout is zero at rest and nothing leaks through whatever the CV. Off centre
+  the difference of the two I x R drops is an offset current that is a fixed fraction of
+  Iabc (about 18 % at 40/60 %): a DC offset on Out that follows the CV, and pin 5 hits a rail
+  at the extremes.
+- *Output.* Iout = Iabc x tanh(Vd / 2Vt) (datasheet Eq. 5) into 33k || the chip's output
+  resistance (Figure 12), pin 5 limited to V+ - 0.8 V / V- + 0.6 V (Figure 5), the buffer's
+  two Vbe below it with the 4k7 to V-. **Out is DC coupled, as drawn: it rests at -1.4 V.**
+  The menu item "remove the output's DC rest level" high-passes it at ~2 Hz.
+
+**VACTROL.** `BIAS + CV AMOUNT × CV` volts (0–15 V) drive the LED through the schematic's 330 Ω
+(CV AMOUNT stands in for the 100k pot). The LED is a diode (about 1.65 V at 20 mA), so 10 V is
+about 25 mA and anything under ~1.4 V is dark. The cell is a **PerkinElmer VTL5C3**
+(`src/Vactrol.hpp`, which documents its sources and fit): resistance against LED current from
+the databook's curve (about 46 kΩ at 1 mA, 5.5 kΩ at 5 mA, 3 kΩ at 10 mA, 1.25 kΩ at 40 mA, 20 MΩ
+dark), then the cell's response in time — a rise to 63 % in about 3 ms, a fall to 100 kΩ in about
+19 ms from 10 mA, and the **memory**: three pools of conductance (fast, ~6 ms, ~60 ms) so the last
+decades of resistance take an order of magnitude longer than the first, and a cell that has been
+lit a while lets go more slowly than one that only flashed. The cell is in series with the audio,
+dividing against an assumed 100 kΩ downstream input impedance — the schematic's `R12` has no
+fixed divider partner, so whatever follows it supplies the other half. **LAG has no effect in
+this mode**: the lag is the part's own, and slewing the drive too would count it twice. The
+module's VACTROL read-out shows the gain the cell is actually passing.
+Which part is **inferred**, not stated: the course schematic says only "LDR Vactrol" (and, on the
+Percussive Noise Voice, "5-10k to 500k ohm", which the VTL5C3's 5 mA to 0.25 mA range matches).
+A Silonex NSL-32 (60–150 Ω on) or a DIY LED + GL5528 would give a different gate. The **low-pass gate** menu option closes a
 one-pole filter (20 Hz–15 kHz) in step with the gain, so the channel darkens
 tonally as it closes, not just in level — the Buchla LPG behaviour the bare
 schematic doesn't have on its own.
@@ -107,9 +133,11 @@ channels' gain; patch channel 2's own CV IN to override it.
 
 ## Context menu
 
-- **OTA: exponential CV response** — squares the combined control before it
-  reaches the OTA path, in place of the schematic's inherently linear
-  response. Off by default (the original's own character).
+- **OTA: BIAS trimmer** — the 1k trimmer's wiper, 0-100 %, 50 % balanced (default).
+- **OTA: remove the output's DC rest level** — the board's Out sits at -1.4 V; this
+  high-passes it at ~2 Hz. Off by default (the board's own character).
+- **OTA: exponential CV response (Iabc squared)** — squares the control current against 1 mA,
+  in place of the schematic's inherently linear current. Off by default.
 - **Vactrol: low-pass gate (filter tracks gain)** — see above. Off by default
   (the schematic is a bare divider, not a filter).
 
@@ -158,12 +186,19 @@ per-polyphony-channel.
   depth by a couple of dB. Assumed: the output is loaded by 100k, and the gate capacitances
   (4.5 pF Ciss, 1.5 pF Crss) are left out as they do nothing at audio. The control's -4 V span
   and the gate-drive sign (control up = gate more negative = more open) are the module's.
-- The OTA is not a transistor-level model; it is a DSP shape chosen to reproduce the
-  *character* the schematic implies (soft saturation growing with level), not to match
-  measured voltages from real hardware.
-- The vactrol's LDR resistance curve (4.7 MΩ dark / 150 Ω lit, log-interpolated)
-  and the 100 kΩ assumed load are reasonable stand-ins for a real LED/LDR pair,
-  not a measured part.
-- LAG is a single shared knob applied identically to all three circuits, even
-  though the original schematics only give the vactrol an inherent lag; this
-  keeps the panel from needing per-mode controls it has no room for.
+- **The OTA** is the board's node equations (three Newton unknowns: the two pins and the diode
+  bias pin) around the datasheet's transfer function, not a transistor-level chip. ASSUMED:
+  +-12 V rails; a nominal part (no offset voltage, typical 0.4 mV); Vt at 300 K; the
+  junction saturation current fitted to datasheet Figure 10 (read off a graph); the output
+  resistance and swing read off Figures 12 and 5; the input transistors' beta (625) from the
+  typical 0.4 uA bias current and the buffer's (73 a stage) from its 0.5 uA at 5k; the
+  trimmer centred. Left out: the chip's 2 MHz bandwidth and 5 pF, temperature, the 470 nF's
+  leakage. The channel's output slews with the LAG control (on the control volts), which the
+  board does not have.
+- The vactrol is the VTL5C3's published curves, digitised by eye and fitted (about 20–30 % rms in
+  log resistance on the response-time plots; the turn-on of the 10 mA curve from a 1 MΩ start is
+  not reproduced), and the part itself is an inference (see VACTROL above). Temperature, the
+  part-to-part spread (2–3× at 1 mA between samples of the same number) and any multi-second
+  dark-recovery tail are not modelled. The 100 kΩ assumed load is a guess.
+- LAG is a shared knob applied to OTA and JFET AM only; VACTROL ignores it because the cell
+  supplies its own lag.

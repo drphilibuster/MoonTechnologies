@@ -1,5 +1,6 @@
 #include "../plugin.hpp"
 #include "Panel.hpp"
+#include "../MixerStages.hpp"
 
 #include <cmath>
 
@@ -14,8 +15,10 @@
 // "Simple Unbuffered Mixer" schematic breaks its own first stage's output out
 // as InvertedOutput. The compensation caps across both feedback resistors
 // (27 pF, 47 pF) and the output RC (100 ohm / 10 uF) are HF-stability and
-// DC-blocking details with no audible effect at audio rates, and are not
-// modeled.
+// DC-blocking details. By default the strips are ideal; "TL07x op-amps" in the
+// menu runs the real stages (src/MixerStages.hpp, src/OpAmp.hpp): rails that
+// depend on the load, slew, gain-bandwidth, the two caps, and the follower's
+// 100 ohm; "Output networks" adds the 10 uF and the 100 ohm into 100 k.
 //
 // MULTIPLES reworks "Buffured Multiple 3x1:2" (three independent 1-in-2-out
 // buffers) into two 1-in-3-out multiples, B normalled to A -- one cable into A
@@ -58,6 +61,14 @@ struct Consolidation : Module {
 	// Options: neither schematic had a front-panel switch for either.
 	bool softClip = false;     // MIXER: soft-clamp at the op-amp rails, ~11 V
 	bool passiveMult = false;  // MULTIPLES: sag a little as more legs are patched
+	bool opamps = false;       // both: the TL07x datasheet model (replaces softClip)
+	bool outputNet = false;    // both: the schematic's output resistor and mixer cap
+
+	// The TL07x stages, one set per polyphony channel, built on first use.
+	mixstage::Bank bank[mixstage::kMaxPoly];
+	mixstage::Leg legA[mixstage::kMaxPoly], legB[mixstage::kMaxPoly];
+	int bankReady = 0, legAReady = 0, legBReady = 0;
+	bool wasOpamps = false, wasNet = false;
 
 	Consolidation() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -105,13 +116,26 @@ struct Consolidation : Module {
 		}
 	}
 
-	void processMixer() {
+	void processMixer(float dt) {
 		int channels = 1;
 		for (int i = 0; i < NUM_CH; i++)
 			channels = std::max(channels, inputs[IN1_INPUT + i].getChannels());
 
 		outputs[OUT_OUTPUT].setChannels(channels);
 		outputs[INV_OUT_OUTPUT].setChannels(channels);
+
+		if (opamps) {
+			if (!wasOpamps || outputNet != wasNet) {
+				bankReady = 0; legAReady = 0; legBReady = 0;
+				wasOpamps = true;
+				wasNet = outputNet;
+			}
+			for (; bankReady < channels; bankReady++) {
+				bank[bankReady].init(NUM_CH);
+				bank[bankReady].coupled = outputNet;
+			}
+		}
+		else wasOpamps = false;
 
 		float level[NUM_CH];
 		bool direct[NUM_CH];
@@ -148,6 +172,16 @@ struct Consolidation : Module {
 				if (mag > meter[i]) meter[i] = mag;
 			}
 
+			if (opamps) {
+				// The real stages: sum -> inverting summer -> inverting stage
+				// -> (100 ohm, 10 uF) -> OUT, with INV OUT the first stage's pin.
+				double inv;
+				double pin = bank[c].process(sum, dt, inv);
+				outputs[OUT_OUTPUT].setVoltage((float) bank[c].jack(pin, dt), c);
+				outputs[INV_OUT_OUTPUT].setVoltage((float) inv, c);
+				continue;
+			}
+
 			if (softClip) {
 				// The op-amps' own supply rails: TL07x output swing tops out
 				// a volt or so shy of a +-12 V rail. tanh gives that a soft
@@ -166,8 +200,14 @@ struct Consolidation : Module {
 	}
 
 	/** One 1-in-3-out multiple. `legs` are the three output ids, in order. */
-	void processMult(Input& in, const int legs[3]) {
+	void processMult(Input& in, const int legs[3], mixstage::Leg* leg, int& ready, float dt) {
 		int channels = std::max(1, in.getChannels());
+		if (opamps) {
+			for (; ready < channels; ready++) {
+				leg[ready].init();
+				leg[ready].withR = outputNet;
+			}
+		}
 
 		// A bare-wire multiple has no source impedance of its own to sag
 		// under load, but the folklore about a passive mult "loading down"
@@ -183,15 +223,24 @@ struct Consolidation : Module {
 			droop = 1.f - 0.01f * patched;
 		}
 
+		// The three legs are three op-amps with one input and one load, so they
+		// agree: one follower per channel, fanned out.
+		float opOut[mixstage::kMaxPoly];
+		if (opamps)
+			for (int c = 0; c < channels; c++)
+				opOut[c] = (float) leg[c].process(in.getPolyVoltage(c), dt);
+
 		for (int i = 0; i < 3; i++) {
 			outputs[legs[i]].setChannels(channels);
-			for (int c = 0; c < channels; c++)
-				outputs[legs[i]].setVoltage(clamp(in.getPolyVoltage(c) * droop, -12.f, 12.f), c);
+			for (int c = 0; c < channels; c++) {
+				float v = opamps ? opOut[c] : in.getPolyVoltage(c);
+				outputs[legs[i]].setVoltage(clamp(v * droop, -12.f, 12.f), c);
+			}
 		}
 	}
 
 	void process(const ProcessArgs& args) override {
-		processMixer();
+		processMixer(args.sampleTime);
 
 		// The fall, once per sample rather than once per channel.
 		for (int i = 0; i < NUM_CH; i++)
@@ -200,19 +249,21 @@ struct Consolidation : Module {
 		static const int legsA[3] = {MULT_A_OUT1_OUTPUT, MULT_A_OUT2_OUTPUT, MULT_A_OUT3_OUTPUT};
 		static const int legsB[3] = {MULT_B_OUT1_OUTPUT, MULT_B_OUT2_OUTPUT, MULT_B_OUT3_OUTPUT};
 
-		processMult(inputs[MULT_A_IN_INPUT], legsA);
+		processMult(inputs[MULT_A_IN_INPUT], legsA, legA, legAReady, args.sampleTime);
 
 		// B normals from A's raw input, not from A's already-multed legs, so
 		// an unpatched B is indistinguishable from a third leg on A.
 		Input& bSource = inputs[MULT_B_IN_INPUT].isConnected()
 		                 ? inputs[MULT_B_IN_INPUT] : inputs[MULT_A_IN_INPUT];
-		processMult(bSource, legsB);
+		processMult(bSource, legsB, legB, legBReady, args.sampleTime);
 	}
 
 	json_t* dataToJson() override {
 		json_t* root = json_object();
 		json_object_set_new(root, "softClip", json_boolean(softClip));
 		json_object_set_new(root, "passiveMult", json_boolean(passiveMult));
+		json_object_set_new(root, "opamps", json_boolean(opamps));
+		json_object_set_new(root, "outputNet", json_boolean(outputNet));
 		return root;
 	}
 
@@ -222,6 +273,10 @@ struct Consolidation : Module {
 		if (j) softClip = json_boolean_value(j);
 		j = json_object_get(root, "passiveMult");
 		if (j) passiveMult = json_boolean_value(j);
+		j = json_object_get(root, "opamps");
+		if (j) opamps = json_boolean_value(j);
+		j = json_object_get(root, "outputNet");
+		if (j) outputNet = json_boolean_value(j);
 	}
 };
 
@@ -305,6 +360,14 @@ struct ConsolidationWidget : ModuleWidget {
 		menu->addChild(createBoolMenuItem("Mixer: soft-clip at the op-amp rails", "",
 			[=]() { return m->softClip; },
 			[=](bool v) { m->softClip = v; }));
+
+		menu->addChild(createBoolMenuItem("TL07x op-amps (datasheet: rails, slew, GBW, caps)", "",
+			[=]() { return m->opamps; },
+			[=](bool v) { m->opamps = v; }));
+
+		menu->addChild(createBoolMenuItem("Output networks (100 ohm; mixer 10 uF) into 100 k", "",
+			[=]() { return m->outputNet; },
+			[=](bool v) { m->outputNet = v; }));
 
 		menu->addChild(createBoolMenuItem("Multiples: passive-style loading droop", "",
 			[=]() { return m->passiveMult; },

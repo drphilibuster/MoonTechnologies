@@ -9,7 +9,9 @@
 // is, per its MODE switch, one of three Modular-in-a-Week circuits:
 //
 //   OTA      Simple 13700 Dual VCA (Kristian Blasol): an LM13700 whose control
-//            current sets its transconductance -- a clean linear VCA.
+//            current sets its transconductance, solved as the board (OtaVca.hpp on
+//            Lm13700.hpp): linearizing diodes, the trimmer, 22k into Iabc, 33k and
+//            the buffer. CV is volts at the 22k, not a 0-10 V "how open".
 //   VACTROL  Vactrol VCA (Kristian Blasol): an LED driving a photoresistor in
 //            series with the audio -- the classic slow, characterful LPG cell.
 //   JFET AM  "I AM O" (Quincas): a 2N5457 used as a voltage-controlled resistor,
@@ -68,6 +70,8 @@ struct Garnishment : Module {
 	// these in the original, so they live in the menu rather than crowding a
 	// 10 HP panel that already repeats twice.
 	bool expCv = false;     // OTA: bend the (linear, in the original) CV response
+	float otaTrim = 0.5f;   // OTA: the 1k BIAS trimmer's wiper (0.5 balances the pair)
+	bool otaRemoveDc = false; // OTA: take the buffer's -1.4 V rest level off Out
 	bool lpgMode = false;   // VACTROL: close a one-pole LPF along with the gain
 
 	Garnishment() {
@@ -123,31 +127,47 @@ struct Garnishment : Module {
 			float cv = cvPort.isConnected() ? cvPort.getPolyVoltage(c) : 0.f;
 
 			// Unipolar 0-10 V CV convention: bias plus an attenuverted CV,
-			// normalized to the 0..1 the three circuits share as "how open".
-			float target = clamp((bias + cvAmt * cv) / 10.f, 0.f, 1.f);
+			// normalized to the 0..1 the vactrol and JFET circuits share as "how open".
+			float volts = bias + cvAmt * cv;
+			float target = clamp(volts / 10.f, 0.f, 1.f);
 			bus.ctrl[c] = slewTo(bus.ctrl[c], target, attackTau, decayTau, args.sampleTime);
 			float ctrl = bus.ctrl[c];
+			// The OTA board has no such convention: the CV goes through 22k into the chip's
+			// bias pin, in volts, and the control current is whatever that makes of it. The
+			// same lag is applied to those volts.
+			bus.cvv[c] = slewTo(bus.cvv[c], clamp(volts, -12.f, 12.f), attackTau, decayTau, args.sampleTime);
+			bus.open[c] = ctrl;
 
 			float out = 0.f;
 			switch (mode) {
 				case MODE_OTA: {
-					// Linear gain, soft-clipped by a fixed-drive tanh: the
-					// unlinearized LM13700 diff pair saturating as either the
-					// signal or the control level rises. Unity small-signal
-					// gain at ctrl = 1 falls out of the 5/1 scaling.
-					float g = expCv ? ctrl * ctrl : ctrl;
-					out = 5.f * std::tanh((audioIn / 5.f) * g);
+					// Solved as the Day 2 board (OtaVca.hpp): the audio through 470 nF and
+					// 27k into the 13700's linearizing-diode input, the trimmer, Iabc from the
+					// CV through 22k, 33k and the buffer. DC coupled, as drawn: Out rests at
+					// about -1.4 V unless the menu takes it off.
+					garnishment::OtaVca& o = bus.ota[c];
+					o.trim = otaTrim;
+					o.squareIabc = expCv;
+					out = (float) o.process(audioIn, bus.cvv[c], args.sampleRate);
+					bus.open[c] = clamp((float)(o.iabc / 0.933e-3), 0.f, 1.f);   // 1 at +10 V CV
+					if (otaRemoveDc) {
+						float k = 1.f - std::exp(-2.f * (float) M_PI * 2.f * args.sampleTime);   // ~2 Hz
+						bus.dcLp[c] += (out - bus.dcLp[c]) * k;
+						out -= bus.dcLp[c];
+					}
 					break;
 				}
 				case MODE_VACTROL: {
-					// LED brightness (= ctrl) sets the LDR's resistance on a
-					// log curve between dark and lit, dividing against an
-					// assumed ~100 kOhm downstream input impedance -- R12 in
-					// the schematic has no fixed partner, so whatever it
-					// feeds supplies the other half of the divider.
-					const float RLDR_DARK = 4.7e6f, RLDR_BRIGHT = 150.f, RLOAD = 100e3f;
-					float rldr = RLDR_DARK * std::pow(RLDR_BRIGHT / RLDR_DARK, ctrl);
-					float g = RLOAD / (RLOAD + rldr);
+					// The Day 2 schematic: CV In -> 330 ohm -> LED, the LDR in series with the
+					// audio. The LED sees BIAS + CV AMOUNT * CV volts through 330 ohm (the
+					// schematic's 100k pot is the CV AMOUNT), the cell is a
+					// PerkinElmer VTL5C3 (Vactrol.hpp: resistance against current, attack, the two decays
+					// and the memory), dividing against an assumed ~100 kOhm downstream input
+					// impedance -- R12 has no fixed partner on the sheet. LAG does not act here:
+					// the lag is the part's own, and slewing the drive on top would count it twice.
+					float drive = clamp(volts, 0.f, 15.f);
+					float g = vactrolGain(bus.ldr[c], drive, args.sampleTime);
+					bus.open[c] = g;      // the read-out shows what the cell is actually passing
 					float sig = audioIn;
 					if (lpgMode) {
 						float cutoff = 20.f + g * g * 15000.f;
@@ -201,6 +221,8 @@ struct Garnishment : Module {
 		json_t* root = json_object();
 		json_object_set_new(root, "expCv", json_boolean(expCv));
 		json_object_set_new(root, "lpgMode", json_boolean(lpgMode));
+		json_object_set_new(root, "otaTrim", json_real(otaTrim));
+		json_object_set_new(root, "otaRemoveDc", json_boolean(otaRemoveDc));
 		return root;
 	}
 
@@ -210,6 +232,10 @@ struct Garnishment : Module {
 		if (j) expCv = json_boolean_value(j);
 		j = json_object_get(root, "lpgMode");
 		if (j) lpgMode = json_boolean_value(j);
+		j = json_object_get(root, "otaTrim");
+		if (j) otaTrim = clamp((float) json_number_value(j), 0.f, 1.f);
+		j = json_object_get(root, "otaRemoveDc");
+		if (j) otaRemoveDc = json_boolean_value(j);
 	}
 };
 
@@ -252,7 +278,7 @@ struct GarnishmentDisplay : LedDisplay {
 			nvgBeginPath(vg); nvgRect(vg, x, top, w, h);
 			nvgFillColor(vg, panel::alpha(panel::SAGE, 0.10f)); nvgFill(vg);
 			// how open: the channel's control level, its first voice
-			const float open = module ? clamp(module->bus[c].ctrl[0], 0.f, 1.f) : 0.f;
+			const float open = module ? clamp(module->bus[c].open[0], 0.f, 1.f) : 0.f;
 			nvgBeginPath(vg); nvgRect(vg, x, bot - h * open, w, h * open);
 			nvgFillColor(vg, panel::alpha(panel::LIME, 0.75f)); nvgFill(vg);
 			// where BIAS alone sits, as a tick across the bar
@@ -262,6 +288,30 @@ struct GarnishmentDisplay : LedDisplay {
 			panel::text(vg, NUM, b.pos.x + b.size.x / 2.f, b.pos.y + b.size.y - 1.5f, std::to_string(c + 1));
 		}
 	}
+};
+
+
+/** The OTA board's 1k BIAS trimmer, as a slider in the context menu. */
+struct OtaTrimQuantity : Quantity {
+	Garnishment* module;
+	OtaTrimQuantity(Garnishment* m) : module(m) {}
+	void setValue(float v) override { module->otaTrim = clamp(v, 0.f, 1.f); }
+	float getValue() override { return module->otaTrim; }
+	float getMinValue() override { return 0.f; }
+	float getMaxValue() override { return 1.f; }
+	float getDefaultValue() override { return 0.5f; }
+	float getDisplayValue() override { return getValue() * 100.f; }
+	void setDisplayValue(float v) override { setValue(v / 100.f); }
+	std::string getLabel() override { return "OTA BIAS trimmer"; }
+	std::string getUnit() override { return "%"; }
+};
+
+struct OtaTrimSlider : ui::Slider {
+	OtaTrimSlider(Garnishment* m) {
+		quantity = new OtaTrimQuantity(m);
+		box.size.x = 220.f;
+	}
+	~OtaTrimSlider() { delete quantity; }
 };
 
 
@@ -333,7 +383,13 @@ struct GarnishmentWidget : ModuleWidget {
 		menu->addChild(new MenuSeparator);
 		menu->addChild(createMenuLabel("Garnishment"));
 
-		menu->addChild(createBoolMenuItem("OTA: exponential CV response", "",
+		menu->addChild(new OtaTrimSlider(m));
+
+		menu->addChild(createBoolMenuItem("OTA: remove the output's DC rest level (-1.4 V)", "",
+			[=]() { return m->otaRemoveDc; },
+			[=](bool v) { m->otaRemoveDc = v; }));
+
+		menu->addChild(createBoolMenuItem("OTA: exponential CV response (Iabc squared)", "",
 			[=]() { return m->expCv; },
 			[=](bool v) { m->expCv = v; }));
 

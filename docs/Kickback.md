@@ -244,16 +244,27 @@ of noise to a rattle.
   same voice); this is one voice. XOR of two square waves in their bipolar (±1) encoding is exactly their
   *product*, so three band-limited squares multiplied give the inharmonic,
   clangy crack, with a short modal ring underneath for body. **TUNE** 110–900 Hz.
+  The oscillators are the CD40106B astable itself (`src/Cd40106.hpp`; XORbell's 0.1 uF capacitors,
+  the datasheet's thresholds, output resistance and propagation delay at an *assumed* +12 V): TUNE
+  sets the pot by inverting the astable law, so the pitch is what the knob says, but the squares are
+  the chip's slightly lopsided ones (about 49 % high) with edges between samples, not ideal 50 %
+  squares. The board's 100k pots reach about 123 Hz; the bottom of TUNE (110 Hz) asks for a little
+  over 100k and is not clamped. BEND is not on the schematic (the 40106's VDD there is the plain
+  rail): it scales the pots' resistance, so the pitch falls as the envelope empties as before.
   *Approximation:* three oscillators, one voice of the board's two, rather than both —
   a third partial already supplies the character the extra three mostly reinforce.
 - **VACTROL** — the Percussive Noise Voice. The trigger's own RC decay drives a
-  vactrol (a photoresistor lit by an LED), whose slow-following resistance sets
-  a lowpass corner over noise from a three-transistor avalanche tap (T1–T3).
+  vactrol (a photoresistor lit by an LED) through the schematic's 330 Ω; the vactrol is a
+  PerkinElmer VTL5C3 (`src/Vactrol.hpp`: LED law, resistance against current, a 3 ms attack, a
+  fall with a fast part and a 60 ms tail, and a memory of how long it was lit), and its
+  conductance sets a lowpass corner over noise from a three-transistor avalanche tap (T1–T3).
   The noise is that tap **solved as the circuit** (`src/Kickback/AvalancheNoise.hpp` on the
   nodal solver `src/Mna.hpp`): T3's emitter-base junction in reverse breakdown, T2 amplifying its
   noise current with R3 47k and C3 0.1 µ closing a self-biasing loop round it, C4 1 µ handing
-  the result to T1's base. Its spectrum is the circuit's own, not white: a broad hump from a few
-  hundred hertz to about a kilohertz, falling about 6 dB an octave above it.
+  the result to T1's base. The junction's noise is **microplasma noise** (below), not a Gaussian
+  hiss, so the voice crackles: the output is skewed and bursty, and its spectrum is the circuit's own
+  band-pass (a broad hump from a few hundred hertz to about a kilohertz, falling above it) over the
+  telegraph pulses' Lorentzian skirt.
   **TUNE** is the C5/C6 pair the original swaps by hand between "Snare" and
   "HiHat" values, made continuous: 500 Hz–9 kHz.
 - **DAZZLE** — Karplus & Strong's 1983 drum recurrence at the long end of its
@@ -264,7 +275,7 @@ of noise to a rattle.
 
 **BEND** does double duty here, because MODE has taken the character knob — and
 it carries the one control each mode actually wants: the inharmonic spread on
-XOR, the vactrol's lag on VACTROL, and on DAZZLE both of the paper's own
+XOR, how far the vactrol opens the filter on VACTROL (the lag itself is now the VTL5C3's, fixed; BEND used to set its speed), and on DAZZLE both of the paper's own
 parameters at once, the blend factor *b* running down from ½ toward the
 "plucked bottle" and the stretch factor *S*, which the paper notes "increases
 the snare sound" as it rises.
@@ -550,8 +561,8 @@ or jack on the panel.
 
 **The VACTROL noise tap, what is and is not the circuit.** Only the noise source is solved. The
 board's output stage (T1 chopping the envelope through D3 and R8, C6) and its trigger envelope
-(C1, D1, D2, C2) are not: the module keeps its own strike envelope, vactrol lag and tunable
-low-pass, and the schematic does not put the vactrol where this module does (on the board the
+(C1, D1, D2, C2) are not: the module keeps its own strike envelope, the VTL5C3's lag (the BEND/grain
+lag knob no longer sets the lag speed, the part does) and a tunable low-pass, and the schematic does not put the vactrol where this module does (on the board the
 photoresistor sets the envelope's decay through R5/R2, not a filter corner). Assumed because
 neither the drawing nor a BC549 datasheet gives them: the 12 V supply, the junction's breakdown
 at 8 V (a BC549's VEBO rating is 5 V; real junctions avalanche at 7–10 V, so this is the figure to
@@ -559,3 +570,52 @@ measure on a real part), an avalanche gain of 30, and C5 at the snare's 0.1 µF.
 absolute level is therefore not known, and is set so the voice is as loud as the white noise it
 replaced (the spectrum and the self-biasing are the circuit's).
 
+**Microplasma noise (added 2026-10-03).** Real breakdown is not a Gaussian shot-noise source. A
+reverse-biased silicon junction breaks down first at a few defect regions, *microplasmas*, each a
+bistable switch in series with a spreading resistance (Haitz, J. Appl. Phys. 35, 1370, 1964; McKay
+1954; Champlin 1959; Cova & Ghioni's account of passive quenching): off it carries nothing, on it
+carries `(V - Vb) / Rs`; it jumps on at random at a rate that rises exponentially with the voltage
+over Vb, and off at a rate that falls steeply with the current it carries (the avalanche chain dies
+when its carriers fluctuate to zero, which is likely only at small currents). The junction current is
+then a sum of constant-height rectangular pulses with exponentially distributed dwell times, a random
+telegraph signal: its spectrum is a sum of Lorentzians and its amplitude distribution is multi-level,
+not Gaussian. `src/Microplasma.hpp` is that process (rates, switch, closed-form Lorentzian);
+`src/Kickback/AvalancheNoise.hpp` puts four microplasmas (a switched zener behind an Rs each) in
+parallel with the bulk junction **inside the solved circuit**, so the pulses interact with it: a
+pulse pulls T2's base up, T2's collector and R3 pull the junction down, and the pulse quenches
+itself. At the default operating point the junction rests at 7.35 V and about 1.5 µA, right at the
+latching edge where this behaviour is seen, and a 0.5 µA pulse pulls T2's collector down by about 0.4 V within 200 µs.
+
+What it sounds like: with the snare's C5 (0.1 µF) the circuit's own 340 Hz-ish low-pass smooths the
+pulses and the noise is nearly Gaussian (kurtosis 2.8, skew -0.6); with the hi-hat's 1 nF the bursts
+come through (kurtosis 5.9, skew -1.4, a spectrum falling 22 dB from 500 Hz to 16 kHz where the old
+model was flat). The supply moves the pop rate (about 630, 1070 and 1520 turn-ons a second at 11, 12
+and 13 V), as it does on a real board. The Tiny Dazzler Electronics original of the same circuit
+(`AvalancheNoise::DAZZLER`: 2N3904s, +13.5 V) is available as a variant. The level is set so the
+snare setting is as loud as before (rms 0.577 at 48 kHz, within 0.01 dB from 44.1 to 192 kHz).
+
+**Still assumed:** the pulse numbers. No BC549 or 2N3904 microplasma data exists, so the four
+microplasmas' breakdown voltages (0.66 to 0.84 V under the bulk knee), spreading resistances (40 to
+300 k), turn-on rates (10 to 30 per second at Vb, e-fold 20 to 40 mV) and turn-off rates (3e3 to 6e4
+per second at zero current, e-fold 0.5 to 1 µA) are the module's. Only the *structure* (which
+quantities rise and fall with what) and the statistics that follow are the literature's; the shot-noise
+current that was the whole model before is kept as a small background. `AvalancheNoise::microplasma = false`
+(and `AvalancheSource(seed, variant, false)`) selects the old shot-noise-only model, which the tests keep
+as the linear reference. If you ever measure a real BC549's reverse-breakdown noise on a scope, the
+dwell times and pulse heights set `mp[]` directly.
+
+
+## TomTomTom as a circuit (modelled, not yet the toms' sound)
+
+`src/Kickback/TomCircuit.hpp` solves the Day 9 `TomTomTom.pdf` voice (LM358 gate-to-trigger stage,
+CD4069UB inverter with the "twin-T" in its feedback, second inverter stage) with `src/Mna.hpp`, using
+the CD4069UB of `src/Cd4069.hpp` (a fitted level-1 MOSFET pair plus input clamp diodes, fitted to the
+TI datasheet's typical curves). Tests: `tests/Kickback/test_tomcircuit.cpp`.
+
+What the drawing does, and why the toms still use the mode bank: the trigger node is the LM358's output
+pin, and whether the voice rings down or sustains a ~35-60 Hz oscillation after the first hit is decided by
+two numbers the datasheets bound but do not fix: the inverter's gain at 12 V (loop threshold about -13 to
+-16; the model says -23, plausible range -15 to -35) and the LM358's idle sink resistance (~8 kohm from its
+Figure 5-47; with a stiff 50 ohm output there is no oscillation at all). The model at its central values
+oscillates continuously once hit. That is not a drum, and the sheet's author evidently built one that works,
+so the parameters need a measurement from a real board before the circuit can replace the modal bank.

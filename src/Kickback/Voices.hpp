@@ -39,6 +39,8 @@
 #include "Bridge808.hpp"
 #include "Smurf.hpp"
 #include "AvalancheNoise.hpp"
+#include "../Vactrol.hpp"
+#include "../Cd40106.hpp"
 
 namespace kickback {
 
@@ -243,6 +245,14 @@ struct Kick {
 
 /** XORbell's six 40106 relaxation oscillators through three 4070 XOR stages.
 
+    The oscillators are the circuit (Cd40106.hpp): each a CD40106B inverter with a pot from output to
+    input and a 0.1 uF capacitor to ground, run as the astable it is -- the datasheet's thresholds at
+    VDD (ASSUMED +12 V; the schematic only says VCC), the on resistance, the propagation delay -- so
+    the squares are slightly lopsided (about 48 % high at 12 V), their edges land between samples, and
+    the frequency law is T = R C [ln((VDD-VN)/(VDD-VP)) + ln(VP/VN)] rather than a phase counter.
+    The pot is set from the frequency TUNE asks for by inverting that law (the 100 k pot reaches
+    about 123 Hz; the bottom of TUNE, 110 Hz, asks for a little more than 100 k and is not clamped).
+
     XOR of two square waves in their bipolar (+-1) encoding is exactly their
     product, so three band-limited squares multiplied give the inharmonic,
     clangy body; the timbre term spreads the upper two away from the
@@ -250,25 +260,57 @@ struct Kick {
     products have no body under the clang.
 
     Three oscillators rather than six -- a third partial already supplies the
-    character the extra three mostly reinforce. */
+    character the extra three mostly reinforce. BEND is not on the schematic (the 40106's
+    VDD there is the plain rail): it scales the pots' resistance, the same fall in pitch as before. */
 struct XorEngine {
-	SquareOsc o1, o2, o3;
+	//: XORbell: C1..C6 = 0.1 uF. VDD is ASSUMED.
+	static constexpr double kCap = 0.1e-6;
+	static constexpr double kVdd = 12.0;
+
+	struct Voice {
+		cd40106::Osc osc;
+		double lastF = -1.0, r = 0.0;
+		/** One sample at `f` hertz (the pot found by inverting the law, only when f changes),
+		    with the pots' resistance divided by `sag`. */
+		inline float process(double f, double sag, double dt) {
+			if (f != lastF) {
+				const double want = 1.0 / f;
+				if (lastF > 0.0 && f < 2.0 * lastF && f > 0.5 * lastF) {
+					// TUNE moving: the period is very nearly proportional to (R + Ron), so a few
+					// multiplicative corrections from the last pot land on the law exactly.
+					const double ron = cd40106::ron(kVdd);
+					double x = r + ron;
+					for (int k = 0; k < 4; k++)
+						x *= want / cd40106::timing(x - ron, kCap, kVdd).period;
+					r = x - ron;
+				}
+				else
+					r = cd40106::resistanceForPeriod(want, kCap, kVdd);
+				lastF = f;
+			}
+			const double ron = cd40106::ron(kVdd);
+			return osc.process(dt, (r + ron) / sag - ron, kCap, kVdd);
+		}
+	};
+	Voice o1, o2, o3;
 	ModalBank body;
 	Decay env;
 	float fs = 44100.f;
 
 	void setRate(float fs_) { fs = fs_; body.setRate(fs_); }
-	void reset() { o1.reset(); o2.reset(); o3.reset(); body.reset(); env.reset(); }
+	void reset() { o1.osc.reset(); o2.osc.reset(); o3.osc.reset(); body.reset(); env.reset(); }
 	inline void strike(float vel) { env.strike(vel); }
 
 	inline float process(float f0, float t60, float bend, float timbre, float x) {
 		float e = env.process(t60, fs);
-		// The 40106's own supply sagging as the gate envelope empties.
+		// The pots' resistance rising as the gate envelope empties (the module's BEND; not in the schematic).
 		float sag = std::exp2f(bend * (1.f - e) * -0.9f);
-		float f = f0 * sag;
-		float sq = o1.process(f, fs)
-		         * o2.process(f * (1.f + timbre * 0.41f), fs)
-		         * o3.process(f * (1.f + timbre * 0.98f), fs);
+		const double dt = 1.0 / fs;
+		const double fmax = 0.45 * fs;
+		auto lim = [fmax](double f) { return f > fmax ? fmax : (f < 1.0 ? 1.0 : f); };
+		float sq = o1.process(lim(f0), sag, dt)
+		         * o2.process(lim(f0 * (1.f + timbre * 0.41f)), sag, dt)
+		         * o3.process(lim(f0 * (1.f + timbre * 0.98f)), sag, dt);
 		body.setPosition(0.78f);
 		body.setTuning(f0 * 2.1f, t60 * 0.5f, 0.5f, sag);
 		return sq * e * 0.8f + body.process(x) * 0.35f;
@@ -278,28 +320,37 @@ struct XorEngine {
 /** The Percussive Noise Voice: the trig's own decay drives a vactrol, whose
     slow-following LDR sets a lowpass corner over the T1/T2/T3 avalanche-noise
     tap. The noise is that circuit solved (AvalancheNoise.hpp): T3's emitter-base junction in
-    breakdown, T2 amplifying it, the loop biasing itself, and what C4 hands T1. The grain term is that lag, from fast (nearly a gate) to slow (a
-    smeared, breathing decay) -- the lag is what makes this sound like a
-    photoresistor rather than a VCA, and it is the character of the circuit. */
+    breakdown, T2 amplifying it, the loop biasing itself, and what C4 hands T1. The vactrol is
+    a VTL5C3 (Vactrol.hpp): the envelope (0..1, as 0..10 V) lights its LED through the schematic's
+    330 ohm, and the cell's conductance, with its own fast attack, its two decays and its memory,
+    sets the corner. That lag is what makes this sound like a photoresistor rather than a
+    VCA, and it is the character of the circuit. NOTE the module's topology is its own: on the
+    board the LDR sets the envelope's decay (R5, R2 and the LDR discharging C2), not a filter. */
 struct VactrolEngine {
 	kickback::AvalancheSource noise;
 	OnePole lp, lp2;
-	Vactrol vac;
+	::vactrol::Vactrol cell;
+	double gRef = 0.0;      // the cell fully lit by a 10 V envelope, for normalising
 	Decay env;
 	float fs = 44100.f;
 	//: The vactrol's filter is a lowpass at a corner in hertz, so this engine wants noise at
 	//: constant spectral density. The circuit's noise already has it (its source is a current
 	//: density per hertz), so unlike the white noise it replaced it takes no noisePsdGain().
 
-	VactrolEngine() : noise(0x5EAF00Du) {}
-	void setRate(float fs_) { fs = fs_; noise.setRate(fs_); }
-	void reset() { noise.reset(); lp.reset(); lp2.reset(); vac.reset(); env.reset(); }
+	VactrolEngine() : noise(0x5EAF00Du) {
+		gRef = ::vactrol::kDarkConductance + ::vactrol::steadyLight(::vactrol::ledCurrent(10.0, 330.0));
+		cell.configure(1.0 / fs);
+	}
+	void setRate(float fs_) { fs = fs_; noise.setRate(fs_); cell.configure(1.0 / (double) fs_); }
+	void reset() { noise.reset(); lp.reset(); lp2.reset(); cell.reset(); env.reset(); }
 	inline void strike(float vel) { env.strike(vel); }
 
 	inline float process(float top, float t60, float bend, float grain) {
 		float e = env.process(t60, fs);
-		// 90 Hz down to 6 Hz of rise time is the range real vactrols cover.
-		float smoothed = vac.process(e, 90.f * std::pow(0.07f, grain), fs);
+		// The envelope as the CV (0..10 V) through 330 ohm into the LED; the cell's conductance,
+		// against the fully lit cell, is how far the filter has opened.
+		double iLed = ::vactrol::ledCurrent(10.0 * (double) e, 330.0);
+		float smoothed = (float) std::fmin(cell.step(iLed) / gRef, 1.0);
 		float span = top * (0.25f + 0.75f * (1.f - bend));
 		float g = poleG(140.f + smoothed * span * (1.f + bend * 2.f), fs);
 		return lp2.lp(lp.lp(noise.next(), g), g) * e * (1.5f + 0.4f * grain);

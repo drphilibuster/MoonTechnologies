@@ -1,6 +1,8 @@
 #include "../plugin.hpp"
 #include "Panel.hpp"
 #include "../Cd4024.hpp"
+#include "../QuadLogicBoard.hpp"
+#include "../ReferralBoard.hpp"
 
 // Audit Logic consolidates three Modular in a Week boards behind one panel:
 //
@@ -147,6 +149,24 @@ struct AuditLogic : Module {
 	LevelGate swGate[2];
 	float onGain[2] = { 0.f, 0.f };
 	bool declick = false;
+	// REFERRAL as the Day 10 board (src/ReferralBoard.hpp, src/Hef4066.hpp): comparator at
+	// 1.0909 V, HEF4066BT on 0..12 V with its Ron, clamps, feedthrough and charge. On by
+	// default; off is the ideal bipolar switch this module started with (for +-5 V CV).
+	bool hefBoard = true;
+	referral::Board referralBoard;
+	referral::Channel referralCh[2];
+
+	// FINDINGS, "Quad Logic board" mode (menu): the Day 8 board as circuit -- see
+	// src/QuadLogicBoard.hpp. Off by default, so the Invert/AND/OR/XOR gates above are
+	// untouched; on, every gate is the board's OR and the FN knobs are ignored.
+	bool quadBoard = false;
+	quadlogic::Board board;
+	/** Which of the board's input pairs feeds output Yn. The Day 8 schematic crosses the lower
+	 *  two (4071 pins 12/13 = A4, B4 drive Q3/Y3; pins 8/9 = A3, B3 drive Q4/Y4). That is a
+	 *  wiring quirk of the board, not a function anyone wants, so the module follows the
+	 *  panel: Yn = An OR Bn. (James, 2026-10-03: MiaW is a starting point, not ground truth.)
+	 *  Set to { 0, 1, 3, 2 } for the board's literal wiring. */
+	static int quadPair(int i) { static const int t[4] = { 0, 1, 2, 3 }; return t[i]; }
 
 	// INSTALLMENTS -- mono.
 	LevelGate clockLevel, resetLevel;
@@ -218,10 +238,48 @@ struct AuditLogic : Module {
 		for (int i = 0; i < 4; i++) { aGate[i].reset(); bGate[i].reset(); }
 		swGate[0] = LevelGate(); swGate[1] = LevelGate();
 		onGain[0] = onGain[1] = 0.f;
+		referralCh[0].reset(); referralCh[1].reset();
 		clockLevel = LevelGate();
 		resetLevel = LevelGate();
 		divChip = cd4024::Cd4024();
 		divCounter = 0;
+	}
+
+	json_t* dataToJson() override {
+		json_t* root = json_object();
+		json_object_set_new(root, "quadBoard", json_boolean(quadBoard));
+		json_object_set_new(root, "hefBoard", json_boolean(hefBoard));
+		return root;
+	}
+
+	void dataFromJson(json_t* root) override {
+		json_t* q = json_object_get(root, "quadBoard");
+		if (q)
+			quadBoard = json_is_true(q);
+		json_t* h = json_object_get(root, "hefBoard");
+		if (h)
+			hefBoard = json_is_true(h);
+	}
+
+	/** Output Yn of the Quad Logic board. Unpatched jacks are pulled to 0 V by the board's
+	 *  own 100k, so REF V does not apply here. Returns the channel-0 verdict. */
+	bool processQuad(int i) {
+		int p = quadPair(i);
+		Input& ai = inputs[A1_INPUT + 2 * p];
+		Input& bi = inputs[B1_INPUT + 2 * p];
+		int channels = std::max(std::max(ai.getChannels(), bi.getChannels()), 1);
+		bool first = false;
+		for (int c = 0; c < channels; c++) {
+			bool aOn = ai.isConnected(), bOn = bi.isConnected();
+			float av = aOn ? ai.getPolyVoltage(c) : 0.f;
+			float bv = bOn ? bi.getPolyVoltage(c) : 0.f;
+			outputs[OUT1_OUTPUT + i].setVoltage((float)board.channel(av, aOn, bv, bOn), c);
+			if (c == 0)
+				first = board.orTrue(av, aOn, bv, bOn);
+		}
+		outputs[OUT1_OUTPUT + i].setChannels(channels);
+		dispFn[i] = "OR";
+		return first;
 	}
 
 	void process(const ProcessArgs& args) override {
@@ -229,6 +287,11 @@ struct AuditLogic : Module {
 		float refV = params[REFV_PARAM].getValue() > 0.5f ? 12.f : 0.f;
 		bool anyTrue = false;
 		for (int i = 0; i < 4; i++) {
+			if (quadBoard) {
+				dispGateOut[i] = processQuad(i);
+				anyTrue = anyTrue || dispGateOut[i];
+				continue;
+			}
 			Input& ai = inputs[A1_INPUT + 2 * i];
 			Input& bi = inputs[B1_INPUT + 2 * i];
 			int channels = std::max(ai.getChannels(), bi.getChannels());
@@ -261,7 +324,16 @@ struct AuditLogic : Module {
 			int aInputs[2]     = { SW1_A_INPUT, SW2_A_INPUT };
 			int bOutputs[2]    = { SW1_B_OUTPUT, SW2_B_OUTPUT };
 			int cOutputs[2]    = { SW1_C_OUTPUT, SW2_C_OUTPUT };
-			for (int n = 0; n < 2; n++) {
+			for (int n = 0; n < 2 && hefBoard; n++) {
+				referral::Out r = referralCh[n].process(referralBoard,
+					inputs[gateInputs[n]].getVoltage(), inputs[aInputs[n]].getVoltage(),
+					inputs[aInputs[1 - n]].getVoltage(), args.sampleTime, hiOn, routeAC, declick);
+				outputs[bOutputs[n]].setVoltage((float)r.b);
+				outputs[cOutputs[n]].setVoltage((float)r.c);
+				onGain[n] = r.onB ? 1.f : 0.f;
+				anyActive = anyActive || r.onB;
+			}
+			for (int n = 0; n < 2 && !hefBoard; n++) {
 				bool gateHigh = swGate[n].sense(inputs[gateInputs[n]].getVoltage(), 0.1f, 1.f);
 				bool on = hiOn ? gateHigh : !gateHigh;
 				float target = on ? 1.f : 0.f;
@@ -363,14 +435,16 @@ struct AuditDisplay : LedDisplay {
 		static const int dflt[4] = { kFnNotA, kFnAnd, kFnOr, kFnXor };
 		for (int i = 0; i < 4; i++) {
 			int fn = clamp(setting(AuditLogic::FN1_PARAM + i, dflt[i]), 0, kNumFn - 1);
-			cell(vg, *FN[i], string::f("GATE %d", i + 1), kFnShort[fn], panel::LIME);
+			cell(vg, *FN[i], string::f("GATE %d", i + 1),
+				(module && module->quadBoard) ? "OR" : kFnShort[fn], panel::LIME);
 		}
 		bool hiOn = setting(AuditLogic::POLARITY_PARAM, kPolarityHiOn) == kPolarityHiOn;
 		bool ref12 = setting(AuditLogic::REFV_PARAM, 0) > 0;
 		bool routeAC = setting(AuditLogic::ROUTE_PARAM, kRouteAB) == kRouteAC;
 		bool musical = setting(AuditLogic::DIVMODE_PARAM, kDivBinary) == kDivMusical;
 		cell(vg, panel::FIELD_POLARITY, "POLARITY", hiOn ? "HI ON" : "LO ON", panel::MINT);
-		cell(vg, panel::FIELD_REFV, "REF V", ref12 ? "12 V" : "0 V", panel::MINT);
+		cell(vg, panel::FIELD_REFV, "REF V",
+			(module && module->quadBoard) ? "--" : (ref12 ? "12 V" : "0 V"), panel::MINT);
 		cell(vg, panel::FIELD_ROUTE, "ROUTE", routeAC ? "A-B/A-C" : "A-B", panel::MINT);
 		cell(vg, panel::FIELD_DIVMODE, "MODE", musical ? "MUSICAL" : "BINARY", panel::MINT);
 	}
@@ -464,6 +538,12 @@ struct AuditLogicWidget : ModuleWidget {
 		menu->addChild(new MenuSeparator);
 		menu->addChild(createMenuLabel("Audit Logic"));
 
+		menu->addChild(createBoolMenuItem("FINDINGS: Quad Logic board (4071 OR, TL074 + 1.09 V)", "",
+			[=]() { return m->quadBoard; },
+			[=](bool v) { m->quadBoard = v; }));
+		menu->addChild(createBoolMenuItem("REFERRAL: HEF4066 board (0..12 V, Ron, clamps; off = ideal bipolar switch)", "",
+			[=]() { return m->hefBoard; },
+			[=](bool v) { m->hefBoard = v; m->referralCh[0].reset(); m->referralCh[1].reset(); }));
 		menu->addChild(createBoolMenuItem("REFERRAL declick (1 ms crossfade)", "",
 			[=]() { return m->declick; },
 			[=](bool v) { m->declick = v; }));

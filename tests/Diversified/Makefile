@@ -18,14 +18,20 @@ CORE := ../../src/Diversified/Dsp99.hpp \
         ../../src/Diversified/Primitives.hpp \
         ../../src/Pt2399.hpp \
         ../../src/Adc0809.hpp \
+        ../../src/OpAmp.hpp \
+        ../../src/Mna.hpp \
+        ../../src/SpringTank.hpp \
+        ../../src/Diversified/SpringBoard.hpp \
         ../../src/TaxBracket/Ladder.hpp
 
-all: test_programs test_pt2399_boards test_bitcrusher
+all: test_programs test_pt2399_boards test_bitcrusher test_opamps test_spring
 
-test: test_programs test_pt2399_boards test_bitcrusher
+test: test_programs test_pt2399_boards test_bitcrusher test_opamps test_spring
 	./test_programs
 	./test_pt2399_boards
 	./test_bitcrusher
+	./test_opamps
+	./test_spring
 
 # -I. first, so <rack.hpp> resolves to the shim beside this file rather than
 # the SDK's, which needs nanovg and will not link.
@@ -41,7 +47,15 @@ test_bitcrusher: test_bitcrusher.cpp rack.hpp $(CORE)
 	$(CXX) $(CXXFLAGS) $(SAN) -I. -I$(RACK_DIR)/include -I$(RACK_DIR)/dep/include \
 		-o $@ test_bitcrusher.cpp
 
+test_opamps: test_opamps.cpp rack.hpp $(CORE)
+	$(CXX) $(CXXFLAGS) $(SAN) -I. -I$(RACK_DIR)/include -I$(RACK_DIR)/dep/include \
+		-o $@ test_opamps.cpp
+
+test_spring: test_spring.cpp rack.hpp $(CORE)
+	$(CXX) $(CXXFLAGS) -O2 -I. -I$(RACK_DIR)/include -I$(RACK_DIR)/dep/include \
+		-o $@ test_spring.cpp
+
 clean:
-	rm -rf test_programs test_pt2399_boards test_bitcrusher *.dSYM
+	rm -rf test_programs test_pt2399_boards test_bitcrusher test_opamps test_spring *.dSYM
 
 .PHONY: all test clean

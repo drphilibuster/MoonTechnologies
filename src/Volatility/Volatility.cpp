@@ -1,20 +1,24 @@
 #include "../plugin.hpp"
 #include "Panel.hpp"
 #include "Noise.hpp"
+#include "Yash.hpp"
+#include "../Lf398.hpp"
 #include <cmath>
 
 // ---------------------------------------------------------------------------
 // Volatility -- the Modular in a Week random trio, consolidated: the 4006
-// shift-register noise generator, Rene Schmitz's YASH sample and hold, and
-// the PHObos random gate. All three want a clock, so they share one: RATE and
+// shift-register noise generator, Rene Schmitz's YASH sample and hold (an LF398
+// with its trigger-pulse circuit; see below), and the PHObos random gate. All
+// three want a clock, so they share one: RATE and
 // CLOCK IN live in NOISE (its own character is what actually depends on
 // tempo), and SAMPLE & HOLD's TRIG and RND GATE's own draw both fall back to
 // that same edge when unpatched. CLOCK OUT mirrors whichever is active.
 //
-// NOISE is one CD4006B wired as an 18-stage shift register with two XOR taps,
-// on the pins the chip actually brings out: stages 17 and 12, a maximal sequence
-// of 2^17 - 1 (src/Volatility/Noise.hpp says why not the textbook 18 and 11, which
-// a single 4006 has no pin for). It shifts on the negative-going clock edge, as the
+// NOISE is one CD4006B wired as an 18-stage shift register closed through two XOR
+// gates and an inverter -- the noise source of Yusynth's Random Eight Pole Gate
+// Switch: new bit = NOT(stage 18 XOR stage 5) XOR stage 9, on the chip's pins 13,
+// 9 and 10. All 18 stages are in play and the period is 2^18 - 4 (see
+// src/Volatility/Noise.hpp for the trace). It shifts on the negative-going clock edge, as the
 // datasheet has it. Clocked at audio rates the bitstream reads as white-ish
 // digital noise; clocked at a crawl, the same bit held between edges reads as a
 // random gate -- one circuit, and the clock rate is the only thing that decides
@@ -22,6 +26,15 @@
 // (the window's stages are inside the chip with no pins: that read is this
 // module's addition); BITS picks where it starts.
 
+// SAMPLE & HOLD is Schmitz's YASH (1999): an LF398 with a 1 nF hold capacitor,
+// sampled by a ~3 us pulse that a BC548 inverter, three CD4093 Schmitt gates and
+// a 470 pF / 10k differentiator make from the trigger (src/Volatility/Yash.hpp,
+// src/Lf398.hpp, src/Cd4093.hpp). Each sample is therefore the input a few
+// microseconds after the trigger, run through the chip's acquisition lag, not an
+// ideal instant read; the held value droops by the chip's leakage, steps by its
+// hold step, and carries its offset and feedthrough. With nothing in TRIG the
+// circuit's own free-running 4093 oscillator can be the trigger (menu).
+//
 // SAMPLE & HOLD's SRC normals to the module's own continuous white noise (the
 // same signal NOISE OUT carries) and TRIG to the shared clock, so it does
 // something useful unpatched; patching either overrides it. RND GATE throws
@@ -34,7 +47,6 @@ namespace volatility {
 static const float kRateMinHz = 0.05f;
 static const float kRateMaxHz = 4000.f;
 static const float kMaxSlewSec = 0.25f;
-static const float kDroopTauSec = 4.f;
 
 } // namespace volatility
 
@@ -71,10 +83,25 @@ struct Volatility : Module {
 	float dacOutV = 0.f;
 
 	// --- SAMPLE & HOLD, polyphonic on SRC IN ---
-	dsp::SchmittTrigger shTrigSchmitt;
-	float shHeld[PORT_MAX_CHANNELS] = {};
+	lf398::Channel shChip[PORT_MAX_CHANNELS];
 	float shSlewState[PORT_MAX_CHANNELS] = {};
+	float shPrevSrc[PORT_MAX_CHANNELS] = {};
+	int shChannelsPrev = 0;
+	// The YASH trigger path and its LF398. "droop" is the old menu option and now means the
+	// chip's leakage current (off = an ideal hold); the rest of the chip's imperfections are its
+	// datasheet's and always present.
 	bool droop = false;
+	int chipGrade = 0;            // 0 = LF398 typical, 1 = LF398 worst case (datasheet maxima)
+	bool droopDown = false;       // leakage direction; the datasheet gives only a magnitude
+	bool yashOsc = false;         // TRIG unpatched: false = shared clock, true = YASH's 4093 oscillator
+	yash::TrigInput shTrigIn;     // the BC548 stage, on the TRIG jack
+	yash::TrigInput shClockIn;    // the same stage seeing CLOCK IN, when TRIG is normalled to it
+	float shPrevClockV = 0.f;
+	yash::PulseChain shChain;
+	yash::Oscillator shOsc;
+	lf398::Spec shSpec;
+	int shTrigKind = -1;          // which source drove the chain last step, to reset on a change
+	float shPrevTrigV = 0.f;
 
 	// --- RND GATE ---
 	bool rndGateState = false;
@@ -116,6 +143,16 @@ struct Volatility : Module {
 		configOutput(CLOCK_OUT_OUTPUT, "Clock (mirrors active source)");
 
 		colours.build(APP->engine->getSampleRate());
+		refreshChip();
+	}
+
+	/** The LF398's datasheet column for the chosen grade and leakage direction. The hold
+	    capacitor is the YASH's 1 nF; the junction sits above a 25 C ambient by the chip's own
+	    dissipation (src/Lf398.hpp). */
+	void refreshChip() {
+		shSpec = lf398::spec(chipGrade != 0, 1e-9, droop, droopDown ? -1.0 : 1.0, 25.0, true);
+		shChain.corner = shOsc.corner = chipGrade != 0 ? cd4093::CORNER_MAX : cd4093::CORNER_TYP;
+		shTrigIn.th = shClockIn.th = yash::trigThresholds(shChain.corner);
 	}
 
 	void onSampleRateChange(const SampleRateChangeEvent& e) override {
@@ -132,11 +169,19 @@ struct Volatility : Module {
 		clockInFallTrig.reset();
 		rndOutV = -5.f;
 		dacOutV = 0.f;
-		shTrigSchmitt.reset();
 		for (int c = 0; c < PORT_MAX_CHANNELS; c++) {
-			shHeld[c] = 0.f;
+			shChip[c].reset();
 			shSlewState[c] = 0.f;
+			shPrevSrc[c] = 0.f;
 		}
+		shChannelsPrev = 0;
+		shTrigIn.reset();
+		shClockIn.reset();
+		shPrevClockV = 0.f;
+		shChain.reset();
+		shOsc.reset();
+		shTrigKind = -1;
+		shPrevTrigV = 0.f;
 		rndGateState = false;
 		gate.reset();
 		colours.reset();
@@ -149,8 +194,17 @@ struct Volatility : Module {
 		bool clockEdge;
 		bool clockFell;
 		float clockOutV;
+		// Where inside this sample the clock's edges fell, for the sample and hold's
+		// trigger path (seconds from the start of the sample; -1 = none). The internal
+		// clock knows exactly; a clock from the jack is only known at the samples.
+		float clockRiseAt = -1.f;
+		float clockFallAt = -1.f;
+		bool clockExt = false;
+		float clockVExt = 0.f;
 		if (inputs[CLOCK_IN_INPUT].isConnected()) {
 			float clockV = inputs[CLOCK_IN_INPUT].getVoltage();
+			clockExt = true;
+			clockVExt = clockV;
 			clockEdge = clockInTrig.process(clockV, 0.1f, 2.f);
 			// The CD4006 moves on the negative-going edge: the same thresholds,
 			// seen from the other side.
@@ -175,9 +229,12 @@ struct Volatility : Module {
 			if (internalPhase >= 1.f) {
 				internalPhase -= 1.f;
 				clockEdge = true;
+				clockRiseAt = clamp(sampleTime - internalPhase / freqHz, 0.f, sampleTime);
 			}
 			clockOutV = (internalPhase < 0.5f) ? 10.f : 0.f;
 			clockFell = clockFall.process(internalPhase < 0.5f);
+			if (clockFell)
+				clockFallAt = clamp(sampleTime - (internalPhase - 0.5f) / freqHz, 0.f, sampleTime);
 		}
 		outputs[CLOCK_OUT_OUTPUT].setVoltage(clockOutV);
 
@@ -218,25 +275,74 @@ struct Volatility : Module {
 		bool srcConnected = inputs[SH_SRC_IN_INPUT].isConnected();
 		int shChannels = std::max(srcConnected ? inputs[SH_SRC_IN_INPUT].getChannels() : 1, 1);
 
+		// The trigger path is the YASH's: a BC548 stage, three 4093 gates and a
+		// differentiator that turn the trigger's rising edge into a ~3 us pulse on
+		// the LF398's logic pin. Where the edge fell inside this sample is kept
+		// (straight-line between the two samples for a patched jack, exactly for
+		// the internal clock and the oscillator), so the pulse lands at its true
+		// time and the chip reads the input then, not at the sample boundary.
 		bool trigConnected = inputs[SH_TRIG_IN_INPUT].isConnected();
-		bool shTrigEdge = trigConnected
-			? shTrigSchmitt.process(inputs[SH_TRIG_IN_INPUT].getVoltage(), 0.1f, 1.f)
-			: clockEdge;
+		int trigKind = trigConnected ? 0 : (yashOsc ? 2 : 1);
+		double dt = sampleTime;
+		double trigV = trigConnected ? inputs[SH_TRIG_IN_INPUT].getVoltage() : 0.f;
+		if (trigKind != shTrigKind) {
+			// A source change must not read as an edge.
+			shTrigKind = trigKind;
+			shTrigIn.on = trigV >= shTrigIn.th.on;
+			shClockIn.on = clockVExt >= shClockIn.th.on;
+			shPrevTrigV = trigV;
+			shPrevClockV = clockVExt;
+			shOsc.reset();
+		}
+		{
+			double et[2];
+			int ed[2];
+			int ne = 0;
+			if (trigKind == 0) {
+				ne = shTrigIn.process(shPrevTrigV, trigV, dt, et, ed);
+			}
+			else if (trigKind == 2) {
+				// Pot: RATE sets the 1 Meg pot (clockwise = less resistance = faster); RATE CV
+				// is 1 V/octave on the loop resistance. A module addition: the circuit has
+				// neither. The loop resistance never goes below the pot's own 2k2.
+				double potFrac = 1.0 - params[RATE_PARAM].getValue();
+				double r = yash::Oscillator::seriesR(potFrac);
+				if (inputs[RATE_CV_IN_INPUT].isConnected())
+					r /= std::pow(2.0, clamp(inputs[RATE_CV_IN_INPUT].getVoltage(), -10.f, 10.f));
+				r = std::min(std::max(r, (double) yash::kRoscFixed), (double) (yash::kRoscFixed + yash::kPot));
+				int n = shOsc.step(dt, r);
+				for (int k = 0; k < n && k < 2; k++) { et[ne] = shOsc.a.edges[k].at; ed[ne] = shOsc.a.edges[k].dir; ne++; }
+			}
+			else if (clockExt) {
+				ne = shClockIn.process(shPrevClockV, clockVExt, dt, et, ed);
+			}
+			else {
+				if (clockRiseAt >= 0.f) { et[ne] = clockRiseAt; ed[ne] = 1; ne++; }
+				if (clockFallAt >= 0.f) { et[ne] = clockFallAt; ed[ne] = -1; ne++; }
+			}
+			for (int k = 0; k < ne; k++)
+				shChain.pushTrigger(et[k], ed[k]);
+			shPrevTrigV = trigV;
+			shPrevClockV = clockVExt;
+		}
+		yash::Pulse pulses[4];
+		lf398::Window win[4];
+		int np = shChain.advance(dt, pulses, 4);
+		for (int k = 0; k < np; k++) { win[k].a = pulses[k].a; win[k].b = pulses[k].b; }
 
 		float slewSec = params[SH_SLEW_PARAM].getValue() * volatility::kMaxSlewSec;
 		float slewCoef = (slewSec > 1e-4f) ? clamp(sampleTime / slewSec, 0.f, 1.f) : 1.f;
-		float droopCoef = sampleTime / volatility::kDroopTauSec;
 
 		for (int c = 0; c < shChannels; c++) {
 			float src = srcConnected ? inputs[SH_SRC_IN_INPUT].getPolyVoltage(c) : noise;
-			if (shTrigEdge)
-				shHeld[c] = src;
-			// The FET S&H leaks: held voltage creeps back toward 0 V.
-			if (droop)
-				shHeld[c] += (0.f - shHeld[c]) * droopCoef;
-			shSlewState[c] += slewCoef * (shHeld[c] - shSlewState[c]);
+			if (c >= shChannelsPrev)
+				shPrevSrc[c] = src;   // a channel just switched on has no earlier sample
+			float held = (float) shChip[c].step(shSpec, dt, shPrevSrc[c], src, win, np);
+			shPrevSrc[c] = src;
+			shSlewState[c] += slewCoef * (held - shSlewState[c]);
 			outputs[SH_OUT_OUTPUT].setVoltage(clamp(shSlewState[c], -12.f, 12.f), c);
 		}
+		shChannelsPrev = shChannels;
 		outputs[SH_OUT_OUTPUT].setChannels(shChannels);
 
 		// --- RND GATE: a coin flip on every shared clock edge -------------------
@@ -275,6 +381,9 @@ struct Volatility : Module {
 	json_t* dataToJson() override {
 		json_t* root = json_object();
 		json_object_set_new(root, "droop", json_boolean(droop));
+		json_object_set_new(root, "chipGrade", json_integer(chipGrade));
+		json_object_set_new(root, "droopDown", json_boolean(droopDown));
+		json_object_set_new(root, "yashOsc", json_boolean(yashOsc));
 		json_object_set_new(root, "toggleMode", json_boolean(toggleMode));
 		return root;
 	}
@@ -283,6 +392,13 @@ struct Volatility : Module {
 		json_t* j;
 		j = json_object_get(root, "droop");
 		if (j) droop = json_boolean_value(j);
+		j = json_object_get(root, "chipGrade");
+		if (j) chipGrade = json_integer_value(j) != 0 ? 1 : 0;
+		j = json_object_get(root, "droopDown");
+		if (j) droopDown = json_boolean_value(j);
+		j = json_object_get(root, "yashOsc");
+		if (j) yashOsc = json_boolean_value(j);
+		refreshChip();
 		j = json_object_get(root, "toggleMode");
 		if (j) toggleMode = json_boolean_value(j);
 	}
@@ -334,9 +450,24 @@ struct VolatilityWidget : ModuleWidget {
 		menu->addChild(new MenuSeparator);
 		menu->addChild(createMenuLabel("Volatility"));
 
-		menu->addChild(createBoolMenuItem("Sample & hold droop", "",
+		menu->addChild(createBoolMenuItem("Sample & hold droop (LF398 leakage)", "",
 			[=]() { return m->droop; },
-			[=](bool v) { m->droop = v; }));
+			[=](bool v) { m->droop = v; m->refreshChip(); }));
+
+		menu->addChild(createIndexSubmenuItem("Sample & hold chip",
+			{"LF398 typical", "LF398 worst case (datasheet maxima)"},
+			[=]() { return (size_t) m->chipGrade; },
+			[=](size_t i) { m->chipGrade = (int) i; m->refreshChip(); }));
+
+		menu->addChild(createIndexSubmenuItem("Droop direction",
+			{"Up (leakage into the hold capacitor)", "Down"},
+			[=]() { return (size_t) (m->droopDown ? 1 : 0); },
+			[=](size_t i) { m->droopDown = i == 1; m->refreshChip(); }));
+
+		menu->addChild(createIndexSubmenuItem("Sample & hold trigger when TRIG is empty",
+			{"Shared clock", "YASH oscillator (RATE is its pot)"},
+			[=]() { return (size_t) (m->yashOsc ? 1 : 0); },
+			[=](size_t i) { m->yashOsc = i == 1; }));
 
 		menu->addChild(createBoolMenuItem("Random gate: toggle mode", "",
 			[=]() { return m->toggleMode; },

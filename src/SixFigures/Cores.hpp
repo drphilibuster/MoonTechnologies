@@ -11,6 +11,7 @@
 #include <cmath>
 
 #include "Avalanche.hpp"
+#include "Schmitt.hpp"
 
 namespace sixfigures {
 
@@ -57,6 +58,13 @@ inline float avalancheSaw(float phase, float dt) {
 	float v = 2.f * (float)avalanche::charge(phase) - 1.f;
 	v -= polyblep(phase, dt);
 	return v;
+}
+
+/** The same saw with this cycle's strike drawn (Avalanche.hpp, `Strike`): the cycle is `theta`
+    long (phase runs 0..theta) and the charge curve is run `warp` times as fast, so the peak is the
+    voltage that cycle struck at. theta = warp = 1 is avalancheSaw(phase, dt) exactly. */
+inline float avalancheSaw(float phase, float dt, float theta, float warp) {
+	return avalanche::saw(phase, dt, theta, warp);
 }
 
 /** Bipolar band-limited ramp (rising sawtooth) from the same phase convention. */
@@ -106,9 +114,13 @@ struct Voice {
 	float lockEnv = 0.f;
 	bool locked = false;
 	dsp::PulseGenerator avalanchePulse;
+	avalanche::Strike strike;    // the avalanche core's per-cycle strike voltage (jitter)
+	cd40106::Osc schmitt;        // the 40106 core: the astable itself, not a phase
 
 	void reset() {
 		phase = 0.f;
+		strike.reset();
+		schmitt.reset();
 		tri.reset();
 		drift = 0.f;
 		loopFilter = 0.f;

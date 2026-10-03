@@ -83,6 +83,25 @@ legs, unchanged except for output-safety clamping to ±12 V.
   schematic (which simply clips hard against the supply once you overdrive
   it). When on, the sum is soft-limited with a `tanh` knee around ±11 V, the
   swing a real TL072 running from a ±12 V supply actually delivers.
+- **TL07x op-amps (datasheet: rails, slew, GBW, caps)** — off by default. Runs the
+  mixer's two stages and the multiples' followers as the TL072 the schematic names
+  (`src/OpAmp.hpp`, numbers in `docs/OpAmps.md`) and replaces the soft clip above:
+  the output stops where a TL07x on ±12 V stops, which depends on what it drives
+  (10.34 V from the mixer's first stage, whose 5 kΩ load is its own feedback
+  resistor in parallel with the second stage's input; 10.6 V into 10 kΩ; 10.8 V from
+  a follower into a high impedance), and not at ±12 V. The 27 pF and 47 pF
+  compensation caps are in, as poles at 590 kHz and 339 kHz, and the stages have the
+  datasheet's 5.25 MHz gain-bandwidth (the first stage's noise gain is 5, four 10 kΩ
+  inputs) and 20 V/µs slew: none of which is audible below the rail (the pass band is
+  flat to 0.1 dB at 20 kHz, tested), which is exactly the claim this page used to make
+  without being able to show it. INV OUT is the first stage's pin, OUT the second's.
+  The three legs of a multiple are three identical op-amps with one input and one
+  load, so they are solved once and fanned out.
+- **Output networks (100 Ω; mixer 10 µF) into 100 kΩ** — off by default. The
+  schematic's output RC: the mixer's OUT goes through 100 Ω and 10 µF, a DC blocker
+  with a 0.16 Hz corner into the assumed 100 kΩ input (so a mix of CV decays with
+  τ = 1 s, which is why this is off); each multiple leg has its 100 Ω in series,
+  dropping 0.1 % into 100 kΩ. Takes effect with the op-amp option.
 - **Multiples: passive-style loading droop** — off by default (both multiples
   are buffered, per the schematic). When on, each multiple's output sags
   about 1% per patched leg. This is the "a passive mult loads down as you
@@ -94,8 +113,11 @@ legs, unchanged except for output-safety clamping to ±12 V.
 
 - The mixer's HF compensation caps (27 pF, 47 pF across the two feedback
   resistors) and its output RC (100 Ω / 10 µF, primarily a DC blocker into
-  whatever follows) have no audible effect at audio rates and are not
-  modeled.
+  whatever follows) are in the model only with the TL07x option on (above); by
+  default the strips are ideal. The compensation values come from this page's own
+  earlier transcription of the schematic -- the board file itself is not in the
+  reference folder -- and the 100 kΩ the output sees is assumed. Input offset,
+  bias current and noise are not modelled.
 - The "Buffured Multiple 3x1:2" board's exact three-buffer-pair layout is not
   reproduced; MULTIPLES implements the more useful two-multiple, B-normalled
   arrangement the consolidated design calls for instead, using the same

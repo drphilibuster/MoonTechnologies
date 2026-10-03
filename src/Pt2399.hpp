@@ -24,6 +24,18 @@ namespace assumed {
     // Sign of the demodulator relative to the modulator's input (+1: the delayed
     // copy has the same polarity). Not determinable from the datasheet.
     static const double CHIP_POLARITY = 1.0;
+    // Pin 2 (REF) and the VCO. Both the datasheet and the measurements say the
+    // delay-control pin (6) is a current source held at REF, so the VCO current
+    // is REF / R and the clock follows REF. How much of the period that current
+    // sets is not on record at small R: the measured law (below) has a 29.7 ms
+    // intercept, and the part of it that is the chip's own series resistance in
+    // the pin-6 path (Valve Wizard draws "1k?", speculative) is the part REF
+    // can move. 1 kohm is the smallest value for which the documented pin-2
+    // modulation (REF 2.5 V -> 2 V, pin 6 grounded) moves the delay by
+    // milliseconds, and it is the only number anyone has drawn. ASSUMED.
+    static const double PIN6_INT_OHMS = 1000.0;
+    // The REF at which the delay law below was measured (5 V supply).
+    static const double LAW_VREF = 2.5;
 }
 
 /** A PT2399. Per the datasheet's block diagram: LPF1 into a comparator, a 1-bit
@@ -44,6 +56,17 @@ struct Pt2399 {
     // equations for the PT2399"): ms = 11.46 * kohm + 29.70. That fixes the bit
     // rate once the RAM length is known.
     static double delaySecondsFor(double rPin6) { return 1e-3 * (11.46 * rPin6 * 1e-3 + 29.70); }
+    // The same law with REF (pin 2) as an input: the part of the delay that is
+    // the VCO's ramp (11.46 ms per kohm of pin-6 path) scales as LAW_VREF / REF,
+    // because the current that ramps it is REF over that path; the rest does not
+    // move. At REF = LAW_VREF this is delaySecondsFor() exactly, whatever
+    // PIN6_INT_OHMS is. rPin6 is the external resistance only.
+    static double delaySecondsForVref(double rPin6, double vref,
+                                      double rInt = assumed::PIN6_INT_OHMS) {
+        double ramp = 11.46e-3 * (rPin6 + rInt) * 1e-3;
+        double fixed = 29.70e-3 - 11.46e-3 * rInt * 1e-3;
+        return fixed + ramp * (assumed::LAW_VREF / vref);
+    }
     // Clock frequency, same source: ms = 683.21 / MHz + 0.08.
     static double clockHzFor(double rPin6) { return 683.21 / (delaySecondsFor(rPin6) * 1e3 - 0.08) * 1e6; }
 
@@ -60,6 +83,7 @@ struct Pt2399 {
     uint32_t w = 0;
     Adm mod, dem;
     double bitRate = 0.0;
+    double tauInt = kTauInt;                    // seconds, set by setIntegrator()
     float alpha = 0.01f, kSyl = 0.01f;
     float vsMin = (float)assumed::ADM_VS_MIN, vsMax = (float)assumed::ADM_VS_MAX;
     float clipV = (float)assumed::CHIP_CLIP;
@@ -79,10 +103,25 @@ struct Pt2399 {
     void setSampleRate(double fs) { fsAudio = fs; }
 
     void setPin6(double rPin6) { setBitRate((double)kBits / delaySecondsFor(rPin6)); }
+    /** Pin 6 through `rPin6` with pin 2 at `vref` volts (see delaySecondsForVref).
+        REF is also the analog ground of every stage in the block diagram -- the
+        LPF, comparator and both integrators all return to it -- so it is
+        *signals* that are relative to it and this model, which works relative
+        to REF, does not move with it; the clock is the one place it matters. */
+    void setPin6Vref(double rPin6, double vref) {
+        setBitRate((double)kBits / delaySecondsForVref(rPin6, vref));
+    }
+    /** The integrators' time constant when it is not the Amortization one:
+        the chip's internal resistor times the capacitor across pins 9-10 and
+        11-12. The default is the one the other modules were fitted with. */
+    void setIntegrator(double rInternal, double cFarads) {
+        tauInt = rInternal * cFarads;
+        bitRate = 0.0;                          // force setBitRate to recompute alpha
+    }
     void setBitRate(double fs) {
         if (fs == bitRate) return;
         bitRate = fs;
-        alpha = (float)(1.0 - std::exp(-1.0 / (fs * kTauInt)));
+        alpha = (float)(1.0 - std::exp(-1.0 / (fs * tauInt)));
         kSyl = (float)(1.0 - std::exp(-1.0 / (fs * assumed::ADM_TAU_SYL)));
     }
     double delaySeconds() const { return (double)kBits / bitRate; }
