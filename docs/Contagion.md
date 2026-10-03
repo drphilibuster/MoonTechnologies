@@ -1,6 +1,6 @@
 # Contagion — Virus C synthesizer
 
-**FORM 8300 — the report filed when cash moves. Contagion is what spreads.** 63 HP.
+**FORM 8300 — the report filed when cash moves. Contagion is what spreads.** 37 HP.
 
 An Access Virus C, running its own operating system — all of it. The Virus has
 two processors. The sound comes from a Motorola DSP56362; everything else comes
@@ -75,7 +75,7 @@ MIDI a keyboard would send. Nothing reaches the firmware but those bytes.
 * **PRT -/+**, **PRM </>**, **VAL -/+**, **ARP**, **RND**: a gate presses that button, and
   presses it once per rising edge: a press is 45 ms down and 45 ms up, because the firmware's key scan needs that (measured: 10 or 20 ms gaps lose presses).
 
-Outputs **1–3** are the Virus's three stereo pairs; the patch decides which
+Outputs **1–3**, two abreast in the OUT rail at the right edge, are the Virus's three stereo pairs; the patch decides which
 pair a part plays on (normally 1). **IN L/R** are its two audio inputs (for the
 vocoder, the input-follower filters and so on). A signal only into IN L is
 copied to IN R.
@@ -113,21 +113,25 @@ control shows a highlight, and the pointer says how it works: up/down arrows ove
 hold and drag, a hand over a word you click. Right-click any of them for the usual parameter
 menu (typed entry, MIDI-Map, reset); Ctrl-Z undoes them like any knob.
 
+The two screens are the unit's LCD **redrawn**, not shown dot for dot: what its character ROM
+prints as letters is set in the display's own type, and only the glyphs that are not letters (the
+eight the firmware defines, and the ROM's symbols) are drawn from their dots. That is what lets
+each screen be a third of the width a dot-for-dot copy needs.
+
 * **PRESET** is the last program screen the unit showed, kept while its LCD is busy with a knob
   or a menu. **Click it** for the list of sounds: the bank, then sixteen at a time, each named as
   the unit's display names it (the same list as the context menu's **Presets**). Banks A and B
   are the unit's battery RAM, so a sound you stored shows under its own name; C and D are the
   factory copies of A and B, and E to H are the OS image's other banks. The names are read from
   your own OS image and battery RAM when the list opens.
-* Beside it, three **step pairs**, up over down, named underneath: **PRESET** steps to the next or
+* Under it, three **step pairs**, up over down, each named beside it: **PRESET** steps to the next or
   previous of all 1024 sounds, wrapping from bank H back to A. It sends MIDI (bank select, then
   program change, on the MIDI channel set in the context menu), so it works from any screen and
   starts from whatever the display shows. **CAT** and **IN CAT** are the unit's two-handed
   category gestures (below).
-* **PARAMETER** is the unit's 2 x 16 LCD as it is now, with its step pairs: **PARAM** (PARAMETER
+* **PARAMETER** is the unit's 2 x 16 LCD as it is now, with its step pairs under it: **PARAM** (PARAMETER
   </>: in play mode, bank), **VALUE** (VALUE -/+: in play mode, program) and **PAGE** (below).
-* Under PRESET, **TRANSPOSE**: its step pair (TRANS -/+) and the unit's five octave lamps.
-* Under PARAMETER, **BPM**: hold it and drag up or down (Ctrl finely, Shift coarsely). It sets the
+* In PARAMETER's caption line, **BPM**: hold it and drag up or down (Ctrl finely, Shift coarsely). It sets the
   sound's clock tempo, 63 to 190. The unit keeps it in a menu (EDIT, then CLOCK) and has no knob
   for it; the module sets it with a SysEx parameter change to the edit buffer, the form the
   firmware answers, and it follows the tempo of whatever sound is loaded. The lamp beside it blinks
@@ -141,41 +145,48 @@ menu (typed entry, MIDI-Map, reset); Ctrl-Z undoes them like any knob.
   unit's key until its LEDs agree, then checks; if the unit will not go there the line returns to
   what the unit shows. Load a program and the lines follow it.
 * The names **LFO**, **OSC** and **EFFECT** are their section's **EDIT** key: click one to press
-  it. It lights while the unit's EDIT lamp for that section does. The delay/reverb, arpeggiator,
-  filter and program EDITs are buttons on the face.
+  it. It lights while the unit's EDIT lamp for that section does. **FILT 1** and **FILT 2** are the
+  filter section's **SEL 1** and **SEL 2** (which filter RESO and ENV AMT act on), lit as theirs are.
+* The OSC line ends in **SYNC** and **3 ON** (OSC 3 ON), the LFO line in the two **RATE** lamps,
+  which follow LFO 1 and LFO 2/3.
+* Under both screens, the unit's other keys, as the words their LEDs light: **SINGLE**, **MULTI**,
+  **MULTI+SGL** (below), **EDIT**, **GLOBAL** (global / multi edit), **UNDO**, **STORE**, and under
+  them **ARP ON**, **ARP EDIT**, **DLY/REV EDIT**, **FILT EDIT** and **RANDOM** (**UNDO** takes it
+  back). Click a word to press its key; it is held while the mouse is, like the unit's.
 * **AMOUNT** lists what each LFO and the modulation matrix are routed to, lit while the amount is
   not zero and flashing while selected. **Click the list** to press the unit's AMOUNT key, which
   steps through the selected LFO's destinations; set the amount with **VALUE** or **SOFT 2/VALUE**.
+* Under AMOUNT, **TRANSPOSE**: its step pair (TRANS -/+) and the unit's five octave lamps.
 
 A step pair's top half is one press up, its bottom half one press down; hold either to repeat, at
 about eleven presses a second. The pairs bind the same parameters the panel's step buttons did,
-so patches made before they moved are unchanged.
+so patches made before they moved are unchanged. The keys on the glass are the same: each binds
+the parameter its panel button did.
 
 ### On the face
+
+The face is the unit's 32 knobs, eleven to a row, and **PART**. Two take the manual's shorter
+names to keep the row narrow: **TIME** is the delay/reverb time and **WAVE/PW** the wave select /
+pulse width; their tooltips say so in full.
 
 **PART** stays a step pair on the face (PART -/+; both together call up the demo song, which this
 OS image does not have: the unit shows "NO DEMOSONG but 1024 Sounds!" for a moment, so there is no
 control for it). Each click is one press of the unit's key.
-
-**Buttons**: **SYNC**, **OSC 3 ON**, **DLY/REV** edit, **ARP ON**, **ARP EDIT**, **EDIT**,
-**GLOBAL** (global / multi edit), **RANDOM** (**UNDO** takes it back), **UNDO**, **STORE**,
-**MULTI**, **SINGLE**, the filter **EDIT** and **SEL 1 / SEL 2** (which filter RESO and ENV AMT
-act on). The two **RATE** lamps follow LFO 1 and LFO 2/3.
 
 ### Gestures that need two hands
 
 **Gestures that need two keys at once, or one held while another is pressed**, which a mouse cannot
 do, are controls that do it for you:
 
-* **MULTI+SINGLE**, on the face, presses MULTI and SINGLE together, which puts the unit in
+* **MULTI+SGL**, on the glass, presses MULTI and SINGLE together, which puts the unit in
   Multi-Single mode (both LEDs lit). Pressed again it presses SINGLE alone, which leaves it, as the
   unit does.
-* **CAT**, the step pair beside PRESET. A click holds SINGLE and presses PARAMETER once, which
+* **CAT**, the step pair next to PRESET. A click holds SINGLE and presses PARAMETER once, which
   steps the category (Off, Acid, Arpeggiator, Bass, ...), and keeps SINGLE held for a second and a
   half after the last click so the category stays on the display; the category is kept when SINGLE
   is let go. **IN CAT** is the same with VALUE: with SINGLE held, VALUE steps to the next or
   previous sound *in the chosen category*, skipping the rest.
-* **PAGE**, beside PARAMETER, scrolls the parameters a group at a time: a click up holds
+* **PAGE**, under PARAMETER, scrolls the parameters a group at a time: a click up holds
   PARAMETER > and presses PARAMETER <, which jumps forward; a click down does the reverse. (The
   unit's own law is not a mirror: forward from CLOCK passes the whole COMMON group, back lands on
   the start of it.)

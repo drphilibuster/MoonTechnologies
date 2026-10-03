@@ -60,37 +60,37 @@ spectrum and a warped field, driven by audio and CV.
 |---|---|---|---|
 | **[Tax Bracket](docs/TaxBracket.md)**<br>R2R DAC & mixer | **[Racketeer](docs/Racketeer.md)**<br>noise voice | **[Gross](docs/Gross.md)**<br>distortion | **[Amortization](docs/Amortization.md)**<br>triple-PT2399 reverb |
 
-| <img src="tools/previews/Apportionment.png" width="218"> | <img src="tools/previews/Contagion.png" width="529"> |
-|---|---|
-| **[Apportionment](docs/Apportionment.md)**<br>DP/4 parallel effects | **[Contagion](docs/Contagion.md)**<br>Virus C synthesizer |
+| <img src="tools/previews/Apportionment.png" width="218"> | <img src="tools/previews/Contagion.png" width="311"> | <img src="tools/previews/NordicBanking.png" width="302"> |
+|---|---|---|
+| **[Apportionment](docs/Apportionment.md)**<br>DP/4 parallel effects | **[Contagion](docs/Contagion.md)**<br>Virus C synthesizer | **[Nordic Banking](docs/NordicBanking.md)**<br>Nord Lead 2X synthesizer |
 
-| <img src="tools/previews/NordicBanking.png" width="302"> | <img src="tools/previews/Rebate.png" width="84"> | <img src="tools/previews/Depreciation.png" width="151"> | <img src="tools/previews/Repossession.png" width="176"> |
+| <img src="tools/previews/Rebate.png" width="84"> | <img src="tools/previews/Depreciation.png" width="151"> | <img src="tools/previews/Repossession.png" width="176"> | <img src="tools/previews/Collusion.png" width="143"> |
 |---|---|---|---|
-| **[Nordic Banking](docs/NordicBanking.md)**<br>Nord Lead 2X synthesizer | **[Rebate](docs/Rebate.md)**<br>MIDIverb digital reverb | **[Depreciation](docs/Depreciation.md)**<br>PCM 70 digital reverb | **[Repossession](docs/Repossession.md)**<br>video sampler |
+| **[Rebate](docs/Rebate.md)**<br>MIDIverb digital reverb | **[Depreciation](docs/Depreciation.md)**<br>PCM 70 digital reverb | **[Repossession](docs/Repossession.md)**<br>video sampler | **[Collusion](docs/Collusion.md)**<br>coupled LFO swarm |
 
-| <img src="tools/previews/Collusion.png" width="143"> | <img src="tools/previews/Reconciliation.png" width="92"> | <img src="tools/previews/Dependents.png" width="118"> | <img src="tools/previews/Calculation.png" width="76"> |
+| <img src="tools/previews/Reconciliation.png" width="92"> | <img src="tools/previews/Dependents.png" width="118"> | <img src="tools/previews/Calculation.png" width="76"> | <img src="tools/previews/Ledger.png" width="294"> |
 |---|---|---|---|
-| **[Collusion](docs/Collusion.md)**<br>coupled LFO swarm | **[Reconciliation](docs/Reconciliation.md)**<br>just-intonation quantizer | **[Dependents](docs/Dependents.md)**<br>chord waveshaper | **[Calculation](docs/Calculation.md)**<br>phrase counter |
+| **[Reconciliation](docs/Reconciliation.md)**<br>just-intonation quantizer | **[Dependents](docs/Dependents.md)**<br>chord waveshaper | **[Calculation](docs/Calculation.md)**<br>phrase counter | **[Ledger](docs/Ledger.md)**<br>generative sequencer |
 
-| <img src="tools/previews/Ledger.png" width="294"> | <img src="tools/previews/SixFigures.png" width="202"> | <img src="tools/previews/Garnishment.png" width="143"> | <img src="tools/previews/Consolidation.png" width="118"> |
+| <img src="tools/previews/SixFigures.png" width="202"> | <img src="tools/previews/Garnishment.png" width="143"> | <img src="tools/previews/Consolidation.png" width="118"> | <img src="tools/previews/Bailout.png" width="210"> |
 |---|---|---|---|
-| **[Ledger](docs/Ledger.md)**<br>generative sequencer | **[Six Figures](docs/SixFigures.md)**<br>oscillator bank | **[Garnishment](docs/Garnishment.md)**<br>VCA / low-pass gate | **[Consolidation](docs/Consolidation.md)**<br>mixer & multiples |
+| **[Six Figures](docs/SixFigures.md)**<br>oscillator bank | **[Garnishment](docs/Garnishment.md)**<br>VCA / low-pass gate | **[Consolidation](docs/Consolidation.md)**<br>mixer & multiples | **[Bailout](docs/Bailout.md)**<br>8-channel mixer & mults |
 
-| <img src="tools/previews/Bailout.png" width="210"> | <img src="tools/previews/Projection.png" width="101"> | <img src="tools/previews/Transmittal.png" width="84"> | <img src="tools/previews/Installment.png" width="134"> |
+| <img src="tools/previews/Projection.png" width="101"> | <img src="tools/previews/Transmittal.png" width="84"> | <img src="tools/previews/Installment.png" width="134"> | <img src="tools/previews/Volatility.png" width="76"> |
 |---|---|---|---|
-| **[Bailout](docs/Bailout.md)**<br>8-channel mixer & mults | **[Projection](docs/Projection.md)**<br>video generator | **[Transmittal](docs/Transmittal.md)**<br>video output | **[Installment](docs/Installment.md)**<br>function generator |
+| **[Projection](docs/Projection.md)**<br>video generator | **[Transmittal](docs/Transmittal.md)**<br>video output | **[Installment](docs/Installment.md)**<br>function generator | **[Volatility](docs/Volatility.md)**<br>noise, S&H & random |
 
-| <img src="tools/previews/Volatility.png" width="76"> | <img src="tools/previews/Deduction.png" width="84"> | <img src="tools/previews/AuditLogic.png" width="134"> | <img src="tools/previews/Kickback.png" width="252"> |
+| <img src="tools/previews/Deduction.png" width="84"> | <img src="tools/previews/AuditLogic.png" width="134"> | <img src="tools/previews/Kickback.png" width="252"> | <img src="tools/previews/PaymentSchedule.png" width="185"> |
 |---|---|---|---|
-| **[Volatility](docs/Volatility.md)**<br>noise, S&H & random | **[Deduction](docs/Deduction.md)**<br>multimode filter | **[Audit Logic](docs/AuditLogic.md)**<br>logic, switches & divider | **[Kickback](docs/Kickback.md)**<br>drum machine |
+| **[Deduction](docs/Deduction.md)**<br>multimode filter | **[Audit Logic](docs/AuditLogic.md)**<br>logic, switches & divider | **[Kickback](docs/Kickback.md)**<br>drum machine | **[Payment Schedule](docs/PaymentSchedule.md)**<br>8-step sequencer |
 
-| <img src="tools/previews/PaymentSchedule.png" width="185"> | <img src="tools/previews/SignHere.png" width="143"> | <img src="tools/previews/Diversified.png" width="118"> | <img src="tools/previews/Toll.png" width="84"> |
+| <img src="tools/previews/SignHere.png" width="143"> | <img src="tools/previews/Diversified.png" width="118"> | <img src="tools/previews/Toll.png" width="84"> | <img src="tools/previews/Obfuscation.png" width="101"> |
 |---|---|---|---|
-| **[Payment Schedule](docs/PaymentSchedule.md)**<br>8-step sequencer | **[Sign Here](docs/SignHere.md)**<br>controllers | **[Diversified](docs/Diversified.md)**<br>multi-effects | **[Toll](docs/Toll.md)**<br>struck-metal voice |
+| **[Sign Here](docs/SignHere.md)**<br>controllers | **[Diversified](docs/Diversified.md)**<br>multi-effects | **[Toll](docs/Toll.md)**<br>struck-metal voice | **[Obfuscation](docs/Obfuscation.md)**<br>dispersion filter |
 
-| <img src="tools/previews/Obfuscation.png" width="101"> | <img src="tools/previews/ScheduleA.png" width="118"> |
-|---|---|
-| **[Obfuscation](docs/Obfuscation.md)**<br>dispersion filter | **[Schedule A](docs/ScheduleA.md)**<br>Repossession expander |
+| <img src="tools/previews/ScheduleA.png" width="118"> |
+|---|
+| **[Schedule A](docs/ScheduleA.md)**<br>Repossession expander |
 
 ## Built for this plugin
 
@@ -178,7 +178,7 @@ An eight-track generative sequencer. Each track's melody is grown from a seed, n
 
 ESP effect units under the DP/4's real operating system and DSP code -- every algorithm, preset and Config is Ensoniq's -- on an emulated 68B03 and four ES5510s. The DP/4's own front panel is here button for button, and the thing the hardware hid in its menus is on the panel: every Config parameter that routes the four units (source count, A-B and C-D serial/parallel/feedback, AB into CD, amounts, mono/stereo inputs, output selects) is a control, and moving one makes the module work the Config pages for you. Per-unit stereo taps for patching the units into the rest of the rack.
 
-### [Contagion](docs/Contagion.md) — **Virus C synthesizer** · 63 HP · *Synth voice, Polyphonic, Effect, Hardware clone*
+### [Contagion](docs/Contagion.md) — **Virus C synthesizer** · 37 HP · *Synth voice, Polyphonic, Effect, Hardware clone*
 
 *An Access Virus C, running all of its own firmware. OS image not included.*
 
