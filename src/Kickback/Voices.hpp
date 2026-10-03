@@ -37,6 +37,7 @@
 
 #include "../Drum.hpp"
 #include "Bridge808.hpp"
+#include "Smurf.hpp"
 #include "AvalancheNoise.hpp"
 
 namespace kickback {
@@ -87,10 +88,8 @@ struct Kick {
 	// BRIDGE: the TR-808 bass drum circuit (Bridge808.hpp)
 	bd808::Bridge808 b808;
 	double bdGate = 1.0, bdGateR = 1.0;   // extra decay, only if DECAY asks for less than the circuit can ring
-	// SMURF
-	SquareOsc osc;
-	OnePole lp, lp2;
-	Decay smurfEnv;
+	// SMURF: the Smurf Drum's supply-starved relaxation oscillator (Smurf.hpp)
+	smurf::Smurf smurfOsc;
 	// SWEEP. The pitch is f0 + A1*e1 + A2*e2, two exponentials in hertz (an RC
 	// discharge is exponential in volts, and a VCO's pitch is linear in them), so
 	// the spike and the dive are separate decays rather than one curve.
@@ -112,11 +111,11 @@ struct Kick {
 	Kick() : attack(0x1CE7A11u) {}
 
 	void setRate(float fs_) {
-		fs = fs_; dc.setRate(fs_); b808.setRate(fs_); attack.setRate(fs_);
+		fs = fs_; dc.setRate(fs_); b808.setRate(fs_); smurfOsc.setRate(fs_); attack.setRate(fs_);
 	}
 	void reset() {
-		b808.reset(); bdGate = 1.0; osc.reset(); lp.reset(); lp2.reset();
-		smurfEnv.reset(); strike.reset(); attack.reset(); dc.reset();
+		b808.reset(); bdGate = 1.0; smurfOsc.reset();
+		strike.reset(); attack.reset(); dc.reset();
 		freqC.clear(); t60C.clear();
 	}
 
@@ -125,6 +124,18 @@ struct Kick {
 	                     float decay, float bend, float colour) {
 		float f0 = transpose(freqC.get(tune, [](float k) { return expMap(k, 32.f, 190.f); }), volts);
 		float t60 = t60C.get(decay, [](float k) { return expMap(k, 0.05f, 1.8f); });
+		// SMURF's parts, from the module's controls. TUNE is the 1 M PITCH pot (extended downward so the
+		// module's range reaches 32 Hz; the sheet's 1 M bottoms out near 100 Hz); the pulse period is
+		// ~0.88 * (R + 22 k) * 10 nF. DECAY is the hold capacitor, the continuous form of the sheet's
+		// switched second 10 uF, here scaled together with the coupling cap in front of it (a bigger envelope
+		// generator: the peak supply stays 6.3 V and every time constant stretches in proportion; the note
+		// ends when the supply falls below ~0.66 V, ~85 ms at 10 uF). BEND is the 1 k in front of the LED, the supply's main load: 1 k
+		// on the sheet at BEND ~0.67, a gentler 4.7 k at 0, a harder 470 ohm at 1.
+		double smRp = 1.0 / ((double)f0 * 10e-9 * 0.88) - 22e3;
+		if (smRp < 100e3) smRp = 100e3; else if (smRp > 8e6) smRp = 8e6;
+		double smCh = 10e-6 * ((double)t60 / 0.085);
+		if (smCh < 2e-6) smCh = 2e-6; else if (smCh > 400e-6) smCh = 400e-6;
+		double smRl = 4700.0 * std::pow(0.1, (double)bend);
 
 		if (hit) {
 			// A kick beater is soft; DRIVE hardens it, which is what the
@@ -132,7 +143,10 @@ struct Kick {
 			// SWEEP's spike is already a click, so its beater is the hard one.
 			strike.trigger(vel, (mode == 2 ? 0.45f : 0.18f) + 0.42f * colour, fs);
 			attack.strike(vel * (0.5f + 0.4f * colour));
-			smurfEnv.strike(vel);
+			if (mode == 1) {
+				// The sheet was tested with a 13.5 V trigger; velocity scales it.
+				smurfOsc.trigger(13.5 * std::fmin((double)vel, 1.6), smCh, smRp, smCh);
+			}
 			if (mode == 0) {
 				// Accent is the trigger voltage: 4-14 V on the machine, and here the module's
 				// velocity, 0..2, spread over 0..14. BEND is how long the envelope generator
@@ -158,7 +172,7 @@ struct Kick {
 				swAmp = vel;
 			}
 		}
-		float x = strike.next();
+		strike.next();          // advances the contact pulse; SWEEP reads its click() below
 
 		float y;
 		if (mode == 0) {
@@ -178,22 +192,9 @@ struct Kick {
 			y = (float)(b808.process(lam, k) * bdGate) * 0.30f;
 		}
 		else if (mode == 1) {
-			float env = smurfEnv.process(t60, fs);
-			// The astable's supply *is* the envelope, so the pitch sags with
-			// it -- BEND is how much of that sag is let through, which is the
-			// sheet's own switched cap on the upper half of the circuit.
-			float f = f0 * 1.8f * std::exp2f(bend * (1.f - env) * -1.9f);
-			float sq = osc.process(f, fs);
-			// Rounded hard, and twice, tracking the oscillator's own pitch. A
-			// two-transistor astable is slew-limited by the very RC pair that
-			// sets its period and is nowhere near a hard square -- and leaving
-			// it square costs the voice its beater, because a square's
-			// harmonics run past 9 kHz for the whole note and mask any click
-			// sitting on top of them.
-			float r1 = lp.lp(sq, poleG(std::fmin(f * 2.2f, 1500.f), fs));
-			y = lp2.lp(r1, poleG(std::fmin(f * 3.2f, 2200.f), fs)) * env * 2.4f;
-			// The strike pulse still lands, so SMURF has an edge too.
-			y += x * 0.5f;
+			// The pulses across the 380 ohm load, scaled so the full 6.3 V supply of a 13.5 V trigger is
+			// about unity before DRIVE.
+			y = (float)(smurfOsc.process(smRp, smCh, smRl) * (1.0 / 6.3));
 		}
 		else {
 			float f = f0 + swA1 * swE1 + swA2 * swE2;
@@ -217,12 +218,12 @@ struct Kick {
 		// The beater, heard directly. A kick's click is the one everybody
 		// reaches for the moment it is missing -- it is what says the head was
 		// hit rather than that an oscillator was switched on.
-		if (mode != 0) y += strike.click() * (1.4f + 2.0f * colour) * (mode == 2 ? 0.5f : 1.f);
-		if (mode != 0) y += attack.process(0.15f + 0.5f * colour, 1.8f + 1.8f * colour) * (mode == 2 ? 0.6f : 1.f);
+		if (mode == 2) y += strike.click() * (1.4f + 2.0f * colour) * 0.5f;
+		if (mode == 2) y += attack.process(0.15f + 0.5f * colour, 1.8f + 1.8f * colour) * 0.6f;
 		// Trimmed per model: a starved astable runs a good deal hotter than a
 		// ringing filter, and one number for all would make the switch a
 		// volume control.
-		return dc.process(y * (mode == 2 ? 0.850f : mode ? 0.310f : 0.484f)) * 5.f;
+		return dc.process(y * (mode == 2 ? 0.850f : mode ? 1.300f : 0.484f)) * 5.f;
 	}
 };
 

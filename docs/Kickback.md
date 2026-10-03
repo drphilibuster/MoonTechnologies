@@ -177,10 +177,41 @@ the half-cycles where Vcomm goes negative run at 57-58 Hz against 49 for the oth
 Fig. 11 (58 Hz settling to 49.5 over ~100 ms) is therefore a loud note, and the module reproduces
 that behaviour only on a loud one. The module's maximum ACCENT reaches only the start of it.
 
-*Smurf* is the "Smurf Drum" half of `SmurfDrum_BassDrumish.jpg`: a
-two-transistor astable (the 1M PITCH pot, 10 k/22 k cross-feedback, 0.01 µF cap)
-running off the trigger's own decaying envelope rather than a rail, so loudness
-and pitch sag together — the "zippy splat" its notes describe. *Sweep* is not a
+*Smurf* is the "Smurf Drum" half of `SmurfDrum_BassDrumish.jpg`, and it is stranger than a kick:
+a complementary-pair relaxation oscillator (a 2N3906 into a 380 Ω load, a 2N3904 driving its base, a
+0.01 µF coupling cap to a node that recharges through the 1 M PITCH pot) whose **supply is the envelope**.
+The trigger charges a 10 µF hold cap through a coupling cap and two diodes, so the supply peaks at
+about 6.3 V for a 13.5 V trigger, and the oscillator is powered by nothing else. The sheet's own notes:
+"power source replaced by envelope generator output to provide pitch and amplitude envelopes for
+oscillators by starving", and "neither sounds like a drum really. Smurf drum sounds like a zippy splat."
+
+It is a train of narrow pulses, not a tone. The supply stepping up finds the timing node at 0 V, which
+charges to the threshold through the pitch resistor: the pair fires once at the full supply about
+0.75 ms later (the hit). It then fires every ~0.9 × (R + 22 k) × 10 nF, each pulse as tall as the supply at
+that moment and ~370 µs wide, so the heights fall with the envelope (3.3 V, 2.2, 1.7, 1.45 … at 1 M).
+Near 0.7 V the pair can barely fire: the pulses narrow to ~60 µs and come faster, the "zip", and stop.
+
+**TUNE** is the PITCH pot, extended downward so the module's range reaches 32 Hz. **DECAY** is the hold
+capacitor (the sheet's switch adds a second 10 µF), scaled together with the coupling cap in front of it
+so the peak supply stays 6.3 V and every time constant stretches in proportion; the note ends when
+the supply falls below the pair's cutoff. **BEND** is the 1 k resistor in front of the LED, the supply's
+main load: the sheet's 1 k at about 0.67, a gentler 4.7 k at 0, a harder 470 Ω at 1. A trigger's velocity
+scales its voltage (13.5 V at 1.0).
+
+*Approximation, and what was checked.* This is fitted to a transistor-level simulation of the whole
+sheet (the nodal solver with a PNP added, the transistors from their datasheets: 2N3904 hFE ≈ 220
+typical and 2N3906 hFE 100–300, Vbe about 0.65 V at 1 mA, and a 1N4148-class diode, 0.69 V at 10 mA),
+not the simulation itself, because the circuit sits on the edge between latching and oscillating: held
+by a stiff supply it latches on, and its tail depends on part gain (3 to 28 pulses in the first 90 ms
+across the datasheet's hFE spread). The first pulses do not move, and the model agrees with the
+simulation to about 7% on their times and 10% on their heights at the nominal setting, and 10% at a
+300 kΩ pitch; at a 3 MΩ pitch the first interval runs about 25% short. The LED is assumed a generic red
+one, the two diodes in the envelope a 1N4148, and the transistors are the sheet's own note (2N3904 /
+2N3906). The previous SMURF was a symmetric square wave under a fixed sweep, which is not what this
+circuit does. Its start also used to depend on where the oscillator had been left; it now starts from the
+same state every time.
+
+*Sweep* is not a
 circuit from the folder but the archetype the other two are not: a sine
 oscillator that restarts on the same phase at every strike, under a pitch
 envelope in two stages — a spike of about six times the tuned pitch lasting three
@@ -194,16 +225,11 @@ its design is copied.
 
 They share controls because they answer the same question three ways: a ringing
 filter, a starved oscillator and a swept one all make a bass drum, and which one a
-patch wants is a switch, not three columns of panel. **TUNE** 32–190 Hz. **BEND** is the
-pitch dive, and on the Smurf model it is the sheet's own switched cap on the
-upper half of the circuit; it also sets how hard the transistor stage is driven,
+patch wants is a switch, not three columns of panel. **TUNE** 32–190 Hz. **BEND** is
+the one control each circuit has to spare, so it means a different thing on each: how long the
+envelope generator holds Q43 on (Bridge), how hard the supply's main load pulls it down (Smurf), and
+the depth of the pitch dive (Sweep). On all three it also sets how hard the output stage is driven,
 since MODEL has taken the character knob.
-
-*Approximation:* the astable is rounded off by two poles that track its own
-pitch, rather than left as a hard square. A two-transistor astable is
-slew-limited by the very RC pair that sets its period, and leaving it square
-costs the voice its beater — a square's harmonics run past 9 kHz for the whole
-note and mask any click sitting on them.
 
 ### SNARE — three circuits under one selector
 

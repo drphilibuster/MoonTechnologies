@@ -10,7 +10,7 @@ CXX ?= c++
 CXXFLAGS := -std=c++11 -O2 -Wall -Wextra -g
 SAN := -fsanitize=address,undefined -fno-omit-frame-pointer
 
-CORE := ../../src/Drum.hpp ../../src/Kickback/Voices.hpp ../../src/Kickback/Bridge808.hpp \
+CORE := ../../src/Drum.hpp ../../src/Kickback/Voices.hpp ../../src/Kickback/Bridge808.hpp ../../src/Kickback/Smurf.hpp \
         ../../src/Kickback/Payroll.hpp ../../src/DspCache.hpp \
         ../../src/Kickback/AvalancheNoise.hpp ../../src/Mna.hpp
 

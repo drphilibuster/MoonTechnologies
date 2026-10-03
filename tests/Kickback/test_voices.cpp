@@ -364,7 +364,12 @@ static void transient(float fs) {
 		struct Def { int v; float tune, decay, bend, colour; const char* what; };
 		static const Def defs[] = {
 			{ 0, 0.40f, 0.50f, 0.60f, 0.55f, "KICK bridge at defaults" },
-			{ 1, 0.40f, 0.50f, 0.60f, 0.55f, "KICK smurf at defaults" },
+			// KICK smurf is not in this table on purpose. This test exists because the mode-bank voices "sounded
+			// like bass oscillators"; SMURF is a relaxation-oscillator pulse train, every pulse of which has
+			// the same sharp edges, so it has no onset to find an order of magnitude over its tail -- the
+			// sheet itself says "neither sounds like a drum really". What does define its hit (the start-up
+			// firing at the full supply, a train whose heights follow the supply down) is asserted in
+			// smurfKick() below.
 			{ 6, 0.42f, 0.55f, 0.55f, 0.30f, "TOM I at defaults" },
 			{ 7, 0.40f, 0.50f, 0.55f, 0.42f, "TOM II at defaults" },
 			{ 8, 0.38f, 0.45f, 0.55f, 0.55f, "TOM III at defaults" },
@@ -1441,6 +1446,100 @@ static void bridgeKick() {
 }
 
 
+// ---------------------------------------------------------------------------
+// 11: SMURF is the Smurf Drum -- a supply-starved relaxation oscillator
+//
+// (a) The pair fires once at the full supply a moment after the trigger (the hit), then settles to a train
+//     of pulses at about the tuned rate whose heights follow the supply down.
+// (b) It starts from the same state every time: a strike on silence is the same strike, whatever the last
+//     one left behind. (The earlier SMURF free-ran its oscillator, so the first millisecond differed.)
+// (c) It ends: the pair stops firing when the supply falls below its cutoff.
+// ---------------------------------------------------------------------------
+struct PulseRec { float t, h; };
+static std::vector<PulseRec> findPulses(const std::vector<float>& y, float fs, float floorV) {
+	std::vector<PulseRec> out;
+	bool in = false; size_t st = 0; float pk = 0.f;
+	for (size_t i = 1; i < y.size(); i++) {
+		if (!in && y[i] > floorV) { in = true; st = i; pk = y[i]; }
+		else if (in) {
+			if (y[i] > pk) pk = y[i];
+			if (y[i] < 0.4f * floorV) { in = false; out.push_back({ (float)st / fs * 1000.f, pk }); }
+		}
+	}
+	return out;
+}
+
+static void smurfKick() {
+	const float fs = 48000.f;
+	char d[240];
+
+	// (a) the hit, the rate, and the heights. DECAY 0.148 is a 10 uF hold cap, the sheet's own.
+	const float tunes[] = { 0.1f, 0.4f, 0.9f };
+	for (int ti = 0; ti < 3; ti++) {
+		float tune = tunes[ti], f0 = expMap(tune, 32.f, 190.f);
+		std::vector<float> y((size_t)(1.5f * fs));
+		Kick k; k.setRate(fs); k.reset();
+		for (size_t i = 0; i < y.size(); i++) y[i] = k.process(i == 0, 1.f, 1, tune, 0.f, 0.148f, 0.6f, 0.55f);
+		float pkAll = 0.f; for (float v : y) pkAll = std::fmax(pkAll, std::fabs(v));
+		std::vector<PulseRec> p = findPulses(y, fs, 0.15f * pkAll);
+		checks++;
+		if (p.size() < 6) { snprintf(d, sizeof d, "tune %.0f Hz: only %zu pulses", f0, p.size()); fail("smurf train", d); continue; }
+		// the hit: first pulse inside 3 ms, taller than the one after it
+		checks++;
+		if (p[0].t > 3.5f || p[0].h < 1.1f * p[1].h) {
+			snprintf(d, sizeof d, "tune %.0f Hz: first pulse at %.2f ms, %.2f V against %.2f V next -- no start-up firing", f0, p[0].t, p[0].h, p[1].h);
+			fail("smurf hit", d);
+		}
+		// the rate: mean pulse spacing over pulses 2..6, within 25% of the tuned rate
+		float span = (p[5].t - p[1].t) / 4.f;
+		float hz = 1000.f / span;
+		checks++;
+		if (hz < 0.75f * f0 || hz > 1.25f * f0) {
+			snprintf(d, sizeof d, "tuned %.1f Hz but the pulses came at %.1f Hz", f0, hz);
+			fail("smurf rate", d);
+		}
+		// the heights follow the supply: never rising once the train is running
+		checks++;
+		bool falling = true;
+		for (size_t i = 2; i < 6 && i < p.size(); i++) if (p[i].h > 1.05f * p[i - 1].h) falling = false;
+		if (!falling) fail("smurf envelope", "pulse heights rose within the first train");
+	}
+
+	// (b) the same strike every time
+	{
+		const float tune = 0.4f;
+		std::vector<float> y((size_t)(3.0f * fs));
+		Kick k; k.setRate(fs); k.reset();
+		size_t again = (size_t)(1.6f * fs);               // long after the first has finished
+		for (size_t i = 0; i < y.size(); i++) y[i] = k.process(i == 0 || i == again, 1.f, 1, tune, 0.f, 0.148f, 0.6f, 0.55f);
+		int n = (int)(0.04f * fs); float worst = 0.f, pk = 0.f;
+		for (int i = 0; i < n; i++) { worst = std::fmax(worst, std::fabs(y[i] - y[again + i])); pk = std::fmax(pk, std::fabs(y[i])); }
+		checks++;
+		if (worst > 0.01f * pk) {
+			snprintf(d, sizeof d, "the opening 40 ms of a second strike differed from the first by %.3f V (peak %.2f V)", worst, pk);
+			fail("smurf same strike", d);
+		}
+	}
+
+	// (c) it ends, at every DECAY
+	{
+		const float decays[] = { 0.0f, 0.5f, 1.0f };
+		const float limitS[] = { 0.4f, 1.5f, 6.0f };
+		for (int di = 0; di < 3; di++) {
+			int n = (int)(8.f * fs);
+			Kick k; k.setRate(fs); k.reset();
+			int last = 0;
+			for (int i = 0; i < n; i++) { float v = k.process(i == 0, 1.f, 1, 0.4f, 0.f, decays[di], 0.6f, 0.55f); if (std::fabs(v) > 0.02f) last = i; }
+			checks++;
+			if (last > (int)(limitS[di] * fs)) {
+				snprintf(d, sizeof d, "DECAY %.1f was still sounding at %.2f s (limit %.1f s)", decays[di], (float)last / fs, limitS[di]);
+				fail("smurf ends", d);
+			}
+		}
+	}
+}
+
+
 int main() {
 	printf("Kickback voices\n");
 
@@ -1455,6 +1554,7 @@ int main() {
 	printf("  ranked patterns...\n");    rankedTests();
 	printf("  sweep kick...\n");         sweepKick();
 	printf("  808 kick...\n");           bridgeKick();
+	printf("  smurf kick...\n");         smurfKick();
 
 	printf("%d checks, %d failures\n", checks, failures);
 	return failures ? 1 : 0;

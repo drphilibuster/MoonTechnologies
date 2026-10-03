@@ -101,8 +101,13 @@ repository.
   The paper's pitch "sigh" depends on amplitude, as Roland's service notes say it does, so it is
   only audible on very loud hits; `docs/Kickback.md` lists the sources and what is assumed.
 * **SWEEP**, a third model: a phase-locked sine under a two-stage pitch envelope (a ~3 ms spike,
-  then a dive on BEND) through a velocity-driven waveshaper. MODEL is now a three-way toggle;
-  position 1 (SMURF) is unchanged.
+  then a dive on BEND) through a velocity-driven waveshaper. MODEL is now a three-way toggle.
+* **SMURF is the Smurf Drum's actual circuit.** It was a symmetric square wave under a fixed sweep; the
+  sheet is a complementary-pair relaxation oscillator whose supply is the envelope, so the voice is now a
+  train of narrow pulses whose heights follow the supply down, starts with the circuit's one big start-up
+  firing, speeds up and narrows as it starves ("zip"), then stops. Fitted to a transistor-level simulation
+  with the transistors and diode from their datasheets (`src/Kickback/Smurf.hpp`). DECAY is now its hold
+  capacitor, BEND the load on its supply. **A saved patch with MODEL at 1 sounds different.**
 * `tests/Kickback/render_kick` renders each model to WAV and prints its pitch track and levels.
 
 ### Changed: Nordic Banking draws its selector LEDs on the display (51 -> 42 HP)
