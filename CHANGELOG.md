@@ -5,6 +5,21 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Added: the hardware emulations' two-handed gestures, as controls
+
+A mouse has one pointer, so what the original units ask of two hands (hold one button, press another; press two together)
+is a control that plays it for you, through the unit's own keys. What each does was checked on the real firmware.
+
+* **Apportionment (DP/4+)**: SOFT RESET (SYSTEM held, A), INIT RAM (SYSTEM held, B), A+B and C+D (two-unit presets),
+  ALGORITHM (< held, CANCEL), NEXT SCREEN and PREV SCREEN (> held with <, and the reverse), and COPY and SWAP (arm, click two
+  units, WRITE to confirm). Scripts in `src/Apportionment/Gestures.hpp`, one step per machine frame. 34 -> 40 HP.
+* **Rebate (MIDIverb)**: CHANNEL is a stepper: each click holds CHANNEL and presses UP or DOWN once (the digits show the
+  channel as it changes), and the channel stops at 1 and 16 as the unit's does.
+* **Contagion (Virus C)**: MULTI+SINGLE (both together enter Multi-Single mode; pressed again, SINGLE alone leaves it),
+  CATEGORY and IN CATEGORY (SINGLE held with PARAMETER or VALUE: the category stays on the display while it is stepped) and PAGE
+  (one PARAMETER button held, the other pressed: a group of parameters at a time). `Chord` in `Controls.hpp` holds a key while
+  another is pressed. The demo (PART - and + together) is not here: this OS image has no demo song and shows "NO DEMOSONG".
+
 ### Added: Nordic Banking's shift functions work from a mouse
 
 The unit's second functions (master tune, out mode, local, program/control change, MIDI channels, the special and

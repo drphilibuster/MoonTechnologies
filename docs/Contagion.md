@@ -1,6 +1,6 @@
 # Contagion
 
-**FORM 8300 — the report filed when cash moves. Contagion is what spreads.** 77 HP.
+**FORM 8300 — the report filed when cash moves. Contagion is what spreads.** 63 HP.
 
 An Access Virus C, running its own operating system — all of it. The Virus has
 two processors. The sound comes from a Motorola DSP56362; everything else comes
@@ -128,7 +128,7 @@ unit's display names it. Banks A and B are the unit's battery RAM, so a sound yo
 under its own name; C and D are the factory copies of A and B, and E to H are the OS image's other
 banks. The names are read from your own OS image and battery RAM when the menu opens.
 
-**Step buttons** (up over down) replace a minus/plus pair: **PART** (PART -/+; both together is the demo),
+**Step buttons** (up over down) replace a minus/plus pair: **PART** (PART -/+; both together call up the demo song, which this OS image does not have: the unit shows "NO DEMOSONG but 1024 Sounds!" for a moment, so there is no control for it),
 **PARAMETER** (PARAM </>: in play mode, bank), **VALUE** (VALUE -/+: in play mode, program) and
 **TRANSPOSE** (TRANS -/+, with the five octave lamps beside them). Each click is one press of the unit's key; hold a button to repeat, at about eleven a second.
 
@@ -140,9 +140,26 @@ overrides it, as on the unit.
 
 **Buttons** that remain: **AMOUNT** (steps through the selected LFO's destinations), **SYNC**,
 **OSC 3 ON**, **DLY/REV** edit, **ARP ON**, **ARP EDIT**, **EDIT**, **GLOBAL** (global / multi
-edit), **RANDOM** (**UNDO** takes it back), **UNDO**, **STORE**, **MULTI**, **SINGLE** (hold
-it to search by category), the filter **EDIT** and **SEL 1 / SEL 2** (which filter RESO and
-ENV AMT act on).
+edit), **RANDOM** (**UNDO** takes it back), **UNDO**, **STORE**, **MULTI**, **SINGLE**, the filter
+**EDIT** and **SEL 1 / SEL 2** (which filter RESO and ENV AMT act on).
+
+**Gestures that need two keys at once, or one held while another is pressed**, which a mouse cannot
+do, are controls that do it for you:
+
+* **MULTI+SINGLE** presses MULTI and SINGLE together, which puts the unit in Multi-Single mode (both
+  LEDs lit). Pressed again it presses SINGLE alone, which leaves it, as the unit does.
+* **CATEGORY** is a pair of buttons, one over the other. A click holds SINGLE and presses PARAMETER
+  once, which steps the category (Off, Acid, Arpeggiator, Bass, ...), and keeps SINGLE held for a
+  second and a half after the last click so the category stays on the display; the category is
+  kept when SINGLE is let go. **IN CATEGORY** is the same with VALUE: with SINGLE held, VALUE steps to the
+  next or previous sound *in the chosen category*, skipping the rest.
+* **PAGE** scrolls the parameters a group at a time: a click up holds PARAMETER > and presses
+  PARAMETER <, which jumps forward; a click down does the reverse. (The unit's own law is not a mirror:
+  forward from CLOCK passes the whole COMMON group, back lands on the start of it.)
+
+Holding EDIT while turning SELECT, which the manual gives as the way to choose a modulation
+destination, needs no control: the LFO knob presses SELECT for you and **AMOUNT** steps the destinations,
+and the display shows the page each one lands on.
 
 **The display** is one piece of glass. **PARAMETER** is the unit's 2 x 16 LCD as it is now;
 **PRESET** is the last program screen it showed, kept while the LCD is busy with a knob or a

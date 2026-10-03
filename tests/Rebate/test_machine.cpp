@@ -312,6 +312,49 @@ static void testBoard(const Roms& roms) {
 	}
 }
 
+// --- 5. the channel stepper: CHANNEL held, UP or DOWN pressed once, for each click ---------------
+static void testChannelStepper(const Roms& roms) {
+	Machine m;
+	CHECK(m.load(roms.cpu, roms.verb).empty(), "load");
+	m.powerOn();
+	run(m, 1.5);
+	auto settle = [&]() { for (int i = 0; i < 40 && m.replaying(); i++) run(m, 0.1); run(m, 0.3); };
+	CHECK(m.settings().channel == 0, "a fresh unit is on channel 1");
+	const int prog = m.settings().program;
+	// Three clicks up, queued together, play out in order.
+	m.stepChannel(+1); m.stepChannel(+1); m.stepChannel(+1);
+	settle();
+	std::printf("  three clicks up: channel %d, display \"%s\"\n", m.settings().channel + 1, display(m).c_str());
+	CHECK(m.settings().channel == 3, "three clicks up gave channel index %d", m.settings().channel);
+	// One back down.
+	m.stepChannel(-1);
+	settle();
+	CHECK(m.settings().channel == 2, "a click down gave channel index %d", m.settings().channel);
+	// The program is not touched: only CHANNEL was held when UP/DOWN were pressed.
+	CHECK(m.settings().program == prog, "the program moved from %d to %d", prog, m.settings().program);
+	// The new channel is the one the unit listens on: a program change on it lands, on the old one it does not.
+	m.midi(0xc2); m.midi(9);
+	run(m, 0.4);
+	CHECK(m.dspProgram() == 9, "a program change on the new channel did not land (program %d)", m.dspProgram());
+	m.midi(0xc0); m.midi(30);
+	run(m, 0.4);
+	CHECK(m.dspProgram() == 9, "a program change on the old channel moved the program to %d", m.dspProgram());
+	// The ends: DOWN from channel 1, UP from channel 16.
+	Machine e;
+	e.load(roms.cpu, roms.verb);
+	e.powerOn();
+	run(e, 1.5);
+	e.stepChannel(-1);
+	for (int i = 0; i < 40 && e.replaying(); i++) run(e, 0.1);
+	run(e, 0.3);
+	std::printf("  a click down from channel 1: channel %d\n", e.settings().channel + 1);
+	for (int i = 0; i < 16; i++) e.stepChannel(+1);
+	for (int i = 0; i < 200 && e.replaying(); i++) run(e, 0.1);
+	run(e, 0.3);
+	std::printf("  then sixteen clicks up: channel %d\n", e.settings().channel + 1);
+	CHECK(e.settings().channel >= 0 && e.settings().channel < 16, "the channel left its range: %d", e.settings().channel);
+}
+
 int main() {
 	Roms roms;
 	if (!findRoms(roms)) {
@@ -327,6 +370,8 @@ int main() {
 	testAnalog();
 	std::printf("4. board\n");
 	testBoard(roms);
+	std::printf("5. channel stepper\n");
+	testChannelStepper(roms);
 	if (failures) { std::printf("%d failure(s)\n", failures); return 1; }
 	std::printf("all passed\n");
 	return 0;

@@ -44,8 +44,11 @@ It is the MIDIverb's own.
   change mutes the effect for about a tenth of a second while it switches.
   That is the firmware: it runs the silent program 64 in between, so the old
   program's delay memory does not spill into the new one.
-* **CHANNEL**: hold it and the digits show the MIDI receive channel. UP and DOWN
-  change the channel while you hold it.
+* **CHANNEL** is a pair of buttons, one over the other. On the unit you hold CHANNEL and the
+  digits show the MIDI receive channel, and UP and DOWN change it while you hold it, which a
+  mouse cannot do. Each click here does exactly that for you: it holds CHANNEL, presses UP (the top
+  button) or DOWN (the bottom) once and lets go, so the digits show the channel as it changes. It
+  stops at channel 1 and at 16, as the unit does.
 * **DEFEAT** mutes the effect (program 64). Press it again to bring the program
   back.
 * **-12 dB / 0 dB** are the unit's input level LEDs. They watch the signal on

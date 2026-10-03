@@ -61,6 +61,59 @@ struct KeyPresser {
 	static float cycle() { return HOLD + GAP; }
 };
 
+/** "Hold this key, press that one": the unit's chorded gestures, which a mouse cannot do (hold SINGLE and step the
+    category with PARAMETER; hold PARAMETER > and press < to scroll a page of parameters). A request names the key to
+    hold and the key to press once while it is down. The holder goes down, waits SETTLE for the unit to notice it, then
+    each requested key is pressed in turn through the KeyPresser, and the holder stays down for `linger` after the last
+    one, which is what keeps a category on the display while it is being stepped. A request for a different holder waits
+    for the first to be let go. Call tick() at a steady rate; holder() says which key to hold down. */
+struct Chord {
+	static constexpr int MAX = 16;
+	static constexpr float SETTLE = 0.30f;      // seconds the holder is down before the first press (measured: enough)
+	struct Req { int holder, inner; float linger; };
+	Req q[MAX];
+	int n = 0;
+	int held = -1;                              // the key being held down, -1 for none
+	int wait = 0;                               // ticks before the first press
+	int hang = 0;                               // ticks the holder stays down once nothing is left to press
+	float lastLinger = 0.f;
+
+	/** Ask for `inner` to be pressed once while `holder` is held. */
+	void request(int holder, int inner, float linger) {
+		if (n < MAX) q[n++] = { holder, inner, linger };
+	}
+	void clear() { n = 0; held = -1; wait = hang = 0; }
+	/** The key to hold down now, or -1. */
+	int holder() const { return held; }
+	bool busy() const { return n > 0 || held >= 0; }
+
+	void tick(KeyPresser& keys, float tickSeconds) {
+		if (held >= 0 && wait > 0) { wait--; return; }
+		if (n > 0) {
+			if (held >= 0 && q[0].holder != held) {          // another holder: let this one go first
+				if (hang > 0) hang--;
+				if (hang <= 0) held = -1;
+				return;
+			}
+			if (held < 0) {
+				held = q[0].holder;
+				wait = int(std::ceil(SETTLE / tickSeconds));
+				hang = 0;
+				return;
+			}
+			if (keys.pending(q[0].inner) == 0) {
+				keys.press(q[0].inner);
+				lastLinger = q[0].linger;
+				hang = std::max(1, int(std::ceil((KeyPresser::cycle() + lastLinger) / tickSeconds)));
+				for (int i = 1; i < n; i++) q[i - 1] = q[i];
+				n--;
+			}
+			return;
+		}
+		if (held >= 0 && --hang <= 0) held = -1;
+	}
+};
+
 /** A knob with N positions standing for a unit's selector. The unit is the truth: `obs` is the
     position its LEDs show, and the knob follows it. When the knob is turned the selector presses
     the unit's key until the LEDs agree, then checks, and gives the knob back to the unit if they

@@ -60,9 +60,13 @@ spectrum and a warped field, driven by audio and CV.
 |---|---|---|---|
 | **[Tax Bracket](docs/TaxBracket.md)** | **[Racketeer](docs/Racketeer.md)** | **[Gross](docs/Gross.md)** | **[Amortization](docs/Amortization.md)** |
 
-| <img src="tools/previews/Apportionment.png" width="286"> | <img src="tools/previews/Contagion.png" width="529"> |
-|---|---|
-| **[Apportionment](docs/Apportionment.md)** | **[Contagion](docs/Contagion.md)** |
+| <img src="tools/previews/Apportionment.png" width="336"> |
+|---|
+| **[Apportionment](docs/Apportionment.md)** |
+
+| <img src="tools/previews/Contagion.png" width="529"> |
+|---|
+| **[Contagion](docs/Contagion.md)** |
 
 | <img src="tools/previews/NordicBanking.png" width="353"> | <img src="tools/previews/Rebate.png" width="101"> | <img src="tools/previews/Depreciation.png" width="277"> |
 |---|---|---|
@@ -172,7 +176,7 @@ An eight-track generative sequencer. Each track's melody is grown from a seed, n
 
 ## Hardware, running its own firmware
 
-### [Apportionment](docs/Apportionment.md) — 34 HP · *Effect, Reverb, Delay, Hardware clone*
+### [Apportionment](docs/Apportionment.md) — 40 HP · *Effect, Reverb, Delay, Hardware clone*
 
 *An Ensoniq DP/4, running its own firmware. EPROMs not included.*
 

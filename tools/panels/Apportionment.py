@@ -32,7 +32,7 @@ P = Panel(
     title="APPORTIONMENT",
     subtitle="PARALLEL EFFECTS",
     form="FORM 1116",
-    hp=34,
+    hp=40,
     glass=Glass(h=20.0),
 )
 
@@ -68,9 +68,18 @@ P.sections = [
              Bezel("unit_c", "C", light="bypass_c"), Bezel("unit_d", "D", light="bypass_d"),
              Bezel("config", "CONFIG"), Bezel("system", "SYSTEM"), Bezel("edit", "EDIT"),
              BigKnob("data", "DATA", primary=True)]),
+        # The DP/4's two-handed combinations are controls that play them for you (a mouse has one pointer): SYSTEM held with
+        # A (a soft reset) or B (initialise the RAM presets, WRITE to confirm); A and B, or C and D, pressed together (a
+        # two-unit preset, then DATA); < held with CANCEL (the first page of a unit, its algorithm); and > held with < (a
+        # whole screen forward, the reverse back). COPY and SWAP are armed, then two Units are clicked: the
+        # unit's own way is EDIT, WRITE, one Unit button held while another is pressed, WRITE to confirm.
         Row([Button("select", "SELECT"), Button("left", "<"),
              Button("right", ">"), Button("cancel", "CANCEL"),
              Button("write", "WRITE"),
+             Button("soft_reset", "SOFT RESET"), Button("init_ram", "INIT RAM"),
+             Button("pair_ab", "A+B"), Button("pair_cd", "C+D"),
+             Button("algorithm", "ALGORITHM"), Button("screen_next", "NEXT SCREEN"), Button("screen_prev", "PREV SCREEN"),
+             Bezel("copy", "COPY"), Bezel("swap", "SWAP"),
              Switch("kill_a", "A B/K"), Switch("kill_b", "B B/K"),
              Switch("kill_c", "C B/K"), Switch("kill_d", "D B/K")], own_grid=True),
     ]),

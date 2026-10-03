@@ -47,11 +47,11 @@ static const Label LABELS[] = {
 	{ 30.4800f,  34.0000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FRONT PANEL"},
 	{ 25.9390f,  42.3143f,  5.80f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "-12 dB"},
 	{ 36.1996f,  42.3143f,  5.80f, 0.00f, CLAY_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "0 dB"},
-	{ 11.1750f,  57.4261f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CHANNEL"},
-	{ 24.5044f,  57.4261f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "UP"},
-	{ 37.3744f,  57.4261f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DOWN"},
-	{ 50.2444f,  57.4261f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DEFEAT"},
-	{ 30.4800f,  81.4330f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MIX"},
+	{ 11.1750f,  61.1212f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CHANNEL"},
+	{ 25.0734f,  61.1212f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "UP"},
+	{ 37.9434f,  61.1212f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DOWN"},
+	{ 50.8134f,  61.1212f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DEFEAT"},
+	{ 30.4800f,  85.1280f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MIX"},
 	{  9.0690f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN L"},
 	{ 23.3430f, 113.3100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN R"},
 	{ 37.6170f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT L"},
@@ -68,11 +68,11 @@ static inline void addLabels(app::ModuleWidget* mw) {
 // Positions are mm; feed them to mm() or createParamCentered.
 static const Vec METER_GREEN_POS = Vec(25.9390, 37.7500);
 static const Vec METER_RED_POS = Vec(36.1996, 37.7500);
-static const Vec CHANNEL_POS = Vec(11.1750, 51.1643);
-static const Vec UP_POS = Vec(24.5044, 51.1643);
-static const Vec DOWN_POS = Vec(37.3744, 51.1643);
-static const Vec DEFEAT_POS = Vec(50.2444, 51.1643);
-static const Vec MIX_POS = Vec(30.4800, 70.6261);
+static const Vec CHANNEL_POS = Vec(11.1750, 52.9143);
+static const Vec UP_POS = Vec(25.0734, 52.9143);
+static const Vec DOWN_POS = Vec(37.9434, 52.9143);
+static const Vec DEFEAT_POS = Vec(50.8134, 52.9143);
+static const Vec MIX_POS = Vec(30.4800, 74.3212);
 static const Vec IN_L_POS = Vec(9.0690, 118.6000);
 static const Vec IN_R_POS = Vec(23.3430, 118.6000);
 static const Vec OUT_L_POS = Vec(37.6170, 118.6000);

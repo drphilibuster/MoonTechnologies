@@ -361,6 +361,79 @@ int main() {
 		CHECK(bad == 0, "the tempo message sets the clock tempo");
 	}
 
+	// The chorded gestures, driven through the module's own loop: a KeyPresser per key, the Chord helper ticking at 40 Hz, and
+	// the holder down for as long as the Chord says. A fresh unit for each, so none starts from another's screen.
+	{
+		struct Drive {
+			VirusC& v;
+			vc::KeyPresser keys;
+			vc::Chord chord;
+			bool down[35] = {};
+			double acc = 0;
+			float in[64] = {}, o[6][64] = {};
+			explicit Drive(VirusC& v) : v(v) {}
+			void seconds(double s) {
+				float* const outs[6] = { o[0], o[1], o[2], o[3], o[4], o[5] };
+				for (long b = 0; b < long(s * VirusC::SAMPLE_RATE / 64); b++) {
+					acc += 64.0 / VirusC::SAMPLE_RATE;
+					if (acc >= 1.0 / 40) { acc -= 1.0 / 40; chord.tick(keys, 1.f / 40); }
+					for (int i = 0; i < 35; i++) {
+						const bool d = keys.process(i, VirusC::SAMPLE_RATE / 64.f) || i == chord.holder();
+						if (d != down[i]) { v.setButton(vc::KEY[i][0], vc::KEY[i][1], d); down[i] = d; }
+					}
+					v.process(in, in, outs, 64);
+				}
+			}
+			bool lcdHas(const char* t) const { return v.lcdText().find(t) != std::string::npos; }
+		};
+		auto fresh = [&](VirusC& u) { u.load(image); for (int i = 0; i < 32; i++) u.setPot(i, 0xc0); u.boot(); Run rr(u); rr.seconds(10.0); };
+		const int SINGLE = 21, PARAM_DN = 24, PARAM_UP = 25, VALUE_DN = 26, VALUE_UP = 27;
+
+		{   // PAGE: in the EDIT menu, one PARAMETER button held and the other pressed jumps a group, in the held button's direction
+			VirusC u; fresh(u); Drive d(u);
+			d.keys.press(15); d.seconds(1.0);
+			const std::string start = u.lcdText();
+			d.chord.request(PARAM_UP, PARAM_DN, 0.4f); d.seconds(2.0);
+			const std::string fwd = u.lcdText();
+			d.chord.request(PARAM_DN, PARAM_UP, 0.4f); d.seconds(2.0);
+			const std::string back = u.lcdText();
+			std::printf("12. page: [%s] -> forward [%s] -> back [%s]\n", start.c_str(), fwd.c_str(), back.c_str());
+			CHECK(fwd != start && fwd.substr(0, 16) != start.substr(0, 16), "a click up scrolls to another group");
+			// The unit's own law, not a mirror: forward jumps past the whole COMMON group, back lands on the start of it.
+			CHECK(back != fwd && back.substr(0, 8) != fwd.substr(0, 8), "a click down scrolls the other way");
+		}
+		{   // CATEGORY and IN CATEGORY: SINGLE held, PARAMETER steps the category and VALUE the sounds in it
+			VirusC u; fresh(u); Drive d(u);
+			const std::string prog0 = u.lcdText().substr(0, 16);
+			d.chord.request(SINGLE, PARAM_UP, 1.5f); d.seconds(1.2);
+			const bool shown = d.lcdHas("Acid");
+			d.seconds(2.5);                     // let go: the program screen comes back
+			const bool back = d.lcdHas("A0") && !d.lcdHas("Acid");
+			d.chord.request(SINGLE, VALUE_UP, 1.5f); d.seconds(1.2);
+			const std::string in1 = u.lcdText();
+			d.seconds(2.5);
+			d.chord.request(SINGLE, VALUE_UP, 1.5f); d.seconds(1.2);
+			const std::string in2 = u.lcdText();
+			std::printf("13. category: step -> %s, released -> %s; sounds in it [%s] then [%s] (was [%s])\n", shown ? "Acid shown" : "NOT shown",
+				back ? "program screen back" : "STILL AWAY", in1.c_str(), in2.c_str(), prog0.c_str());
+			CHECK(shown, "a click on CATEGORY shows the next category while SINGLE is held");
+			CHECK(back, "SINGLE is let go and the program screen returns");
+			CHECK(in1.substr(0, 16) != prog0 && in2.substr(0, 16) != in1.substr(0, 16), "IN CATEGORY moves through sounds");
+		}
+		{   // MULTI+SINGLE: both keys together enter Multi-Single (both LEDs); SINGLE alone leaves it
+			VirusC u; fresh(u); Drive d(u);
+			float g[7][14];
+			auto leds = [&]() { u.leds(g); d.seconds(0.4); u.leds(g); return std::string(g[vc::LED[48][0]][vc::LED[48][1]] > 0.5f ? "1" : "0") + (g[vc::LED[49][0]][vc::LED[49][1]] > 0.5f ? "1" : "0"); };
+			const std::string before = leds();
+			d.keys.press(20); d.keys.press(21); d.seconds(1.0);
+			const std::string in = leds();
+			d.keys.press(21); d.seconds(1.0);
+			const std::string out = leds();
+			std::printf("14. multi+single: MULTI/SINGLE LEDs %s -> %s -> %s\n", before.c_str(), in.c_str(), out.c_str());
+			CHECK(before == "01" && in == "11" && out == "01", "MULTI and SINGLE together light both, and SINGLE alone leaves");
+		}
+	}
+
 	const double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
 	std::printf("   %.1f s of machine time in %.1f s wall\n", 16.75 + 3 + 1.3 + 1.15 + 5 * 1.1 + 2, wall);
 	if (failures) { std::printf("%d failure(s)\n", failures); return 1; }

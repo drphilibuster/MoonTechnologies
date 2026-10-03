@@ -34,6 +34,12 @@ struct Unit {
 
 } // namespace
 
+/** A control that has no end: its tooltip says what its buttons do rather than a number of detents. */
+struct ChannelQuantity : ParamQuantity {
+	std::string getDisplayValueString() override { return "down / up: one channel a click"; }
+	std::string getUnit() override { return ""; }
+};
+
 struct Rebate : Module {
 	enum ParamId { CHANNEL_PARAM, UP_PARAM, DOWN_PARAM, DEFEAT_PARAM, MIX_PARAM, PARAMS_LEN };
 	enum InputId { IN_L_INPUT, IN_R_INPUT, INPUTS_LEN };
@@ -56,6 +62,8 @@ struct Rebate : Module {
 
 	midi::InputQueue midiInput;
 	bool pressed[4] = {};
+	long chanSeen = 0;                           // the channel stepper's count at the last look
+	bool chanInit = false;
 	int housekeeping = 0;
 
 	dsp::SampleRateConverter<2> inSrc, outSrc;
@@ -66,7 +74,9 @@ struct Rebate : Module {
 
 	Rebate() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-		configButton(CHANNEL_PARAM, "Channel (hold, then UP/DOWN to set the MIDI channel)");
+		// On the unit CHANNEL is held while UP or DOWN is pressed, which a mouse cannot do: each click of this holds CHANNEL
+		// and presses the one key, and the digits show the channel while it does.
+		configParam<ChannelQuantity>(CHANNEL_PARAM, -INFINITY, INFINITY, 0.f, "MIDI receive channel");
 		configButton(UP_PARAM, "Up");
 		configButton(DOWN_PARAM, "Down");
 		configButton(DEFEAT_PARAM, "Defeat");
@@ -194,6 +204,14 @@ struct Rebate : Module {
 			carryLen = 0;
 			for (bool& p : pressed) p = false;
 		}
+		// The channel stepper's clicks since the last sample (not a jump when a patch loads with it somewhere).
+		int chanClicks = 0;
+		{
+			const long v = long(std::floor(double(params[CHANNEL_PARAM].getValue()) + 0.5));
+			if (chanInit) chanClicks = int(std::max(-8L, std::min(8L, v - chanSeen)));
+			chanSeen = v;
+			chanInit = true;
+		}
 		midi::Message msg;
 		if (!unit) {
 			while (midiInput.tryPop(&msg, args.frame)) {}
@@ -205,8 +223,9 @@ struct Rebate : Module {
 
 		// The front panel. While a patch's settings are being played in, the
 		// buttons are the module's; a press then would only fight it.
+		for (int c = 0; c < std::abs(chanClicks); c++) m.stepChannel(chanClicks > 0 ? 1 : -1);
 		if (!m.replaying())
-			for (int i = 0; i < 4; i++) {
+			for (int i = 1; i < 4; i++) {   // UP, DOWN, DEFEAT: CHANNEL is the stepper's, not a button
 				const bool down = params[CHANNEL_PARAM + i].getValue() > 0.5f;
 				if (down != pressed[i]) { m.button(mv::Machine::Button(i), down); pressed[i] = down; }
 			}
@@ -375,9 +394,10 @@ struct RebateWidget : ModuleWidget {
 
 		addChild(createLightCentered<MediumLight<panel::LimeLight> >(panel::mm(panel::METER_GREEN_POS.x, panel::METER_GREEN_POS.y), module, Rebate::METER_GREEN_LIGHT));
 		addChild(createLightCentered<MediumLight<panel::ClayLight> >(panel::mm(panel::METER_RED_POS.x, panel::METER_RED_POS.y), module, Rebate::METER_RED_LIGHT));
-		const Vec buttons[4] = { panel::CHANNEL_POS, panel::UP_POS, panel::DOWN_POS, panel::DEFEAT_POS };
-		for (int i = 0; i < 4; i++)
-			addParam(createParamCentered<VCVButton>(panel::mm(buttons[i].x, buttons[i].y), module, Rebate::CHANNEL_PARAM + i));
+		addParam(createParamCentered<panel::StepPair>(panel::mm(panel::CHANNEL_POS.x, panel::CHANNEL_POS.y), module, Rebate::CHANNEL_PARAM));
+		const Vec buttons[3] = { panel::UP_POS, panel::DOWN_POS, panel::DEFEAT_POS };
+		for (int i = 0; i < 3; i++)
+			addParam(createParamCentered<VCVButton>(panel::mm(buttons[i].x, buttons[i].y), module, Rebate::UP_PARAM + i));
 		addParam(createParamCentered<RoundLargeBlackKnob>(panel::mm(panel::MIX_POS.x, panel::MIX_POS.y), module, Rebate::MIX_PARAM));
 
 		addInput(createInputCentered<panel::PortInMain>(panel::mm(panel::IN_L_POS.x, panel::IN_L_POS.y), module, Rebate::IN_L_INPUT));

@@ -106,7 +106,7 @@ struct Snapshot {
 
 struct Contagion : Module {
 	enum ParamId { POT_PARAM, KEY_PARAM = POT_PARAM + 32, SEL_PARAM = KEY_PARAM + 35, ENC_PARAM = SEL_PARAM + 6,
-		PRESET_PARAM = ENC_PARAM + 4, TEMPO_PARAM, PARAMS_LEN = TEMPO_PARAM + 1 };
+		PRESET_PARAM = ENC_PARAM + 4, TEMPO_PARAM, MULTISINGLE_PARAM, PAGE_PARAM, CATEGORY_PARAM, INCAT_PARAM, PARAMS_LEN };
 	enum InputId { IN_L_INPUT, IN_R_INPUT,
 		NOTE_V_INPUT, NOTE_GATE_INPUT, NOTE_VEL_INPUT, BEND_INPUT, MOD_INPUT, TOUCH_INPUT, SUSTAIN_INPUT,
 		CLK_INPUT, RUN_INPUT, RST_INPUT,
@@ -135,7 +135,9 @@ struct Contagion : Module {
 	float cvOff[32] = {};                       // what the CV adds to each pot, audio thread
 	vc::KeyPresser keys;                        // presses of the unit's buttons, from any thread
 	vc::Selector sels[6];                       // audio thread
-	vc::Encoder encs[4], presetEnc;
+	vc::Encoder encs[4], presetEnc, pageEnc, catEnc, inCatEnc;
+	vc::Chord chord;                            // the gestures that hold one key while another is pressed
+	bool msWas = false;                         // the MULTI+SINGLE button's last state
 	vc::Presets presets;                        // guarded by snapMutex: the image's names
 	std::atomic<int> presetRequest{-1};         // a sound to select, from the menu (UI thread)
 	std::atomic<int> shownPreset{-1};           // the sound the LCD names, -1 if it names none
@@ -163,6 +165,13 @@ struct Contagion : Module {
 			paramQuantities[SEL_PARAM + i]->randomizeEnabled = false;
 			resetSelector(i);
 		}
+		// Gestures of the unit that need two keys at once or one held while another is pressed: a mouse cannot, so each is
+		// a control that does it (Chord in Controls.hpp).
+		configButton(MULTISINGLE_PARAM, "Multi+Single: MULTI and SINGLE together enter Multi-Single mode; pressed again, SINGLE alone leaves it");
+		configParam<EncoderQuantity>(PAGE_PARAM, -INFINITY, INFINITY, 0.f, "Parameter page (hold one PARAMETER button, press the other)");
+		configParam<EncoderQuantity>(CATEGORY_PARAM, -INFINITY, INFINITY, 0.f, "Category (hold SINGLE, step with PARAMETER)");
+		configParam<EncoderQuantity>(INCAT_PARAM, -INFINITY, INFINITY, 0.f, "Sound in the category (hold SINGLE, step with VALUE)");
+		for (int p : { PAGE_PARAM, CATEGORY_PARAM, INCAT_PARAM }) paramQuantities[p]->randomizeEnabled = false;
 		configParam(TEMPO_PARAM, 0.f, 127.f, 38.f, "Tempo", " BPM", 0.f, 1.f, float(vc::KnobSync::TEMPO_BPM_AT_ZERO));
 		paramQuantities[TEMPO_PARAM]->snapEnabled = true;
 		paramQuantities[TEMPO_PARAM]->randomizeEnabled = false;
@@ -311,6 +320,8 @@ struct Contagion : Module {
 			for (int i = 0; i < 6; i++) resetSelector(i);    // the knobs take the new unit's word for it
 			for (int i = 0; i < 4; i++) encs[i] = vc::Encoder();
 			presetEnc = vc::Encoder();
+			pageEnc = catEnc = inCatEnc = vc::Encoder();
+			chord.clear();
 			tempoSent = int(std::floor(params[TEMPO_PARAM].getValue() + 0.5f));
 			tempoHold = 0;
 			presetPending = 0;
@@ -337,6 +348,16 @@ struct Contagion : Module {
 			const int d = encs[i].delta(params[ENC_PARAM + i].getValue());
 			if (d > 0) keys.press(ENC_KEYS[i][1], d);
 			else if (d < 0) keys.press(ENC_KEYS[i][0], -d);
+		}
+		{   // The chorded gestures. Each click holds one key and presses another (KEY indices in PanelMap.hpp).
+			const int SINGLE = 21, PARAM_DN = 24, PARAM_UP = 25, VALUE_DN = 26, VALUE_UP = 27;
+			const int page = pageEnc.delta(params[PAGE_PARAM].getValue());
+			for (int k = 0; k < std::abs(page); k++)      // up scrolls forward: the held button is the direction
+				page > 0 ? chord.request(PARAM_UP, PARAM_DN, 0.4f) : chord.request(PARAM_DN, PARAM_UP, 0.4f);
+			const int cat = catEnc.delta(params[CATEGORY_PARAM].getValue());
+			for (int k = 0; k < std::abs(cat); k++) chord.request(SINGLE, cat > 0 ? PARAM_UP : PARAM_DN, 1.5f);
+			const int inCat = inCatEnc.delta(params[INCAT_PARAM].getValue());
+			for (int k = 0; k < std::abs(inCat); k++) chord.request(SINGLE, inCat > 0 ? VALUE_UP : VALUE_DN, 1.5f);
 		}
 		{
 			vc::CvMidi::In in;
@@ -383,7 +404,7 @@ struct Contagion : Module {
 		}
 		for (int i = 0; i < 35; i++) {
 			const bool pressed = keys.process(i, args.sampleRate);
-			const bool down = params[KEY_PARAM + i].getValue() > 0.5f || pressed;
+			const bool down = params[KEY_PARAM + i].getValue() > 0.5f || pressed || i == chord.holder();
 			if (down != keyDown[i]) { v.setButton(KEY[i][0], KEY[i][1], down); keyDown[i] = down; }
 		}
 		while (midiInput.tryPop(&msg, args.frame))
@@ -437,6 +458,15 @@ struct Contagion : Module {
 				const int obs = vc::litPosition(lit, ids, SELECTORS[i].n);
 				const int to = sels[i].tick(int(std::floor(params[SEL_PARAM + i].getValue() + 0.5f)), obs, keys, tick);
 				if (to >= 0) params[SEL_PARAM + i].setValue(float(to));
+			}
+			chord.tick(keys, tick);
+			{   // MULTI+SINGLE: both keys at once enter Multi-Single (both LEDs lit); SINGLE alone leaves it
+				const bool ms = params[MULTISINGLE_PARAM].getValue() > 0.5f;
+				if (ms && !msWas) {
+					if (lit(48) > 0.5f && lit(49) > 0.5f) keys.press(21);
+					else { keys.press(20); keys.press(21); }
+				}
+				msWas = ms;
 			}
 			// The knobs follow the sound. Where a knob and the loaded sound disagree it is moved to the
 			// sound's value on screen only (KnobSync.hpp): potSent is set to match, so the firmware is
@@ -803,6 +833,11 @@ struct ContagionWidget : ModuleWidget {
 			tempo->speed = 2.f;
 			addParam(tempo);
 		}
+		// The chorded gestures: a button that presses MULTI and SINGLE together, and steppers whose clicks hold one key and press another.
+		addParam(createParamCentered<VCVButton>(panel::mm(panel::MULTISINGLE_POS.x, panel::MULTISINGLE_POS.y), module, Contagion::MULTISINGLE_PARAM));
+		addParam(createParamCentered<panel::StepPair>(panel::mm(panel::CATEGORY_POS.x, panel::CATEGORY_POS.y), module, Contagion::CATEGORY_PARAM));
+		addParam(createParamCentered<panel::StepPair>(panel::mm(panel::INCAT_POS.x, panel::INCAT_POS.y), module, Contagion::INCAT_PARAM));
+		addParam(createParamCentered<panel::StepPair>(panel::mm(panel::PAGE_POS.x, panel::PAGE_POS.y), module, Contagion::PAGE_PARAM));
 		const Vec encs[5] = { panel::PART_POS, panel::PARAM_POS, panel::VALUE_POS, panel::TRANS_POS, panel::PRESET_POS };
 		// Each is a pair of buttons now: UP is one detent clockwise, DOWN one counterclockwise, and the
 		// param still counts detents, so the firmware side (vc::Encoder) is untouched.

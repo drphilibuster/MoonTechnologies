@@ -107,27 +107,31 @@
   <rect x="253.5741" y="74.5844" width="8.2000" height="11.0000" rx="1.43" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <rect x="269.5269" y="74.5844" width="8.2000" height="11.0000" rx="1.43" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <rect x="285.4797" y="74.5844" width="8.2000" height="11.0000" rx="1.43" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="59.1144" cy="96.5913" r="3.7500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="75.9241" cy="96.5913" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="91.3341" cy="96.5913" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="104.9941" cy="96.5913" r="3.7500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="120.6837" cy="96.5913" r="3.7500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="136.3733" cy="96.5913" r="3.7500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="148.2833" cy="96.5913" r="3.7500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="160.1933" cy="96.5913" r="3.7500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="175.8829" cy="96.5913" r="3.7500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="190.6024" cy="96.5913" r="2.1500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="199.3124" cy="96.5913" r="2.1500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="208.0224" cy="96.5913" r="2.1500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="216.7324" cy="96.5913" r="2.1500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="225.4424" cy="96.5913" r="2.1500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="237.5024" cy="96.5913" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="64.2741" cy="104.5288" r="1.7400" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="110.7837" cy="104.5288" r="1.7400" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="126.4733" cy="104.5288" r="1.7400" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="165.9829" cy="104.5288" r="1.7400" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="182.3024" cy="104.5288" r="1.7400" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
-  <circle cx="242.2760" cy="104.4313" r="1.7400" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="25.7226" cy="96.5913" r="3.7500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="42.5323" cy="96.5913" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="57.9423" cy="96.5913" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="71.6023" cy="96.5913" r="3.7500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="87.2919" cy="96.5913" r="3.7500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="102.9815" cy="96.5913" r="3.7500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="114.8915" cy="96.5913" r="3.7500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="126.8015" cy="96.5913" r="3.7500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="142.4911" cy="96.5913" r="3.7500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="162.4196" cy="96.5913" r="3.7500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <rect x="175.5783" y="91.0913" width="8.2000" height="11.0000" rx="1.43" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <rect x="193.1011" y="91.0913" width="8.2000" height="11.0000" rx="1.43" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <rect x="209.2343" y="91.0913" width="8.2000" height="11.0000" rx="1.43" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="223.9943" cy="96.5913" r="2.1500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="232.7043" cy="96.5913" r="2.1500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="241.4143" cy="96.5913" r="2.1500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="250.1243" cy="96.5913" r="2.1500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="258.8343" cy="96.5913" r="2.1500" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="270.8943" cy="96.5913" r="5.5000" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="30.8823" cy="104.5288" r="1.7400" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="77.3919" cy="104.5288" r="1.7400" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="93.0815" cy="104.5288" r="1.7400" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="132.5911" cy="104.5288" r="1.7400" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="148.9106" cy="104.5288" r="1.7400" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
+  <circle cx="275.6679" cy="104.4313" r="1.7400" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="310.5500" cy="37.8900" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="310.5500" cy="50.7078" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
   <circle cx="310.5500" cy="63.5255" r="4.2900" fill="#1B151E" stroke="#7B9A6D" stroke-width="0.2"/>
@@ -181,16 +185,16 @@
   <path d="M 174.646 57.454 L 174.080 58.019" fill="none" stroke="#7B9A6D" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="M 177.792 49.607 L 177.792 49.057" fill="none" stroke="#7B9A6D" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="M 180.939 57.454 L 181.504 58.019" fill="none" stroke="#7B9A6D" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M 72.212 100.304 L 71.866 99.922 L 71.559 99.508 L 71.294 99.066 L 71.074 98.600 L 70.900 98.115 L 70.775 97.616 L 70.699 97.106 L 70.674 96.591 L 70.699 96.077 L 70.775 95.567 L 70.900 95.067 L 71.074 94.582 L 71.294 94.116 L 71.559 93.675 L 71.866 93.261 L 72.212 92.879 L 72.594 92.533 L 73.007 92.226 L 73.449 91.961 L 73.915 91.741 L 74.400 91.567 L 74.900 91.442 L 75.410 91.367 L 75.924 91.341 L 76.439 91.367 L 76.948 91.442 L 77.448 91.567 L 77.933 91.741 L 78.399 91.961 L 78.841 92.226 L 79.255 92.533 L 79.636 92.879 L 79.982 93.261 L 80.289 93.675 L 80.554 94.116 L 80.774 94.582 L 80.948 95.067 L 81.073 95.567 L 81.149 96.077 L 81.174 96.591 L 81.149 97.106 L 81.073 97.616 L 80.948 98.115 L 80.774 98.600 L 80.554 99.066 L 80.289 99.508 L 79.982 99.922 L 79.636 100.304" fill="none" stroke="#7B9A6D" stroke-width="0.19" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M 72.777 99.738 L 72.212 100.304" fill="none" stroke="#7B9A6D" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M 72.601 93.268 L 72.212 92.879" fill="none" stroke="#7B9A6D" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M 79.248 93.268 L 79.636 92.879" fill="none" stroke="#7B9A6D" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M 79.071 99.738 L 79.636 100.304" fill="none" stroke="#7B9A6D" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M 87.622 100.304 L 87.276 99.922 L 86.969 99.508 L 86.704 99.066 L 86.484 98.600 L 86.310 98.115 L 86.185 97.616 L 86.109 97.106 L 86.084 96.591 L 86.109 96.077 L 86.185 95.567 L 86.310 95.067 L 86.484 94.582 L 86.704 94.116 L 86.969 93.675 L 87.276 93.261 L 87.622 92.879 L 88.004 92.533 L 88.417 92.226 L 88.859 91.961 L 89.325 91.741 L 89.810 91.567 L 90.310 91.442 L 90.820 91.367 L 91.334 91.341 L 91.849 91.367 L 92.358 91.442 L 92.858 91.567 L 93.343 91.741 L 93.809 91.961 L 94.251 92.226 L 94.665 92.533 L 95.046 92.879 L 95.392 93.261 L 95.699 93.675 L 95.964 94.116 L 96.184 94.582 L 96.358 95.067 L 96.483 95.567 L 96.559 96.077 L 96.584 96.591 L 96.559 97.106 L 96.483 97.616 L 96.358 98.115 L 96.184 98.600 L 95.964 99.066 L 95.699 99.508 L 95.392 99.922 L 95.046 100.304" fill="none" stroke="#7B9A6D" stroke-width="0.19" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M 88.187 99.738 L 87.622 100.304" fill="none" stroke="#7B9A6D" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M 88.011 93.268 L 87.622 92.879" fill="none" stroke="#7B9A6D" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M 94.658 93.268 L 95.046 92.879" fill="none" stroke="#7B9A6D" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M 94.481 99.738 L 95.046 100.304" fill="none" stroke="#7B9A6D" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 38.820 100.304 L 38.474 99.922 L 38.167 99.508 L 37.902 99.066 L 37.682 98.600 L 37.508 98.115 L 37.383 97.616 L 37.308 97.106 L 37.282 96.591 L 37.308 96.077 L 37.383 95.567 L 37.508 95.067 L 37.682 94.582 L 37.902 94.116 L 38.167 93.675 L 38.474 93.261 L 38.820 92.879 L 39.202 92.533 L 39.616 92.226 L 40.057 91.961 L 40.523 91.741 L 41.008 91.567 L 41.508 91.442 L 42.018 91.367 L 42.532 91.341 L 43.047 91.367 L 43.557 91.442 L 44.056 91.567 L 44.541 91.741 L 45.007 91.961 L 45.449 92.226 L 45.863 92.533 L 46.245 92.879 L 46.591 93.261 L 46.897 93.675 L 47.162 94.116 L 47.383 94.582 L 47.556 95.067 L 47.681 95.567 L 47.757 96.077 L 47.782 96.591 L 47.757 97.106 L 47.681 97.616 L 47.556 98.115 L 47.383 98.600 L 47.162 99.066 L 46.897 99.508 L 46.591 99.922 L 46.245 100.304" fill="none" stroke="#7B9A6D" stroke-width="0.19" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 39.386 99.738 L 38.820 100.304" fill="none" stroke="#7B9A6D" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 39.209 93.268 L 38.820 92.879" fill="none" stroke="#7B9A6D" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 45.856 93.268 L 46.245 92.879" fill="none" stroke="#7B9A6D" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 45.679 99.738 L 46.245 100.304" fill="none" stroke="#7B9A6D" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 54.230 100.304 L 53.884 99.922 L 53.577 99.508 L 53.312 99.066 L 53.092 98.600 L 52.918 98.115 L 52.793 97.616 L 52.718 97.106 L 52.692 96.591 L 52.718 96.077 L 52.793 95.567 L 52.918 95.067 L 53.092 94.582 L 53.312 94.116 L 53.577 93.675 L 53.884 93.261 L 54.230 92.879 L 54.612 92.533 L 55.026 92.226 L 55.467 91.961 L 55.933 91.741 L 56.418 91.567 L 56.918 91.442 L 57.428 91.367 L 57.942 91.341 L 58.457 91.367 L 58.967 91.442 L 59.466 91.567 L 59.951 91.741 L 60.417 91.961 L 60.859 92.226 L 61.273 92.533 L 61.655 92.879 L 62.001 93.261 L 62.307 93.675 L 62.572 94.116 L 62.793 94.582 L 62.966 95.067 L 63.091 95.567 L 63.167 96.077 L 63.192 96.591 L 63.167 97.106 L 63.091 97.616 L 62.966 98.115 L 62.793 98.600 L 62.572 99.066 L 62.307 99.508 L 62.001 99.922 L 61.655 100.304" fill="none" stroke="#7B9A6D" stroke-width="0.19" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 54.796 99.738 L 54.230 100.304" fill="none" stroke="#7B9A6D" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 54.619 93.268 L 54.230 92.879" fill="none" stroke="#7B9A6D" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 61.266 93.268 L 61.655 92.879" fill="none" stroke="#7B9A6D" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 61.089 99.738 L 61.655 100.304" fill="none" stroke="#7B9A6D" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round"/>
   <circle cx="10.4000" cy="80.0844" r="7.0000" fill="none" stroke="#7B9A6D" stroke-width="0.32"/>
   <circle cx="10.4000" cy="80.0844" r="6.4000" fill="none" stroke="#7B9A6D" stroke-width="0.16"/>
 </g>
@@ -254,27 +258,31 @@
   <circle inkscape:label="param" cx="257.6741" cy="80.0844" r="1" fill="#ff0000"/>
   <circle inkscape:label="value" cx="273.6269" cy="80.0844" r="1" fill="#ff0000"/>
   <circle inkscape:label="trans" cx="289.5797" cy="80.0844" r="1" fill="#ff0000"/>
-  <circle inkscape:label="flt_edit" cx="59.1144" cy="96.5913" r="1" fill="#ff0000"/>
-  <circle inkscape:label="flt1_mode" cx="75.9241" cy="96.5913" r="1" fill="#ff0000"/>
-  <circle inkscape:label="flt2_mode" cx="91.3341" cy="96.5913" r="1" fill="#ff0000"/>
-  <circle inkscape:label="flt_sel1" cx="104.9941" cy="96.5913" r="1" fill="#ff0000"/>
-  <circle inkscape:label="flt_sel2" cx="120.6837" cy="96.5913" r="1" fill="#ff0000"/>
-  <circle inkscape:label="undo" cx="136.3733" cy="96.5913" r="1" fill="#ff0000"/>
-  <circle inkscape:label="store" cx="148.2833" cy="96.5913" r="1" fill="#ff0000"/>
-  <circle inkscape:label="multi" cx="160.1933" cy="96.5913" r="1" fill="#ff0000"/>
-  <circle inkscape:label="single" cx="175.8829" cy="96.5913" r="1" fill="#ff0000"/>
-  <circle inkscape:label="tr1" cx="190.6024" cy="96.5913" r="1" fill="#ff00ff"/>
-  <circle inkscape:label="tr2" cx="199.3124" cy="96.5913" r="1" fill="#ff00ff"/>
-  <circle inkscape:label="tr3" cx="208.0224" cy="96.5913" r="1" fill="#ff00ff"/>
-  <circle inkscape:label="tr4" cx="216.7324" cy="96.5913" r="1" fill="#ff00ff"/>
-  <circle inkscape:label="tr5" cx="225.4424" cy="96.5913" r="1" fill="#ff00ff"/>
-  <circle inkscape:label="tempo" cx="237.5024" cy="96.5913" r="1" fill="#ff0000"/>
-  <circle inkscape:label="flt_edit_led" cx="64.2741" cy="104.5288" r="1" fill="#ff0000"/>
-  <circle inkscape:label="sel1_led" cx="110.7837" cy="104.5288" r="1" fill="#ff0000"/>
-  <circle inkscape:label="sel2_led" cx="126.4733" cy="104.5288" r="1" fill="#ff0000"/>
-  <circle inkscape:label="multi_led" cx="165.9829" cy="104.5288" r="1" fill="#ff0000"/>
-  <circle inkscape:label="single_led" cx="182.3024" cy="104.5288" r="1" fill="#ff0000"/>
-  <circle inkscape:label="bpm" cx="242.2760" cy="104.4313" r="1" fill="#ff0000"/>
+  <circle inkscape:label="flt_edit" cx="25.7226" cy="96.5913" r="1" fill="#ff0000"/>
+  <circle inkscape:label="flt1_mode" cx="42.5323" cy="96.5913" r="1" fill="#ff0000"/>
+  <circle inkscape:label="flt2_mode" cx="57.9423" cy="96.5913" r="1" fill="#ff0000"/>
+  <circle inkscape:label="flt_sel1" cx="71.6023" cy="96.5913" r="1" fill="#ff0000"/>
+  <circle inkscape:label="flt_sel2" cx="87.2919" cy="96.5913" r="1" fill="#ff0000"/>
+  <circle inkscape:label="undo" cx="102.9815" cy="96.5913" r="1" fill="#ff0000"/>
+  <circle inkscape:label="store" cx="114.8915" cy="96.5913" r="1" fill="#ff0000"/>
+  <circle inkscape:label="multi" cx="126.8015" cy="96.5913" r="1" fill="#ff0000"/>
+  <circle inkscape:label="single" cx="142.4911" cy="96.5913" r="1" fill="#ff0000"/>
+  <circle inkscape:label="multisingle" cx="162.4196" cy="96.5913" r="1" fill="#ff0000"/>
+  <circle inkscape:label="category" cx="179.6783" cy="96.5913" r="1" fill="#ff0000"/>
+  <circle inkscape:label="incat" cx="197.2011" cy="96.5913" r="1" fill="#ff0000"/>
+  <circle inkscape:label="page" cx="213.3343" cy="96.5913" r="1" fill="#ff0000"/>
+  <circle inkscape:label="tr1" cx="223.9943" cy="96.5913" r="1" fill="#ff00ff"/>
+  <circle inkscape:label="tr2" cx="232.7043" cy="96.5913" r="1" fill="#ff00ff"/>
+  <circle inkscape:label="tr3" cx="241.4143" cy="96.5913" r="1" fill="#ff00ff"/>
+  <circle inkscape:label="tr4" cx="250.1243" cy="96.5913" r="1" fill="#ff00ff"/>
+  <circle inkscape:label="tr5" cx="258.8343" cy="96.5913" r="1" fill="#ff00ff"/>
+  <circle inkscape:label="tempo" cx="270.8943" cy="96.5913" r="1" fill="#ff0000"/>
+  <circle inkscape:label="flt_edit_led" cx="30.8823" cy="104.5288" r="1" fill="#ff0000"/>
+  <circle inkscape:label="sel1_led" cx="77.3919" cy="104.5288" r="1" fill="#ff0000"/>
+  <circle inkscape:label="sel2_led" cx="93.0815" cy="104.5288" r="1" fill="#ff0000"/>
+  <circle inkscape:label="multi_led" cx="132.5911" cy="104.5288" r="1" fill="#ff0000"/>
+  <circle inkscape:label="single_led" cx="148.9106" cy="104.5288" r="1" fill="#ff0000"/>
+  <circle inkscape:label="bpm" cx="275.6679" cy="104.4313" r="1" fill="#ff0000"/>
   <circle inkscape:label="out1l" cx="310.5500" cy="37.8900" r="1" fill="#00ff00"/>
   <circle inkscape:label="out1r" cx="310.5500" cy="50.7078" r="1" fill="#00ff00"/>
   <circle inkscape:label="out2l" cx="310.5500" cy="63.5255" r="1" fill="#00ff00"/>

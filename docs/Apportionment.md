@@ -1,6 +1,6 @@
 # Apportionment
 
-**FORM 1116 — foreign tax credit, the form on which income is apportioned among categories.** 34 HP.
+**FORM 1116 — foreign tax credit, the form on which income is apportioned among categories.** 40 HP.
 
 An Ensoniq DP/4 parallel effects processor, running its own operating system.
 Four Ensoniq ESP (ES5510) signal processors, one Motorola 68B03 host, and the
@@ -64,6 +64,24 @@ them. Everything in the DP/4 manual can be done here.
 | **SELECT**, **<**, **>**, **CANCEL**, **WRITE** | Select, the parameter arrows, Cancel•Undo, Write•Copy |
 | **A B/K … D B/K** | what bypass does to each unit — the Config's bypass/kill page. **B** (down) passes the dry signal through a bypassed unit; **K** (up) mutes it. Like the CONFIG controls, moving one makes the module set it on the firmware's own page, and it follows the firmware back |
 | **DATA** | the big knob. It is endless, as on the hardware: drag it (up or right turns it up) or use the scroll wheel. It reports detents, not a position, so it has no value to reset |
+
+### Combinations that need two hands
+
+The DP/4 has gestures that hold one button while another is pressed. A mouse has one pointer and cannot, so each
+is a control that plays it for you, through the unit's own keys, one step per machine frame -- the firmware sees
+exactly the presses it would from a hand, so what it does is what the unit does.
+
+| control | the unit's gesture | what happens next |
+|---|---|---|
+| **SOFT RESET** | hold SYSTEM•MIDI, press A | the unit reboots (the boot screen, then Select mode); its memory is left alone |
+| **INIT RAM** | hold SYSTEM•MIDI, press B | "Hit <WRITE> To Init RAM Presets": **WRITE** initialises the RAM presets, or **>** then **WRITE** reinitialises the whole unit, which asks for it by name; **CANCEL** leaves |
+| **A+B**, **C+D** | EDIT, then the two Unit buttons together | the unit now takes a two-unit preset for that pair: turn **DATA** and wait a moment, it loads by itself |
+| **ALGORITHM** | hold <, press CANCEL | jumps to the first page of the unit being edited, where its algorithm is chosen, instead of stepping back through every parameter |
+| **NEXT SCREEN**, **PREV SCREEN** | hold >, press < (and the reverse) | jumps a whole screen of parameters at a time, not one cursor step |
+| **COPY**, **SWAP** | EDIT, WRITE, one Unit button held while another is pressed (and for copy, DATA one click clockwise) | click **COPY** (it lights), then the unit to copy *from*, then the unit to copy *to*. The panel does the rest and the unit asks "Hit <WRITE> To Copy Unit A to B": **WRITE** makes it so ("Unit Copied!"). **SWAP** is the same, and swaps the two. Click the lit button again to cancel |
+
+The unit's last two-handed gesture, holding < or > while turning DATA to scroll quickly through a long list of
+parameters, has no control here: DATA drags and scrolls, and the arrows repeat.
 
 ## CONFIG — the routing
 

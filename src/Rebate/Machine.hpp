@@ -90,6 +90,7 @@ struct Machine : Mcs51Bus {
 		midiBusy = false;
 		lineFree = 0;
 		replay.clear();
+		replayEnd = 0;
 		for (bool& b : pressed) b = false;
 		conflicts = floating = 0;
 		cpu.reset();
@@ -164,6 +165,20 @@ struct Machine : Mcs51Bus {
 	}
 	bool replaying() const { return !replay.empty(); }
 
+	/** One click of the channel stepper: what a person does with the unit's own buttons, which is to hold CHANNEL (the
+	    digits then show the receive channel) and press UP or DOWN once, then let go. Queued behind anything already
+	    playing, so a run of clicks plays out in order; while it plays the module's buttons are the machine's. */
+	void stepChannel(int dir) {
+		const long ms = long(SAMPLE_RATE / 1000);
+		if (replay.empty()) { replayClock = 0; replayEnd = 0; }
+		long t = replayEnd;
+		replay.push_back({ t, PRESS, CHANNEL }); t += 80 * ms;
+		replay.push_back({ t, PRESS, dir > 0 ? UP : DOWN }); t += 40 * ms;
+		replay.push_back({ t, RELEASE, dir > 0 ? UP : DOWN }); t += 80 * ms;
+		replay.push_back({ t, RELEASE, CHANNEL }); t += 80 * ms;
+		replayEnd = t;
+	}
+
 	/** Queue the presses and the program change that bring a unit fresh from
 	    power-on to `s`. Played from sample(), in the unit's own time. */
 	void restore(const Settings& s) {
@@ -174,6 +189,7 @@ struct Machine : Mcs51Bus {
 			replay.push_back({ t, PRESS, b }); t += 40 * ms;
 			replay.push_back({ t, RELEASE, b }); t += 80 * ms;
 		};
+		replayEnd = 0;
 		if (s.channel) {
 			// The channel shows, and UP/DOWN change it, only while CHANNEL is held.
 			replay.push_back({ t, PRESS, CHANNEL }); t += 80 * ms;
@@ -187,6 +203,7 @@ struct Machine : Mcs51Bus {
 		}
 		if (s.defeat) press(DEFEAT);
 		replayClock = 0;
+		replayEnd = t;
 	}
 
 	// --- Mcs51Bus -------------------------------------------------------------------------
@@ -251,7 +268,7 @@ private:
 	enum Kind { PRESS, RELEASE, MIDI };
 	struct Action { long at; Kind kind; int arg; };
 	std::deque<Action> replay;
-	long replayClock = 0;
+	long replayClock = 0, replayEnd = 0;     // replayEnd: when the last queued action is over, on the same clock
 
 	void lightDigits() {
 		for (int d = 0; d < 2; d++) if (!(p1 >> d & 1)) digit[d] = segLatch;

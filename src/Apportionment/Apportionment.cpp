@@ -8,6 +8,7 @@
 #include "../plugin.hpp"
 #include "Panel.hpp"
 #include "Router.hpp"
+#include "Gestures.hpp"
 
 #include <osdialog.h>
 
@@ -49,12 +50,15 @@ struct Apportionment : Module {
 		AB_OUT_PARAM, CD_OUT_PARAM, IN_LEVEL_PARAM, OUT_LEVEL_PARAM,
 		// Appended later: ids are saved in patches, so new ones only ever go last.
 		KILL_A_PARAM, KILL_B_PARAM, KILL_C_PARAM, KILL_D_PARAM,
+		SOFT_RESET_PARAM, INIT_RAM_PARAM, PAIR_AB_PARAM, PAIR_CD_PARAM, ALGORITHM_PARAM, SCREEN_NEXT_PARAM, SCREEN_PREV_PARAM,
+		COPY_PARAM, SWAP_PARAM,
 		PARAMS_LEN
 	};
 	enum InputId { IN1_INPUT, IN2_INPUT, IN3_INPUT, IN4_INPUT, PEDAL_INPUT, FS_L_INPUT, FS_R_INPUT, INPUTS_LEN };
 	enum OutputId { OUT1_OUTPUT, OUT2_OUTPUT, OUT3_OUTPUT, OUT4_OUTPUT, TAP_A_OUTPUT, TAP_B_OUTPUT, TAP_C_OUTPUT, TAP_D_OUTPUT, OUTPUTS_LEN };
 	enum LightId { UNIT_A_LIGHT, UNIT_B_LIGHT, UNIT_C_LIGHT, UNIT_D_LIGHT, CONFIG_LIGHT, SYSTEM_LIGHT, EDIT_LIGHT, ROUTING_LIGHT,
-		BYPASS_A_LIGHT, BYPASS_B_LIGHT, BYPASS_C_LIGHT, BYPASS_D_LIGHT, LIGHTS_LEN };
+		BYPASS_A_LIGHT, BYPASS_B_LIGHT, BYPASS_C_LIGHT, BYPASS_D_LIGHT, COPY_LIGHT, SWAP_LIGHT, LIGHTS_LEN };
+	static constexpr int GESTURES = 9;           // SOFT_RESET_PARAM ... SWAP_PARAM
 
 	/** The first twelve params are the DP/4's own buttons, in this order. */
 	static constexpr int BUTTONS = 12;
@@ -83,6 +87,11 @@ struct Apportionment : Module {
 
 	// --- audio-thread state -------------------------------------------------------
 	bool pressed[BUTTONS] = {};
+	// The two-handed combinations, played for you (Gestures.hpp): a script of the unit's own keys, in machine time.
+	dp4::Gestures gestures;
+	bool gestureWas[GESTURES] = {};
+	bool swallowed[4] = {};                      // a Unit click taken as a COPY/SWAP choice: its release is too
+	int armed = 0, armedSrc = -1;                // COPY (1) or SWAP (2) waiting for two Unit clicks, and the first of them
 	std::atomic<int> dataDetents{0};              // from the endless knob widget
 	bool fsDown[2] = {};
 	Routing applied;                             // what the CONFIG controls last agreed with
@@ -106,6 +115,18 @@ struct Apportionment : Module {
 		static const char* names[BUTTONS] = { "Unit A", "Unit B", "Unit C", "Unit D", "Config", "System/MIDI",
 			"Edit/Compare", "Select", "Previous parameter", "Next parameter", "Cancel/Undo", "Write/Copy" };
 		for (int i = 0; i < BUTTONS; i++) configButton(i, names[i]);
+		// The unit's two-handed combinations: a mouse has one pointer, so each is a control that plays it.
+		configButton(SOFT_RESET_PARAM, "Soft reset (SYSTEM held, A pressed): reboots the unit, keeps its memory");
+		configButton(INIT_RAM_PARAM, "Initialise RAM presets (SYSTEM held, B pressed): then WRITE to confirm, or > then WRITE to reinitialise everything");
+		configButton(PAIR_AB_PARAM, "A and B together (after EDIT): turn DATA to choose a two-unit preset");
+		configButton(PAIR_CD_PARAM, "C and D together (after EDIT): turn DATA to choose a two-unit preset");
+		configButton(ALGORITHM_PARAM, "Algorithm (< held, CANCEL pressed): the first page of the unit being edited");
+		configButton(SCREEN_NEXT_PARAM, "Next screen (> held, < pressed): jumps a whole screen of parameters");
+		configButton(SCREEN_PREV_PARAM, "Previous screen (< held, > pressed)");
+		configButton(COPY_PARAM, "Copy a unit's preset: click this, the unit to copy from, then the unit to copy to; WRITE confirms");
+		configButton(SWAP_PARAM, "Swap two units' presets: click this, then the two units; WRITE confirms");
+		configLight(COPY_LIGHT, "Copy armed: click two units");
+		configLight(SWAP_LIGHT, "Swap armed: click two units");
 
 		configSwitch(SOURCES_PARAM, 0.f, 3.f, 0.f, "Sources", { "1 source (1,2 > ABCD)", "2 sources (12 > AB, 34 > CD)", "3 sources (1 > A, 2 > B, 34 > CD)", "4 sources (one per unit)" });
 		const std::vector<std::string> pair = { "Serial", "Parallel", "Feedback 1", "Feedback 2" };
@@ -282,7 +303,7 @@ struct Apportionment : Module {
 	/** A control the user moved is sent to the firmware; a Config the firmware
 	    changed on its own (a Config preset, the front panel) moves the controls. */
 	void syncRouting() {
-		if (router.busy()) return;
+		if (router.busy() || gestures.busy()) return;
 		const Routing fw = machine->routing();
 		if (!routingSynced) {
 			// First contact after power-on: the firmware's battery RAM is the truth.
@@ -316,6 +337,9 @@ struct Apportionment : Module {
 	// --- audio -------------------------------------------------------------------------
 	void process(const ProcessArgs& args) override {
 		if (Machine* m = handover.exchange(nullptr)) {
+			gestures.clear();
+			armed = 0;
+			armedSrc = -1;
 			INFO("Apportionment: machine running, engine at %.0f Hz", args.sampleRate);
 			machine.reset(m);
 			routingSynced = false;
@@ -330,10 +354,46 @@ struct Apportionment : Module {
 			return;
 		}
 
+		// The two-handed combinations. A click on one of these plays a script of the unit's own keys; COPY and SWAP arm,
+		// and the next two Unit clicks name the units.
+		for (int g = 0; g < GESTURES; g++) {
+			const bool on = params[SOFT_RESET_PARAM + g].getValue() > 0.5f;
+			if (on && !gestureWas[g] && !router.busy()) {
+				switch (g) {
+				case 0: gestures.play(dp4::Gestures::softReset()); break;
+				case 1: gestures.play(dp4::Gestures::initRam()); break;
+				case 2: gestures.play(dp4::Gestures::pair(dp4::BTN_A, dp4::BTN_B)); break;
+				case 3: gestures.play(dp4::Gestures::pair(dp4::BTN_C, dp4::BTN_D)); break;
+				case 4: gestures.play(dp4::Gestures::algorithm()); break;
+				case 5: gestures.play(dp4::Gestures::screen(+1)); break;
+				case 6: gestures.play(dp4::Gestures::screen(-1)); break;
+				case 7: armed = armed == 1 ? 0 : 1; armedSrc = -1; break;
+				case 8: armed = armed == 2 ? 0 : 2; armedSrc = -1; break;
+				}
+			}
+			gestureWas[g] = on;
+		}
+		lights[COPY_LIGHT].setBrightness(armed == 1 ? 1.f : 0.f);
+		lights[SWAP_LIGHT].setBrightness(armed == 2 ? 1.f : 0.f);
+
 		// The front panel.
 		for (int i = 0; i < BUTTONS; i++) {
 			const bool down = params[i].getValue() > 0.5f;
-			if (down != pressed[i]) { machine->button(buttonNumber(i), down); pressed[i] = down; }
+			if (down == pressed[i]) continue;
+			if (i < 4 && swallowed[i]) { pressed[i] = down; if (!down) swallowed[i] = false; continue; }
+			if (i < 4 && armed && down) {            // a COPY/SWAP choice, not the unit's own press
+				if (armedSrc < 0) armedSrc = i;
+				else if (i != armedSrc) {
+					gestures.play(dp4::Gestures::swapOrCopy(buttonNumber(armedSrc), buttonNumber(i), armed == 1));
+					armed = 0;
+					armedSrc = -1;
+				}
+				swallowed[i] = true;
+				pressed[i] = true;
+				continue;
+			}
+			if (gestures.busy()) continue;            // a script has the keys: this edge waits, and is seen again next sample
+			machine->button(buttonNumber(i), down); pressed[i] = down;
 		}
 		if (const int d = dataDetents.exchange(0)) machine->knob(d);
 		for (int i = 0; i < 2; i++) {
@@ -380,8 +440,9 @@ struct Apportionment : Module {
 				int16_t adc[4], dac[4], taps[8];
 				for (int c = 0; c < 4; c++)
 					adc[c] = int16_t(clamp(mIn[n].samples[c], -1.f, 1.f) * 32767.f);
+				gestures.tick(*machine);
 				machine->frame(adc, dac, taps);
-				router.tick(*machine);
+				if (!gestures.busy()) router.tick(*machine);
 				for (int c = 0; c < 4; c++) mOut[n].samples[c] = dac[c] / 32768.f;
 				for (int c = 0; c < 8; c++) mTap[n].samples[c] = taps[c] / 32768.f;
 			}
@@ -763,6 +824,15 @@ struct ApportionmentWidget : ModuleWidget {
 		const Vec plain[5] = { panel::SELECT_POS, panel::LEFT_POS, panel::RIGHT_POS, panel::CANCEL_POS, panel::WRITE_POS };
 		for (int i = 0; i < 5; i++)
 			addParam(createParamCentered<VCVButton>(panel::mm(plain[i].x, plain[i].y), module, Apportionment::SELECT_PARAM + i));
+		// The two-handed combinations, played for you; COPY and SWAP are lit while armed.
+		const Vec shortcut[7] = { panel::SOFT_RESET_POS, panel::INIT_RAM_POS, panel::PAIR_AB_POS, panel::PAIR_CD_POS,
+			panel::ALGORITHM_POS, panel::SCREEN_NEXT_POS, panel::SCREEN_PREV_POS };
+		for (int i = 0; i < 7; i++)
+			addParam(createParamCentered<VCVButton>(panel::mm(shortcut[i].x, shortcut[i].y), module, Apportionment::SOFT_RESET_PARAM + i));
+		addParam(createLightParamCentered<VCVLightBezel<panel::LimeLight> >(panel::mm(panel::COPY_POS.x, panel::COPY_POS.y), module,
+			Apportionment::COPY_PARAM, Apportionment::COPY_LIGHT));
+		addParam(createLightParamCentered<VCVLightBezel<panel::LimeLight> >(panel::mm(panel::SWAP_POS.x, panel::SWAP_POS.y), module,
+			Apportionment::SWAP_PARAM, Apportionment::SWAP_LIGHT));
 
 		DataKnob* knob = new DataKnob;
 		knob->module = module;

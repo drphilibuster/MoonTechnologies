@@ -46,12 +46,12 @@ P.plates = [
 ]
 
 P.sections = [
-    # The unit's own controls. CHANNEL held shows the MIDI channel and lets UP and
-    # DOWN change it; DEFEAT mutes the effect (the display shows --). The level
+    # The unit's own controls. CHANNEL is a stepper: on the unit it is held while UP or DOWN is pressed,
+    # which a mouse cannot do, so each click holds CHANNEL and presses the one key for you. DEFEAT mutes the effect (the display shows --). The level
     # LEDs watch the signal on its way into the converter.
     Section("FRONT PANEL", rows=[
         Row([Light("meter_green", "-12 dB", ink="LIME"), Light("meter_red", "0 dB", ink="CLAY")], own_grid=True),
-        Row([Button("channel", "CHANNEL"), Button("up", "UP"),
+        Row([Stepper("channel", "CHANNEL"), Button("up", "UP"),
              Button("down", "DOWN"), Button("defeat", "DEFEAT")], own_grid=True),
         Row([BigKnob("mix", "MIX", primary=True)], own_grid=True),
     ]),

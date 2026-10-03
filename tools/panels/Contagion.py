@@ -45,6 +45,12 @@ P = Panel(
 # firmware as a key press and comes back as an LED (Controls.hpp).
 #
 # `steps` is the knob's detent count; an endless knob has none.
+#
+# Four gestures of the unit need one key held while another is pressed, or two pressed together, which a mouse
+# cannot do, so each is a control that does it for you: MULTI+SINGLE (both together enter Multi-Single mode, and
+# SINGLE or MULTI alone leaves it, so a second press leaves), CATEGORY and IN CATEGORY (SINGLE held, PARAMETER
+# steps the category, VALUE steps the sounds in it) and PAGE (one PARAMETER button held, the other pressed, scrolls a
+# page of parameters at a time in the direction of the held one).
 
 
 def knob_row_1():
@@ -82,7 +88,9 @@ P.sections = [
              Knob("flt1_mode", "FILT 1", steps=4), Knob("flt2_mode", "FILT 2", steps=4),
              Button("flt_sel1", "SEL 1", light="sel1_led"), Button("flt_sel2", "SEL 2", light="sel2_led"),
              Button("undo", "UNDO"), Button("store", "STORE"),
-             Button("multi", "MULTI", light="multi_led"), Button("single", "SINGLE", light="single_led")]
+             Button("multi", "MULTI", light="multi_led"), Button("single", "SINGLE", light="single_led"),
+             Button("multisingle", "MULTI+SINGLE"),
+             Stepper("category", "CATEGORY"), Stepper("incat", "IN CATEGORY"), Stepper("page", "PAGE")]
             + [Light("tr%d" % (i + 1), t) for i, t in enumerate(["-2", "-1", "0", "+1", "+2"])]
             + [Knob("tempo", "BPM", light="bpm")], own_grid=True),
     ]),

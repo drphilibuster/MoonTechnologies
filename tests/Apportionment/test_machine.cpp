@@ -4,6 +4,7 @@
 // EPROM images; without it, prints SKIP and passes. The ROMs are Ensoniq's and
 // never live in this repository.
 #include "../../src/Apportionment/Router.hpp"
+#include "../../src/Apportionment/Gestures.hpp"
 
 #include <cmath>
 #include <cstdio>
@@ -221,6 +222,80 @@ int main() {
 	CHECK(std::fabs(lateDc / (N / 10)) < 64, "DC on output 3: %.1f", lateDc / (N / 10));
 
 	for (int i = 0; i < 4; i++) CHECK(m.esp(i).transferCollisions() == 0, "ESP %c transfer collisions", 'A' + i);
+
+	// The gestures: the two-handed combinations, played as scripts through the unit's own keys. A fresh unit for each, so
+	// none starts from another's screen.
+	{
+		auto fresh = [&](Machine& g) { g.load(os, uc); g.powerOn(); run(g, nullptr, 4.5); };
+		// Play a script, one machine frame at a time, for `seconds`.
+		auto play = [&](Machine& g, Gestures& gs, const std::vector<Gestures::Step>& st, double seconds, const char* watch = nullptr, bool* saw = nullptr) {
+			gs.play(st);
+			const int16_t z[4] = {};
+			for (uint64_t n = uint64_t(seconds * Machine::FRAME_RATE); n--;) {
+				gs.tick(g);
+				g.frame(z, nullptr, nullptr);
+				if (watch && saw && g.display().line(0).find(watch) != std::string::npos) *saw = true;
+			}
+		};
+		auto tapKey = [&](Machine& g, int b) { g.button(b, true); run(g, nullptr, 0.15); g.button(b, false); run(g, nullptr, 0.45); };
+		auto l0 = [&](const Machine& g) { return g.display().line(0); };
+		auto l1 = [&](const Machine& g) { return g.display().line(1); };
+		auto has = [&](const std::string& hay, const char* needle) { return hay.find(needle) != std::string::npos; };
+
+		{   // SOFT RESET: SYSTEM held and A pressed reboots the unit (the boot screen shows, then Select mode again)
+			Machine g; fresh(g); Gestures gs; bool sawBoot = false;
+			tapKey(g, BTN_EDIT);
+			play(g, gs, Gestures::softReset(), 8.0, "ENSONIQ", &sawBoot);
+			printf("%s gesture: soft reset -> %s, then [%s]\n", sawBoot ? "ok  " : "FAIL", sawBoot ? "the boot screen" : "NO boot screen", l0(g).c_str());
+			CHECK(sawBoot && has(l0(g), "Select"), "SOFT RESET reboots the unit to Select mode");
+		}
+		{   // INIT RAM: SYSTEM held and B pressed asks for WRITE to initialise the presets
+			Machine g; fresh(g); Gestures gs;
+			play(g, gs, Gestures::initRam(), 2.0);
+			printf("     gesture: init RAM -> [%s|%s]\n", l0(g).c_str(), l1(g).c_str());
+			CHECK(has(l1(g), "Init RAM Presets"), "INIT RAM brings up the Init RAM Presets prompt");
+			tapKey(g, BTN_CANCEL);
+		}
+		{   // ALGORITHM and SCREEN, inside a unit's own edit pages
+			Machine g; fresh(g); Gestures gs;
+			tapKey(g, BTN_EDIT); tapKey(g, BTN_A);
+			const std::string first = l1(g);
+			for (int i = 0; i < 4; i++) tapKey(g, BTN_RIGHT);
+			const std::string deep = l0(g);
+			play(g, gs, Gestures::algorithm(), 2.0);
+			printf("     gesture: algorithm -> [%s|%s] from [%s]\n", l0(g).c_str(), l1(g).c_str(), deep.c_str());
+			CHECK(l1(g) == first && l0(g) != deep, "ALGORITHM returns to the unit's first page");
+			play(g, gs, Gestures::screen(+1), 2.0);
+			const std::string fwd0 = l0(g);
+			play(g, gs, Gestures::screen(+1), 2.0);
+			const std::string fwd1 = l0(g);
+			play(g, gs, Gestures::screen(-1), 2.0);
+			const std::string back = l0(g);
+			printf("     gesture: screen forward [%s] [%s], back [%s]\n", fwd0.c_str(), fwd1.c_str(), back.c_str());
+			
+			CHECK(fwd1 != fwd0, "a second SCREEN up goes on to another screen");
+			CHECK(back == fwd0, "SCREEN down goes back one");
+		}
+		{   // A+B: with them held together the DATA knob chooses a two-unit preset
+			Machine g; fresh(g); Gestures gs;
+			play(g, gs, Gestures::pair(BTN_A, BTN_B), 2.0);
+			g.knob(1); run(g, nullptr, 1.5);
+			printf("     gesture: A+B then DATA -> [%s|%s]\n", l0(g).c_str(), l1(g).c_str());
+			CHECK(has(l0(g), "2U") || has(l0(g), "AB:"), "A and B together, then DATA, selects a two-unit preset");
+		}
+		{   // SWAP and COPY
+			for (int copy = 0; copy < 2; copy++) {
+				Machine g; fresh(g); Gestures gs;
+				play(g, gs, Gestures::swapOrCopy(BTN_A, BTN_B, copy), 4.0);
+				const std::string prompt = l1(g);
+				tapKey(g, BTN_WRITE); run(g, nullptr, 0.3);
+				const std::string done = l0(g);
+				printf("     gesture: %s A to B -> [%s] then [%s]\n", copy ? "copy" : "swap", prompt.c_str(), done.c_str());
+				CHECK(has(prompt, copy ? "Copy Unit A to B" : "Swap Units A & B"), "the prompt names the operation");
+				CHECK(has(done, copy ? "Unit Copied!" : "Units Swapped!"), "WRITE makes it so");
+			}
+		}
+	}
 
 	printf(failures ? "%d FAILED\n" : "all passed\n", failures);
 	return failures ? 1 : 0;
