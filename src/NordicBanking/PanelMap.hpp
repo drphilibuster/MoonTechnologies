@@ -38,12 +38,24 @@ static const int EDIT_BUFFER_SIZE = 66;
 // slot A; the byte keeps its last value there, so the LEDs say which mode it is.
 static const uint32_t SELECTED_SLOT = 0x12226;
 
+// The unit's second functions ("Shift functions", printed in blue on its panel) need SHIFT held while another
+// button is pressed. Found by holding SHIFT over each button on the firmware and reading the display:
+//   Slot A   master tune                    Slot B   out mode (A/B, then C/D on a second press)
+//   Slot C   local on/off                   Slot D   program change / control change / arp MIDI out (P, C, A)
+//   UNISON   MIDI channel (slot, then global)
+//   PLAY MODE  special: LFO 1 sync, LFO 2/arp sync, filter env trig, amp env trig, velocity/morph, aftertouch,
+//              pedal assignment (1, 2, F, A, S, t, E on the display)
+//   AUTO     system: sustain pedal polarity, pitch bend range, unison detune
+// In any of them the value is set with PROGRAM UP / DOWN, and SHIFT again leaves the function. Single presses
+// with SHIFT held: DISTORTION panic, ARP hold, RING/SYNC demo, OCT - / + dump all / one, VEL/MORPH clear.
+// The panel's SHIFT latches (a mouse has one pointer), so a combination is click, click, click.
+
 // The buttons in panel order: (key line address byte, bit mask) -- gearmulator's ButtonType ids,
 // several of which it names after the wrong control (noted).
 struct Button { uint16_t id; const char* name; };
 static const Button BUTTONS[28] = {
 	{ 0x0480, "Osc 1 waveform" }, { 0x0280, "Osc 2 waveform" }, { 0x0204, "Osc 2 KBD track" },
-	{ 0x0208, "Ring mod / sync" },
+	{ 0x0208, "Ring mod / sync (shift: demo)" },
 	{ 0x0210, "Filter type" }, { 0x0220, "Filter velocity" },
 	{ 0x0402, "Filter KBD track" },             // gearmulator: "Arp"
 	{ 0x0240, "Filter distortion (shift: panic)" },
@@ -51,12 +63,13 @@ static const Button BUTTONS[28] = {
 	{ 0x0440, "Arpeggiator on (shift: hold)" }, // gearmulator: "Lfo2Shape"
 	{ 0x0401, "LFO 2 destination / arp mode" }, // gearmulator: "Distortion"
 	{ 0x0408, "Mod envelope destination" },
-	{ 0x0680, "Shift / mod wheel destination" },
-	{ 0x0610, "Play mode (poly, legato, mono)" }, { 0x0620, "Unison (shift: MIDI channel)" },
-	{ 0x0640, "Portamento auto" },
+	{ 0x0680, "SHIFT (latches while lit: click it, then the button to shift, then it again) / mod wheel destination when tapped" },
+	{ 0x0610, "Play mode (poly, legato, mono) (shift: special)" }, { 0x0620, "Unison (shift: MIDI channel)" },
+	{ 0x0640, "Portamento auto (shift: system)" },
 	{ 0x0004, "Oct shift - (shift: dump all)" }, { 0x0002, "Oct shift + (shift: dump one)" },
 	{ 0x0010, "Program up" }, { 0x0020, "Program down" }, { 0x0404, "Store" },
-	{ 0x0601, "Slot A" }, { 0x0602, "Slot B" }, { 0x0604, "Slot C" }, { 0x0608, "Slot D" },
+	{ 0x0601, "Slot A (shift: master tune)" }, { 0x0602, "Slot B (shift: out mode)" },
+	{ 0x0604, "Slot C (shift: local on/off)" }, { 0x0608, "Slot D (shift: program/control change, arp MIDI out)" },
 	{ 0x0201, "Velocity/morph assign (shift: clear)" }, { 0x0202, "Perf mode" },
 };
 

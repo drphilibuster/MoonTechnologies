@@ -5,6 +5,16 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Added: Nordic Banking's shift functions work from a mouse
+
+The unit's second functions (master tune, out mode, local, program/control change, MIDI channels, the special and
+system settings, panic, arp hold, demo, dumps, clear) need SHIFT held while another button is pressed. SHIFT is now a
+latching, lit button, so the combination is click, click, click, and the unit sees what it would from two hands;
+*SHIFT lets go after the next button* in the context menu lets it up by itself. Each button's shifted function is in
+its label and tooltip, and `docs/NordicBanking.md` has the table (found by holding SHIFT over every button on the
+firmware). A test does the sequence: the function stays selected when SHIFT is let go, UP changes its value, SHIFT
+again leaves it.
+
 ### Added: Nordic Banking takes V/OCT, GATE and SUSTAIN
 
 The pedal jack is gone (there is no foot pedal in Rack); in its place **V/OCT** and **GATE**, both

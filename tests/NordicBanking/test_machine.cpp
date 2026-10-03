@@ -271,6 +271,40 @@ int main() {
 		CHECK(wrong == 0, "no knob edits a byte of another");
 	}
 
+	// SHIFT functions: the panel's SHIFT latches, so a mouse can do what the unit asks of two hands. The sequence is
+	// SHIFT down, a function button, SHIFT up -- the function stays selected, PROGRAM UP / DOWN set its value, and
+	// SHIFT again leaves it. Slot A is master tune, Slot B out mode, UNISON the MIDI channel (found on the firmware).
+	{
+		const uint16_t SHIFT = nb::BUTTONS[13].id, UP = nb::BUTTONS[19].id;
+		struct Fn { int button; const char* name; };
+		const Fn fns[3] = { { 22, "master tune (Slot A)" }, { 23, "out mode (Slot B)" }, { 15, "MIDI channel (UNISON)" } };
+		for (const Fn& f : fns) {
+			Nord2x n5;
+			CHECK(n5.boot(os, {}), "boot for shift functions");
+			Run r5(n5);
+			r5.seconds(1.5);
+			auto lit = [&]() { float rw[6][8], dg[3][8]; n5.leds(rw, dg); r5.seconds(0.4); n5.leds(rw, dg); int c = 0; for (auto& row : rw) for (float v : row) c += v > 0.5f; return c; };
+			auto digits = [&](float out[3][8]) { float rw[6][8]; n5.leds(rw, out); r5.seconds(0.4); n5.leds(rw, out); };
+			const int before = lit();
+			n5.setButton(SHIFT, true); r5.seconds(0.2);
+			n5.setButton(nb::BUTTONS[f.button].id, true); r5.seconds(0.15); n5.setButton(nb::BUTTONS[f.button].id, false); r5.seconds(0.3);
+			n5.setButton(SHIFT, false); r5.seconds(0.3);
+			const int inFn = lit();
+			float d1[3][8], d2[3][8];
+			digits(d1);
+			r5.press(UP);
+			digits(d2);
+			float change = 0;
+			for (int d = 0; d < 3; d++) for (int b = 0; b < 8; b++) change += std::fabs(d1[d][b] - d2[d][b]);
+			r5.press(SHIFT);   // a tap: SHIFT again leaves the function
+			const int after = lit();
+			std::printf("11. shift function %-24s LEDs lit %d -> %d in the function (SHIFT released) -> %d after SHIFT, UP changed the display by %.2f\n", f.name, before, inFn, after, change);
+			CHECK(inFn <= 3, "the function stays selected after SHIFT is let go");
+			CHECK(change > 0.3, "UP changes the function's value");
+			CHECK(after > 8, "SHIFT again leaves the function");
+		}
+	}
+
 	if (failures) { std::printf("%d failure(s)\n", failures); return 1; }
 	std::printf("all passed\n");
 	return 0;

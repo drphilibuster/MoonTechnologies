@@ -34,6 +34,9 @@ P = Panel(
 # -- grouped by the button that steps them. The module draws all of it; where it goes inside the
 # glass is the widget's business. A lamp that belongs to a button of its own (ARP, VELOCITY, the
 # four slots) stays beside that button.
+#
+# SHIFT is a latching bezel, lit while it is down: the unit's second functions (printed in blue on its panel, here after
+# a dot in the label) need SHIFT held while another button is pressed, and a mouse has one pointer.
 
 P.sections = [
     Section("LFO 1 · LFO 2/ARPEGGIATOR · MOD ENV · OSCILLATORS", groups=(2, 2, 3, 5), rows=[
@@ -43,10 +46,10 @@ P.sections = [
              Knob("semi", "SEMITONES"), Knob("fine", "FINE TUNE"),
              Knob("fm", "FM AMOUNT"), Knob("pw", "PULSE WIDTH"), Knob("mix", "MIX")]),
         Row([Button("b_lfo1wave", "LFO 1 WAVE"), Button("b_lfo1dest", "LFO 1 DEST"),
-             Button("b_arp", "ARP", light="arp"), Button("b_lfo2dest", "DEST/MODE"),
+             Button("b_arp", "ARP · HOLD", light="arp"), Button("b_lfo2dest", "DEST/MODE"),
              Button("b_modenv", "DEST"),
              Button("b_osc1", "OSC 1"), Button("b_osc2", "OSC 2"),
-             Button("b_kbd2", "KBD TRACK", light="osc2_kbd"), Button("b_ringsync", "RING/SYNC")],
+             Button("b_kbd2", "KBD TRACK", light="osc2_kbd"), Button("b_ringsync", "RING/SYNC · DEMO")],
             own_grid=True),
     ]),
     Section("FILTER · AMPLIFIER · PROGRAM", groups=(3, 4, 4, 1, 2), rows=[
@@ -56,14 +59,14 @@ P.sections = [
              Knob("gain", "GAIN"), Knob("porta", "PORTA"), Knob("volume", "MASTER VOL")]),
         Row([Button("b_ftype", "TYPE"),
              Button("b_velo", "VELOCITY", light="velocity"), Button("b_fkbd", "KBD TRACK"),
-             Button("b_dist", "DISTORTION", light="distortion"), Button("b_play", "PLAY MODE"),
-             Button("b_unison", "UNISON", light="unison"), Button("b_auto", "AUTO", light="auto"),
-             Button("b_shift", "SHIFT/WHEEL")], own_grid=True),
+             Button("b_dist", "DISTORTION · PANIC", light="distortion"), Button("b_play", "PLAY MODE · SPECIAL"),
+             Button("b_unison", "UNISON · MIDI CH", light="unison"), Button("b_auto", "AUTO · SYSTEM", light="auto"),
+             Bezel("b_shift", "SHIFT/WHEEL")], own_grid=True),
         Row([Button("b_down", "DOWN"), Button("b_up", "UP"), Button("b_store", "STORE"),
-             Button("b_slota", "A", light="slot_a"), Button("b_slotb", "B", light="slot_b"),
-             Button("b_slotc", "C", light="slot_c"), Button("b_slotd", "D", light="slot_d"),
-             Button("b_velmorph", "VEL/MORPH", light="velmorph"), Button("b_perf", "PERF MODE", light="kbdsplit"),
-             Button("b_octdn", "OCT -"), Button("b_octup", "OCT +")], own_grid=True),
+             Button("b_slota", "A · TUNE", light="slot_a"), Button("b_slotb", "B · OUT MODE", light="slot_b"),
+             Button("b_slotc", "C · LOCAL", light="slot_c"), Button("b_slotd", "D · PRG.CTRL", light="slot_d"),
+             Button("b_velmorph", "VEL/MORPH · CLEAR", light="velmorph"), Button("b_perf", "PERF MODE", light="kbdsplit"),
+             Button("b_octdn", "OCT - · DUMP ALL"), Button("b_octup", "OCT + · DUMP ONE")], own_grid=True),
     ]),
 ]
 

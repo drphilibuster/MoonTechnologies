@@ -41,7 +41,8 @@ struct NordicBanking : Module {
 	enum ParamId { KNOB_PARAM, BUTTON_PARAM = KNOB_PARAM + 26, PARAMS_LEN = BUTTON_PARAM + 28 };
 	enum InputId { V_OCT_INPUT, GATE_INPUT, SUSTAIN_INPUT, INPUTS_LEN };
 	enum OutputId { OUT_A_OUTPUT, OUT_B_OUTPUT, OUT_C_OUTPUT, OUT_D_OUTPUT, OUTPUTS_LEN };
-	enum LightId { LED_LIGHT, LIGHTS_LEN = LED_LIGHT + nb::NUM_LEDS };
+	enum LightId { LED_LIGHT, SHIFT_LIGHT = LED_LIGHT + nb::NUM_LEDS, LIGHTS_LEN };
+	static constexpr int SHIFT_BUTTON = 13;     // nb::BUTTONS order: the latching one
 
 	// The DSP's full scale is 1, and the unit never gets near it: a held note at full MASTER VOL peaks around
 	// 0.04, which is 0.2 V at 5 V full scale -- 28 dB under a Rack audio source. The make-up gain is a menu
@@ -68,6 +69,7 @@ struct NordicBanking : Module {
 
 	midi::InputQueue midiInput;
 	bool buttonDown[28] = {};
+	bool shiftOneShot = false;                  // SHIFT lets go after the next button, instead of staying down
 	uint8_t knobSent[26];
 	vc::CvMidi cvMidi;                          // audio thread; its settings are saved in the patch
 	float minNoteMs = 0.f;                      // settings for cvMidi's minimum note length
@@ -223,6 +225,7 @@ struct NordicBanking : Module {
 			cvMidi.reset();
 			for (bool& b : buttonDown) b = false;
 		}
+		lights[SHIFT_LIGHT].setBrightness(params[BUTTON_PARAM + SHIFT_BUTTON].getValue() > 0.5f ? 1.f : 0.f);
 		midi::Message msg;
 		if (!unit) {
 			while (midiInput.tryPop(&msg, args.frame)) {}
@@ -236,10 +239,18 @@ struct NordicBanking : Module {
 			const uint8_t c = knobCode(i);
 			if (c != knobSent[i]) { n.setKnob(nb::KNOBS[i].channel, c); knobSent[i] = c; knobHold[i] = 12; }
 		}
+		bool otherReleased = false;
 		for (int i = 0; i < 28; i++) {
 			const bool down = params[BUTTON_PARAM + i].getValue() > 0.5f;
-			if (down != buttonDown[i]) { n.setButton(nb::BUTTONS[i].id, down); buttonDown[i] = down; }
+			if (down != buttonDown[i]) {
+				n.setButton(nb::BUTTONS[i].id, down);
+				buttonDown[i] = down;
+				if (!down && i != SHIFT_BUTTON) otherReleased = true;
+			}
 		}
+		// One-shot SHIFT: down for one press of another button, then up on its own.
+		if (shiftOneShot && otherReleased && params[BUTTON_PARAM + SHIFT_BUTTON].getValue() > 0.5f)
+			params[BUTTON_PARAM + SHIFT_BUTTON].setValue(0.f);
 		// The cables become MIDI, the one thing the firmware understands: a rising gate is a note-on at the pitch read
 		// then, a falling gate its note-off, and SUSTAIN is the pedal (controller 64).
 		{
@@ -345,6 +356,7 @@ struct NordicBanking : Module {
 		json_object_set_new(root, "cvMidiChannel", json_integer(cvMidi.channel));
 		json_object_set_new(root, "cvPolyToChannels", json_boolean(cvMidi.polyToChannels));
 		json_object_set_new(root, "cvMinNoteMs", json_real(minNoteMs));
+		json_object_set_new(root, "shiftOneShot", json_boolean(shiftOneShot));
 		return root;
 	}
 
@@ -360,6 +372,7 @@ struct NordicBanking : Module {
 		if (json_t* j = json_object_get(root, "cvMidiChannel")) cvMidi.channel = clamp(int(json_integer_value(j)), 0, 15);
 		if (json_t* j = json_object_get(root, "cvPolyToChannels")) cvMidi.polyToChannels = json_is_true(j);
 		if (json_t* j = json_object_get(root, "cvMinNoteMs")) minNoteMs = clamp(float(json_number_value(j)), 0.f, 4000.f);
+		if (json_t* j = json_object_get(root, "shiftOneShot")) shiftOneShot = json_is_true(j);
 		boot();
 	}
 };
@@ -504,8 +517,13 @@ struct NordicBankingWidget : ModuleWidget {
 			panel::B_PLAY_POS, panel::B_UNISON_POS, panel::B_AUTO_POS, panel::B_OCTDN_POS, panel::B_OCTUP_POS,
 			panel::B_UP_POS, panel::B_DOWN_POS, panel::B_STORE_POS, panel::B_SLOTA_POS, panel::B_SLOTB_POS,
 			panel::B_SLOTC_POS, panel::B_SLOTD_POS, panel::B_VELMORPH_POS, panel::B_PERF_POS };
-		for (int i = 0; i < 28; i++)
-			addParam(createParamCentered<VCVButton>(panel::mm(buttons[i].x, buttons[i].y), module, NordicBanking::BUTTON_PARAM + i));
+		for (int i = 0; i < 28; i++) {
+			if (i == NordicBanking::SHIFT_BUTTON)   // latching, and lit while it is down: a mouse cannot hold SHIFT and click
+				addParam(createLightParamCentered<VCVLightBezelLatch<panel::LimeLight> >(panel::mm(buttons[i].x, buttons[i].y), module,
+					NordicBanking::BUTTON_PARAM + i, NordicBanking::SHIFT_LIGHT));
+			else
+				addParam(createParamCentered<VCVButton>(panel::mm(buttons[i].x, buttons[i].y), module, NordicBanking::BUTTON_PARAM + i));
+		}
 
 		// The lamps that stay lamps: one beside each button that has a light of its own. The rest of
 		// the unit's LEDs are drawn on the display.
@@ -561,6 +579,9 @@ struct NordicBankingWidget : ModuleWidget {
 				[=]() { int best = 0; for (int i = 0; i < 7; i++) if (std::abs(dbs[i] - m->outGainDb) < std::abs(dbs[best] - m->outGainDb)) best = i; return best; },
 				[=](int i) { m->outGainDb = dbs[i]; }));
 		}
+		menu->addChild(new MenuSeparator);
+		menu->addChild(createCheckMenuItem("SHIFT lets go after the next button (else it stays down until clicked)", "",
+			[=]() { return m->shiftOneShot; }, [=]() { m->shiftOneShot = !m->shiftOneShot; }));
 		menu->addChild(new MenuSeparator);
 		menu->addChild(createMenuLabel("V/OCT, GATE and SUSTAIN jacks"));
 		menu->addChild(createSubmenuItem("MIDI channel", std::to_string(m->cvMidi.channel + 1), [=](Menu* sub) {

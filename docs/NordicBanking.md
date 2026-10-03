@@ -73,6 +73,39 @@ full scale is 1 and the unit never gets near it: a held middle C across the 120 
 0.09 of full scale (median) to 0.44 (loudest), which is 0.4 to 2.2 V at a 5 V full scale. +12 dB puts the
 median near 2 V and the loudest near 9 V; a patch that sustains at full level is louder still.
 
+## Shift functions
+
+The unit has settings that have no button of their own: they share buttons with other functions and are printed
+in blue on its panel. Reaching one takes SHIFT held while another button is pressed, which a mouse, with its one
+pointer, cannot do. So **SHIFT latches**: click it and it stays down, lit, until you click it again. The
+combination is click SHIFT, click the button, and the unit sees exactly what it would from two hands. (If you
+would rather it let go by itself, the context menu's *SHIFT lets go after the next button* does that: SHIFT is
+down for one press of another button and comes up on its own.) SHIFT clicked down and up with nothing
+between is the unit's own tap on that button, which steps the mod wheel's destination, as its label says.
+
+The panel names each button's shifted function after a dot in its label. Seven of them open a menu of
+settings; the rest do one thing:
+
+| SHIFT + | What it opens | Setting the value |
+|---|---|---|
+| **A** | Master tune, in cents; `00` is 440 Hz, a dot after the number is flat | UP / DOWN |
+| **B** | Out mode for slots A and B (`1.Ab` to `4.Ab`); press again for slots C and D (`-.cd`, `1.cd` to `4.cd`). In the 4 modes each slot gets an output of its own | UP / DOWN |
+| **C** | Local on/off | UP / DOWN |
+| **D** | Program change `P`, controllers `C`, arpeggio MIDI out `A`; press again to step between them | UP / DOWN: `oF` / `on` |
+| **UNISON** | The MIDI channel of the selected slot (choose the slot with A to D); press again for the global channel | UP / DOWN |
+| **PLAY MODE** | Special functions, one per press: `1` LFO 1 sync, `2` LFO 2/arp sync, `F` filter envelope trigger, `A` amp envelope trigger, `S` velocity/morph, `t` aftertouch, `E` pedal assignment. Choose the slot, then | UP / DOWN |
+| **AUTO** | System, one per press: `SP` sustain pedal polarity, `br` pitch bend range, `Un` unison detune | UP / DOWN |
+| DISTORTION | Panic: an All Notes Off, and certain parameters reset to normal values | |
+| ARP | Arpeggio hold | |
+| RING/SYNC | The demo | |
+| OCT - / OCT + | Dump all / dump one program or performance, as SysEx | |
+| VEL/MORPH | Clears all velocity programming | |
+
+In a function the lamps on the display go dark, as the unit's LEDs do, and the three digits show it. The value is
+set with **UP** and **DOWN**, and SHIFT clicked again (down, then up) leaves the function. Nothing needs storing:
+the settings are kept by the unit, and travel in the patch with its flash. These were found by holding SHIFT over each of the
+unit's buttons on the firmware and reading the display; the tests do the same, click for click.
+
 ## The panel
 
 These are the unit's own 26 knobs and 28 buttons, grouped as the manual draws them. A knob
