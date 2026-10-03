@@ -154,12 +154,54 @@ median), and a median strike that moves with the pitch (8.29 V at a 10 ms time c
 median, so RATE still sets the median pitch. DRIFT is unchanged and is the slower wander. The per-cycle
 randomness is seeded per voice and is deterministic from the module's creation.
 
-**The board's output stage.** The TL072 "buffered, amplified output" is non-inverting with gain
-1 + 220k/1k = 221, AC-coupled by C3 1 µF into R4 100k (a 1.6 Hz high-pass), with the part's 3 MHz
-gain-bandwidth putting a pole at 13.6 kHz. The oscillator's 0.9 V swing times 221 is far past the
-rails, so on the real board that output is a clipped, nearly square wave, not a saw.
-`Tl072Stage` in Avalanche.hpp models it (rail ASSUMED at +-10.5 V on +-12 V supplies) and is tested,
-but this module has no output for it (the `OUT` is the node's own saw), so it is not routed.
+**The board's output stage.** Read from the schematic: the oscillator node N goes through R4 100k to
+P2 ("Output from Osc circuit"); from P2, C3 1 µF goes to the TL072's POS input, which R7 1k holds to
+ground. C3 into R4 + R7 is a 1.58 Hz high-pass, and R4 over R7 is a divider that passes 1k / 101k = 0.99 %
+of the node's swing. The stage is then non-inverting, gain 1 + 220k / 1k = 221, with the part's 3 MHz
+gain-bandwidth putting a pole at 13.6 kHz (rail ASSUMED at +-10.5 V on +-12 V supplies). So the net gain is
+221 x 0.99 % = 2.19 and the 0.9 V swing comes out as about 2 V peak to peak: **it does not clip** (an
+earlier version of this page, and of `Tl072Stage`, had the divider the wrong way and called it a clipped
+square wave; the PDF does not say that). `Tl072Stage` in Avalanche.hpp models it and is tested.
+The default core has no output for it; the optional board core (below) does.
+
+**Avalanche core: board (menu option, off by default).** With it on, the avalanche voices are the
+schematic's parts instead of a frequency asked for. `src/SixFigures/AvalancheBoard.hpp`:
+
+- **RATE** is R2, the board's 10k pot (assumed linear, with RATE = 1 at 0 ohms, the fast end);
+  **RANGE** is SW1: AUDIO is C2 1 µF, LFO is C1 10 µF. The charging resistance is
+  R1 1k + R2 || the vactrol's LDR (R3), so 1k to 11k with no CV.
+- **CV** goes through R8 330 into R9 (the **CV amount** trimpot's positive half is the 100k pot, 0 to full;
+  its negative half is the pot at ground), then LED2 (the vactrol's LED), through the optional LED3 if you
+  fit it (menu), and the LDR is the VTL5C3 of Vactrol.hpp with its memory. A negative CV lights nothing.
+  The 100k pot starves the LED below full travel (5 V at half travel is a few microamps), and at full travel
+  10 V gives 25 mA: the LDR falls to about 1.5k and the pot-at-10k pitch goes up 4.5 times.
+  The first milliseconds of a CV step show the cell's own lag.
+- **The frequency is not set anywhere.** The capacitor charges toward VCC less LED1 through that resistance
+  and the junction strikes when its hazard (the microplasma law above, integrated along the real charge, so a
+  resistance that moves mid-cycle is handled exactly) says so; it releases at 7.3 V. The median cycle is
+  `T = RC ln((Vs - Vrel) / (Vs - V_m))` with V_m the median strike at that RC; checked against an independent
+  stepped simulation with its own calibration and against the strike table, to under 1 %.
+- **Spans, measured by the test (median frequency, no CV):** AUDIO 218 Hz (R2 10k) to 2.26 kHz (R2 0);
+  LFO 23.1 Hz to 239 Hz. These are not the default core's 20 Hz-4 kHz and 0.05-8 Hz: the board's parts
+  cannot reach those. The 10:1 capacitor ratio gives 9.45:1 in frequency because the junction strikes later
+  when it is charged faster (8.34 V at the fastest, 8.24 V at the slowest, against 8.2 V at the
+  calibration), and the fixed-threshold law is 6-19 % higher in frequency than the circuit's, so the abstract
+  core's RATE-to-pitch law is not the board's. Jitter is the ~3 % of the default core, per cycle, and
+  there is nothing else to wander the pitch except DRIFT (the module's addition, kept: it speeds or slows the
+  whole time constant by up to half an octave, as before).
+- **OUT carries** (menu): *saw (module)*, the default, is the capacitor's own charge normalised as in the
+  default core (+-5 V; here the peak sits above +1 at the fast end, where the median strike is later);
+  *TL072 x221 amplified (P3)* is about +-1.1 V at the board's own gain, in volts; *raw oscillator node (P2)* is
+  P2 exactly: N through R4 into C3 + R7, so it carries N's DC level (about 9.6 V) and only about 1 % of the
+  swing on top of it (~10 mV at audio rates, a few percent more at the slowest LFO), which is what the schematic's jack does; *capacitor node
+  (N, before R4)* is N itself, 9.1 to 10.1 V, an addition of mine (the schematic has no jack there). The
+  AUX pulse, the LED and the display (the median frequency) follow the board. MIX always sums the saw.
+  1 V/oct mode does not apply to board voices.
+- **Assumed** (not in the course files or the sheets): VCC +12 V, LED1 1.8 V and constant, the junction numbers
+  of the default core (a 2N2222's, strike 8.2 V, release 7.3 V; no BC337 measured), the 20 mV strike e-fold,
+  R2 linear, the vactrol a VTL5C3 with a 20 Mohm dark resistance, LED3 the same LED as LED2, C1/C2 exact, the
+  TL072 ideal apart from its gain-bandwidth and rail, no input offset (3 mV typ x 221 would be 0.7 V of DC
+  at P3).
 
 ## Per-voice controls (×6)
 
@@ -234,6 +276,9 @@ while genuinely tracking `SIGNAL`, dark while beating against it or free-running
 
 - **1 V/oct tracking (all voices)** — off by default. See
   [CV response](#cv-response).
+- **Avalanche core: board** — off by default. Turns the avalanche voices into the schematic's circuit,
+  with **Avalanche board: OUT carries** (saw, P3, P2, N) and **Avalanche board: CV LED (LED3) fitted**.
+  Saved in the patch only when on. See [the avalanche core](#the-four-cores).
 - **40106 supply (VDD)** — 5, 9, 12 (default) or 15 V: the supply of the 40106 voices.
   See [the 40106 core](#the-four-cores).
 - **SIGNAL also on the 4046 R1 pin (board's RingMod jack)** — off by default. See
@@ -247,7 +292,7 @@ while genuinely tracking `SIGNAL`, dark while beating against it or free-running
   In jack drives the node outside the rails). The avalanche core is the relaxation oscillator's own charge curve, but
   its breakdown voltages are a 2N2222's, not a measured BC337's, the strike jitter's e-fold (20 mV) is
   an assumption of Haitz's microplasma shape (the rate itself is calibrated to the published strike), the TL072
-  x221 stage is modelled but not routed, and the flyback is instantaneous.
+  x221 stage is routed only in the optional board mode, and the flyback is instantaneous.
 - The PLL only locks to the fundamental, not to harmonics or subharmonics of
   `SIGNAL` the way a real 4046 can be coaxed into doing (the "or its harmonics
   or subharmonics" the brief mentions) — implementing genuine N:M lock was out

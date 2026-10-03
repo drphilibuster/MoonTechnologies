@@ -24,8 +24,8 @@ static const int MAX_POLY = 16;
 static inline float vactrolGain(vactrol::Vactrol& cell, float volts, float sampleTime) {
 	const double RSERIES = 330.0, RLOAD = 100e3;
 	cell.setSampleTime(sampleTime);
-	double i = vactrol::ledCurrent((double) volts, RSERIES);
-	if (i > vactrol::kMaxLedCurrent) i = vactrol::kMaxLedCurrent;
+	double i = vactrol::ledCurrent((double) volts, RSERIES, *cell.p);
+	if (i > cell.p->maxLedCurrent) i = cell.p->maxLedCurrent;
 	double g = cell.step(i);          // siemens
 	return (float) (1.0 / (1.0 + 1.0 / (g * RLOAD)));    // RLOAD / (RLOAD + 1/g)
 }
@@ -60,7 +60,7 @@ struct OnePoleLP {
 struct VcaBus {
 	float ctrl[MAX_POLY] = {};   // slewed control voltage, 0..1 -- all three modes
 	OnePoleLP lpg[MAX_POLY];
-	vactrol::Vactrol ldr[MAX_POLY];            // VACTROL mode: the VTL5C3 cell, with its memory
+	vactrol::Vactrol ldr[MAX_POLY];            // VACTROL mode: the cell (VTL5C3 unless the menu says otherwise), with its memory
 	garnishment::IAmO jfet[MAX_POLY];          // the I AM O circuit, solved; C1 is its own DC blocker
 	garnishment::OtaVca ota[MAX_POLY];         // the Day 2 13700 board, solved
 	float cvv[MAX_POLY] = {};                  // OTA: the CV at the 22k, volts, slewed by LAG

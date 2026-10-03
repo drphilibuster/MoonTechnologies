@@ -182,6 +182,17 @@ struct AvalancheNoise {
     sets its level to the white noise this replaced (rms 1/sqrt(3) in the band at 48 kHz). */
 struct AvalancheSource {
     static constexpr double kNormMicroplasma = 2.474;   // 0.57735 / 0.2334: the 48 kHz rms of the snare setting (C5 0.1 uF), measured over 3 seeds x 30 s, 44.1 to 192 kHz within 0.01 dB
+    // The same 0.57735 (white's rms) for the other three boards the drum voices use, each the 48 kHz rms
+    // measured over 3 seeds x 29 s (44.1 to 96 kHz within 0.3 dB for the 0.1 uF settings and 0.9 dB for
+    // the 1 nF ones, whose band is wider): the Percussive Noise Voice's HiHat (BC549, C5 = 1 nF), and
+    // the Tiny Dazzler's snare (2N3904, C1 = 0.1 uF) and HighHat (C1 = 1 nF).
+    static constexpr double kNormHat = 1.8219, kNormDazzlerSnare = 1.7825, kNormDazzlerHat = 1.2360;
+    /** The normalisation for a board: which of the four measured settings (C5 below 10 nF is the hi-hat's). */
+    static double normFor(AvalancheNoise::Variant v, double c5) {
+        const bool hat = c5 < 10e-9;
+        if (v == AvalancheNoise::DAZZLER) return hat ? kNormDazzlerHat : kNormDazzlerSnare;
+        return hat ? kNormHat : kNormMicroplasma;
+    }
     static constexpr double kNorm = 1065.0;   // 0.57735 / 0.5421 mV: the 48 kHz rms of this circuit, as volts
 
     AvalancheNoise ckt;
@@ -191,6 +202,7 @@ struct AvalancheSource {
     double norm = kNormMicroplasma;
     uint32_t seed0 = 0x5EAF00Du;
     int K = 4;
+    double minSolver = 192000.0;        // the solver's rate is the smallest whole multiple of the audio rate that reaches this
     double fs = 48000.0, dc = 0.0;
     double hp = 0.0, hpA = 0.001;       // microplasma pulses rectify through T1's base: a one-pole DC block at 8 Hz
     struct Bq { double b0, b1, b2, a1, a2, z1 = 0, z2 = 0;
@@ -201,12 +213,12 @@ struct AvalancheSource {
     explicit AvalancheSource(uint32_t seed = 0x5EAF00Du,
                              AvalancheNoise::Variant v = AvalancheNoise::PERCUSSIVE,
                              bool plasmas = true, double c5Farads = 0.1e-6)
-        : variant(v), microplasma(plasmas), c5(c5Farads), norm(plasmas ? kNormMicroplasma : kNorm), seed0(seed) {}
+        : variant(v), microplasma(plasmas), c5(c5Farads), norm(plasmas ? normFor(v, c5Farads) : kNorm), seed0(seed) {}
 
     void setRate(double audioRate) {
         fs = audioRate;
         hpA = 2.0 * 3.14159265358979323846 * 8.0 / fs;
-        K = (int)std::ceil(192000.0 / fs);
+        K = (int)std::ceil(minSolver / fs);
         if (K < 1) K = 1;
         double fc = 0.4 * fs, w0 = 2.0 * 3.14159265358979323846 * fc / (fs * K);
         double Qs[2] = { 0.5411961, 1.3065630 };               // 4th-order Butterworth

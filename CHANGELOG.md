@@ -5,6 +5,27 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Added: Accrual, the 4069 VCO
+
+The Modular in a Week 4069 VCO (Unfinished projects, kristian.borgstedt 2019-12-06) solved as its circuit. A BC560/BC550
+exponential pair sums Tune, Fine, CV1 and CV2; a CD4069UB Miller integrator is reset by a two-inverter Schmitt trigger; a third
+inverter makes the pulse-width comparator. SAW and PULSE come out of the board's own coupling capacitors. Polyphonic, 8 HP; the
+integrator's output is on the screen, and the pitch in hertz, FINE and PW are fields on it. The menu holds the 1 V/oct trimmer
+R21 (with a calibrate item), the 4069 supply (9/10/12/15 V), its input capacitance and the pot range. Checked against the whole
+netlist stepped at 20 ps to 20 us: period within 0.1 % from 4.5 Hz to 4 kHz. `Mna.hpp` gained a PNP, a size template (the
+existing `Circuit` is unchanged and bit-identical) and a DC continuation step.
+
+### Added: options on the 2026-10-03 chip models (left-click menus, defaults unchanged)
+
+* **Kickback** HAT noise and DAZZLE (snare mode, hat top end) run on the avalanche noise circuit by default (Percussive Noise Voice
+  HiHat C5 and Tiny Dazzler, with microplasmas); a *Noise source* menu returns either to white, bit-identical to before. A sounding
+  hat costs about a quarter of a core. The snare VACTROL gains *Vactrol part* and *VACTROL topology* (module filter corner by
+  default, or the Day 9 board where the LDR sets the envelope decay).
+* **Garnishment** VACTROL gains *Vactrol part* (VTL5C3 default, Silonex NSL-32SR2/SR3, DIY LED + GL5528, each from its datasheet).
+* **SixFigures** gains *Avalanche core: board* (RATE is the real R2 pot, RANGE the real C1/C2, CV drives the vactrol LED, strike
+  timing from the real RC), with *OUT carries* (saw, TL072 x221 at P3, raw P2, capacitor node) and *CV LED (LED3) fitted*. The
+  TL072 stage is now modelled with the board's R4/R7 divider (it does not clip).
+
 ### Changed: chip-level models for the Modular-in-a-Week banks (2026-10-03 batch)
 
 MiaW is a starting point, not ground truth: where a datasheet or a better source disagrees with the course board, the

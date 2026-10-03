@@ -10,6 +10,7 @@ void init(Plugin* p) {
 
 	// The order here is the order Rack lists the brand's modules in, so keep it
 	// alphabetical rather than in the order they were written.
+	p->addModel(modelAccrual);
 	p->addModel(modelAmortization);
 	p->addModel(modelApportionment);
 	p->addModel(modelAuditLogic);

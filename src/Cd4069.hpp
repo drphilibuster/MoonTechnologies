@@ -53,7 +53,8 @@ struct Inverter { int nmos, pmos, clampHi, clampLo; };
 
 /** Adds one inverter between `in` and `out`, supplied between `vdd` and `vss` (any node codes,
     fixed sources included), with its input clamp diodes. */
-inline Inverter addInverter(mna::Circuit& c, int in, int out, int vdd, int vss, const Params& q = typical()) {
+template <class Circ>
+inline Inverter addInverter(Circ& c, int in, int out, int vdd, int vss, const Params& q = typical()) {
     Inverter inv;
     inv.nmos = c.addMosfet(out, in, vss, q.n.beta, q.n.vt, q.n.lambda, q.n.theta, +1);
     inv.pmos = c.addMosfet(out, in, vdd, q.p.beta, q.p.vt, q.p.lambda, q.p.theta, -1);

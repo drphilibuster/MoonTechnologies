@@ -84,13 +84,18 @@ inline double mosId(double vgs, double vds, double beta, double vt, double lambd
     return id;
 }
 
-struct Circuit {
+/** The solver, sized by template: `Circuit` below is the 16-node, 40-element, 4-source size every
+    existing board uses; a larger board (Accrual's 16 unknowns and 12 sources) names a bigger one. The
+    arithmetic is identical at any size. */
+template <int kMaxNodes, int kMaxElems, int kMaxFixed>
+struct CircuitT {
+    static const int kCols = kMaxNodes + 1 + kMaxFixed;
     int n = 0;                          // unknown nodes
     double fixedV[kMaxFixed] = {};
     double v[kMaxNodes] = {};           // node voltages (the solution)
     double gmin = 1e-12;                // to ground at every node, so a floating one is defined
 
-    enum Kind { RES, CAP, DIODE, NPN, NJFET, ZENER, ISRC, MOS };
+    enum Kind { RES, CAP, DIODE, NPN, NJFET, ZENER, ISRC, MOS, PNP };
     struct Elem {
         Kind kind;
         int a, b, c;                    // terminals (NPN: collector, base, emitter)
@@ -108,6 +113,10 @@ struct Circuit {
     int addDiode(int a, int k, double is, double nvt) { return add({ DIODE, a, k, 0, is, nvt, 0, 0, 0, 0, 0 }); }
     int addNpn(int c, int b, int em, double is, double bf, double br, double vaf) {
         return add({ NPN, c, b, em, is, bf, br, vaf, 0, 0, 0 });
+    }
+    /** A PNP: the NPN law in mirrored voltages, the currents reversed (p0..p3 as for addNpn). */
+    int addPnp(int c, int b, int em, double is, double bf, double br, double vaf) {
+        return add({ PNP, c, b, em, is, bf, br, vaf, 0, 0, 0 });
     }
     int addJfet(int d, int g, int src, double beta, double vto, double lambda) {
         return add({ NJFET, d, g, src, beta, vto, lambda, 0, 0, 0, 0 });
@@ -156,6 +165,16 @@ struct Circuit {
         for (int i = 0; i < ne; i++)
             if (e[i].kind == CAP) { e[i].vPrev = volt(e[i].a) - volt(e[i].b); e[i].iPrev = 0.0; }
         dc = false;
+        return ok;
+    }
+
+    /** Newton at the present sources, from the present voltages, with the capacitors open: the
+        continuation step of a DC sweep (solveDc always restarts from zero). Returns convergence. */
+    bool solveHere(int maxIter = 80) {
+        bool was = dc;
+        dc = true;
+        bool ok = newton(maxIter);
+        dc = was;
         return ok;
     }
 
@@ -389,6 +408,40 @@ private:
                 }
                 break;
             }
+            case PNP: {
+                // The NPN law in mirrored voltages (u = -v): the slopes keep their form, the
+                // currents change sign.
+                double vb = volt(el.b), vc = volt(el.a), ve = volt(el.c);
+                double Is = el.p0, BF = el.p1, BR = el.p2, VAF = el.p3;
+                double vbe = ve - vb, vbc = vc - vb, def, der;
+                double ef = expLim(vbe / kVt, def), er = expLim(vbc / kVt, der);
+                double f = 1.0 - vbc / VAF;
+                double Ic = Is * (ef - er) * f - Is / BR * (er - 1.0);
+                double Ib = Is / BF * (ef - 1.0) + Is / BR * (er - 1.0);
+                double dIc_dvbe = Is * def / kVt * f;
+                double dIc_dvbc = -Is * der / kVt * f - Is * (ef - er) / VAF - Is / BR * der / kVt;
+                double dIb_dvbe = Is / BF * def / kVt;
+                double dIb_dvbc = Is / BR * der / kVt;
+                int c = el.a, b = el.b, em = el.c;
+                // mirrored vbe_n = Ve - Vb, vbc_n = Vc - Vb. Real currents leaving: collector -Ic,
+                // base -Ib, emitter +(Ic+Ib). d(real)/dV = d(n)/dV_n for each terminal.
+                // d/dVb = -(dvbe+dvbc), d/dVe = +dvbe, d/dVc = +dvbc  (times -1 for the sign flip)
+                struct T { int node; double i; double dIdVb, dIdVe, dIdVc; };
+                T t[3] = {
+                    { c,  -Ic,       dIc_dvbe + dIc_dvbc, -dIc_dvbe, -dIc_dvbc },
+                    { b,  -Ib,       dIb_dvbe + dIb_dvbc, -dIb_dvbe, -dIb_dvbc },
+                    { em, (Ic + Ib), -(dIc_dvbe + dIc_dvbc + dIb_dvbe + dIb_dvbc),
+                                       dIc_dvbe + dIb_dvbe, dIc_dvbc + dIb_dvbc },
+                };
+                for (int k = 0; k < 3; k++) {
+                    if (t[k].node < 0) continue;
+                    J[t[k].node][n] -= t[k].i;
+                    if (col(b) >= 0)  J[t[k].node][col(b)]  += t[k].dIdVb;
+                    if (col(em) >= 0) J[t[k].node][col(em)] += t[k].dIdVe;
+                    if (col(c) >= 0)  J[t[k].node][col(c)]  += t[k].dIdVc;
+                }
+                break;
+            }
         }
     }
 
@@ -417,5 +470,7 @@ private:
         return true;
     }
 };
+
+typedef CircuitT<kMaxNodes, kMaxElems, kMaxFixed> Circuit;
 
 } // namespace mna

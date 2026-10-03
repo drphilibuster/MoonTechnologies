@@ -59,6 +59,10 @@ struct Kickback : Module {
 
 	Kick kick;
 	Snare snare;
+	// The SNARE's VACTROL mode, two options (context menu, saved in the patch). Defaults: a VTL5C3,
+	// the module's filter-corner topology -- the engine as it was.
+	int vactrolPart = 0;          // vactrol::PartId
+	bool vactrolBoard = false;    // false: filter corner (module), true: the LDR sets the decay (the board)
 	Hat hat;
 	Tom tom[3];
 
@@ -193,6 +197,7 @@ struct Kickback : Module {
 
 	void onReset(const ResetEvent& e) override {
 		Module::onReset(e);
+		vactrolPart = 0; vactrolBoard = false;
 		kick.reset(); snare.reset(); hat.reset();
 		for (int i = 0; i < 3; i++) tom[i].reset();
 		payroll.reset();
@@ -208,12 +213,29 @@ struct Kickback : Module {
 	json_t* dataToJson() override {
 		json_t* root = json_object();
 		json_object_set_new(root, "step", json_integer(payroll.step));
+		// Noise sources (context menu): 1 = the avalanche circuit with microplasmas, 0 = white noise.
+		json_object_set_new(root, "hatNoise", json_integer(hat.plasma ? 1 : 0));
+		json_object_set_new(root, "dazzleNoise", json_integer(snare.ksEng.plasma ? 1 : 0));
+		json_object_set_new(root, "vactrolPart", json_integer(vactrolPart));
+		json_object_set_new(root, "vactrolBoard", json_boolean(vactrolBoard));
 		return root;
 	}
 	void dataFromJson(json_t* root) override {
 		json_t* j = json_object_get(root, "step");
 		if (j) payroll.setStep(clamp((int)json_integer_value(j), 0, kSteps - 1));
+		// A patch saved before these existed has no keys and gets the default, the circuit.
+		j = json_object_get(root, "hatNoise");
+		hat.plasma = j ? json_integer_value(j) != 0 : true;
+		j = json_object_get(root, "dazzleNoise");
+		setDazzleNoise(j ? json_integer_value(j) != 0 : true);
+		j = json_object_get(root, "vactrolPart");
+		vactrolPart = j ? clamp((int)json_integer_value(j), 0, ::vactrol::PART_COUNT - 1) : 0;
+		j = json_object_get(root, "vactrolBoard");
+		vactrolBoard = j ? json_boolean_value(j) : false;
 	}
+
+	/** DAZZLE, wherever it is: the snare's mode and the hat's top end. */
+	void setDazzleNoise(bool plasma) { snare.ksEng.plasma = plasma; hat.ksEng.plasma = plasma; }
 
 	void process(const ProcessArgs& args) override {
 		// --- the payroll -----------------------------------------------------
@@ -304,6 +326,7 @@ struct Kickback : Module {
 			// a kick wound up for a long dive wants the stage pushed harder.
 			0.25f + 0.5f * KNOB(BEND, V_KICK));
 
+		snare.setVactrol(vactrolPart, vactrolBoard);
 		out[V_SNARE] = snare.process(hit[V_SNARE], vel[V_SNARE],
 			(int)clamp(std::round(KNOB(COLOUR, V_SNARE)), 0.f, 2.f),
 			KNOB(TUNE, V_SNARE), VOCT(V_SNARE), KNOB(DECAY, V_SNARE),
@@ -496,6 +519,40 @@ struct KickbackWidget : ModuleWidget {
 		addOutput(createOutputCentered<panel::PortTrigOut>(panel::mm(panel::CLK_OUT_POS.x, panel::CLK_OUT_POS.y), module, Kickback::CLK_OUTPUT));
 		addOutput(createOutputCentered<panel::PortOutMain>(panel::mm(panel::MIX_OUT_POS.x, panel::MIX_OUT_POS.y), module, Kickback::MIX_OUTPUT));
 
+	}
+
+	void appendContextMenu(Menu* menu) override {
+		Kickback* m = dynamic_cast<Kickback*>(module);
+		if (!m)
+			return;
+		menu->addChild(new MenuSeparator);
+		menu->addChild(createMenuLabel("Snare VACTROL mode"));
+		std::vector<std::string> parts;
+		for (int i = 0; i < ::vactrol::PART_COUNT; i++) parts.push_back(::vactrol::part(i).name);
+		menu->addChild(createIndexSubmenuItem("Vactrol part", parts,
+			[=]() { return (size_t) m->vactrolPart; },
+			[=](size_t i) { m->vactrolPart = (int) i; }));
+		menu->addChild(createIndexSubmenuItem("VACTROL topology",
+			{"filter corner (module)", "board (LDR sets the decay)"},
+			[=]() { return (size_t) (m->vactrolBoard ? 1 : 0); },
+			[=](size_t i) { m->vactrolBoard = (i == 1); }));
+		menu->addChild(createMenuLabel("  board: DECAY = R2 (A100K), BEND = Decay CV into the LED"));
+		menu->addChild(createMenuLabel("  (t60 = 6.9 * 10 uF * (100 + R2 || LDR)); TUNE stays the low-pass"));
+
+		// The noise behind the HAT's hiss and behind DAZZLE (the snare's mode and the hat's top
+		// end). Microplasma is the Percussive Noise Voice / Tiny Dazzler avalanche circuit solved
+		// at 192 kHz (a sounding hat costs about a quarter of a core at 48 kHz; DAZZLE only pays
+		// while a table is being filled); white is the flat generator both used before.
+		menu->addChild(new MenuSeparator);
+		menu->addChild(createMenuLabel("Noise source"));
+		menu->addChild(createIndexSubmenuItem("HAT noise",
+			{"White", "Microplasma (avalanche circuit)"},
+			[=]() { return (size_t) (m->hat.plasma ? 1 : 0); },
+			[=](size_t i) { m->hat.plasma = (i == 1); }));
+		menu->addChild(createIndexSubmenuItem("DAZZLE noise",
+			{"White", "Microplasma (avalanche circuit)"},
+			[=]() { return (size_t) (m->snare.ksEng.plasma ? 1 : 0); },
+			[=](size_t i) { m->setDazzleNoise(i == 1); }));
 	}
 };
 

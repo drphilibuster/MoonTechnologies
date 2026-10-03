@@ -11,6 +11,7 @@
 #include <cmath>
 
 #include "Avalanche.hpp"
+#include "AvalancheBoard.hpp"
 #include "Schmitt.hpp"
 
 namespace sixfigures {
@@ -115,11 +116,14 @@ struct Voice {
 	bool locked = false;
 	dsp::PulseGenerator avalanchePulse;
 	avalanche::Strike strike;    // the avalanche core's per-cycle strike voltage (jitter)
+	avalanche::board::Board board;   // the avalanche core's optional faithful board (menu); idle in the default mode
+	float boardSr = 0.f;         // the sample rate `board` was last set up for
 	cd40106::Osc schmitt;        // the 40106 core: the astable itself, not a phase
 
 	void reset() {
 		phase = 0.f;
 		strike.reset();
+		board.reset();
 		schmitt.reset();
 		tri.reset();
 		drift = 0.f;

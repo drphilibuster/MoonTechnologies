@@ -53,6 +53,12 @@ struct SixFigures : Module {
 	bool signalOnR1 = false;
 	// The 40106 core's supply (VDD = VCC on the board). Its thresholds are a function of it (Cd40106.hpp).
 	float vdd = (float) sixfigures::schmitt::kVddDefault;
+	// The avalanche core as the board (AvalancheBoard.hpp, docs/SixFigures.md). Off (default): the core is the
+	// abstract one, RATE and CV asking for a frequency. On: RATE is the board's R2 pot, the range switch picks C1/C2,
+	// CV drives the vactrol's LED through R8 330 and R9 (CV AMOUNT), and `avalancheTap` picks what OUT carries.
+	bool avalancheBoard = false;
+	int avalancheTap = sixfigures::avalanche::board::TAP_SAW;
+	bool avalancheLed3 = false;          // the board's optional CV LED, in series with the vactrol's
 
 	SixFigures() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -223,6 +229,20 @@ struct SixFigures : Module {
 			dispHz[i] = freq;
 			float dt = freq * args.sampleTime;
 
+			// The board's avalanche core runs its own circuit; everything above (the abstract RATE/CV frequency, DRIFT's
+			// wander) is shared with the default core, so DRIFT still moves the pitch the same way, as a speed factor.
+			sixfigures::avalanche::board::Board::Out boardOut = {};
+			const bool boardMode = avalancheBoard && core == sixfigures::CORE_AVALANCHE;
+			if (boardMode) {
+				if (v.boardSr != args.sampleRate) {
+					v.board.setRate(args.sampleRate);
+					v.boardSr = args.sampleRate;
+				}
+				const double speed = dsp::exp2_taylor5(v.drift * driftAmount * 0.5f);
+				boardOut = v.board.process(knob, lfoRange, cv, std::max(cvAmt, 0.f), avalancheLed3, speed);
+				dispHz[i] = (float) v.board.hz;
+			}
+
 			float prevPhase = v.phase;
 			v.phase += dt;
 			// the avalanche core's cycle ends where this cycle's junction struck (Avalanche.hpp `Strike`)
@@ -235,6 +255,8 @@ struct SixFigures : Module {
 			bool wrapped = v.phase < prevPhase;
 
 			float outSample = 0.f, auxSample = 0.f;
+			float outVolts = 0.f;          // the board's chosen tap, when OUT carries one
+			bool haveVolts = false;
 			switch (core) {
 				case sixfigures::CORE_SCHMITT: {
 					// The astable itself (Cd40106.hpp): RATE is the pot, the CV the In jack's 1N4448 + 1k
@@ -262,15 +284,33 @@ struct SixFigures : Module {
 				}
 				case sixfigures::CORE_AVALANCHE:
 				default: {
-					outSample = sixfigures::avalancheSaw(v.phase, dt, v.strike.theta, v.strike.warp);
-					if (wrapped)
-						v.avalanchePulse.trigger(0.001f);
+					if (boardMode) {
+						// The board: OUT carries the saw (as ever, +-5 V), or a node of the circuit in the volts it is at.
+						// MIX always sums the saw: the nodes sit on DC (N, P2) or are not the module's level (P3).
+						outSample = (float) boardOut.saw;
+						switch (avalancheTap) {
+							case sixfigures::avalanche::board::TAP_TL072: outVolts = (float) boardOut.p3; break;
+							case sixfigures::avalanche::board::TAP_NODE:  outVolts = (float) boardOut.p2; break;
+							case sixfigures::avalanche::board::TAP_CAP:   outVolts = (float) boardOut.node; break;
+							default: break;
+						}
+						if (avalancheTap != sixfigures::avalanche::board::TAP_SAW)
+							haveVolts = true;
+						if (v.board.wrapped)
+							v.avalanchePulse.trigger(0.001f);
+						v.phase = clamp((float) (v.board.tCycle * v.board.hz), 0.f, 1.f);   // the LED follows the cycle
+					}
+					else {
+						outSample = sixfigures::avalancheSaw(v.phase, dt, v.strike.theta, v.strike.warp);
+						if (wrapped)
+							v.avalanchePulse.trigger(0.001f);
+					}
 					auxSample = v.avalanchePulse.process(args.sampleTime) ? 10.f : 0.f;
 					break;
 				}
 			}
 
-			outputs[OUT1_OUTPUT + i].setVoltage(outSample * 5.f);
+			outputs[OUT1_OUTPUT + i].setVoltage(haveVolts ? outVolts : outSample * 5.f);
 			outputs[AUX1_OUTPUT + i].setVoltage(auxSample);
 			mixSum += outSample;
 
@@ -291,6 +331,13 @@ struct SixFigures : Module {
 		json_object_set_new(root, "voltPerOct", json_boolean(voltPerOct));
 		json_object_set_new(root, "signalOnR1", json_boolean(signalOnR1));
 		json_object_set_new(root, "vdd", json_real(vdd));
+		// the board option is written only when it is on, so a default patch saves what it always did
+		if (avalancheBoard)
+			json_object_set_new(root, "avalancheBoard", json_boolean(true));
+		if (avalancheTap != sixfigures::avalanche::board::TAP_SAW)
+			json_object_set_new(root, "avalancheTap", json_integer(avalancheTap));
+		if (avalancheLed3)
+			json_object_set_new(root, "avalancheLed3", json_boolean(true));
 		return root;
 	}
 
@@ -304,6 +351,13 @@ struct SixFigures : Module {
 		j = json_object_get(root, "vdd");
 		if (j && json_is_number(j))
 			vdd = clamp((float) json_number_value(j), 3.f, 18.f);
+		j = json_object_get(root, "avalancheBoard");
+		avalancheBoard = j && json_boolean_value(j);
+		j = json_object_get(root, "avalancheTap");
+		avalancheTap = (j && json_is_integer(j)) ? clamp((int) json_integer_value(j), 0, sixfigures::avalanche::board::NUM_TAPS - 1)
+		                                         : sixfigures::avalanche::board::TAP_SAW;
+		j = json_object_get(root, "avalancheLed3");
+		avalancheLed3 = j && json_boolean_value(j);
 	}
 };
 
@@ -427,6 +481,19 @@ struct SixFiguresWidget : ModuleWidget {
 		menu->addChild(createBoolMenuItem("SIGNAL also on the 4046 R1 pin (board's RingMod jack)", "",
 			[=]() { return m->signalOnR1; },
 			[=](bool v) { m->signalOnR1 = v; }));
+		menu->addChild(createBoolMenuItem("Avalanche core: board (R2 pot, C1/C2, vactrol CV, TL072)", "",
+			[=]() { return m->avalancheBoard; },
+			[=](bool v) { m->avalancheBoard = v; }));
+		static const char* const TAPS[] = {"saw (module)", "TL072 x221 amplified (P3)", "raw oscillator node (P2)", "capacitor node (N, before R4)"};
+		menu->addChild(createSubmenuItem("Avalanche board: OUT carries", TAPS[clamp(m->avalancheTap, 0, 3)], [=](Menu* sub) {
+			for (int t = 0; t < sixfigures::avalanche::board::NUM_TAPS; t++)
+				sub->addChild(createCheckMenuItem(TAPS[t], "",
+					[=]() { return m->avalancheTap == t; },
+					[=]() { m->avalancheTap = t; }));
+		}));
+		menu->addChild(createBoolMenuItem("Avalanche board: CV LED (LED3) fitted", "",
+			[=]() { return m->avalancheLed3; },
+			[=](bool v) { m->avalancheLed3 = v; }));
 		menu->addChild(createSubmenuItem("40106 supply (VDD)", string::f("%.0f V", m->vdd), [=](Menu* sub) {
 			static const float VDDS[] = {5.f, 9.f, 12.f, 15.f};
 			for (float vv : VDDS)

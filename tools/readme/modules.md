@@ -161,6 +161,12 @@ credit: *Day 6, consolidated.*
 
 An 18-bit 4006-style shift-register noise source, the YASH sample and hold (an LF398 with its 3 µs trigger-pulse circuit), and the PHObos random gate — three separate builds put on one shared clock.
 
+## Accrual
+group: miaw
+credit: *Unfinished projects, the 4069 VCO.*
+
+The course's 4069 VCO, solved as the circuit it is: a BC560 and BC550 exponential pair summing Tune, Fine and two CV inputs, a CD4069UB inverter turned into a Miller integrator, a two-inverter Schmitt trigger that dumps it, and a third inverter turned into a pulse-width comparator. Saw and pulse come out of the board's own 7 Hz coupling capacitors. The supply, the input capacitance and the v/oct trimmer are in the menu, and it is polyphonic.
+
 ## Deduction
 group: miaw
 credit: *Day 7, consolidated.*

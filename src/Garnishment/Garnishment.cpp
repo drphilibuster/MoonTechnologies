@@ -73,6 +73,7 @@ struct Garnishment : Module {
 	float otaTrim = 0.5f;   // OTA: the 1k BIAS trimmer's wiper (0.5 balances the pair)
 	bool otaRemoveDc = false; // OTA: take the buffer's -1.4 V rest level off Out
 	bool lpgMode = false;   // VACTROL: close a one-pole LPF along with the gain
+	int vactrolPart = 0;    // VACTROL: which part (vactrol::PartId; 0 = the VTL5C3, the default)
 
 	Garnishment() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -166,6 +167,7 @@ struct Garnishment : Module {
 					// impedance -- R12 has no fixed partner on the sheet. LAG does not act here:
 					// the lag is the part's own, and slewing the drive on top would count it twice.
 					float drive = clamp(volts, 0.f, 15.f);
+					bus.ldr[c].setPart(vactrolPart);
 					float g = vactrolGain(bus.ldr[c], drive, args.sampleTime);
 					bus.open[c] = g;      // the read-out shows what the cell is actually passing
 					float sig = audioIn;
@@ -223,6 +225,7 @@ struct Garnishment : Module {
 		json_object_set_new(root, "lpgMode", json_boolean(lpgMode));
 		json_object_set_new(root, "otaTrim", json_real(otaTrim));
 		json_object_set_new(root, "otaRemoveDc", json_boolean(otaRemoveDc));
+		json_object_set_new(root, "vactrolPart", json_integer(vactrolPart));
 		return root;
 	}
 
@@ -236,6 +239,8 @@ struct Garnishment : Module {
 		if (j) otaTrim = clamp((float) json_number_value(j), 0.f, 1.f);
 		j = json_object_get(root, "otaRemoveDc");
 		if (j) otaRemoveDc = json_boolean_value(j);
+		j = json_object_get(root, "vactrolPart");
+		vactrolPart = j ? clamp((int) json_integer_value(j), 0, ::vactrol::PART_COUNT - 1) : 0;
 	}
 };
 
@@ -396,6 +401,12 @@ struct GarnishmentWidget : ModuleWidget {
 		menu->addChild(createBoolMenuItem("Vactrol: low-pass gate (filter tracks gain)", "",
 			[=]() { return m->lpgMode; },
 			[=](bool v) { m->lpgMode = v; }));
+
+		std::vector<std::string> parts;
+		for (int i = 0; i < ::vactrol::PART_COUNT; i++) parts.push_back(::vactrol::part(i).name);
+		menu->addChild(createIndexSubmenuItem("Vactrol part", parts,
+			[=]() { return (size_t) m->vactrolPart; },
+			[=](size_t i) { m->vactrolPart = (int) i; }));
 	}
 };
 

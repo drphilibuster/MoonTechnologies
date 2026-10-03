@@ -334,16 +334,65 @@ struct VactrolEngine {
 	Decay env;
 	float fs = 44100.f;
 	//: The vactrol's filter is a lowpass at a corner in hertz, so this engine wants noise at
-	//: constant spectral density. The circuit's noise already has it (its source is a current
-	//: density per hertz), so unlike the white noise it replaced it takes no noisePsdGain().
+	//: constant spectral density. The circuit's noise has a fixed density per hertz (its source is
+	//: a current density per hertz) shaped by the circuit's own corners (not white), and the
+	//: output is normalised to the old white noise's rms, so unlike the white noise it replaced
+	//: it takes no noisePsdGain().
 
 	VactrolEngine() : noise(0x5EAF00Du) {
 		gRef = ::vactrol::kDarkConductance + ::vactrol::steadyLight(::vactrol::ledCurrent(10.0, 330.0));
 		cell.configure(1.0 / fs);
 	}
 	void setRate(float fs_) { fs = fs_; noise.setRate(fs_); cell.configure(1.0 / (double) fs_); }
-	void reset() { noise.reset(); lp.reset(); lp2.reset(); cell.reset(); env.reset(); }
-	inline void strike(float vel) { env.strike(vel); }
+	void reset() { noise.reset(); lp.reset(); lp2.reset(); cell.reset(); env.reset(); vC2 = 0.0; }
+
+	// --- the two options (left-click menu, saved in the patch). The defaults -- a VTL5C3, the
+	// module's own filter-corner topology -- are the engine exactly as it was.
+	int partId = 0;         // ::vactrol::PartId
+	bool board = false;     // false: the cell opens a filter corner (module); true: the cell sets the
+	                        // envelope's decay, as on the Day 9 board (processBoard below)
+	double vC2 = 0.0;       // board: C2's voltage, 1.0 = what a full-velocity strike pumps it to
+
+	void setPart(int id) {
+		if (id < 0) id = 0;
+		if (id >= ::vactrol::PART_COUNT) id = ::vactrol::PART_COUNT - 1;
+		if (id == partId) return;
+		partId = id;
+		cell.setPart(id);
+		const ::vactrol::Part& p = ::vactrol::part(id);
+		gRef = p.darkG + ::vactrol::steadyLight(::vactrol::ledCurrent(10.0, 330.0, p), p);
+	}
+
+	inline void strike(float vel) {
+		env.strike(vel);
+		// The board's pump: the trigger through C1 (10 u) and D2 into C2 (10 u), the 1N4448's 0.6 V
+		// lost on the way, against a 10 V trigger. A strike never lowers a C2 that is already higher
+		// (D2 would be reverse biased).
+		double pumped = (10.0 * (double) vel - 0.6) / 9.4;
+		if (pumped > vC2) vC2 = pumped;
+	}
+
+	/** The Percussive Noise Voice's own topology (Day 9 `Percussive Noise Voice.pdf`): the LDR sets the
+	    envelope's DECAY. C2 (10 u) discharges through R5 (100 ohm) in series with R2 (A100K) in
+	    parallel with the LDR, while the vactrol's LED is lit from the Decay CV in through R6 (330 ohm).
+	    `decayKnob` (0..1) is R2: an audio-taper pot, ASSUMED 15 % of 100 kohm at mid-travel, its wiper
+	    tied to its end so it is a rheostat across the LDR. `bend` is the Decay CV, 0..10 V. The
+	    time constant is C2 * (R5 + R2 || R_ldr); t60 = 6.91 of them. Not modelled: R8 33k / D3 / T1
+	    loading C2, and C1's recovery between strikes (taken as complete). The noise tap, TUNE's lowpass
+	    and the level are the module's own, as in `process`. */
+	inline float processBoard(float top, float decayKnob, float bend) {
+		double cv = 10.0 * (double) bend;
+		double iLed = ::vactrol::ledCurrent(cv, 330.0, ::vactrol::part(partId));
+		double rLdr = 1.0 / cell.step(iLed);
+		double k = (double) decayKnob; if (k < 0.0) k = 0.0; else if (k > 1.0) k = 1.0;
+		double r2 = 100e3 * (k <= 0.5 ? 0.15 * (k / 0.5) : 0.15 + 0.85 * (k - 0.5) / 0.5);
+		double rd = 100.0 + (r2 * rLdr) / (r2 + rLdr + 1e-30);
+		vC2 *= std::exp(-1.0 / ((double) fs * rd * 10e-6));
+		if (vC2 < 1e-9) vC2 = 0.0;
+		float e = (float) vC2;
+		float g = poleG(top, fs);
+		return lp2.lp(lp.lp(noise.next(), g), g) * e * (1.5f + 0.4f * 0.5f);
+	}
 
 	inline float process(float top, float t60, float bend, float grain) {
 		float e = env.process(t60, fs);
@@ -356,6 +405,26 @@ struct VactrolEngine {
 		return lp2.lp(lp.lp(noise.next(), g), g) * e * (1.5f + 0.4f * grain);
 	}
 };
+
+/** A level correction, linear gain from dB points laid against log frequency, piecewise-linear
+    between them and held beyond the ends. The microplasma noise has the white noise's rms but not
+    its flat spectrum, and the same rms is a different loudness after a highpass or a Karplus-Strong
+    table; these tables are the ratio, measured on the voice as it stands (calibrate with the
+    white/microplasma render in tests/Kickback/test_noise_source.cpp), so TUNE does not move the
+    loudness. They are level only: the spectrum inside the band is the circuit's. */
+template <int N>
+inline float levelDb(const float (&hz)[N], const float (&db)[N], float f) {
+	float d;
+	if (f <= hz[0]) d = db[0];
+	else if (f >= hz[N - 1]) d = db[N - 1];
+	else {
+		int i = 1;
+		while (f > hz[i]) i++;
+		float t = std::log(f / hz[i - 1]) / std::log(hz[i] / hz[i - 1]);
+		d = db[i - 1] + (db[i] - db[i - 1]) * t;
+	}
+	return std::pow(10.f, d * 0.05f);
+}
 
 /** Karplus & Strong's 1983 drum recurrence, verbatim.
 
@@ -376,8 +445,27 @@ struct KsEngine {
 	mt::Cache capC;
 	int lastMode = -1;
 
-	void setRate(float fs_) { fs = fs_; psd = noisePsdGain(fs_); capC.clear(); }
-	void reset() { ks.reset(); lp.reset(); hp.reset(); env.reset(); capC.clear(); lastMode = -1; }
+	//: What fills the table. The recurrence's own coin flips stay the PRNG's (they are the
+	//: algorithm, not a circuit); the table it starts from is the "donor circuit's noise", and
+	//: that donor is the Tiny Dazzler (`Tiny Dazzler Schematic.png`): 2N3904s, +13.5 V, solved
+	//: as a circuit with microplasmas in AvalancheNoise.hpp. C1 is the schematic's own table:
+	//: 0.1 uF for the snare, 0.001 uF for the hi-hat. `plasma` false is the white noise this
+	//: replaced, bit for bit.
+	//: The solve costs ~1 us a step at 192 kHz, so a table (up to 4094 samples at the snare's
+	//: lowest pitch) is not made inside the strike: the engine keeps a store of finished circuit
+	//: noise and tops it up one sample per audio sample while it is not full, so the cost is
+	//: spread across the samples after a strike and is nothing while the store is full. The
+	//: circuit is stationary, so noise made earlier is as good as noise made now.
+	kickback::AvalancheSource dz;
+	bool plasma = true;
+	float store[KsDrum::kMax] = {};
+	int stored = 0;
+
+	explicit KsEngine(double c1 = 0.1e-6)
+		: dz(0xD0771E5u, kickback::AvalancheNoise::DAZZLER, true, c1) {}
+
+	void setRate(float fs_) { fs = fs_; psd = noisePsdGain(fs_); capC.clear(); dz.setRate(fs_); stored = 0; }
+	void reset() { ks.reset(); lp.reset(); hp.reset(); env.reset(); capC.clear(); lastMode = -1; dz.reset(); stored = 0; }
 
 	/** `bright` 0 = the snare end (long table, open and low), 1 = the hat end
 	    (short table, tight and bright). `blend` is the paper's b. */
@@ -388,13 +476,29 @@ struct KsEngine {
 		// The snare end finishes in a lowpass at a corner in hertz and wants
 		// noise at constant spectral density; the hat end finishes in a
 		// highpass, whose band grows with the rate, and is right without it.
-		ks.pluck(vel * (bright ? 1.f : psd), (int)(fs / std::fmax(hz, 8.f)), bias * 0.8f);
+		const int period = (int)(fs / std::fmax(hz, 8.f));
+		if (!plasma) ks.pluck(vel * (bright ? 1.f : psd), period, bias * 0.8f);
+		else {
+			// The circuit's noise has its spectrum per hertz already and takes no noisePsdGain();
+			// its level is the white noise's (AvalancheSource::norm).
+			const int need = (period < 2 ? 2 : (period > KsDrum::kMax - 2 ? KsDrum::kMax - 2 : period)) + 1;
+			while (stored < need) store[stored++] = dz.next();
+			// Noise averaged by the recurrence is not the same loudness at the same rms when it is
+			// lowpass-coloured: the table is trimmed so DAZZLE (snare) and RATTLE's top (hat) come out
+			// where the white noise left them (levelDb, measured; the hat end varies with its pitch).
+			static const float hatHz[3] = { 450.f, 1100.f, 2750.f }, hatDb[3] = { -6.4f, -7.6f, -9.5f };
+			const float trim = bright ? levelDb(hatHz, hatDb, hz) : 0.6166f;   // snare: -4.2 dB
+			ks.pluckRaw(store, vel * trim, period, bias * 0.8f);
+			stored -= need;
+			for (int i = 0; i < stored; i++) store[i] = store[i + need];
+		}
 		env.strike(vel);
 	}
 
 	/** `stretch` is the paper's S, which it notes "increases the snare sound". */
 	inline float process(float hz, float t60, float blend, float stretch, int bright) {
 		if (bright != lastMode) { lastMode = bright; capC.clear(); }
+		if (plasma && stored < KsDrum::kMax) store[stored++] = dz.next();   // top up the store
 		float e = env.process(t60, fs);
 		float y = ks.process(blend, stretch);
 		float g = capC.get(hz, [this, bright](float h) {
@@ -424,6 +528,9 @@ struct KsEngine {
 struct Snare {
 	XorEngine xorEng;
 	VactrolEngine vacEng;
+	/** VACTROL mode's two menu options: the vactrol part (::vactrol::PartId) and the topology (false =
+	    the module's filter corner, true = the board's LDR-sets-the-decay). Defaults are the old engine. */
+	void setVactrol(int part, bool board) { vacEng.setPart(part); vacEng.board = board; }
 	KsEngine ksEng;
 	StrikePulse strike;
 	Attack attack;
@@ -473,7 +580,8 @@ struct Snare {
 		// circuits do not arrive at the same loudness on their own, and a mode
 		// selector that is also a volume control is unusable.
 		if (mode == 0)      y = xorEng.process(f0, t60, bend, bend, x) * 1.256f;
-		else if (mode == 1) y = vacEng.process(f0, t60, bend, bend) * 4.394f;
+		else if (mode == 1) y = (vacEng.board ? vacEng.processBoard(f0, decay, bend)
+		                                      : vacEng.process(f0, t60, bend, bend)) * 4.394f;
 		else                y = ksEng.process(f0, t60, blend,
 		                                      1.f + bend * bend * 11.f, 0) * 6.148f;
 
@@ -509,6 +617,11 @@ struct Snare {
 // ---------------------------------------------------------------------------
 struct Hat {
 	Noise noise;
+	// The hiss as the circuit it came from: the Percussive Noise Voice's avalanche tap with C5 at the
+	// schematic's HiHat 1 nF (AvalancheNoise.hpp), in place of `noise` when `plasma` is set. Its
+	// density is per hertz already, so it takes no noisePsdGain (this stage ends in a highpass either way).
+	kickback::AvalancheSource avalanche;
+	bool plasma = true;
 	SquareOsc o1, o2, o3;
 	OnePole hp1, hp2, lp1;
 	KsEngine ksEng;
@@ -519,15 +632,17 @@ struct Hat {
 
 	mt::Cache freqC, t60C, topC;
 
-	Hat() : noise(0xBADC0DEu), attack(0x4A77E5u) {}
+	Hat() : noise(0xBADC0DEu),
+	        avalanche(0x4A77E5Du, kickback::AvalancheNoise::PERCUSSIVE, true, 1e-9),
+	        ksEng(1e-9), attack(0x4A77E5u) {}
 
 	// topC closes over fs, so the rate moving has to invalidate it by hand --
 	// its key is a knob and cannot see the rate change behind it.
 	void setRate(float fs_) {
-		fs = fs_; dc.setRate(fs_); attack.setRate(fs_); ksEng.setRate(fs_); topC.clear();
+		fs = fs_; dc.setRate(fs_); attack.setRate(fs_); ksEng.setRate(fs_); avalanche.setRate(fs_); topC.clear();
 	}
 	void reset() {
-		noise.reset();
+		noise.reset(); avalanche.reset();
 		o1.reset(); o2.reset(); o3.reset();
 		hp1.reset(); hp2.reset(); lp1.reset();
 		ksEng.reset(); fast.reset(); slow.reset(); attack.reset(); dc.reset();
@@ -565,7 +680,15 @@ struct Hat {
 		float m = o1.process(corner * 0.42f, fs)
 		        * o2.process(corner * 0.63f, fs)
 		        * o3.process(corner * 0.87f, fs);
-		float n = noise.next();
+		// White: drawn every sample, used or not, so the stream is exactly what it was. The circuit
+		// is only solved while it is heard: the hiss is nothing at the bottom of RATTLE (hiss = 0) and
+		// the envelope has gone under -100 dB some time after the hit, and a stationary circuit
+		// paused there is the same circuit when it resumes.
+		const float hissAmt = 1.f - clampf(1.f - colour * 2.f, 0.f, 1.f) - clampf(colour * 2.f - 1.f, 0.f, 1.f);
+		static const float hissHz[9] = { 1800.f, 2257.f, 2830.f, 3549.f, 4450.f, 5580.f, 6996.f, 8773.f, 11000.f };
+		static const float hissDb[9] = { 0.9f, 2.5f, 4.2f, 5.8f, 7.5f, 9.3f, 11.2f, 12.1f, 13.0f };
+		float n = plasma ? ((hissAmt > 0.f && env > 1e-5f) ? avalanche.next() * levelDb(hissHz, hissDb, corner) : 0.f)
+		                 : noise.next();
 
 		// RATTLE crossfades metal -> noise over the first half of its travel
 		// and noise -> Dazzler over the second, so each boundary is a sweep.

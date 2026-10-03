@@ -91,10 +91,33 @@ this mode**: the lag is the part's own, and slewing the drive too would count it
 module's VACTROL read-out shows the gain the cell is actually passing.
 Which part is **inferred**, not stated: the course schematic says only "LDR Vactrol" (and, on the
 Percussive Noise Voice, "5-10k to 500k ohm", which the VTL5C3's 5 mA to 0.25 mA range matches).
-A Silonex NSL-32 (60–150 Ω on) or a DIY LED + GL5528 would give a different gate. The **low-pass gate** menu option closes a
+The **Vactrol part** menu option swaps in a Silonex NSL-32 or a DIY LED + GL5528 (below). The **low-pass gate** menu option closes a
 one-pole filter (20 Hz–15 kHz) in step with the gain, so the channel darkens
 tonally as it closes, not just in level — the Buchla LPG behaviour the bare
 schematic doesn't have on its own.
+
+**Vactrol parts.** The part is an option (context menu), the VTL5C3 by default and bit-identical to
+what it has always been. Each part carries its own LED law, its own resistance-against-current
+anchor table and its own time constants (`src/Vactrol.hpp`, where every source is listed):
+
+| part | R at 1 mA / 5 mA / 20 mA | closed (dark) | opens to 63 % | lets go |
+|---|---|---|---|---|
+| VTL5C3 (default) | 46 k / 5.5 k / 1.7 k | 20 MΩ, leaks 0.5 % into 100 k | 3 ms | 20 ms to 50 % gain, a 60 ms tail (memory) |
+| NSL-32SR2 | 122 / 48 / 24 Ω | 5 MΩ, leaks 2.0 % (-34 dB) | 5 ms (sheet) | 5 ms to 100 kΩ from 16 mA (sheet); 5 ms to 50 % |
+| NSL-32SR3 | 293 / 115 / 61 Ω | 25 MΩ, leaks 0.4 % | 5 ms (sheet) | 10 ms to 100 kΩ from 5 mA (sheet); 11 ms to 50 % |
+| LED + GL5528 | 1.6 k / 0.6 k / 0.26 k | 2 MΩ, leaks 4.8 % (-26 dB) | 20 ms (sheet) | 30 ms constant: 180 ms to 50 % |
+
+The NSL-32s are the fast, low-resistance cell: against the 100 kΩ load they are fully open at any
+LED current above a few hundred microamps (the control is nearly a switch with a 5-10 ms
+release), and an LED limit of 25 mA clamps the drive (the VTL5C3's is 40 mA, the DIY LED's 30). The
+DIY pair is the slowest and the leakiest. **Assumed, not on a sheet:** the NSL's LED (2.0 V at
+20 mA; the sheet bounds it under 2.5 V), the DIY LED (5 mm green, 2.1 V), the DIY coupling (378
+lux per mA of LED current, fixed by one forum report of ~400 Ω at 10 mA), the GL5528's rise/decay
+definitions (63 % up, 37 % down), and the SR2's 5 MΩ typical dark. **Not modelled for the three added parts:**
+any slow light-history tail (the NSL sheets give none to fit; real DIY pairs are reported to ring
+longer than a single 30 ms constant and to take seconds to recover to megohms), temperature (the
+NSL-32's 0.7 %/°C is quoted, not applied), and sample spread (a surplus NSL-32SR3 measured at
+modularsynthesis.com took 120 ms to reach 100 kΩ, twelve times its sheet: the model follows the sheet).
 
 **JFET AM.** The combined control (0-1) is the 2N5457's gate voltage, 0 V at zero down to
 -4 V at one (the datasheet's typical pinch-off is -2 V). The audio IN is the AM signal: it
@@ -140,6 +163,9 @@ channels' gain; patch channel 2's own CV IN to override it.
   in place of the schematic's inherently linear current. Off by default.
 - **Vactrol: low-pass gate (filter tracks gain)** — see above. Off by default
   (the schematic is a bare divider, not a filter).
+- **Vactrol part** — which vactrol the VACTROL mode is (saved in the patch, applies to every
+  channel): **VTL5C3 (PerkinElmer)** (default; the model above, unchanged), **NSL-32SR2
+  (Silonex / API)**, **NSL-32SR3 (Silonex)** or **LED + GL5528 (DIY)**. See "Vactrol parts" below.
 
 Both options apply to whichever channel is currently in that mode; there is no
 separate per-channel copy of either, since an 11 HP panel repeated twice has no

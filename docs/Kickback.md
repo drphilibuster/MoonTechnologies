@@ -267,15 +267,19 @@ of noise to a rattle.
   telegraph pulses' Lorentzian skirt.
   **TUNE** is the C5/C6 pair the original swaps by hand between "Snare" and
   "HiHat" values, made continuous: 500 Hz–9 kHz.
+  Two **options in the left-click menu** (saved in the patch, defaults = the voice as described
+  above, bit-identical): **Vactrol part** and **VACTROL topology**; see "Snare VACTROL options" below.
 - **DAZZLE** — Karplus & Strong's 1983 drum recurrence at the long end of its
   delay line, which the paper itself calls "the effect of a snare drum". Fed by
   the Tiny Dazzler's backwards-wired transistor (base and emitter swapped —
   "EBC", in the sheet's own notation, avalanching its reverse-biased junction
-  for noise). **TUNE** is the table length, 70–460 Hz.
+  for noise). **TUNE** is the table length, 70–460 Hz. The table the recurrence starts from is that
+  circuit's noise, solved (the Tiny Dazzler variant, 2N3904 at 13.5 V, C1 0.1 µF); a left-click menu
+  option swaps it back to white noise, see "Hat and DAZZLE noise source" below.
 
 **BEND** does double duty here, because MODE has taken the character knob — and
 it carries the one control each mode actually wants: the inharmonic spread on
-XOR, how far the vactrol opens the filter on VACTROL (the lag itself is now the VTL5C3's, fixed; BEND used to set its speed), and on DAZZLE both of the paper's own
+XOR, how far the vactrol opens the filter on VACTROL (the lag itself is the part's, fixed; BEND used to set its speed; in the menu's *board* topology BEND is instead the Decay CV into the LED, see below), and on DAZZLE both of the paper's own
 parameters at once, the blend factor *b* running down from ½ toward the
 "plucked bottle" and the stretch factor *S*, which the paper notes "increases
 the snare sound" as it rises.
@@ -305,6 +309,11 @@ struck is what decides whether it reads as closed or open, exactly as a pedal
 would — velocity multiplies the ring time, better than three to one from a
 ghost tick to a full accent. Patch the ACCENT CV, or let the pattern engine's
 own per-step velocities do it.
+
+The hat's **noise** is the Percussive Noise Voice's avalanche tap at its own *HiHat* value (C5 =
+1 nF), solved as a circuit, and the **Dazzler** end of RATTLE is the Tiny Dazzler's (C1 = 0.001 µF,
+the sheet's HighHat column). Both can be set back to white noise from the left-click menu, see
+"Hat and DAZZLE noise source".
 
 ### TOM I / TOM II / TOM III — TomTomTom's three rings, all at once
 
@@ -556,14 +565,104 @@ There is no V/OCT jack. Every voice still takes 1 V/oct internally, but that row
 became RATIO: Kickback is a rhythm instrument, and the pitched voice that wanted
 a keyboard is [Toll](Toll.md).
 
-There is no context menu — every control the circuits expose has a knob, toggle
-or jack on the panel.
+The context menu holds the SNARE's VACTROL options (**Vactrol part**, **VACTROL
+topology**, below) and the **Noise source** options for the HAT and DAZZLE (**HAT noise**,
+**DAZZLE noise**, below) — every control the circuits expose has a knob, toggle or jack on the panel.
+
+### Hat and DAZZLE noise source
+
+Two entries under **Noise source** in the left-click menu, saved in the patch (`hatNoise`,
+`dazzleNoise`; a patch saved before they existed gets the default). Each is **Microplasma
+(avalanche circuit)**, the default, or **White**, the flat generator both used before. White is the
+old voice bit for bit (tested against a verbatim copy of the old Hat and Karplus-Strong engine).
+
+- **HAT noise** — the hat's hiss (RATTLE's middle). Microplasma is the Percussive Noise Voice's T1–T3
+  avalanche tap with C5 = 1 nF, the sheet's HiHat value (BC549, 12 V; same assumptions as the
+  snare's VACTROL, above).
+- **DAZZLE noise** — the table the Karplus-Strong recurrence is loaded with, on the snare's DAZZLE
+  mode and on the hat's top end. Microplasma is the Tiny Dazzler's own noise circuit (`Tiny Dazzler
+  Schematic.png`: 2N3904s, +13.5 V, "EBC = a transistor facing backwards"); C1 is the sheet's
+  table, 0.1 µF on the snare and 0.001 µF on the hat. The recurrence's coin flips remain the PRNG's:
+  they are the algorithm, not the circuit.
+
+The VACTROL snare is always the circuit (it has no white option; it never did).
+
+*Level.* The circuit's noise has the white noise's rms but not its flat spectrum, so the same rms is
+a different loudness after the hat's highpass or the recurrence's averaging. The noise is
+normalised to the white rms (`AvalancheSource::normFor`), and each use carries a measured level
+correction (`levelDb` in `Voices.hpp`) so the voice's own rms is the white voice's at 48 kHz:
+the hat's hiss within ±0.5 dB across TUNE (the table rises about 12 dB from 1.8 to 11 kHz, because the
+circuit's noise falls with frequency), DAZZLE within a few dB over the knob (snare: bias -0.3 dB, range
+about ±2 dB over TUNE and up to ±3 dB over BEND; hat top: about +0.5 dB, ±1.5 dB). At 96 kHz the
+circuit hat is 2 to 3 dB louder than the white one, because the circuit's density per hertz does not
+change with the sample rate and the white noise's, in the hat's band, halves.
+
+*CPU.* The circuit is solved at 192 kHz (or the next multiple of the audio rate), about 1 µs a step
+(M-series): 4 to 6 µs per audio sample at 48 kHz. A sounding hat in HAT noise = microplasma costs
+about **a quarter of one core** at 48 kHz (a 16th-note hat at 120 BPM: 22 to 27 %, white 0.2 %). The
+circuit is only solved while the hiss is heard: not at all with RATTLE at either end, and not once the
+hat's envelope has gone under -100 dB. DAZZLE is much cheaper (0.1 to 0.5 % of a core, 2 hits a
+second): a table is not solved inside the strike but kept in a store topped up one sample per sample
+after a strike, so a strike's cost is spread across the following milliseconds; the first strike after a
+sample-rate change or a reset finds the store empty and pays it at once (about 3 ms at the lowest
+pitch). Running the solver at 96 kHz instead would halve the hat's cost but is not the same noise
+(up to 0.4 dB more at 16 to 19 kHz, kurtosis 2 % higher), so it is not done.
+
+### Snare VACTROL options
+
+Both are in the left-click menu, saved in the patch, and affect only the SNARE in VACTROL mode
+(the kicks, XOR, DAZZLE, hat, toms and the Euclidean sequencer do not see them).
+
+**Vactrol part** — VTL5C3 (PerkinElmer; default), NSL-32SR2 (Silonex / API), NSL-32SR3 (Silonex), or
+LED + GL5528 (DIY). Each has its own LED law, resistance-against-current anchors and time constants
+from its datasheet (`src/Vactrol.hpp` lists them and what is assumed; the same menu is on
+[Garnishment](Garnishment.md)). In the filter-corner topology the part sets how the corner follows
+the envelope: the NSL-32s let go in 5–10 ms (the cell is no longer the thing that smooths the
+envelope), the DIY pair opens in 20 ms and rings on (30 ms decay constant).
+
+**VACTROL topology** — *filter corner (module)*, the default, is the voice as documented: the
+strike envelope lights the LED through 330 Ω and the cell's conductance opens a low-pass corner
+over the noise. *board (LDR sets the decay)* is the Day 9 Percussive Noise Voice's own wiring:
+
+- trigger → R1 4k7 ‖ D1 → C1 10 µ → D2 → **C2 10 µ**. A strike pumps C2 to (10 V·velocity − 0.6 V) /
+  9.4 V of its full-strike value (C1's recovery between strikes is taken as complete; a weaker strike
+  never lowers a C2 that is already higher, D2 being reverse-biased).
+- C2 discharges through **R5 100 Ω in series with R2 (A100K) in parallel with the vactrol's LDR**,
+  so the decay time constant is τ = 10 µF · (100 Ω + R2 ‖ R_LDR), and the envelope falls to −60 dB in
+  6.9 τ. The LED is lit from the Decay CV through R6 330 Ω.
+- The envelope multiplies the module's noise tap exactly as in the other topology; the output stage
+  (R8 33k, D3, T1, C6) is still not solved, and R8/D3/T1 loading C2 is not modelled.
+
+**Control mapping in board mode** (the panel has no spare control, so this is the module's, and the
+menu says so): **DECAY is R2** (an audio-taper 100k pot, assumed 15 % of its value at mid-travel;
+the t60 range is no longer the module's 30 ms–1.1 s: with no LED light it runs from 7 ms at the
+bottom through about 1 s at mid-travel to 6.9 s at the top), **BEND is the Decay CV** (0–10 V into
+the LED through 330 Ω; at 0 the LED is dark and the LDR is out of the circuit, and the part
+barely matters), and **TUNE stays a fixed low-pass** at its corner — the board has no filter the
+LDR moves, so BEND no longer opens the corner and no longer sets the grain/level.
+
+**How the part limits the board's decay.** With R2 at the top, BEND (the CV) at 10 V, the
+shortest decay is set by R5 plus the part's on-resistance at the 24 mA that 10 V makes through the
+330 Ω, in parallel with R2:
+
+| part | LDR at 24 mA | shortest τ | shortest t60 |
+|---|---|---|---|
+| VTL5C3 (default) | ~1.5 kΩ | 16 ms | 0.11 s |
+| NSL-32SR2 | ~24 Ω | 1.2 ms | 8 ms |
+| NSL-32SR3 | ~55 Ω | 1.6 ms | 11 ms |
+| LED + GL5528 | ~0.26 kΩ | 3.4 ms | 23 ms |
+
+The VTL5C3's ~0.1 s floor (about 93 ms at its 40 mA limit) is therefore that part's, not the circuit's:
+the NSL-32s, whose on-resistance is under the 100 Ω of R5, are limited by R5 itself (t60 about 7 ms,
+the same as R2 at its bottom), so with the CV up their decay is nearly independent of DECAY. At BEND 0
+the LED is dark and every part gives the same decay, to within the few percent that its dark
+resistance (2–25 MΩ) loads R2.
 
 **The VACTROL noise tap, what is and is not the circuit.** Only the noise source is solved. The
 board's output stage (T1 chopping the envelope through D3 and R8, C6) and its trigger envelope
 (C1, D1, D2, C2) are not: the module keeps its own strike envelope, the VTL5C3's lag (the BEND/grain
-lag knob no longer sets the lag speed, the part does) and a tunable low-pass, and the schematic does not put the vactrol where this module does (on the board the
-photoresistor sets the envelope's decay through R5/R2, not a filter corner). Assumed because
+lag knob no longer sets the lag speed, the part does) and a tunable low-pass, and the schematic does not put the vactrol where this module does by default (on the board the
+photoresistor sets the envelope's decay through R5/R2, not a filter corner; the menu's *board* topology does exactly that, see "Snare VACTROL options"). Assumed because
 neither the drawing nor a BC549 datasheet gives them: the 12 V supply, the junction's breakdown
 at 8 V (a BC549's VEBO rating is 5 V; real junctions avalanche at 7–10 V, so this is the figure to
 measure on a real part), an avalanche gain of 30, and C5 at the snare's 0.1 µF. The noise's

@@ -36,8 +36,9 @@
 // (statistical lag), so the median voltage moves with the pitch; the cycle length is
 // normalised to the median so the RATE knob still sets the median pitch.
 //
-// The TL072 "buffered, amplified output" (`Tl072Stage`: 1 + 220k/1k = 221, AC-coupled by C3 1 uF
-// into R4 100k) is here too, as a function; Cores.hpp does not route to it (no panel output).
+// The TL072 "buffered, amplified output" (`Tl072Stage`: R4 100k, C3 1 uF, R7 1k to ground, then
+// gain 1 + 220k/1k = 221) is here too, as a function; the default core does not route to it (no
+// panel output). The optional "board" core (AvalancheBoard.hpp) does.
 //
 // No Rack dependency, so tests/ drives it bare.
 
@@ -188,23 +189,35 @@ inline float saw(float phase, float dt, float theta = 1.f, float warp = 1.f) {
     return 2.f * c - 1.f - cEnd * blep(phase / theta, dt / theta);
 }
 
-/** The TL072 "buffered, amplified output" (P3): C3 1 uF into R4 100k to ground, then a
-    non-inverting stage of gain 1 + 220k / 1k = 221 with the part's gain-bandwidth (3 MHz typ)
-    giving a pole at 3 MHz / 221 = 13.6 kHz and the output stopping short of the +-12 V rails
-    (ASSUMED +-10.5 V; the datasheet's +-12 V is at +-15 V supplies). Input in volts at the
-    oscillator node, output in volts. */
+/** The board's output network and its TL072 "buffered, amplified output" (P3), read off the
+    schematic (Day 1 `1.4 Schematic_ReverseAvalancheOscillator.pdf`): the oscillator node N goes
+    through R4 100k to the junction P2 ("Output from Osc circuit"); from P2, C3 1 uF to the
+    TL072's POS input, which R7 1k holds to ground. So C3 + R7 is a high-pass whose resistance is
+    R4 + R7 = 101k (corner 1.58 Hz) and R4 / R7 is a divider that passes 1k / 101k = 0.99 % of the
+    node's swing; the stage is then non-inverting with R6 220k / R5 1k, gain 1 + 220k / 1k = 221,
+    and the part's gain-bandwidth (3 MHz typ) puts a pole at 3 MHz / 221 = 13.6 kHz. The output
+    stops short of the +-12 V rails (ASSUMED +-10.5 V; the datasheet's +-12 V is at +-15 V
+    supplies). Net passband gain 221 x 0.99 % = 2.19, so the 0.9 V node swing comes out as about
+    2 V peak to peak: it does NOT clip (an earlier version of this struct had C3 into R4 and no R7,
+    which put the full 221 on the swing and drove it to the rails; the schematic is the other way).
+    Input in volts at the oscillator node N, output in volts. TL072 input offset (3 mV typ, times
+    221) is not modelled. After `run`, `p2` is the voltage on P2. */
 struct Tl072Stage {
     static constexpr double kGain = 221.0, kGbw = 3e6, kRail = 10.5;
-    double hpA = 0, lpA = 0, hpZ = 0, lpZ = 0, xPrev = 0;
+    static constexpr double kR4 = 100e3, kR7 = 1e3, kC3 = 1e-6;
+    double c3 = 0, lpA = 0, hpA = 0, lpZ = 0, p2 = 0;
     void setRate(double fs) {
-        hpA = std::exp(-2.0 * 3.14159265358979323846 * (1.0 / (2.0 * 3.14159265358979323846 * 100e3 * 1e-6)) / fs);
+        hpA = std::exp(-1.0 / (fs * (kR4 + kR7) * kC3));
         lpA = std::exp(-2.0 * 3.14159265358979323846 * (kGbw / kGain) / fs);
-        hpZ = lpZ = xPrev = 0;
+        c3 = lpZ = p2 = 0;
     }
+    /** `x`: the node's voltage. C3 starts discharged, so the node's DC rings in as a start-up
+        transient that dies with the 101 ms time constant. */
     double run(double x) {
-        hpZ = hpA * (hpZ + x - xPrev);            // one-pole high-pass: C3 into R4
-        xPrev = x;
-        lpZ = lpA * lpZ + (1.0 - lpA) * (hpZ * kGain);
+        const double p = (x - c3) * (kR7 / (kR4 + kR7));      // the POS input: the divider's R7 end
+        p2 = c3 + p;                                           // P2: C3's voltage plus what R7 drops
+        c3 += (x - c3) * (1.0 - hpA);                          // C3 charges through R4 + R7
+        lpZ = lpA * lpZ + (1.0 - lpA) * (p * kGain);
         return lpZ > kRail ? kRail : (lpZ < -kRail ? -kRail : lpZ);
     }
 };

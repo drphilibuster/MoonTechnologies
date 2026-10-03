@@ -182,25 +182,28 @@ static void testTl072() {
 		}
 		return peak / amp;
 	};
-	checkv("gain in the passband is 1 + 220k/1k = 221 (within 1 %), at 1 kHz", gainAt(1000.0, 1e-3), 221.0, 2.21);
-	checkv("and at 100 Hz", gainAt(100.0, 1e-3), 221.0, 2.5);
+	// The schematic: N -R4 100k- P2 -C3 1u- POS, R7 1k from POS to ground, then x221. Passband gain 221 x 1k / 101k.
+	const double want = 221.0 * 1e3 / 101e3;
+	checkv("gain in the passband is 221 x R7 / (R4 + R7) = 2.19 (within 1 %), at 1 kHz", gainAt(1000.0, 1e-3), want, 0.022);
+	checkv("and at 100 Hz", gainAt(100.0, 1e-3), want, 0.03);
 	double g0 = gainAt(1000.0, 1e-3);
-	checkv("C3 into R4 high-passes at 1.59 Hz: 3 dB down there", 20 * std::log10(gainAt(1.59, 1e-3) / g0), -3.0, 0.5);
+	checkv("C3 into R4 + R7 high-passes at 1.58 Hz: 3 dB down there", 20 * std::log10(gainAt(1.576, 1e-3) / g0), -3.0, 0.5);
 	checkv("the part's 3 MHz gain-bandwidth puts the pole at 13.6 kHz: 3 dB down", 20 * std::log10(gainAt(13575.0, 1e-3) / g0), -3.0, 0.5);
-	// the oscillator's 0.9 V swing is far over the 10.5 V rail at this gain: the output sits on the rails
+	// the oscillator's 0.9 V swing comes out at about 2 V peak to peak: well inside the 10.5 V rails
 	Tl072Stage s;
 	s.setRate(fs);
 	double hiV = -1e9, loV = 1e9;
 	for (int i = 0; i < (int)fs; i++) {
 		double ph = std::fmod(i * 440.0 / fs, 1.0);
-		double y = s.run(7.3 + 0.9 * charge(ph));
+		double y = s.run(7.3 + 0.9 * charge(ph) + kVLed);
 		if (i > (int)fs / 2) { hiV = std::max(hiV, y); loV = std::min(loV, y); }
 	}
-	printf("    0.9 V saw at 440 Hz through x221: output %.2f .. %.2f V\n", loV, hiV);
-	check("the 0.9 V swing drives the output to both rails", hiV > 10.4 && loV < -10.4);
-	check("and not past them", hiV <= Tl072Stage::kRail + 1e-9 && loV >= -Tl072Stage::kRail - 1e-9);
+	printf("    0.9 V saw at 440 Hz through R4/C3/R7 and x221: output %.2f .. %.2f V\n", loV, hiV);
+	check("the 0.9 V swing comes out near 2 V peak to peak (1.7 .. 2.2), centred", hiV - loV > 1.7 && hiV - loV < 2.2 && std::fabs(hiV + loV) < 0.6);
+	check("and nowhere near the rails", hiV < 3.0 && loV > -3.0);
 	// NEGATIVE CONTROL: the stage with a tenth of the gain fails the gain checks
-	check("NEGATIVE CONTROL: a gain of 22.1 is rejected by the 221 check", std::fabs(g0 / 10.0 - 221.0) > 2.21);
+	check("NEGATIVE CONTROL: a tenth of the gain is rejected by the gain check", std::fabs(g0 / 10.0 - want) > 0.022);
+	check("NEGATIVE CONTROL: the earlier reading, a bare 221 (no R7 divider), is rejected too", std::fabs(221.0 - want) > 0.022);
 }
 
 int main() {

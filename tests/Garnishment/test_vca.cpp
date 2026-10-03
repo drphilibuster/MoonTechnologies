@@ -8,6 +8,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <functional>
 
 static int checks = 0;
 static int failures = 0;
@@ -30,6 +31,44 @@ static int travel(float from, float to, float atk, float dec) {
 		if (there) return i;
 	}
 	return -1;
+}
+
+
+// --- the VACTROL mode's PART option (Vactrol.hpp: VTL5C3 / NSL-32SR2 / NSL-32SR3 / LED + GL5528) --
+// `pick` selects the part on a cell; a broken one is passed to prove the checks can fail.
+static bool gQuiet = false;
+static void partChecks(const std::function<void(vactrol::Vactrol&, int)>& pick, bool clampOn) {
+	auto bad = [](const char* what, const char* detail) { failures++; if (!gQuiet) printf("  FAIL  %s: %s\n", what, detail); };
+	#define PCHECK(cond, what, ...) do { checks++; if (!(cond)) { char d_[200]; snprintf(d_, sizeof d_, __VA_ARGS__); bad(what, d_); } } while (0)
+	double close50[4], leak[4], g10[4];
+	for (int id = 0; id < vactrol::PART_COUNT; id++) {
+		const char* nm = vactrol::part(id).name;
+		vactrol::Vactrol c; pick(c, id);
+		float g = 0;
+		for (int i = 0; i < (int)(kFs * 3.f); i++) g = vactrolGain(c, 0.f, kDt);
+		leak[id] = g;
+		// the closed gate passes what its dark resistance lets through a 100 kohm load
+		float want = (float) (100e3 / (100e3 + 1.0 / vactrol::part(id).darkG));
+		PCHECK(std::fabs(g - want) < 0.0008f, nm, "closed gate passes %.4f, dark resistance says %.4f", (double) g, (double) want);
+		for (int i = 0; i < (int)(kFs * 3.f); i++) g = vactrolGain(c, 10.f, kDt);
+		g10[id] = g;
+		PCHECK(g > 0.98f, nm, "10 V gain %.4f", (double) g);
+		int t = -1;
+		for (int i = 1; i <= (int)(kFs * 2.f); i++) { g = vactrolGain(c, 0.f, kDt); if (g < 0.5f) { t = i; break; } }
+		close50[id] = t / 48.0;
+		// the LED's limit: 15 V would push 35-40 mA; the cell is held at the part's rating
+		for (int i = 0; i < (int)(kFs * 3.f); i++) vactrolGain(c, 15.f, kDt);
+		double rWant = vactrol::steadyResistance(vactrol::part(id).maxLedCurrent, vactrol::part(id));
+		PCHECK(!clampOn || std::fabs(c.resistance() / rWant - 1.0) < 0.01, nm, "15 V settles at %.1f ohm, the LED limit (%.0f mA) gives %.1f", c.resistance(), vactrol::part(id).maxLedCurrent * 1e3, rWant);
+	}
+	// to 50 % after the LED goes out: the sheets' order -- NSL-32SR2 < SR3 < VTL5C3 < DIY pair
+	PCHECK(close50[1] > 4.0 && close50[1] < 6.5, "part", "NSL-32SR2 closes to 50 %% in %.2f ms (5 ms decay to 100k)", close50[1]);
+	PCHECK(close50[2] > 9.0 && close50[2] < 13.0, "part", "NSL-32SR3 closes to 50 %% in %.2f ms (10 ms decay to 100k)", close50[2]);
+	PCHECK(close50[0] > 15.0 && close50[0] < 25.0, "part", "VTL5C3 closes to 50 %% in %.2f ms", close50[0]);
+	PCHECK(close50[3] > 150.0 && close50[3] < 205.0, "part", "LED + GL5528 closes to 50 %% in %.2f ms (30 ms decay constant)", close50[3]);
+	// the closed gate leaks most on the DIY pair (2 Mohm dark) and least on the VTL5C3 / SR3
+	PCHECK(leak[3] > leak[1] && leak[1] > leak[0] && leak[0] > leak[2], "part", "leakage order: VTL5C3 %.4f SR2 %.4f SR3 %.4f GL5528 %.4f", leak[0], leak[1], leak[2], leak[3]);
+	#undef PCHECK
 }
 
 int main() {
@@ -166,6 +205,39 @@ int main() {
 		if (tTail < 0 || !(tTail > 3 * tClose)) {
 			char d[128]; snprintf(d, sizeof d, "closing to 50%% took %d samples and to 5%% %d: no slow tail", tClose, tTail); fail("vactrol", d);
 		}
+	}
+
+	// --- the PART option ----------------------------------------------------------------------
+	printf("  the vactrol part option...\n");
+	{
+		// the default part is the cell as it was: a fresh cell and one put through setPart(0) agree exactly
+		vactrol::Vactrol a, b; b.setPart(0);
+		float dmax = 0;
+		for (int i = 0; i < 20000; i++) { float v = (i % 9000) < 4000 ? 7.f : 0.5f; dmax = std::fmax(dmax, std::fabs(vactrolGain(a, v, kDt) - vactrolGain(b, v, kDt))); }
+		checks++;
+		if (dmax != 0.f) { char d[96]; snprintf(d, sizeof d, "setPart(0) changed the default cell by %.3g", (double) dmax); fail("vactrol part", d); }
+
+		int f0 = failures, c0 = checks;
+		partChecks([](vactrol::Vactrol& c, int id) { c.setPart(id); }, true);
+		printf("    %d checks, %d failures\n", checks - c0, failures - f0);
+
+		struct Ctl { const char* name; std::function<void(vactrol::Vactrol&, int)> pick; bool clampOn; };
+		Ctl ctl[2] = {
+			{ "part option ignored (every cell stays a VTL5C3)", [](vactrol::Vactrol&, int) {}, true },
+			{ "part's curve and times change but not its LED limit", [](vactrol::Vactrol& c, int id) { c.setPart(id); static vactrol::Part q[4]; q[id] = vactrol::part(id); q[id].maxLedCurrent = 1.0; c.p = &q[id]; }, true },
+		};
+		int caught = 0;
+		for (int i = 0; i < 2; i++) {
+			int fb = failures; gQuiet = true;
+			partChecks(ctl[i].pick, ctl[i].clampOn);
+			gQuiet = false;
+			int hit = failures - fb;
+			printf("    negative control '%s': %d checks failed%s\n", ctl[i].name, hit, hit ? "" : "  <-- NOT CAUGHT");
+			if (hit) caught++;
+			failures = fb;
+		}
+		checks++;
+		if (caught != 2) { failures++; printf("  FAIL  part negative controls: only %d of 2 caught\n", caught); }
 	}
 
 	printf("%d checks, %d failures\n", checks, failures);

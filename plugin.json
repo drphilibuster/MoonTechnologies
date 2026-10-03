@@ -14,6 +14,16 @@
   "changelogUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/CHANGELOG.md",
   "modules": [
     {
+      "slug": "Accrual",
+      "name": "Accrual",
+      "description": "Modular in a Week 4069 VCO solved as a circuit: a BC560/BC550 exponential pair, a CD4069UB Miller integrator reset by a two-inverter Schmitt trigger, and a pulse-width comparator, polyphonic",
+      "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Accrual.md",
+      "tags": [
+        "Oscillator",
+        "Polyphonic"
+      ]
+    },
+    {
       "slug": "Amortization",
       "name": "Amortization",
       "description": "The Pittsburgh Modular Verbtronic as a circuit: three PT2399 echo chips in a recirculating network, tonal tilt, zener-limited feedback, mode gate and wet-only output",

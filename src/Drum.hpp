@@ -704,6 +704,19 @@ struct KsDrum {
 		idx = 0;
 	}
 
+	/** The same fill from a noise someone else made: `raw` holds period + 1 samples (period
+	    clamped as in pluck), in place of the PRNG. Same load shaping, same scaling. */
+	inline void pluckRaw(const float* raw, float vel, int period, float colour) {
+		p = period < 2 ? 2 : (period > kMax - 2 ? kMax - 2 : period);
+		float s = 0.f;
+		for (int i = 0; i < p + 1; i++) {
+			float n = raw[i];
+			s += (n - s) * (1.f - colour * 0.92f);
+			buf[i] = (n * (1.f - colour) + s * colour) * vel;
+		}
+		idx = 0;
+	}
+
 	/** `blend` 0..1 is b; `stretch` >= 1 is S. */
 	inline float process(float blend, float stretch) {
 		int i0 = idx;

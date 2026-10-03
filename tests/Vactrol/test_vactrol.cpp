@@ -166,8 +166,8 @@ static void suite(const Model& m) {
 
 int main() {
 	Model good;
-	good.led = vactrol::ledCurrent;
-	good.steadyR = vactrol::steadyResistance;
+	good.led = [](double v, double r) { return vactrol::ledCurrent(v, r); };      // (overloaded since the part option)
+	good.steadyR = [](double i) { return vactrol::steadyResistance(i); };
 	good.tweak = nullptr;
 	printf("the VTL5C3 model...\n");
 	suite(good);

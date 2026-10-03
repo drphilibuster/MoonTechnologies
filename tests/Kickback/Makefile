@@ -14,17 +14,21 @@ CORE := ../../src/Drum.hpp ../../src/Kickback/Voices.hpp ../../src/Kickback/Brid
         ../../src/Kickback/Payroll.hpp ../../src/DspCache.hpp \
         ../../src/Kickback/AvalancheNoise.hpp ../../src/Microplasma.hpp ../../src/Mna.hpp ../../src/Cd40106.hpp ../../src/Vactrol.hpp
 
-all: test_voices test_avalanche test_microplasma test_xor test_vactrol_snare
+all: test_voices test_avalanche test_microplasma test_xor test_vactrol_snare test_noise_source
 
-test: test_voices test_avalanche test_microplasma test_xor test_vactrol_snare
+test: test_voices test_avalanche test_microplasma test_xor test_vactrol_snare test_noise_source
 	./test_voices
 	./test_avalanche
 	./test_microplasma
 	./test_xor
 	./test_vactrol_snare
+	./test_noise_source
 
 test_voices: test_voices.cpp $(CORE)
 	$(CXX) $(CXXFLAGS) $(SAN) -o $@ test_voices.cpp
+
+test_noise_source: test_noise_source.cpp $(CORE)
+	$(CXX) $(CXXFLAGS) $(SAN) -o $@ test_noise_source.cpp
 
 test_xor: test_xor.cpp $(CORE)
 	$(CXX) $(CXXFLAGS) $(SAN) -o $@ test_xor.cpp
@@ -39,7 +43,7 @@ test_microplasma: test_microplasma.cpp ../../src/Kickback/AvalancheNoise.hpp ../
 	$(CXX) $(CXXFLAGS) $(SAN) -o $@ test_microplasma.cpp
 
 clean:
-	rm -rf test_vactrol_snare test_microplasma test_voices test_avalanche test_xor render_kick *.dSYM
+	rm -rf test_noise_source test_vactrol_snare test_microplasma test_voices test_avalanche test_xor render_kick *.dSYM
 
 .PHONY: all test clean
 

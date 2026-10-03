@@ -8,7 +8,7 @@
 [![Downloads](https://img.shields.io/github/downloads/drphilibuster/MoonTechnologies/total?label=downloads)](https://github.com/drphilibuster/MoonTechnologies/releases)
 [![Licence](https://img.shields.io/badge/code-GPL--3.0--or--later-blue)](LICENSE.md)
 
-Thirty-six modules for [VCV Rack 2](https://vcvrack.com), by **Taxxess**.
+Thirty-seven modules for [VCV Rack 2](https://vcvrack.com), by **Taxxess**.
 
 They share a panel language borrowed from money — a pale engraved note, sage
 guilloche round every field, a scroll in every corner, a form number in the
@@ -80,17 +80,17 @@ spectrum and a warped field, driven by audio and CV.
 |---|---|---|---|
 | **[Projection](docs/Projection.md)**<br>video generator | **[Transmittal](docs/Transmittal.md)**<br>video output | **[Installment](docs/Installment.md)**<br>function generator | **[Volatility](docs/Volatility.md)**<br>noise, S&H & random |
 
-| <img src="tools/previews/Deduction.png" width="84"> | <img src="tools/previews/AuditLogic.png" width="134"> | <img src="tools/previews/Kickback.png" width="252"> | <img src="tools/previews/PaymentSchedule.png" width="185"> |
+| <img src="tools/previews/Accrual.png" width="67"> | <img src="tools/previews/Deduction.png" width="84"> | <img src="tools/previews/AuditLogic.png" width="134"> | <img src="tools/previews/Kickback.png" width="252"> |
 |---|---|---|---|
-| **[Deduction](docs/Deduction.md)**<br>multimode filter | **[Audit Logic](docs/AuditLogic.md)**<br>logic, switches & divider | **[Kickback](docs/Kickback.md)**<br>drum machine | **[Payment Schedule](docs/PaymentSchedule.md)**<br>8-step sequencer |
+| **[Accrual](docs/Accrual.md)**<br>4069 saw & pulse VCO | **[Deduction](docs/Deduction.md)**<br>multimode filter | **[Audit Logic](docs/AuditLogic.md)**<br>logic, switches & divider | **[Kickback](docs/Kickback.md)**<br>drum machine |
 
-| <img src="tools/previews/SignHere.png" width="143"> | <img src="tools/previews/Diversified.png" width="118"> | <img src="tools/previews/Toll.png" width="84"> | <img src="tools/previews/Obfuscation.png" width="101"> |
+| <img src="tools/previews/PaymentSchedule.png" width="185"> | <img src="tools/previews/SignHere.png" width="143"> | <img src="tools/previews/Diversified.png" width="118"> | <img src="tools/previews/Toll.png" width="84"> |
 |---|---|---|---|
-| **[Sign Here](docs/SignHere.md)**<br>controllers | **[Diversified](docs/Diversified.md)**<br>multi-effects | **[Toll](docs/Toll.md)**<br>struck-metal voice | **[Obfuscation](docs/Obfuscation.md)**<br>dispersion filter |
+| **[Payment Schedule](docs/PaymentSchedule.md)**<br>8-step sequencer | **[Sign Here](docs/SignHere.md)**<br>controllers | **[Diversified](docs/Diversified.md)**<br>multi-effects | **[Toll](docs/Toll.md)**<br>struck-metal voice |
 
-| <img src="tools/previews/ScheduleA.png" width="118"> |
-|---|
-| **[Schedule A](docs/ScheduleA.md)**<br>Repossession expander |
+| <img src="tools/previews/Obfuscation.png" width="101"> | <img src="tools/previews/ScheduleA.png" width="118"> |
+|---|---|
+| **[Obfuscation](docs/Obfuscation.md)**<br>dispersion filter | **[Schedule A](docs/ScheduleA.md)**<br>Repossession expander |
 
 ## Built for this plugin
 
@@ -245,6 +245,12 @@ Two function generators, each LFO, AR or AD with loop, range, bias and CV, plus 
 *Day 6, consolidated.*
 
 An 18-bit 4006-style shift-register noise source, the YASH sample and hold (an LF398 with its 3 µs trigger-pulse circuit), and the PHObos random gate — three separate builds put on one shared clock.
+
+### [Accrual](docs/Accrual.md) — **4069 saw & pulse VCO** · 8 HP · *Oscillator, Polyphonic*
+
+*Unfinished projects, the 4069 VCO.*
+
+The course's 4069 VCO, solved as the circuit it is: a BC560 and BC550 exponential pair summing Tune, Fine and two CV inputs, a CD4069UB inverter turned into a Miller integrator, a two-inverter Schmitt trigger that dumps it, and a third inverter turned into a pulse-width comparator. Saw and pulse come out of the board's own 7 Hz coupling capacitors. The supply, the input capacitance and the v/oct trimmer are in the menu, and it is polyphonic.
 
 ### [Deduction](docs/Deduction.md) — **multimode filter** · 10 HP · *Filter, Distortion*
 
