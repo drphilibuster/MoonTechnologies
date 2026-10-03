@@ -298,9 +298,9 @@ BaSnaHi's snare stage was always a better bell than a snare, so it has a module 
 
 ### [Obfuscation](docs/Obfuscation.md) — 14 HP · *Filter, Effect, Distortion*
 
-*A phaser taken to its logical conclusion.*
+*After Kilohearts' Disperser.*
 
-A three-band allpass matrix: the input is split into low, mid and high, each band runs through up to ninety-six first-order allpass stages inside its own feedback loop, and the bands are summed, saturated, tilted, clipped and boosted. RANDOM redraws every stage's cutoff on a clock or on the input's peaks, and the RANDOM gate also freezes the matrix, holding whatever is ringing in it.
+A three-band dispersion matrix in the manner of Disperser: each band runs through up to ninety-six second-order allpass stages in series, with FREQ, PINCH (the stage Q) and STAGES, then the bands are summed, saturated, tilted, clipped and boosted. RANDOM redraws every stage's cutoff and pinch on a clock or on the input's peaks, and the RANDOM gate also freezes the current set while it is held.
 
 ### [Schedule A](docs/ScheduleA.md) — 14 HP · *Expander, Sampler, Sequencer*
 
