@@ -1,13 +1,14 @@
 #pragma once
 /** Obfuscation's DSP: a three-band allpass matrix, tested without Rack.
  *
- *   in -> 3-band LR4 split -> per band: up to 96 first-order allpass stages
- *   inside one feedback loop -> sum -> saturator (2x oversampled) -> 2-band
- *   split for BRIGHT -> hard clip -> boost -> out
+ *   in -> 3-band LR4 split -> per band: up to 96 second-order allpass stages
+ *   in series (no feedback; FREQ centres the group delay, PINCH is the stage
+ *   Q) -> sum -> saturator (2x oversampled) -> 2-band split for BRIGHT ->
+ *   hard clip -> boost -> out
  *
  * No Rack types, no allocation, no I/O. Audio is +-1 inside (Rack's +-5 V is
- * scaled by the module). Every recursive path is bounded by a tanh or by
- * |a| < 1, and sanitize() sits on the loop memory, so nothing can run away.
+ * scaled by the module). Every stage is a stable allpass (poles inside the unit
+ * circle) and sanitize() sits on the output, so nothing can run away.
  */
 #include <cmath>
 #include <cstdint>
@@ -72,41 +73,61 @@ struct LR4 {
 	float allpass(float x) { float l, h; run(x, l, h); return l + h; }
 };
 
-/** N first-order allpasses inside one feedback loop. */
+/** N second-order (RBJ) allpass stages in series. Magnitude is flat; the
+    stages only delay frequencies differently (group delay peaks at each
+    stage's cutoff, and a higher Q concentrates it there). */
 struct Chain {
-	float a[MAX_STAGES], z[MAX_STAGES];
-	float off[MAX_STAGES], tgt[MAX_STAGES];   // per-stage cutoff offset, -1..1
-	float fbOff = 0.f, fbTgt = 0.f;           // per-band feedback offset
-	float nSm = 8.f, yPrev = 0.f;
+	float kd[MAX_STAGES], a1[MAX_STAGES], a2[MAX_STAGES], a3[MAX_STAGES];
+	float z1[MAX_STAGES], z2[MAX_STAGES];
+	float off[MAX_STAGES], tgt[MAX_STAGES];     // per-stage cutoff offset, -1..1
+	float qoff[MAX_STAGES], qtgt[MAX_STAGES];   // per-stage Q offset, -1..1
+	float nSm = 8.f, nTarget = 8.f;
 	Chain() { reset(); }
 	void reset() {
-		for (int i = 0; i < MAX_STAGES; i++) a[i] = z[i] = off[i] = tgt[i] = 0.f;
-		fbOff = fbTgt = 0.f; yPrev = 0.f;
+		for (int i = 0; i < MAX_STAGES; i++) {
+			kd[i] = 1.f; a1[i] = 1.f; a2[i] = a3[i] = 0.f;
+			z1[i] = z2[i] = off[i] = tgt[i] = qoff[i] = qtgt[i] = 0.f;
+		}
+	}
+	/** Zavalishin TPT state-variable allpass: x - 2k*bp with k = 1/Q. Chosen over
+	    a direct-form biquad because it stays bounded while its coefficients move. */
+	void setStage(int i, float f, float q, float sr) {
+		float g = std::tan(PI_F * clampf(f, 5.f, 0.45f * sr) / sr);
+		kd[i] = 1.f / q;
+		a1[i] = 1.f / (1.f + g * (g + kd[i]));
+		a2[i] = g * a1[i];
+		a3[i] = g * a2[i];
 	}
 	int active() const { return (int)clampf(std::ceil(nSm), 1.f, (float)MAX_STAGES); }
-	float process(float x, float fb, float inGain) {
+	/** Every stage runs on every sample and only the output tap moves. A stage
+	    that stopped running would keep stale state, and bringing it back in
+	    would inject that state as a click on each step of STAGES. */
+	float process(float x) {
+		// Slewed every sample, not at control rate: a stepped crossfade weight
+		// is itself a click. Rate-limited so a big jump sweeps stage by stage.
+		nSm += clampf((nTarget - nSm) * 0.01f, -0.02f, 0.02f);
 		int k = active();
-		float frac = nSm - (float)(k - 1);
-		frac = clampf(frac, 0.f, 1.f);
-		float v = x * inGain + fb * std::tanh(yPrev);
-		float before = v;
-		for (int i = 0; i < k; i++) {
+		float frac = clampf(nSm - (float)(k - 1), 0.f, 1.f);
+		float v = x, before = x, after = x;
+		for (int i = 0; i < MAX_STAGES; i++) {
 			if (i == k - 1) before = v;
-			float y = a[i] * v + z[i];
-			z[i] = v - a[i] * y;
-			v = y;
+			float v3 = v - z2[i];
+			float v1 = a1[i] * z1[i] + a2[i] * v3;
+			float v2 = z2[i] + a2[i] * z1[i] + a3[i] * v3;
+			z1[i] = 2.f * v1 - z1[i];
+			z2[i] = 2.f * v2 - z2[i];
+			v = v - 2.f * kd[i] * v1;
+			if (i == k - 1) after = v;
 		}
-		float out = sanitize(before + frac * (v - before));
-		yPrev = out;
-		return out * (1.f - 0.5f * fb);
+		return sanitize(before + frac * (after - before));
 	}
 };
 
 struct Params {
 	float freq = 0.5f;      // 0..1, 40 Hz .. 8 kHz exponential
-	float res = 0.3f;       // 0..1 loop feedback
+	float pinch = 0.3f;     // 0..1 stage Q, 0.5 .. ~30 (concentrates the delay at FREQ)
 	float stages = 8.f;     // 1..96
-	float spread = 0.f;     // 0..1 per-stage cutoff spread / random depth
+	float spread = 0.f;     // 0..1 per-stage cutoff / pinch scatter
 	float drive = 0.2f;     // 0..1
 	float bright = 0.5f;    // 0..1, 0.5 neutral
 	float clip = 1.f;       // 0..1, 1 = no clip
@@ -119,7 +140,7 @@ struct Matrix {
 	Chain band[3];
 	Svf osUp, osUp2, osDn, osDn2;
 	float dcX = 0.f, dcY = 0.f;
-	float hold = 0.f, env = 0.f, envArm = 1.f, refractory = 0.f;
+	float env = 0.f, envArm = 1.f, refractory = 0.f;
 	float xoLoF = 250.f, xoHiF = 2500.f;
 	int ctr = 0;
 	bool randWas = false, gateWas = false;
@@ -133,11 +154,11 @@ struct Matrix {
 		xo1.reset(); xo2.reset(); xoComp.reset(); bright.reset();
 		for (int b = 0; b < 3; b++) band[b].reset();
 		osUp.reset(); osUp2.reset(); osDn.reset(); osDn2.reset();
-		dcX = dcY = 0.f; hold = env = 0.f; envArm = 1.f; refractory = 0.f; ctr = 0; fired = 0.f;
+		dcX = dcY = 0.f; env = 0.f; envArm = 1.f; refractory = 0.f; ctr = 0; fired = 0.f;
 		randWas = gateWas = false;
 		rng.seed(0x1234567u);
 		for (int b = 0; b < 3; b++) ladder(b);
-		for (int b = 0; b < 3; b++) for (int i = 0; i < MAX_STAGES; i++) band[b].off[i] = band[b].tgt[i];
+		for (int b = 0; b < 3; b++) for (int i = 0; i < MAX_STAGES; i++) { band[b].off[i] = band[b].tgt[i]; band[b].qoff[i] = band[b].qtgt[i]; }
 	}
 	void seed(uint32_t v) { rng.seed(v); }
 
@@ -148,38 +169,40 @@ struct Matrix {
 			float p = std::fmod((float)(i + 1 + 17 * b) * 0.6180339887f, 1.f);
 			band[b].tgt[i] = 2.f * p - 1.f;
 		}
-		band[b].fbTgt = 0.f;
+		for (int i = 0; i < MAX_STAGES; i++) band[b].qtgt[i] = 0.f;
 	}
 	void roll() {
 		for (int b = 0; b < 3; b++) {
 			for (int i = 0; i < MAX_STAGES; i++) band[b].tgt[i] = rng.bi();
-			band[b].fbTgt = 0.5f * rng.bi();
+			for (int i = 0; i < MAX_STAGES; i++) band[b].qtgt[i] = rng.bi();
 		}
 		fired = 1.f;
 	}
 
 	static float freqHz(float k) { return 40.f * std::exp2(clampf(k, 0.f, 1.f) * 7.64f); }
 
+	static float pinchQ(float k) { return 0.5f * std::exp2(clampf(k, 0.f, 1.f) * 5.9f); }
+
 	void updateCoeffs(const Params& p) {
 		static const float bandMul[3] = {0.25f, 1.f, 4.f};
 		float f0 = freqHz(p.freq);
+		float q0 = pinchQ(p.pinch);
 		float target = clampf(p.stages, 1.f, (float)MAX_STAGES);
 		for (int b = 0; b < 3; b++) {
 			Chain& c = band[b];
 			float fb = f0 * bandMul[b];
 			for (int i = 0; i < MAX_STAGES; i++) {
 				c.off[i] += (c.tgt[i] - c.off[i]) * 0.05f;
-				float f = fb * std::exp2(p.spread * 2.f * c.off[i]);
-				f = clampf(f, 10.f, 0.45f * sr);
-				float t = std::tan(PI_F * f / sr);
-				c.a[i] = (t - 1.f) / (t + 1.f);
+				c.qoff[i] += (c.qtgt[i] - c.qoff[i]) * 0.05f;
+				float f = clampf(fb * std::exp2(p.spread * 2.f * c.off[i]), 10.f, 0.45f * sr);
+				float q = clampf(q0 * std::exp2(p.spread * 2.f * c.qoff[i]), 0.5f, 40.f);
+				c.setStage(i, f, q, sr);
 			}
-			c.fbOff += (c.fbTgt - c.fbOff) * 0.05f;
-			c.nSm += (target - c.nSm) * 0.1f;
+			c.nTarget = target;
 		}
 	}
 
-	/** x in +-1. clockEdge: rising edge of the clock jack. gate: RANDOM gate level.
+	/** x in +-1. clockEdge: rising edge of the clock jack. gate: RANDOM gate level (held = set frozen).
 	    randSw: RANDOM switch. envMode: peak follower drives the roll instead of the clock. */
 	float process(float x, const Params& p, bool clockEdge, bool gate, bool randSw, bool envMode) {
 		x = sanitize(x);
@@ -194,7 +217,8 @@ struct Matrix {
 		if (env < 0.1f) envArm = 1.f;
 
 		bool gateEdge = gate && !gateWas;
-		bool trig = randOn && ((envMode ? envEdge : clockEdge) || gateEdge);
+		// While the gate is held the set is frozen: only its own rising edge rolls.
+		bool trig = randOn && (gate ? gateEdge : (envMode ? envEdge : clockEdge));
 		if (trig) roll();
 		if (!randOn && randWas) for (int b = 0; b < 3; b++) ladder(b);
 		randWas = randOn;
@@ -203,9 +227,6 @@ struct Matrix {
 		if (ctr == 0) updateCoeffs(p);
 		ctr = (ctr + 1) % CTRL_DIV;
 		if (fired > 0.f) fired -= 1.f / (0.1f * sr);
-
-		float holdT = gate ? 1.f : 0.f;
-		hold += (holdT - hold) * (1.f / (0.005f * sr));
 
 		// split
 		float lo1, hi1, mid, hi;
@@ -216,9 +237,7 @@ struct Matrix {
 		float bands[3] = {lo, mid, hi};
 		float sum = 0.f;
 		for (int b = 0; b < 3; b++) {
-			float fb = clampf(p.res * 0.97f + band[b].fbOff * p.spread, 0.f, 0.99f);
-			fb = fb + (0.995f - fb) * hold;
-			sum += band[b].process(bands[b], fb, 1.f - hold);
+			sum += band[b].process(bands[b]);
 		}
 
 		// saturator, 2x oversampled

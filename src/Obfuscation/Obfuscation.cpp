@@ -4,14 +4,14 @@
 
 struct ObfuscationModule : Module {
 	enum ParamId {
-		FREQ_PARAM, RES_PARAM, STAGES_PARAM,
-		FREQ_CV_PARAM, RES_CV_PARAM, STAGES_CV_PARAM,
+		FREQ_PARAM, PINCH_PARAM, STAGES_PARAM,
+		FREQ_CV_PARAM, PINCH_CV_PARAM, STAGES_CV_PARAM,
 		RANDOM_PARAM, MODE_PARAM, SPREAD_PARAM,
 		DRIVE_PARAM, BRIGHT_PARAM, CLIP_PARAM, BOOST_PARAM,
 		PARAMS_LEN
 	};
 	enum InputId {
-		IN_INPUT, FREQ_INPUT, RES_INPUT, STAGES_INPUT,
+		IN_INPUT, FREQ_INPUT, PINCH_INPUT, STAGES_INPUT,
 		CLOCK_INPUT, GATE_INPUT,
 		INPUTS_LEN
 	};
@@ -26,11 +26,11 @@ struct ObfuscationModule : Module {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 
 		configParam(FREQ_PARAM, 0.f, 1.f, 0.5f, "Frequency", " Hz", 2.f, 40.f);
-		configParam(RES_PARAM, 0.f, 1.f, 0.3f, "Resonance", "%", 0.f, 100.f);
+		configParam(PINCH_PARAM, 0.f, 1.f, 0.3f, "Pinch (allpass Q: concentrates delay around FREQ)", "%", 0.f, 100.f);
 		configParam(STAGES_PARAM, 1.f, 96.f, 8.f, "Allpass stages per band");
 		paramQuantities[STAGES_PARAM]->snapEnabled = true;
 		configParam(FREQ_CV_PARAM, -1.f, 1.f, 0.f, "Frequency CV", "%", 0.f, 100.f);
-		configParam(RES_CV_PARAM, -1.f, 1.f, 0.f, "Resonance CV", "%", 0.f, 100.f);
+		configParam(PINCH_CV_PARAM, -1.f, 1.f, 0.f, "Pinch CV", "%", 0.f, 100.f);
 		configParam(STAGES_CV_PARAM, -1.f, 1.f, 0.f, "Stages CV", "%", 0.f, 100.f);
 		configSwitch(RANDOM_PARAM, 0.f, 1.f, 0.f, "Randomize", {"Off", "On"});
 		configSwitch(MODE_PARAM, 0.f, 1.f, 0.f, "Random trigger source",
@@ -43,10 +43,10 @@ struct ObfuscationModule : Module {
 
 		configInput(IN_INPUT, "Audio");
 		configInput(FREQ_INPUT, "Frequency CV");
-		configInput(RES_INPUT, "Resonance CV");
+		configInput(PINCH_INPUT, "Pinch CV");
 		configInput(STAGES_INPUT, "Stages CV");
 		configInput(CLOCK_INPUT, "Randomize clock");
-		configInput(GATE_INPUT, "Randomize + freeze gate");
+		configInput(GATE_INPUT, "Randomize + freeze gate (held = set frozen)");
 		configOutput(OUT_OUTPUT, "Audio");
 		configLight(FIRE_LIGHT, "Randomized");
 
@@ -72,7 +72,7 @@ struct ObfuscationModule : Module {
 	void process(const ProcessArgs& args) override {
 		obf::Params p;
 		p.freq = clamp(params[FREQ_PARAM].getValue() + cv(FREQ_INPUT, FREQ_CV_PARAM, 1.f), 0.f, 1.f);
-		p.res = clamp(params[RES_PARAM].getValue() + cv(RES_INPUT, RES_CV_PARAM, 1.f), 0.f, 1.f);
+		p.pinch = clamp(params[PINCH_PARAM].getValue() + cv(PINCH_INPUT, PINCH_CV_PARAM, 1.f), 0.f, 1.f);
 		p.stages = clamp(params[STAGES_PARAM].getValue() + cv(STAGES_INPUT, STAGES_CV_PARAM, 95.f), 1.f, 96.f);
 		p.spread = params[SPREAD_PARAM].getValue();
 		p.drive = params[DRIVE_PARAM].getValue();
@@ -108,13 +108,13 @@ struct ObfuscationWidget : ModuleWidget {
 
 		addInput(createInputCentered<panel::PortIn>(at(panel::IN_POS), module, M::IN_INPUT));
 		addParam(createParamCentered<RoundLargeBlackKnob>(at(panel::FREQ_POS), module, M::FREQ_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(at(panel::RES_POS), module, M::RES_PARAM));
+		addParam(createParamCentered<RoundBlackKnob>(at(panel::PINCH_POS), module, M::PINCH_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(at(panel::STAGES_POS), module, M::STAGES_PARAM));
 		addParam(createParamCentered<Trimpot>(at(panel::FREQ_CV_POS), module, M::FREQ_CV_PARAM));
-		addParam(createParamCentered<Trimpot>(at(panel::RES_CV_POS), module, M::RES_CV_PARAM));
+		addParam(createParamCentered<Trimpot>(at(panel::PINCH_CV_POS), module, M::PINCH_CV_PARAM));
 		addParam(createParamCentered<Trimpot>(at(panel::STAGES_CV_POS), module, M::STAGES_CV_PARAM));
 		addInput(createInputCentered<panel::PortIn>(at(panel::FREQ_IN_POS), module, M::FREQ_INPUT));
-		addInput(createInputCentered<panel::PortIn>(at(panel::RES_IN_POS), module, M::RES_INPUT));
+		addInput(createInputCentered<panel::PortIn>(at(panel::PINCH_IN_POS), module, M::PINCH_INPUT));
 		addInput(createInputCentered<panel::PortIn>(at(panel::STAGES_IN_POS), module, M::STAGES_INPUT));
 
 		addParam(createParamCentered<CKSS>(at(panel::RANDOM_POS), module, M::RANDOM_PARAM));

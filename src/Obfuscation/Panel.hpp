@@ -27,10 +27,10 @@ static const Label LABELS[] = {
 	{ 35.5600f,  13.3000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "THE MATRIX"},
 	{  8.5998f,  17.9600f,  6.20f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN"},
 	{ 26.2802f,  33.8569f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FREQ"},
-	{ 45.0352f,  33.8569f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RES"},
+	{ 45.0352f,  33.8569f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PINCH"},
 	{ 61.3102f,  33.8569f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "STAGES"},
 	{  8.5998f,  48.0032f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FREQ"},
-	{ 26.2802f,  48.0032f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RES"},
+	{ 26.2802f,  48.0032f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PINCH"},
 	{ 45.0352f,  48.0032f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "STAGES"},
 	{ 35.5600f,  65.7277f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RANDOMIZATION"},
 	{  7.1795f,  82.6730f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RANDOM"},
@@ -56,13 +56,13 @@ static inline void addLabels(app::ModuleWidget* mw) {
 // Positions are mm; feed them to mm() or createParamCentered.
 static const Vec IN_POS = Vec(8.5998, 23.1500);
 static const Vec FREQ_POS = Vec(26.2802, 23.1500);
-static const Vec RES_POS = Vec(45.0352, 23.1500);
+static const Vec PINCH_POS = Vec(45.0352, 23.1500);
 static const Vec STAGES_POS = Vec(61.3102, 23.1500);
 static const Vec FREQ_CV_POS = Vec(8.5998, 40.4714);
-static const Vec RES_CV_POS = Vec(26.2802, 40.4714);
+static const Vec PINCH_CV_POS = Vec(26.2802, 40.4714);
 static const Vec STAGES_CV_POS = Vec(45.0352, 40.4714);
 static const Vec FREQ_IN_POS = Vec(8.5998, 54.5932);
-static const Vec RES_IN_POS = Vec(26.2802, 54.5932);
+static const Vec PINCH_IN_POS = Vec(26.2802, 54.5932);
 static const Vec STAGES_IN_POS = Vec(45.0352, 54.5932);
 static const Vec RANDOM_POS = Vec(7.1795, 73.9795);
 static const Vec MODE_POS = Vec(19.2907, 73.9795);

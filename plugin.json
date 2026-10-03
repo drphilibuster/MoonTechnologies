@@ -386,7 +386,7 @@
     {
       "slug": "Obfuscation",
       "name": "Obfuscation",
-      "description": "Three-band allpass matrix: up to 96 feedback allpass stages per band, clock- or peak-driven randomization, a freeze gate, then saturation, tilt, clip and boost",
+      "description": "Three-band dispersion matrix: up to 96 series allpass stages per band with frequency and pinch, clock- or peak-driven randomization, a freeze gate, then saturation, tilt, clip and boost",
       "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/Obfuscation.md",
       "tags": [
         "Filter",

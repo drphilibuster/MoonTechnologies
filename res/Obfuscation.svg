@@ -80,13 +80,13 @@
 <g inkscape:label="components" inkscape:groupmode="layer" id="components" style="display:none">
   <circle inkscape:label="in" cx="8.5998" cy="23.1500" r="1" fill="#00ff00"/>
   <circle inkscape:label="freq" cx="26.2802" cy="23.1500" r="1" fill="#ff0000"/>
-  <circle inkscape:label="res" cx="45.0352" cy="23.1500" r="1" fill="#ff0000"/>
+  <circle inkscape:label="pinch" cx="45.0352" cy="23.1500" r="1" fill="#ff0000"/>
   <circle inkscape:label="stages" cx="61.3102" cy="23.1500" r="1" fill="#ff0000"/>
   <circle inkscape:label="freq_cv" cx="8.5998" cy="40.4714" r="1" fill="#ff0000"/>
-  <circle inkscape:label="res_cv" cx="26.2802" cy="40.4714" r="1" fill="#ff0000"/>
+  <circle inkscape:label="pinch_cv" cx="26.2802" cy="40.4714" r="1" fill="#ff0000"/>
   <circle inkscape:label="stages_cv" cx="45.0352" cy="40.4714" r="1" fill="#ff0000"/>
   <circle inkscape:label="freq_in" cx="8.5998" cy="54.5932" r="1" fill="#00ff00"/>
-  <circle inkscape:label="res_in" cx="26.2802" cy="54.5932" r="1" fill="#00ff00"/>
+  <circle inkscape:label="pinch_in" cx="26.2802" cy="54.5932" r="1" fill="#00ff00"/>
   <circle inkscape:label="stages_in" cx="45.0352" cy="54.5932" r="1" fill="#00ff00"/>
   <circle inkscape:label="random" cx="7.1795" cy="73.9795" r="1" fill="#ff0000"/>
   <circle inkscape:label="mode" cx="19.2907" cy="73.9795" r="1" fill="#ff0000"/>

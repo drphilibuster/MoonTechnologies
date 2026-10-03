@@ -25,11 +25,11 @@ P.sections = [
     Section("THE MATRIX", rows=[
         Row([Jack("in", "IN", ink="PAPER"),
              BigKnob("freq", "FREQ", primary=True),
-             Knob("res", "RES"),
+             Knob("pinch", "PINCH"),
              Knob("stages", "STAGES")]),
-        Row(items=[Trim("freq_cv", "FREQ"), Trim("res_cv", "RES"),
+        Row(items=[Trim("freq_cv", "FREQ"), Trim("pinch_cv", "PINCH"),
                    Trim("stages_cv", "STAGES")], pair=True),
-        Row([Jack("freq_in"), Jack("res_in"), Jack("stages_in")]),
+        Row([Jack("freq_in"), Jack("pinch_in"), Jack("stages_in")]),
     ]),
 
     Section("RANDOMIZATION", rows=[
