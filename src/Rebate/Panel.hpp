@@ -22,9 +22,9 @@ static const float H  = 128.5000f;  // mm
 // A display used to be positioned by hand in the module's C++, in the same
 // millimetres the spec had already chosen -- two copies of one number, and
 // they drifted. The widget takes them from here now.
-static const float GLASS_X = 4.2000f;
+static const float GLASS_X = 3.6000f;
 static const float GLASS_Y = 9.8000f;
-static const float GLASS_W = 52.5600f;
+static const float GLASS_W = 53.7600f;
 static const float GLASS_H = 20.0000f;
 
 // --- panel metrics, mirrored from tools/panels/Rebate.py ---

@@ -22,9 +22,9 @@ static const float H  = 128.5000f;  // mm
 // A display used to be positioned by hand in the module's C++, in the same
 // millimetres the spec had already chosen -- two copies of one number, and
 // they drifted. The widget takes them from here now.
-static const float GLASS_X = 4.2000f;
+static const float GLASS_X = 3.6000f;
 static const float GLASS_Y = 9.8000f;
-static const float GLASS_W = 47.4800f;
+static const float GLASS_W = 48.6800f;
 static const float GLASS_H = 15.0000f;
 
 // --- silkscreen ------------------------------------------------------------
@@ -34,12 +34,12 @@ static const Label LABELS[] = {
 	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
 	{ 51.6800f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "SCHEDULE UTP"},
 	{ 27.9400f,  28.3000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EXPOSURE"},
-	{ 11.8000f,  45.6069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "VARIANCE"},
+	{ 10.4000f,  45.6069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "VARIANCE"},
 	{ 27.9400f,  45.6069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SPREAD"},
-	{ 44.0800f,  45.6069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRANSFERS"},
+	{ 45.4800f,  45.6069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRANSFERS"},
 	{ 27.9400f,  52.5219f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MANDATE"},
-	{ 13.8628f,  67.0337f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BASIS"},
-	{ 38.2680f,  67.0337f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SAFE HARBOR"},
+	{ 13.1962f,  67.0337f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BASIS"},
+	{ 38.9347f,  67.0337f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SAFE HARBOR"},
 	{ 27.9400f,  73.9488f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "AMEND"},
 	{ 13.8775f,  88.7581f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CONTROLS"},
 	{ 29.0294f,  88.7581f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BOTH"},
@@ -58,11 +58,11 @@ static inline void addLabels(app::ModuleWidget* mw) {
 
 // --- widget positions, by the names used in tools/panels/UncertaintyPolicy.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
-static const Vec KNOB_AMOUNT_POS = Vec(11.8000, 36.2000);
+static const Vec KNOB_AMOUNT_POS = Vec(10.4000, 36.2000);
 static const Vec SPREAD_POS = Vec(27.9400, 36.2000);
-static const Vec CABLE_COUNT_POS = Vec(44.0800, 36.2000);
-static const Vec BASIS_POS = Vec(13.8628, 59.1219);
-static const Vec SPINE_POS = Vec(38.2680, 59.1219);
+static const Vec CABLE_COUNT_POS = Vec(45.4800, 36.2000);
+static const Vec BASIS_POS = Vec(13.1962, 59.1219);
+static const Vec SPINE_POS = Vec(38.9347, 59.1219);
 static const Vec ROLL_CONTROLS_POS = Vec(13.8775, 80.6488);
 static const Vec ROLL_ALL_POS = Vec(29.0294, 80.6488);
 static const Vec ROLL_CABLES_POS = Vec(43.0919, 80.6488);

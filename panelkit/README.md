@@ -60,7 +60,7 @@ two near-blacks, two off-whites, one sage. Everything else is derived from them.
 | the paper | `PAPER`, the whole face |
 | masthead | `BAND` to y=9.0, a braided ribbon between the top screws, closed by a sage rule. Title in `PAPER`, auto-sized to clear both screws. The form number sits under it on the right in `SAGE` |
 | margins | a braided sage ribbon runs each side of the face between the bands, the way a note's border frames its engraving |
-| section block | `FELT`, inset 3 mm, rounded 1.6, framed in a sage hairline, a **scroll** in three corners and a 7 × 0.5 mm **ink index tab** at the fourth (top-left) |
+| section block | `FELT`, inset 2.4 mm (`BLOCK_INSET`; the margin ribbons ride midway between it and the edge), ink at least 1.0 mm inside the frame (`EDGE_PAD`), rounded 1.6, framed in a sage hairline, a **scroll** in three corners and a 7 × 0.5 mm **ink index tab** at the fourth (top-left) |
 | section caption | secondary ink, 6 px, centred on the block, 3.3–3.6 mm below its top edge |
 | control label | primary ink for a primary control, secondary for a secondary. **Below** knobs, buttons and switches; **above** jacks, where a cable would cover it |
 | ink and ground | a label's role (`PAPER` primary, `SAGE` secondary, `LIME` accent, `MINT` output, `CLAY` warning) is what the spec says; what it lands as depends on where it sits. On the pale face it is `INK` / `SAGE_DARK` / `LIME_DARK` / `MINT_DARK` / `CLAY_DARK`; on a band or in a display it is `PAPER` / `SAGE` / `LIME` / `MINT` / `CLAY`. The solver tags every label with its ground; the emitter resolves it |

@@ -22,9 +22,9 @@ static const float H  = 128.5000f;  // mm
 // A display used to be positioned by hand in the module's C++, in the same
 // millimetres the spec had already chosen -- two copies of one number, and
 // they drifted. The widget takes them from here now.
-static const float GLASS_X = 4.2000f;
+static const float GLASS_X = 3.6000f;
 static const float GLASS_Y = 9.8000f;
-static const float GLASS_W = 72.8800f;
+static const float GLASS_W = 74.0800f;
 static const float GLASS_H = 8.8000f;
 
 // --- silkscreen ------------------------------------------------------------
@@ -37,35 +37,35 @@ static const Label LABELS[] = {
 	{ 19.6400f,  43.0154f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TIME"},
 	{ 40.6400f,  43.0154f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ECHO"},
 	{ 61.6400f,  43.0154f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CUTOFF"},
-	{  8.7200f,  56.4234f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LAG"},
-	{ 19.1700f,  56.4234f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DRIVE"},
-	{ 29.6200f,  56.4234f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SEED"},
+	{  7.3200f,  56.4234f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LAG"},
+	{ 18.2367f,  56.4234f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DRIVE"},
+	{ 29.1533f,  56.4234f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SEED"},
 	{ 40.0700f,  56.4234f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RATE"},
-	{ 50.5200f,  56.4234f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RES"},
-	{ 60.9700f,  56.4234f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "THRESH"},
-	{ 71.9900f,  56.4234f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
+	{ 50.9867f,  56.4234f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RES"},
+	{ 61.9033f,  56.4234f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "THRESH"},
+	{ 73.3900f,  56.4234f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
 	{ 40.6400f,  62.5896f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ENFORCEMENT"},
-	{  9.3000f,  75.2855f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "NOISE"},
-	{ 20.5183f,  75.2855f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BOOST"},
-	{ 31.7365f,  75.2855f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MUTE"},
-	{ 43.1065f,  75.2855f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CHOP"},
-	{ 55.3544f,  75.2855f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "POL"},
-	{ 64.2822f,  75.2855f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FILTER"},
-	{ 73.2100f,  75.2855f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RANGE"},
+	{  7.9000f,  75.2855f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "NOISE"},
+	{ 19.6783f,  75.2855f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BOOST"},
+	{ 31.4565f,  75.2855f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MUTE"},
+	{ 42.8265f,  75.2855f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CHOP"},
+	{ 55.6344f,  75.2855f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "POL"},
+	{ 65.1222f,  75.2855f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FILTER"},
+	{ 74.6100f,  75.2855f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RANGE"},
 	{ 40.6400f,  82.6358f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SKIM"},
-	{  9.2900f,  94.9876f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TIME"},
-	{ 21.8300f,  94.9876f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ECHO"},
-	{ 34.3700f,  94.9876f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CUTOFF"},
-	{ 46.9100f,  94.9876f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RATE"},
-	{ 59.4500f,  94.9876f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RES"},
-	{ 71.9900f,  94.9876f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LAG"},
-	{  7.2900f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN"},
-	{ 18.4067f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "NOISE"},
-	{ 29.5233f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BOOST"},
+	{  7.8900f,  94.9876f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TIME"},
+	{ 20.9900f,  94.9876f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ECHO"},
+	{ 34.0900f,  94.9876f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CUTOFF"},
+	{ 47.1900f,  94.9876f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RATE"},
+	{ 60.2900f,  94.9876f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RES"},
+	{ 73.3900f,  94.9876f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LAG"},
+	{  6.4900f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN"},
+	{ 17.8733f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "NOISE"},
+	{ 29.2567f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BOOST"},
 	{ 40.6400f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MUTE"},
-	{ 51.7567f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ENV"},
-	{ 62.8733f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DIRTY"},
-	{ 73.9900f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
+	{ 52.0233f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ENV"},
+	{ 63.4067f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DIRTY"},
+	{ 74.7900f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
 };
 
 /** Draws this panel's silkscreen. `static` so each module keeps its own,
@@ -80,39 +80,39 @@ static const Vec LOOP_POS = Vec(47.5472, 21.3685);
 static const Vec TIME_POS = Vec(19.6400, 32.3085);
 static const Vec ECHO_POS = Vec(40.6400, 32.3085);
 static const Vec CUTOFF_POS = Vec(61.6400, 32.3085);
-static const Vec LAG_POS = Vec(8.7200, 49.7216);
-static const Vec DRIVE_POS = Vec(19.1700, 49.7216);
-static const Vec SEED_POS = Vec(29.6200, 49.7216);
+static const Vec LAG_POS = Vec(7.3200, 49.7216);
+static const Vec DRIVE_POS = Vec(18.2367, 49.7216);
+static const Vec SEED_POS = Vec(29.1533, 49.7216);
 static const Vec RATE_POS = Vec(40.0700, 49.7216);
-static const Vec RES_POS = Vec(50.5200, 49.7216);
-static const Vec THRESH_POS = Vec(60.9700, 49.7216);
-static const Vec GATE_OUT_POS = Vec(71.9900, 49.7216);
-static const Vec NOISE_POS = Vec(9.3000, 67.9896);
-static const Vec BOOST_POS = Vec(20.5183, 67.9896);
-static const Vec MUTE_POS = Vec(31.7365, 67.9896);
-static const Vec CHOP_POS = Vec(43.1065, 67.9896);
-static const Vec POL_POS = Vec(55.3544, 67.9896);
-static const Vec FILT_POS = Vec(64.2822, 67.9896);
-static const Vec RANGE_POS = Vec(73.2100, 67.9896);
-static const Vec CHOP_LED_POS = Vec(48.2662, 74.5296);
-static const Vec TIME_CV_POS = Vec(9.2900, 87.4558);
-static const Vec ECHO_CV_POS = Vec(21.8300, 87.4558);
-static const Vec CUTOFF_CV_POS = Vec(34.3700, 87.4558);
-static const Vec RATE_CV_POS = Vec(46.9100, 87.4558);
-static const Vec RES_CV_POS = Vec(59.4500, 87.4558);
-static const Vec LAG_CV_POS = Vec(71.9900, 87.4558);
-static const Vec TIME_IN_POS = Vec(9.2900, 101.5776);
-static const Vec ECHO_IN_POS = Vec(21.8300, 101.5776);
-static const Vec CUTOFF_IN_POS = Vec(34.3700, 101.5776);
-static const Vec RATE_IN_POS = Vec(46.9100, 101.5776);
-static const Vec RES_IN_POS = Vec(59.4500, 101.5776);
-static const Vec LAG_IN_POS = Vec(71.9900, 101.5776);
-static const Vec IN_POS = Vec(7.2900, 118.6000);
-static const Vec NOISE_IN_POS = Vec(18.4067, 118.6000);
-static const Vec BOOST_IN_POS = Vec(29.5233, 118.6000);
+static const Vec RES_POS = Vec(50.9867, 49.7216);
+static const Vec THRESH_POS = Vec(61.9033, 49.7216);
+static const Vec GATE_OUT_POS = Vec(73.3900, 49.7216);
+static const Vec NOISE_POS = Vec(7.9000, 67.9896);
+static const Vec BOOST_POS = Vec(19.6783, 67.9896);
+static const Vec MUTE_POS = Vec(31.4565, 67.9896);
+static const Vec CHOP_POS = Vec(42.8265, 67.9896);
+static const Vec POL_POS = Vec(55.6344, 67.9896);
+static const Vec FILT_POS = Vec(65.1222, 67.9896);
+static const Vec RANGE_POS = Vec(74.6100, 67.9896);
+static const Vec CHOP_LED_POS = Vec(47.9862, 74.5296);
+static const Vec TIME_CV_POS = Vec(7.8900, 87.4558);
+static const Vec ECHO_CV_POS = Vec(20.9900, 87.4558);
+static const Vec CUTOFF_CV_POS = Vec(34.0900, 87.4558);
+static const Vec RATE_CV_POS = Vec(47.1900, 87.4558);
+static const Vec RES_CV_POS = Vec(60.2900, 87.4558);
+static const Vec LAG_CV_POS = Vec(73.3900, 87.4558);
+static const Vec TIME_IN_POS = Vec(7.8900, 101.5776);
+static const Vec ECHO_IN_POS = Vec(20.9900, 101.5776);
+static const Vec CUTOFF_IN_POS = Vec(34.0900, 101.5776);
+static const Vec RATE_IN_POS = Vec(47.1900, 101.5776);
+static const Vec RES_IN_POS = Vec(60.2900, 101.5776);
+static const Vec LAG_IN_POS = Vec(73.3900, 101.5776);
+static const Vec IN_POS = Vec(6.4900, 118.6000);
+static const Vec NOISE_IN_POS = Vec(17.8733, 118.6000);
+static const Vec BOOST_IN_POS = Vec(29.2567, 118.6000);
 static const Vec MUTE_IN_POS = Vec(40.6400, 118.6000);
-static const Vec ENV_OUT_POS = Vec(51.7567, 118.6000);
-static const Vec DIRTY_OUT_POS = Vec(62.8733, 118.6000);
-static const Vec OUT_POS = Vec(73.9900, 118.6000);
+static const Vec ENV_OUT_POS = Vec(52.0233, 118.6000);
+static const Vec DIRTY_OUT_POS = Vec(63.4067, 118.6000);
+static const Vec OUT_POS = Vec(74.7900, 118.6000);
 
 } // namespace panel

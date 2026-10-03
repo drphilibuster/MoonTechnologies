@@ -15,7 +15,7 @@ EDGE = 1.0              # minimum clearance from the panel edge
 GRID_MM = S.GRID_W_PX * S.MM_PER_PX             # 5.08
 SCREW_TOP = 0.0
 SCREW_BOT = (S.GRID_H_PX - S.GRID_W_PX) * S.MM_PER_PX   # 123.6133
-BLOCK_INSET = 3.0       # mirrors render.BLOCK_INSET; a well must sit inside the frame
+BLOCK_INSET = 2.4       # mirrors render.BLOCK_INSET; a well must sit inside the frame
 #: A widget's ink has to stand clear of its block's frame, not merely stop short
 #: of crossing it. Letting the ring touch the line is what put Dividend's FREQ
 #: knob through the left-hand edge of PAYOUT: the check passed, and the panel

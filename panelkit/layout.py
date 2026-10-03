@@ -71,14 +71,14 @@ SCALE = {
 #: number is a clearance between two pieces of ink, never a position.
 H_SCALE = {
     "regular": dict(
-        EDGE_PAD=2.2,      # frame (or panel edge) to the nearest ink on a row
+        EDGE_PAD=1.0,      # frame (or panel edge) to the nearest ink on a row
         ITEM_GAP=2.0,      # between neighbouring cells inside one run
         GROUP_GAP=4.4,     # the gutter where a row changes gear
         PITCH_CAP=1.30,    # most a run's pitch may grow to fill the width
         MARGIN_SHARE=0.55,  # how much of the left-over a side margin takes
     ),
     "compact": dict(
-        EDGE_PAD=1.8,
+        EDGE_PAD=1.0,
         ITEM_GAP=1.5,
         GROUP_GAP=3.6,
         PITCH_CAP=1.25,
@@ -661,7 +661,9 @@ def rail_extent(panel):
 def glass_x(panel):
     """The read-out well's (x0, x1): the whole face between the screws, less the
     width of a rail that stands beside it."""
-    x0, x1 = 4.2, panel.w - 4.2
+    from .render import BLOCK_INSET
+    gi = BLOCK_INSET + 1.2          # the well stands a little inside the blocks' frame
+    x0, x1 = gi, panel.w - gi
     if panel.rail and panel.rail.items and panel.rail.tall:
         r0, r1 = rail_extent(panel)
         if panel.rail.side == "left":
@@ -1072,7 +1074,7 @@ def _solve(panel, m):
     return out, slack, gaps
 
 
-BLOCK_INSET_X = 3.0     # mirrors render.BLOCK_INSET, for blocks that span the face
+BLOCK_INSET_X = 2.4     # mirrors render.BLOCK_INSET, for blocks that span the face
 
 
 def _place_rail(out, panel, m):

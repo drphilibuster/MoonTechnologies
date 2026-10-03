@@ -25,40 +25,40 @@ static const Label LABELS[] = {
 	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
 	{122.8000f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 1040-X"},
 	{ 63.5000f,  14.0000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MIXER"},
-	{ 10.9000f,  29.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 1"},
-	{ 25.8000f,  29.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 2"},
-	{ 40.7000f,  29.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 3"},
+	{  9.1000f,  29.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 1"},
+	{ 24.6000f,  29.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 2"},
+	{ 40.1000f,  29.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 3"},
 	{ 55.6000f,  29.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 4"},
 	{ 71.4000f,  29.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 5"},
-	{ 86.3000f,  29.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 6"},
-	{101.2000f,  29.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 7"},
-	{116.1000f,  29.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 8"},
-	{ 33.2500f,  42.1291f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MUTE"},
-	{ 93.7500f,  42.1291f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MUTE"},
-	{ 33.2500f,  46.2513f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LEVEL CV"},
-	{ 93.7500f,  46.2513f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LEVEL CV"},
-	{ 10.9000f,  60.1534f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 1"},
-	{ 25.8000f,  60.1534f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 2"},
-	{ 40.7000f,  60.1534f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 3"},
+	{ 86.9000f,  29.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 6"},
+	{102.4000f,  29.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 7"},
+	{117.9000f,  29.3069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LVL 8"},
+	{ 32.3500f,  42.1291f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MUTE"},
+	{ 94.6500f,  42.1291f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MUTE"},
+	{ 32.3500f,  46.2513f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LEVEL CV"},
+	{ 94.6500f,  46.2513f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LEVEL CV"},
+	{  9.1000f,  60.1534f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 1"},
+	{ 24.6000f,  60.1534f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 2"},
+	{ 40.1000f,  60.1534f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 3"},
 	{ 55.6000f,  60.1534f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 4"},
 	{ 71.4000f,  60.1534f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 5"},
-	{ 86.3000f,  60.1534f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 6"},
-	{101.2000f,  60.1534f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 7"},
-	{116.1000f,  60.1534f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 8"},
+	{ 86.9000f,  60.1534f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 6"},
+	{102.4000f,  60.1534f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 7"},
+	{117.9000f,  60.1534f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN 8"},
 	{ 63.5000f,  78.7438f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MULTIPLES"},
 	{ 13.5410f,  81.8056f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MULT A"},
 	{ 13.5410f,  95.7078f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MULT B"},
-	{  7.6900f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "1"},
-	{ 18.8520f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "2"},
-	{ 30.0140f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "3"},
-	{ 41.1760f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "4"},
-	{ 52.3380f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "5"},
+	{  6.4900f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "1"},
+	{ 17.8920f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "2"},
+	{ 29.2940f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "3"},
+	{ 40.6960f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "4"},
+	{ 52.0980f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "5"},
 	{ 63.5000f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "6"},
-	{ 74.6620f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "7"},
-	{ 85.8240f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "8"},
-	{ 96.9860f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MIX A"},
-	{108.1480f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MIX B"},
-	{119.3100f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MAIN"},
+	{ 74.9020f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "7"},
+	{ 86.3040f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "8"},
+	{ 97.7060f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MIX A"},
+	{109.1080f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MIX B"},
+	{120.5100f, 113.3100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MAIN"},
 };
 
 /** Draws this panel's silkscreen. `static` so each module keeps its own,
@@ -69,38 +69,38 @@ static inline void addLabels(app::ModuleWidget* mw) {
 
 // --- widget positions, by the names used in tools/panels/Bailout.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
-static const Vec LVL1_POS = Vec(10.9000, 21.1000);
-static const Vec LVL2_POS = Vec(25.8000, 21.1000);
-static const Vec LVL3_POS = Vec(40.7000, 21.1000);
+static const Vec LVL1_POS = Vec(9.1000, 21.1000);
+static const Vec LVL2_POS = Vec(24.6000, 21.1000);
+static const Vec LVL3_POS = Vec(40.1000, 21.1000);
 static const Vec LVL4_POS = Vec(55.6000, 21.1000);
 static const Vec LVL5_POS = Vec(71.4000, 21.1000);
-static const Vec LVL6_POS = Vec(86.3000, 21.1000);
-static const Vec LVL7_POS = Vec(101.2000, 21.1000);
-static const Vec LVL8_POS = Vec(116.1000, 21.1000);
-static const Vec MUTE1_POS = Vec(10.9000, 35.8673);
-static const Vec MUTE2_POS = Vec(25.8000, 35.8673);
-static const Vec MUTE3_POS = Vec(40.7000, 35.8673);
+static const Vec LVL6_POS = Vec(86.9000, 21.1000);
+static const Vec LVL7_POS = Vec(102.4000, 21.1000);
+static const Vec LVL8_POS = Vec(117.9000, 21.1000);
+static const Vec MUTE1_POS = Vec(9.1000, 35.8673);
+static const Vec MUTE2_POS = Vec(24.6000, 35.8673);
+static const Vec MUTE3_POS = Vec(40.1000, 35.8673);
 static const Vec MUTE4_POS = Vec(55.6000, 35.8673);
 static const Vec MUTE5_POS = Vec(71.4000, 35.8673);
-static const Vec MUTE6_POS = Vec(86.3000, 35.8673);
-static const Vec MUTE7_POS = Vec(101.2000, 35.8673);
-static const Vec MUTE8_POS = Vec(116.1000, 35.8673);
-static const Vec CV1_POS = Vec(10.9000, 51.5413);
-static const Vec CV2_POS = Vec(25.8000, 51.5413);
-static const Vec CV3_POS = Vec(40.7000, 51.5413);
+static const Vec MUTE6_POS = Vec(86.9000, 35.8673);
+static const Vec MUTE7_POS = Vec(102.4000, 35.8673);
+static const Vec MUTE8_POS = Vec(117.9000, 35.8673);
+static const Vec CV1_POS = Vec(9.1000, 51.5413);
+static const Vec CV2_POS = Vec(24.6000, 51.5413);
+static const Vec CV3_POS = Vec(40.1000, 51.5413);
 static const Vec CV4_POS = Vec(55.6000, 51.5413);
 static const Vec CV5_POS = Vec(71.4000, 51.5413);
-static const Vec CV6_POS = Vec(86.3000, 51.5413);
-static const Vec CV7_POS = Vec(101.2000, 51.5413);
-static const Vec CV8_POS = Vec(116.1000, 51.5413);
-static const Vec IN1_POS = Vec(10.9000, 65.4434);
-static const Vec IN2_POS = Vec(25.8000, 65.4434);
-static const Vec IN3_POS = Vec(40.7000, 65.4434);
+static const Vec CV6_POS = Vec(86.9000, 51.5413);
+static const Vec CV7_POS = Vec(102.4000, 51.5413);
+static const Vec CV8_POS = Vec(117.9000, 51.5413);
+static const Vec IN1_POS = Vec(9.1000, 65.4434);
+static const Vec IN2_POS = Vec(24.6000, 65.4434);
+static const Vec IN3_POS = Vec(40.1000, 65.4434);
 static const Vec IN4_POS = Vec(55.6000, 65.4434);
 static const Vec IN5_POS = Vec(71.4000, 65.4434);
-static const Vec IN6_POS = Vec(86.3000, 65.4434);
-static const Vec IN7_POS = Vec(101.2000, 65.4434);
-static const Vec IN8_POS = Vec(116.1000, 65.4434);
+static const Vec IN6_POS = Vec(86.9000, 65.4434);
+static const Vec IN7_POS = Vec(102.4000, 65.4434);
+static const Vec IN8_POS = Vec(117.9000, 65.4434);
 static const Vec MULT_A_IN_POS = Vec(13.5410, 87.0956);
 static const Vec MULT_A_OUT1_POS = Vec(27.8150, 87.0956);
 static const Vec MULT_A_OUT2_POS = Vec(42.0890, 87.0956);
@@ -117,16 +117,16 @@ static const Vec MULT_B_OUT4_POS = Vec(70.6370, 100.9978);
 static const Vec MULT_B_OUT5_POS = Vec(84.9110, 100.9978);
 static const Vec MULT_B_OUT6_POS = Vec(99.1850, 100.9978);
 static const Vec MULT_B_OUT7_POS = Vec(113.4590, 100.9978);
-static const Vec OUT1_POS = Vec(7.6900, 118.6000);
-static const Vec OUT2_POS = Vec(18.8520, 118.6000);
-static const Vec OUT3_POS = Vec(30.0140, 118.6000);
-static const Vec OUT4_POS = Vec(41.1760, 118.6000);
-static const Vec OUT5_POS = Vec(52.3380, 118.6000);
+static const Vec OUT1_POS = Vec(6.4900, 118.6000);
+static const Vec OUT2_POS = Vec(17.8920, 118.6000);
+static const Vec OUT3_POS = Vec(29.2940, 118.6000);
+static const Vec OUT4_POS = Vec(40.6960, 118.6000);
+static const Vec OUT5_POS = Vec(52.0980, 118.6000);
 static const Vec OUT6_POS = Vec(63.5000, 118.6000);
-static const Vec OUT7_POS = Vec(74.6620, 118.6000);
-static const Vec OUT8_POS = Vec(85.8240, 118.6000);
-static const Vec MIX_A_OUT_POS = Vec(96.9860, 118.6000);
-static const Vec MIX_B_OUT_POS = Vec(108.1480, 118.6000);
-static const Vec MAIN_OUT_POS = Vec(119.3100, 118.6000);
+static const Vec OUT7_POS = Vec(74.9020, 118.6000);
+static const Vec OUT8_POS = Vec(86.3040, 118.6000);
+static const Vec MIX_A_OUT_POS = Vec(97.7060, 118.6000);
+static const Vec MIX_B_OUT_POS = Vec(109.1080, 118.6000);
+static const Vec MAIN_OUT_POS = Vec(120.5100, 118.6000);
 
 } // namespace panel

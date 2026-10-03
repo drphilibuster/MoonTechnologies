@@ -22,9 +22,9 @@ static const float H  = 128.5000f;  // mm
 // A display used to be positioned by hand in the module's C++, in the same
 // millimetres the spec had already chosen -- two copies of one number, and
 // they drifted. The widget takes them from here now.
-static const float GLASS_X = 4.2000f;
+static const float GLASS_X = 3.6000f;
 static const float GLASS_Y = 9.8000f;
-static const float GLASS_W = 52.5600f;
+static const float GLASS_W = 53.7600f;
 static const float GLASS_H = 32.0000f;
 
 // --- silkscreen ------------------------------------------------------------
@@ -34,19 +34,19 @@ static const Label LABELS[] = {
 	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
 	{ 56.7600f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 1120-W"},
 	{ 30.4800f,  45.3000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SIGNAL"},
-	{  9.2900f,  48.3618f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "L"},
-	{ 21.5600f,  48.3618f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "R"},
-	{ 36.0100f,  61.6587f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SENS"},
-	{ 50.4600f,  61.6587f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TILT"},
+	{  7.8900f,  48.3618f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "L"},
+	{ 21.0933f,  48.3618f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "R"},
+	{ 36.4767f,  61.6587f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SENS"},
+	{ 51.8600f,  61.6587f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TILT"},
 	{ 30.4800f,  66.4587f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PICTURE"},
-	{ 10.5000f,  82.5656f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODE"},
-	{ 23.8200f,  82.5656f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SCALE"},
-	{ 37.1400f,  82.5656f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "WARP"},
-	{ 50.4600f,  82.5656f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "HUE"},
-	{ 10.5000f, 109.3043f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRAIL"},
-	{ 23.8200f, 109.3043f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SAT"},
-	{ 37.1400f,  96.0074f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FLASH"},
-	{ 50.4600f,  96.0074f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FREEZE"},
+	{  9.1000f,  82.5656f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODE"},
+	{ 23.3533f,  82.5656f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SCALE"},
+	{ 37.6067f,  82.5656f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "WARP"},
+	{ 51.8600f,  82.5656f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "HUE"},
+	{  9.1000f, 109.3043f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRAIL"},
+	{ 23.3533f, 109.3043f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SAT"},
+	{ 37.6067f,  96.0074f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FLASH"},
+	{ 51.8600f,  96.0074f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FREEZE"},
 	{ 10.1550f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LOW"},
 	{ 23.7050f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MID"},
 	{ 37.2550f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "HIGH"},
@@ -61,22 +61,22 @@ static inline void addLabels(app::ModuleWidget* mw) {
 
 // --- widget positions, by the names used in tools/panels/Projection.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
-static const Vec AUDIO_L_POS = Vec(9.2900, 53.5518);
-static const Vec AUDIO_R_POS = Vec(21.5600, 53.5518);
-static const Vec SENS_POS = Vec(36.0100, 53.5518);
-static const Vec TILT_POS = Vec(50.4600, 53.5518);
-static const Vec MODE_POS = Vec(10.5000, 73.0587);
-static const Vec SCALE_POS = Vec(23.8200, 73.0587);
-static const Vec WARP_POS = Vec(37.1400, 73.0587);
-static const Vec HUE_POS = Vec(50.4600, 73.0587);
-static const Vec MODE_CV_POS = Vec(10.5000, 89.1556);
-static const Vec SCALE_CV_POS = Vec(23.8200, 89.1556);
-static const Vec WARP_CV_POS = Vec(37.1400, 89.1556);
-static const Vec HUE_CV_POS = Vec(50.4600, 89.1556);
-static const Vec TRAIL_POS = Vec(10.5000, 101.1974);
-static const Vec SAT_POS = Vec(23.8200, 101.1974);
-static const Vec FLASH_POS = Vec(37.1400, 101.1974);
-static const Vec FREEZE_POS = Vec(50.4600, 101.1974);
+static const Vec AUDIO_L_POS = Vec(7.8900, 53.5518);
+static const Vec AUDIO_R_POS = Vec(21.0933, 53.5518);
+static const Vec SENS_POS = Vec(36.4767, 53.5518);
+static const Vec TILT_POS = Vec(51.8600, 53.5518);
+static const Vec MODE_POS = Vec(9.1000, 73.0587);
+static const Vec SCALE_POS = Vec(23.3533, 73.0587);
+static const Vec WARP_POS = Vec(37.6067, 73.0587);
+static const Vec HUE_POS = Vec(51.8600, 73.0587);
+static const Vec MODE_CV_POS = Vec(9.1000, 89.1556);
+static const Vec SCALE_CV_POS = Vec(23.3533, 89.1556);
+static const Vec WARP_CV_POS = Vec(37.6067, 89.1556);
+static const Vec HUE_CV_POS = Vec(51.8600, 89.1556);
+static const Vec TRAIL_POS = Vec(9.1000, 101.1974);
+static const Vec SAT_POS = Vec(23.3533, 101.1974);
+static const Vec FLASH_POS = Vec(37.6067, 101.1974);
+static const Vec FREEZE_POS = Vec(51.8600, 101.1974);
 static const Vec LOW_OUT_POS = Vec(10.1550, 118.6000);
 static const Vec MID_OUT_POS = Vec(23.7050, 118.6000);
 static const Vec HIGH_OUT_POS = Vec(37.2550, 118.6000);

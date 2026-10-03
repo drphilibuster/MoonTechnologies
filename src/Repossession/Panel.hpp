@@ -22,9 +22,9 @@ static const float H  = 128.5000f;  // mm
 // A display used to be positioned by hand in the module's C++, in the same
 // millimetres the spec had already chosen -- two copies of one number, and
 // they drifted. The widget takes them from here now.
-static const float GLASS_X = 4.2000f;
+static const float GLASS_X = 3.6000f;
 static const float GLASS_Y = 9.8000f;
-static const float GLASS_W = 164.3200f;
+static const float GLASS_W = 165.5200f;
 static const float GLASS_H = 39.0000f;
 
 // --- panel metrics, mirrored from tools/panels/Repossession.py ---
@@ -57,14 +57,14 @@ static const Label LABELS[] = {
 	{168.5200f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 1099-A"},
 	{ 86.3600f,  52.3000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SEIZED ASSETS"},
 	{ 86.3600f,  70.3000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LIENS"},
-	{ 18.2463f,  85.0069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "REGION"},
-	{ 34.5213f,  85.0069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SPEED"},
-	{ 50.7963f,  85.0069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GAIN"},
-	{ 77.4504f,  85.0069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LOOP"},
-	{ 87.5004f,  85.0069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "REV"},
-	{114.1546f,  85.0069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODE"},
-	{130.4296f,  85.0069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TEMPO"},
-	{156.9937f,  85.0069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RUN"},
+	{ 17.2219f,  85.0069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "REGION"},
+	{ 33.4969f,  85.0069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SPEED"},
+	{ 49.7719f,  85.0069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GAIN"},
+	{ 77.1090f,  85.0069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LOOP"},
+	{ 87.1590f,  85.0069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "REV"},
+	{114.4960f,  85.0069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MODE"},
+	{130.7710f,  85.0069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TEMPO"},
+	{158.0181f,  85.0069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RUN"},
 	{ 86.3600f,  92.0985f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "COLLECTIONS"},
 	{ 30.7202f,  96.3444f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CLOCK"},
 	{ 47.1498f,  96.3444f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RESET"},
@@ -101,14 +101,14 @@ static const Vec SLOT5_POS = Vec(93.1350, 58.7085);
 static const Vec SLOT6_POS = Vec(106.6850, 58.7085);
 static const Vec SLOT7_POS = Vec(120.2350, 58.7085);
 static const Vec SLOT8_POS = Vec(133.7850, 58.7085);
-static const Vec REGION_POS = Vec(18.2463, 76.9000);
-static const Vec SPEED_POS = Vec(34.5213, 76.9000);
-static const Vec GAIN_POS = Vec(50.7963, 76.9000);
-static const Vec LOOP_POS = Vec(77.4504, 76.9000);
-static const Vec REV_POS = Vec(87.5004, 76.9000);
-static const Vec MODE_POS = Vec(114.1546, 76.9000);
-static const Vec TEMPO_POS = Vec(130.4296, 76.9000);
-static const Vec RUNMODE_POS = Vec(156.9937, 76.9000);
+static const Vec REGION_POS = Vec(17.2219, 76.9000);
+static const Vec SPEED_POS = Vec(33.4969, 76.9000);
+static const Vec GAIN_POS = Vec(49.7719, 76.9000);
+static const Vec LOOP_POS = Vec(77.1090, 76.9000);
+static const Vec REV_POS = Vec(87.1590, 76.9000);
+static const Vec MODE_POS = Vec(114.4960, 76.9000);
+static const Vec TEMPO_POS = Vec(130.7710, 76.9000);
+static const Vec RUNMODE_POS = Vec(158.0181, 76.9000);
 static const Vec CLOCK_IN_POS = Vec(30.7202, 102.0185);
 static const Vec RESET_IN_POS = Vec(47.1498, 102.0185);
 static const Vec REGION_IN_POS = Vec(60.6998, 102.0185);

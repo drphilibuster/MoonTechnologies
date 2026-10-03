@@ -46,13 +46,13 @@ static const Label LABELS[] = {
 	{ 14.6550f,  93.5085f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
 	{ 40.6400f, 106.8054f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "DUTY"},
 	{ 66.6250f,  93.5085f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
-	{  7.2900f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ENV1"},
-	{ 18.4067f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SQU1"},
-	{ 29.5233f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EOC1"},
+	{  6.4900f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ENV1"},
+	{ 17.8733f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SQU1"},
+	{ 29.2567f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EOC1"},
 	{ 40.6400f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ENV2"},
-	{ 51.7567f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SQU2"},
-	{ 62.8733f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EOC2"},
-	{ 73.9900f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PWM"},
+	{ 52.0233f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SQU2"},
+	{ 63.4067f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "EOC2"},
+	{ 74.7900f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PWM"},
 };
 
 /** Draws this panel's silkscreen. `static` so each module keeps its own,
@@ -86,12 +86,12 @@ static const Vec CV2_IN_POS = Vec(66.6250, 85.6593);
 static const Vec GATE1_IN_POS = Vec(14.6550, 98.6985);
 static const Vec PWM_DUTY_POS = Vec(40.6400, 98.6985);
 static const Vec GATE2_IN_POS = Vec(66.6250, 98.6985);
-static const Vec ENV1_OUT_POS = Vec(7.2900, 118.6000);
-static const Vec INV1_OUT_POS = Vec(18.4067, 118.6000);
-static const Vec EOC1_OUT_POS = Vec(29.5233, 118.6000);
+static const Vec ENV1_OUT_POS = Vec(6.4900, 118.6000);
+static const Vec INV1_OUT_POS = Vec(17.8733, 118.6000);
+static const Vec EOC1_OUT_POS = Vec(29.2567, 118.6000);
 static const Vec ENV2_OUT_POS = Vec(40.6400, 118.6000);
-static const Vec INV2_OUT_POS = Vec(51.7567, 118.6000);
-static const Vec EOC2_OUT_POS = Vec(62.8733, 118.6000);
-static const Vec PWM_OUT_POS = Vec(73.9900, 118.6000);
+static const Vec INV2_OUT_POS = Vec(52.0233, 118.6000);
+static const Vec EOC2_OUT_POS = Vec(63.4067, 118.6000);
+static const Vec PWM_OUT_POS = Vec(74.7900, 118.6000);
 
 } // namespace panel

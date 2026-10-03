@@ -30,7 +30,7 @@ from .layout import cap_h, desc_h, label_box, HEADER_H, SCALE, FOOT_Y
 
 TAB_W = 7.0             # the index tab on every block: a form's thumb index
 TAB_H = 0.5
-BLOCK_INSET = 3.0       # felt blocks sit this far in from the panel edge
+BLOCK_INSET = 2.4       # felt blocks sit this far in from the panel edge
 BLOCK_R = 1.6
 WELL_R = 1.2
 TRACE_W = 0.30
@@ -39,6 +39,7 @@ TRACE_PERIOD = 3.2
 TRACE_CLEAR = 0.9       # how far a trace breaks around a label's box
 FRAME_W = 0.22          # the engraved frame round every block
 RIBBON_W = 0.16         # a guilloche strand
+RIBBON_X = BLOCK_INSET / 2 + 0.05   # the margin ribbons' centreline: midway between the edge and the frame
 SCREW_CLEAR = 11.2      # x at which the corner screws stop, plus a millimetre
 
 
@@ -133,7 +134,7 @@ def panel_svg(panel, sol, layers=False, art=None):
     top = HEADER_H + 1.4
     bot = (sol.band_footer if sol.band_footer is not None else 123.0) - 1.4
     if bot - top > 12.0:
-        for x in (1.55, w - 1.55):
+        for x in (RIBBON_X, w - RIBBON_X):
             _ribbon(a, top, bot, x, horizontal=False, amp=0.5, period=6.0,
                     ink=P.RULE, opacity=0.55)
 

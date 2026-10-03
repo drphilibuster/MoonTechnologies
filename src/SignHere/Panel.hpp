@@ -22,9 +22,9 @@ static const float H  = 128.5000f;  // mm
 // A display used to be positioned by hand in the module's C++, in the same
 // millimetres the spec had already chosen -- two copies of one number, and
 // they drifted. The widget takes them from here now.
-static const float GLASS_X = 4.2000f;
+static const float GLASS_X = 3.6000f;
 static const float GLASS_Y = 9.8000f;
-static const float GLASS_W = 93.2000f;
+static const float GLASS_W = 94.4000f;
 static const float GLASS_H = 21.5000f;
 
 // --- panel metrics, mirrored from tools/panels/SignHere.py ---
@@ -49,35 +49,35 @@ static const Label LABELS[] = {
 	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
 	{ 97.4000f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 8879"},
 	{ 50.8000f,  34.8000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SIGNATURE"},
-	{ 10.5000f,  49.5069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "X SCALE"},
-	{ 26.6200f,  49.5069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "X OFFSET"},
-	{ 42.7400f,  49.5069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "Y SCALE"},
-	{ 58.8600f,  49.5069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "Y OFFSET"},
-	{ 74.9800f,  49.5069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GLIDE"},
-	{ 91.1000f,  49.5069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "AMOUNT"},
-	{ 24.7651f,  65.8079f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BUTTON"},
-	{ 41.0401f,  65.8079f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LEVEL"},
-	{ 79.3649f,  65.8079f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "INV"},
-	{  9.2900f,  69.7114f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "X CV"},
-	{ 21.1500f,  69.7114f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "Y CV"},
-	{ 33.0100f,  69.7114f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TOUCH"},
-	{ 44.8700f,  69.7114f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PEDAL"},
-	{ 56.7300f,  69.7114f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
-	{ 68.5900f,  69.7114f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRIG"},
-	{ 80.4500f,  69.7114f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FLIP"},
-	{ 92.3100f,  69.7114f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV"},
-	{ 13.5433f,  83.2949f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
-	{ 27.0933f,  83.2949f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRIG"},
-	{ 40.6433f,  83.2949f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV"},
-	{ 60.9567f,  83.2949f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
-	{ 74.5067f,  83.2949f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRIG"},
-	{ 88.0567f,  83.2949f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV"},
-	{ 13.5433f,  96.8783f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
-	{ 27.0933f,  96.8783f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRIG"},
-	{ 40.6433f,  96.8783f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV"},
-	{ 60.9567f,  96.8783f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
-	{ 74.5067f,  96.8783f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRIG"},
-	{ 88.0567f,  96.8783f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV"},
+	{ 10.1125f,  49.5069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "X SCALE"},
+	{ 26.3875f,  49.5069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "X OFFSET"},
+	{ 42.6625f,  49.5069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "Y SCALE"},
+	{ 58.9375f,  49.5069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "Y OFFSET"},
+	{ 75.2125f,  49.5069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GLIDE"},
+	{ 91.4875f,  49.5069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "AMOUNT"},
+	{ 24.0985f,  65.8079f,  6.60f, 0.00f, LIME_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "BUTTON"},
+	{ 40.3735f,  65.8079f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LEVEL"},
+	{ 80.0315f,  65.8079f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "INV"},
+	{  7.8900f,  69.7114f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "X CV"},
+	{ 20.1500f,  69.7114f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "Y CV"},
+	{ 32.4100f,  69.7114f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TOUCH"},
+	{ 44.6700f,  69.7114f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "PEDAL"},
+	{ 56.9300f,  69.7114f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
+	{ 69.1900f,  69.7114f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRIG"},
+	{ 81.4500f,  69.7114f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FLIP"},
+	{ 93.7100f,  69.7114f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV"},
+	{ 12.8767f,  83.2949f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
+	{ 26.4267f,  83.2949f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRIG"},
+	{ 39.9767f,  83.2949f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV"},
+	{ 61.6233f,  83.2949f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
+	{ 75.1733f,  83.2949f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRIG"},
+	{ 88.7233f,  83.2949f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV"},
+	{ 12.8767f,  96.8783f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
+	{ 26.4267f,  96.8783f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRIG"},
+	{ 39.9767f,  96.8783f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV"},
+	{ 61.6233f,  96.8783f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "GATE"},
+	{ 75.1733f,  96.8783f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TRIG"},
+	{ 88.7233f,  96.8783f,  6.20f, 0.00f, MINT_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CV"},
 	{ 44.0250f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "IN"},
 	{ 57.5750f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "OUT"},
 };
@@ -90,35 +90,35 @@ static inline void addLabels(app::ModuleWidget* mw) {
 
 // --- widget positions, by the names used in tools/panels/SignHere.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
-static const Vec X_SCALE_POS = Vec(10.5000, 41.4000);
-static const Vec X_OFFSET_POS = Vec(26.6200, 41.4000);
-static const Vec Y_SCALE_POS = Vec(42.7400, 41.4000);
-static const Vec Y_OFFSET_POS = Vec(58.8600, 41.4000);
-static const Vec GLIDE_POS = Vec(74.9800, 41.4000);
-static const Vec AMOUNT_POS = Vec(91.1000, 41.4000);
-static const Vec BUTTON_POS = Vec(24.7651, 57.6986);
-static const Vec LEVEL_POS = Vec(41.0401, 57.6986);
-static const Vec INV_POS = Vec(79.3649, 57.6986);
-static const Vec X_CV_OUT_POS = Vec(9.2900, 74.9014);
-static const Vec Y_CV_OUT_POS = Vec(21.1500, 74.9014);
-static const Vec TOUCH_GATE_OUT_POS = Vec(33.0100, 74.9014);
-static const Vec PEDAL_IN_POS = Vec(44.8700, 74.9014);
-static const Vec BTN_GATE_OUT_POS = Vec(56.7300, 74.9014);
-static const Vec BTN_TRIG_OUT_POS = Vec(68.5900, 74.9014);
-static const Vec BTN_FLIP_OUT_POS = Vec(80.4500, 74.9014);
-static const Vec BTN_CV_OUT_POS = Vec(92.3100, 74.9014);
-static const Vec GATE1_POS = Vec(13.5433, 88.4849);
-static const Vec TRIG1_POS = Vec(27.0933, 88.4849);
-static const Vec CV1_POS = Vec(40.6433, 88.4849);
-static const Vec GATE2_POS = Vec(60.9567, 88.4849);
-static const Vec TRIG2_POS = Vec(74.5067, 88.4849);
-static const Vec CV2_POS = Vec(88.0567, 88.4849);
-static const Vec GATE3_POS = Vec(13.5433, 102.0683);
-static const Vec TRIG3_POS = Vec(27.0933, 102.0683);
-static const Vec CV3_POS = Vec(40.6433, 102.0683);
-static const Vec GATE4_POS = Vec(60.9567, 102.0683);
-static const Vec TRIG4_POS = Vec(74.5067, 102.0683);
-static const Vec CV4_POS = Vec(88.0567, 102.0683);
+static const Vec X_SCALE_POS = Vec(10.1125, 41.4000);
+static const Vec X_OFFSET_POS = Vec(26.3875, 41.4000);
+static const Vec Y_SCALE_POS = Vec(42.6625, 41.4000);
+static const Vec Y_OFFSET_POS = Vec(58.9375, 41.4000);
+static const Vec GLIDE_POS = Vec(75.2125, 41.4000);
+static const Vec AMOUNT_POS = Vec(91.4875, 41.4000);
+static const Vec BUTTON_POS = Vec(24.0985, 57.6986);
+static const Vec LEVEL_POS = Vec(40.3735, 57.6986);
+static const Vec INV_POS = Vec(80.0315, 57.6986);
+static const Vec X_CV_OUT_POS = Vec(7.8900, 74.9014);
+static const Vec Y_CV_OUT_POS = Vec(20.1500, 74.9014);
+static const Vec TOUCH_GATE_OUT_POS = Vec(32.4100, 74.9014);
+static const Vec PEDAL_IN_POS = Vec(44.6700, 74.9014);
+static const Vec BTN_GATE_OUT_POS = Vec(56.9300, 74.9014);
+static const Vec BTN_TRIG_OUT_POS = Vec(69.1900, 74.9014);
+static const Vec BTN_FLIP_OUT_POS = Vec(81.4500, 74.9014);
+static const Vec BTN_CV_OUT_POS = Vec(93.7100, 74.9014);
+static const Vec GATE1_POS = Vec(12.8767, 88.4849);
+static const Vec TRIG1_POS = Vec(26.4267, 88.4849);
+static const Vec CV1_POS = Vec(39.9767, 88.4849);
+static const Vec GATE2_POS = Vec(61.6233, 88.4849);
+static const Vec TRIG2_POS = Vec(75.1733, 88.4849);
+static const Vec CV2_POS = Vec(88.7233, 88.4849);
+static const Vec GATE3_POS = Vec(12.8767, 102.0683);
+static const Vec TRIG3_POS = Vec(26.4267, 102.0683);
+static const Vec CV3_POS = Vec(39.9767, 102.0683);
+static const Vec GATE4_POS = Vec(61.6233, 102.0683);
+static const Vec TRIG4_POS = Vec(75.1733, 102.0683);
+static const Vec CV4_POS = Vec(88.7233, 102.0683);
 static const Vec UTIL_IN_POS = Vec(44.0250, 118.6000);
 static const Vec UTIL_OUT_POS = Vec(57.5750, 118.6000);
 

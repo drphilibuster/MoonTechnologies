@@ -22,9 +22,9 @@ static const float H  = 128.5000f;  // mm
 // A display used to be positioned by hand in the module's C++, in the same
 // millimetres the spec had already chosen -- two copies of one number, and
 // they drifted. The widget takes them from here now.
-static const float GLASS_X = 4.2000f;
+static const float GLASS_X = 3.6000f;
 static const float GLASS_Y = 9.8000f;
-static const float GLASS_W = 42.4000f;
+static const float GLASS_W = 43.6000f;
 static const float GLASS_H = 52.0000f;
 
 // --- silkscreen ------------------------------------------------------------
@@ -34,10 +34,10 @@ static const Label LABELS[] = {
 	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
 	{ 46.6000f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM W-3"},
 	{ 25.4000f,  65.3000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "FILING"},
-	{ 10.5000f,  81.0154f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SOURCE"},
+	{  9.1250f,  81.0154f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SOURCE"},
 	{ 25.4000f,  81.0154f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SIZE"},
-	{ 40.3000f,  81.0154f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RATE"},
-	{ 10.5000f,  94.3772f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SEND"},
+	{ 41.6750f,  81.0154f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "RATE"},
+	{  9.1250f,  94.3772f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SEND"},
 	{ 18.6250f, 113.4100f,  6.20f, 0.00f, SAGE     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SEND"},
 	{ 32.1750f, 113.4100f,  6.20f, 0.00f, MINT     , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LIVE"},
 };
@@ -51,10 +51,10 @@ static inline void addLabels(app::ModuleWidget* mw) {
 // --- widget positions, by the names used in tools/panels/Transmittal.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
 static const Vec STATE_POS = Vec(32.3072, 64.5685);
-static const Vec SOURCE_POS = Vec(10.5000, 72.9085);
+static const Vec SOURCE_POS = Vec(9.1250, 72.9085);
 static const Vec SIZE_POS = Vec(25.4000, 72.9085);
-static const Vec RATE_POS = Vec(40.3000, 72.9085);
-static const Vec SEND_POS = Vec(10.5000, 88.2154);
+static const Vec RATE_POS = Vec(41.6750, 72.9085);
+static const Vec SEND_POS = Vec(9.1250, 88.2154);
 static const Vec SEND_IN_POS = Vec(18.6250, 118.6000);
 static const Vec SENDING_OUT_POS = Vec(32.1750, 118.6000);
 

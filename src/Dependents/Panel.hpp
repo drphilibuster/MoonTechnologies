@@ -25,24 +25,24 @@ static const Label LABELS[] = {
 	{ 13.7637f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE, false, "MOON TECHNOLOGIES"},
 	{ 77.0800f,   8.0000f,  4.60f, 0.40f, SAGE     , NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE, false, "FORM 8812"},
 	{ 40.6400f,  13.3000f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "QUALIFYING CHILD"},
-	{ 13.1000f,  33.2069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ROOT"},
-	{ 29.3800f,  33.2069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "QUANT"},
+	{ 11.7000f,  33.2069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ROOT"},
+	{ 28.6800f,  33.2069f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "QUANT"},
 	{ 43.1800f,  33.2069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SCALE"},
-	{ 56.9800f,  33.2069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CHORD A"},
-	{ 70.7800f,  33.2069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CHORD B"},
-	{ 13.1000f,  48.7922f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MORPH"},
-	{ 29.3800f,  48.7922f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TILT"},
+	{ 57.6800f,  33.2069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CHORD A"},
+	{ 72.1800f,  33.2069f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CHORD B"},
+	{ 11.7000f,  48.7922f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MORPH"},
+	{ 28.6800f,  48.7922f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TILT"},
 	{ 43.1800f,  48.7922f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CHORDS"},
-	{ 56.9800f,  48.7922f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MIX"},
-	{ 70.7800f,  48.7922f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LEVEL"},
+	{ 57.6800f,  48.7922f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MIX"},
+	{ 72.1800f,  48.7922f,  7.00f, 0.00f, INK      , NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LEVEL"},
 	{ 40.6400f,  54.5207f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "SCHEDULE"},
-	{  9.2900f,  67.3525f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MORPH"},
-	{ 20.2067f,  67.3525f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TILT"},
-	{ 31.1233f,  67.3525f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CHORD A"},
+	{  7.8900f,  67.3525f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "MORPH"},
+	{ 19.2733f,  67.3525f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "TILT"},
+	{ 30.6567f,  67.3525f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CHORD A"},
 	{ 42.0400f,  67.3525f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CHORD B"},
-	{ 52.9567f,  67.3525f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CHORDS"},
-	{ 63.8733f,  67.3525f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LEVEL"},
-	{ 73.2100f,  67.3525f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "HOLD"},
+	{ 53.4233f,  67.3525f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "CHORDS"},
+	{ 64.8067f,  67.3525f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "LEVEL"},
+	{ 74.6100f,  67.3525f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "HOLD"},
 	{ 40.6400f,  84.1610f,  6.00f, 0.60f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "ITEMIZED HARMONICS"},
 	{ 40.6400f,  95.1128f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "1 - 6"},
 	{ 40.6400f, 106.9431f,  6.20f, 0.00f, SAGE_DARK, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE, false, "7 - 12"},
@@ -60,29 +60,29 @@ static inline void addLabels(app::ModuleWidget* mw) {
 
 // --- widget positions, by the names used in tools/panels/Dependents.py -----
 // Positions are mm; feed them to mm() or createParamCentered.
-static const Vec ROOT_POS = Vec(13.1000, 22.5000);
-static const Vec ROOT_QUANT_POS = Vec(29.3800, 22.5000);
+static const Vec ROOT_POS = Vec(11.7000, 22.5000);
+static const Vec ROOT_QUANT_POS = Vec(28.6800, 22.5000);
 static const Vec ROOT_SCALE_POS = Vec(43.1800, 22.5000);
-static const Vec CHORD_A_POS = Vec(56.9800, 22.5000);
-static const Vec CHORD_B_POS = Vec(70.7800, 22.5000);
-static const Vec MORPH_POS = Vec(13.1000, 40.6853);
-static const Vec TILT_POS = Vec(29.3800, 40.6853);
+static const Vec CHORD_A_POS = Vec(57.6800, 22.5000);
+static const Vec CHORD_B_POS = Vec(72.1800, 22.5000);
+static const Vec MORPH_POS = Vec(11.7000, 40.6853);
+static const Vec TILT_POS = Vec(28.6800, 40.6853);
 static const Vec DRIVE_POS = Vec(43.1800, 40.6853);
-static const Vec MIX_POS = Vec(56.9800, 40.6853);
-static const Vec LEVEL_POS = Vec(70.7800, 40.6853);
-static const Vec MORPH_CV_POS = Vec(9.2900, 59.8207);
-static const Vec TILT_CV_POS = Vec(20.2067, 59.8207);
-static const Vec CHORD_A_CV_POS = Vec(31.1233, 59.8207);
+static const Vec MIX_POS = Vec(57.6800, 40.6853);
+static const Vec LEVEL_POS = Vec(72.1800, 40.6853);
+static const Vec MORPH_CV_POS = Vec(7.8900, 59.8207);
+static const Vec TILT_CV_POS = Vec(19.2733, 59.8207);
+static const Vec CHORD_A_CV_POS = Vec(30.6567, 59.8207);
 static const Vec CHORD_B_CV_POS = Vec(42.0400, 59.8207);
-static const Vec DRIVE_CV_POS = Vec(52.9567, 59.8207);
-static const Vec LEVEL_CV_POS = Vec(63.8733, 59.8207);
-static const Vec NORM_POS = Vec(73.2100, 59.8207);
-static const Vec MORPH_IN_POS = Vec(9.2900, 73.9425);
-static const Vec TILT_IN_POS = Vec(20.2067, 73.9425);
-static const Vec CHORD_A_IN_POS = Vec(31.1233, 73.9425);
+static const Vec DRIVE_CV_POS = Vec(53.4233, 59.8207);
+static const Vec LEVEL_CV_POS = Vec(64.8067, 59.8207);
+static const Vec NORM_POS = Vec(74.6100, 59.8207);
+static const Vec MORPH_IN_POS = Vec(7.8900, 73.9425);
+static const Vec TILT_IN_POS = Vec(19.2733, 73.9425);
+static const Vec CHORD_A_IN_POS = Vec(30.6567, 73.9425);
 static const Vec CHORD_B_IN_POS = Vec(42.0400, 73.9425);
-static const Vec DRIVE_IN_POS = Vec(52.9567, 73.9425);
-static const Vec LEVEL_IN_POS = Vec(63.8733, 73.9425);
+static const Vec DRIVE_IN_POS = Vec(53.4233, 73.9425);
+static const Vec LEVEL_IN_POS = Vec(64.8067, 73.9425);
 static const Vec H1_POS = Vec(11.4525, 88.9810);
 static const Vec H2_POS = Vec(23.1275, 88.9810);
 static const Vec H3_POS = Vec(34.8025, 88.9810);
