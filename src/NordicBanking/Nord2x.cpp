@@ -71,9 +71,7 @@ bool Nord2x::boot(const std::vector<uint8_t>& rom, const std::vector<uint8_t>& f
 	impl->hw.reset(new n2x::Hardware(rom, "nord_lead_2x", f));
 	Impl* m = impl.get();
 	impl->hw->getUC().getFrontPanel().cs6().setWriteObserver([m](uint32_t o, uint8_t v) { m->panelWrite(o, v); });
-	// The rack unit: no wheel, no bend (the firmware takes both over MIDI).
-	impl->hw->setKnobPosition(static_cast<n2x::KnobType>(0x70), 0);
-	impl->hw->setKnobPosition(static_cast<n2x::KnobType>(0x71), 0);
+	if (impl->hw->bootTimedOut()) { impl->hw.reset(); return false; }
 	return impl->hw->isValid();
 }
 
@@ -102,6 +100,11 @@ void Nord2x::setKnob(uint8_t channel, uint8_t value) {
 
 void Nord2x::setButton(uint16_t id, bool down) {
 	if (impl->hw) impl->hw->setButtonState(static_cast<n2x::ButtonType>(id), down);
+}
+
+void Nord2x::ram(uint32_t offset, uint8_t* out, size_t length) const {
+	if (!impl->hw) { std::fill(out, out + length, uint8_t(0)); return; }
+	for (size_t i = 0; i < length; i++) out[i] = impl->hw->getUC().read8(0x100000u + offset + uint32_t(i));
 }
 
 void Nord2x::leds(float rows[6][8], float digits[3][8]) {

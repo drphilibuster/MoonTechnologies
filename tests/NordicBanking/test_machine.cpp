@@ -1,6 +1,7 @@
 // Nordic Banking's Nord Lead 2X, run without Rack against the real firmware. See the Makefile.
 #include "../../src/NordicBanking/Nord2x.hpp"
 #include "../../src/NordicBanking/PanelMap.hpp"
+#include "../../src/NordicBanking/KnobSync.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -187,12 +188,72 @@ int main() {
 		CHECK(filled > 5000, "the programs land in the flash");
 		CHECK(!blankLook, "program 1 is the factory program, not the blank one");
 		CHECK(factory > 0.005, "the factory program sounds");
+
+		// The knobs follow the sound: for every knob, the position KnobSync would move it to must reproduce the
+		// program's own value, and a knob already there must be left alone. Programs 1, 2, 3 and 4.
+		int unsynced = 0, moved = 0;
+		for (int p = 0; p < 4; p++) {
+			uint8_t prog[nb::EDIT_BUFFER_SIZE];
+			n3.ram(nb::EDIT_BUFFER, prog, sizeof prog);
+			for (int k = 0; k < 26; k++) {
+				const nb::KnobSync::Curve c = nb::KnobSync::curve(k);
+				if (c == nb::KnobSync::NONE) continue;
+				const int code = nb::KnobSync::code(c, prog[nb::KNOBS[k].offset]);
+				if (std::abs(nb::KnobSync::value(c, code) - prog[nb::KNOBS[k].offset]) > nb::KnobSync::tolerance(c)) unsynced++;
+				if (nb::KnobSync::resync(k, code, prog) >= 0) moved++;
+			}
+			r3.press(nb::BUTTONS[19].id);   // next program
+			r3.seconds(0.3);
+		}
+		std::printf("   knobs follow the sound: %d knobs that cannot reach their program's value, %d that would be moved twice\n", unsynced, moved);
+		CHECK(unsynced == 0, "every knob can be put where the program has its parameter");
+		CHECK(moved == 0, "a knob put there is left alone");
 	} else {
 		std::printf("8. factory bank: SKIP (set NL2X_SYSEX to the factory bank's SysEx directory)\n");
 	}
 
 	const double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
 	std::printf("   %.1f s wall in all\n", wall);
+	// Every knob edits the byte of the edit buffer PanelMap.hpp says, by the law KnobSync.hpp says. gearmulator's
+	// names for the A/D channels are not the firmware's (its "Filter frequency" edits the amp decay), so this
+	// is what keeps the panel honest: a wrong channel here is a knob that does the wrong thing.
+	{
+		Nord2x n4;
+		CHECK(n4.boot(os, {}), "boot for the knob map");
+		Run r4(n4);
+		r4.seconds(1.0);
+		int wrong = 0, offLaw = 0;
+		for (int k = 0; k < 26; k++) {
+			const nb::Knob& kn = nb::KNOBS[k];
+			if (kn.offset < 0) continue;
+			uint8_t before[nb::EDIT_BUFFER_SIZE], after[nb::EDIT_BUFFER_SIZE];
+			for (int code : { 40, 200, 90, 168 }) {   // 168 after 90 is a move in the other direction; two codes land on a detent
+				n4.setKnob(kn.channel, uint8_t(code));
+				r4.seconds(0.4);
+				n4.ram(nb::EDIT_BUFFER, after, sizeof after);
+				const int want = nb::KnobSync::value(nb::KnobSync::curve(k), code);
+				if (std::abs(int(after[kn.offset]) - want) > nb::KnobSync::tolerance(nb::KnobSync::curve(k))) {
+					offLaw++;
+					std::printf("   knob %d (%s) channel %02x code %d: byte %d is %d, law says %d\n", k, kn.name, kn.channel, code, kn.offset, after[kn.offset], want);
+				}
+				(void)before;
+			}
+			// and nothing else moved much: the other 65 bytes are what they were before the last move
+			n4.setKnob(kn.channel, 20);
+			r4.seconds(0.4);
+			n4.ram(nb::EDIT_BUFFER, before, sizeof before);
+			n4.setKnob(kn.channel, 230);
+			r4.seconds(0.4);
+			n4.ram(nb::EDIT_BUFFER, after, sizeof after);
+			int others = 0;
+			for (int i = 0; i < nb::EDIT_BUFFER_SIZE; i++) if (i != kn.offset && before[i] != after[i]) others++;
+			if (others) { wrong++; std::printf("   knob %d (%s) channel %02x moved %d other bytes\n", k, kn.name, kn.channel, others); }
+		}
+		std::printf("9. knob map: %d knobs off their law, %d moving other bytes\n", offLaw, wrong);
+		CHECK(offLaw == 0, "every knob edits its byte by its law");
+		CHECK(wrong == 0, "no knob edits a byte of another");
+	}
+
 	if (failures) { std::printf("%d failure(s)\n", failures); return 1; }
 	std::printf("all passed\n");
 	return 0;

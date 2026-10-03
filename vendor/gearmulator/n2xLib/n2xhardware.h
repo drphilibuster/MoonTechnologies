@@ -19,6 +19,7 @@ namespace n2x
 		~Hardware();
 
 		bool isValid() const;
+		bool bootTimedOut() const { return m_bootTimedOut; }   // MoonTechnologies
 
 		void processUC();
 
@@ -98,5 +99,6 @@ namespace n2x
 		dsp56k::SpscSemaphoreWithCount m_haltDSPSem;
 
 		bool m_bootFinished = false;
+		bool m_bootTimedOut = false;   // MoonTechnologies
 	};
 }

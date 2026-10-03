@@ -51,6 +51,11 @@ public:
 	    5 lower right, 0 point). Any thread. */
 	void leds(float rows[6][8], float digits[3][8]);
 
+	/** The 68331's RAM (256 KB at $100000), `length` bytes from `offset`, as the firmware sees it now: the
+	    program edit buffer is in it. Any thread; the firmware may be writing, so a multi-byte value can
+	    be caught half written. */
+	void ram(uint32_t offset, uint8_t* out, size_t length) const;
+
 	/** The flash as it is now, for the patch (64 KB). Any thread. */
 	void copyFlash(std::vector<uint8_t>& out) const;
 

@@ -5,6 +5,72 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Fixed: Nordic Banking
+
+* **The knobs did the wrong things.** gearmulator's names for the unit's A/D channels are wrong for this
+  firmware (its "Filter frequency" edits the amp decay, its "pitch bend" the filter decay), so almost every
+  knob edited some other parameter. Each channel was measured against the edit buffer and the table is now the
+  firmware's. The power-on pass that sent all 26 knob positions to the unit, rewriting the program it had just
+  loaded, is gone, and so is the write that zeroed channel $70 (the filter decay).
+* **The knobs follow the sound.** Select a program and each knob moves to that program's value, on screen only
+  (the selected slot's, in a performance); nothing is sent to the firmware until you turn one.
+* **No programs.** A unit with an erased flash has blank programs and sounds like static. The display now
+  says NO PROGRAMS LOADED, and **Load program banks from folder...** sends a whole folder of `.syx` files
+  (the factory library) with a progress readout.
+* **Output level.** The DSP's output peaks near 0.04 of full scale, 28 dB under a Rack audio source; the
+  output now has +24 dB of make-up gain, with an **Output level** choice in the context menu.
+* **A flash that will not boot** no longer hangs the module for ever: boot gives up after ten seconds of
+  machine time, the stored flash is kept in `nordic-banking-flash-unbootable.bin` and the unit starts erased.
+
+### Added: Obfuscation, a Disperser-style allpass filter
+
+Three Linkwitz-Riley bands, each a series chain of up to 96 second-order (TPT state-variable)
+allpass stages. PINCH sets the stage Q, a clock- or peak-driven RANDOMIZE re-draws the stage
+set, and the RANDOM gate's FREEZE holds the current set. Every stage runs continuously and the
+output tap is rate-limited, so STAGES does not click and a swept high-Q chain stays bounded.
+A saturator, brightness split, clip and boost follow. Its first draft, a feedback loop of
+first-order allpasses, was replaced by the series chain before release.
+
+### Changed: the family shares one footer band, and panels got narrower
+
+The footer band's top was worked out per panel from its own labels and landed anywhere from
+108.9 to 111.2 mm; it is now one constant (`BAND_TOP`, 111.1 mm), so the band, its mint tab and
+the row of jack names line up from module to module (31 of 34 panels; Gross, PatchAudit and
+Schedule A are the documented exceptions). A lit jack label hangs its light from the label's cap
+height, and `/`, `&` and `Q` sit on the baseline in capitals, so V/OCT, S&H and SQU1 no longer lift
+their row.
+
+* **Rails.** A new panelkit `Rail` is the footer band stood on its end: a column of jacks in a
+  felt block beside the sections, for panels whose footer sets their width. It can be tall (from the
+  top of a display), take its labels above the jacks, stand on the left for inputs, and hold
+  `RailPair`s (a jack and its attenuator under one label).
+* **Narrower.** Contagion 77 -> 64 HP (six outputs on a rail), Ledger 68 -> 54 (its last seven
+  outputs on a tall rail), Payment Schedule 33 -> 26 (five jacks to the footer) and then 23 (DIR CV
+  and TAP IN beside their controls), Volatility 14 -> 10 and Racketeer 18 -> 16 (a footer jack moves
+  to the row of controls that sets it). Gross' four CV pairs move to a left rail. Kickback's gate
+  column is a rail too. Control and jack names are unchanged, so no patch is affected.
+* **Tighter margins.** Section blocks sit 2.4 mm in from the edge instead of 3.0, and the nearest
+  ink on a row 1.0 mm inside a frame instead of 1.8 to 2.2 (the linter's floor is 0.7). Sixteen
+  panels each lose an HP: Amortization 10, AuditLogic 24, Calculation 15, Contagion 63, Deduction
+  11, Depreciation 33, Dividend 14, Garnishment 17, Kickback 30, Ledger 53, Nordic Banking 51,
+  Payment Schedule 22, Reconciliation 18, Retroactive 14, Six Figures 24 and Toll 10.
+* **Three knob sizes.** Large, standard and small (Trimpot). Contagion and Nordic Banking declared
+  standard knobs but built Rack's 7.7 mm small one, so their seats were sized for a knob a
+  millimetre bigger than the one on the panel; they now build the standard knob and the art is
+  unchanged. The linter warns on a knob widget outside the three. Nordic's PORTAMENTO label is PORTA.
+
+### Changed: Contagion's PRESET glass no longer depends on catching the program screen
+
+It is composed from the edit buffer's name and, in single mode, the sound's label. A lower-case
+bank letter (an edited sound) is read as its bank, and FILTERS EDIT is no longer counted as a menu.
+
+### Added: Rebate loads MIDIverb ROMs from folders
+
+Drop EPROM images into `MoonTechnologies/roms/midiverb/{cpu,dsp}` in Rack's user folder and pick
+them from the module's menu (CPU 8 KB; DSP 16 or 32 KB, named by CRC where known). A module with
+nothing remembered boots from the first images in those folders. The images stay outside the
+repository.
+
 ### Changed: Kickback's KICK is the TR-808, and has a third model, SWEEP
 
 * **BRIDGE is the Roland TR-808 bass drum** (Werner, Abel & Smith, DAFx-14; `src/Kickback/Bridge808.hpp`):
@@ -18,12 +84,19 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
   position 1 (SMURF) is unchanged.
 * `tests/Kickback/render_kick` renders each model to WAV and prints its pitch track and levels.
 
+### Changed: Nordic Banking draws its selector LEDs on the display (51 -> 42 HP)
+
+As Contagion does: 37 of the unit's 49 LEDs -- the waveform, destination, filter-type, play-mode
+and octave lamps -- are lit words on the display glass beside the three digits, grouped by the
+button that steps them. The 12 lamps that belong to a button of their own stay beside it.
+
 ### Added: Ledger, an eight-track sequencer after Shoal and Hermod+
 
 Every track is either a seeded generator or a written pattern, sixteen slots each. The
 generator is Ormer Modular's Shoal (MIT), ported line for line and held frame-identical to
 the original by `tests/Ledger/test_golden`. The patterns, effects and MIDI follow Squarp's
-Hermod+ manual. 68 HP.
+Hermod+ manual. 53 HP (it was built at 68; its last seven outputs moved to a rail and the margins
+tightened, see above).
 
 * **Shoal entire**: chance, bipolar note and octave, fifteen walks, twenty-nine rates,
   Follow, Evolve, Breathe, Weight, Slop, Freeze, Currents, EOS, reseeding. Per-knob

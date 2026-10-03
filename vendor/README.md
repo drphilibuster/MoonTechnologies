@@ -83,6 +83,9 @@ Changes, each marked `MoonTechnologies` in the source:
   must not pick up whatever lies around); the OS image is always given, and the flash's
   power-on contents are a constructor argument, set before the 68331 starts.
 * `n2xdsp`: the debugger include is behind `DSP56300_DEBUGGER`, as its use already was.
+* `n2xhardware`: the constructor's wait for the firmware to finish booting gives up after ten seconds of
+  machine time (`bootTimedOut()`), where it waited for ever: a flash the firmware cannot boot with hung the
+  module. `Nord2x::boot` returns false and the module starts again from an erased flash.
 * `i2cFlash::getData()` and `Microcontroller::getFlash()`, so a patch can keep the flash.
 * MinGW (Rack's Windows toolchain): `baseLib/filesystem.cpp` and `synthLib/os.cpp` include
   `shlobj.h` where MSVC has `shlobj_core.h`; `synthLib/deviceException.cpp` includes

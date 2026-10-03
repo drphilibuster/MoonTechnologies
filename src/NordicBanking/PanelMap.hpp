@@ -8,24 +8,35 @@
 
 namespace nb {
 
-// The 26 knobs in panel order, as the ADC channel the 68331 selects (gearmulator's KnobType ids)
-// and their power-on position (gearmulator's front panel defaults).
-struct Knob { uint8_t channel, initial; const char* name; };
+// The 26 knobs in panel order: the ADC channel the 68331 selects (gearmulator's KnobType ids), the byte of
+// the 66-byte program (owner's manual, "Patch Dump Format") that turning it edits, and its power-on
+// position. gearmulator's names for these ids do not match what the firmware does with them -- the
+// channel it calls "Filter frequency" edits the amp envelope's decay -- so the table here is the
+// measured one: every channel set from 20 to 230 with the edit buffer watched (tests/NordicBanking),
+// the panel's function taken from the byte it moved. `offset` -1: not in the program (master volume).
+struct Knob { uint8_t channel, initial; int8_t offset; const char* name; };
 static const Knob KNOBS[26] = {
-	{ 0x3B, 0x00, "LFO 1 rate" }, { 0x5E, 0x0F, "LFO 1 amount" },
-	{ 0x3A, 0x00, "LFO 2 / arpeggiator rate" }, { 0x73, 0x00, "LFO 2 amount / arpeggiator range" },
-	{ 0x3F, 0x00, "Mod envelope attack" }, { 0x3E, 0x00, "Mod envelope decay" }, { 0x3D, 0x00, "Mod envelope amount" },
-	{ 0x74, 0x7F, "Osc 2 semitones" }, { 0x5D, 0x7F, "Osc 2 fine tune" },
-	{ 0x38, 0x00, "FM amount" }, { 0x5F, 0x40, "Pulse width" }, { 0x5C, 0x7F, "Osc mix" },
-	{ 0x39, 0x00, "Portamento" },
-	{ 0x59, 0xFF, "Filter frequency" }, { 0x6E, 0x10, "Filter resonance" }, { 0x6B, 0x00, "Filter envelope amount" },
-	{ 0x5A, 0x00, "Filter attack" }, { 0x6F, 0x00, "Filter decay" }, { 0x6C, 0x7F, "Filter sustain" }, { 0x69, 0x30, "Filter release" },
-	{ 0x5B, 0x00, "Amp attack" }, { 0x58, 0x00, "Amp decay" }, { 0x6D, 0x7F, "Amp sustain" }, { 0x6A, 0x90, "Amp release" },
-	{ 0x68, 0xFF, "Amp gain" }, { 0x3C, 0xFF, "Master volume" },
+	{ 0x3D, 0x00, 21, "LFO 1 rate" }, { 0x5F, 0x0F, 22, "LFO 1 amount" },
+	{ 0x3B, 0x00, 23, "LFO 2 / arpeggiator rate" }, { 0x74, 0x00, 24, "LFO 2 amount / arpeggiator range" },
+	{ 0x58, 0x00, 18, "Mod envelope attack" }, { 0x3F, 0x00, 19, "Mod envelope decay" }, { 0x3E, 0x00, 20, "Mod envelope amount" },
+	{ 0x38, 0x7F, 0, "Osc 2 semitones" }, { 0x5E, 0x7F, 1, "Osc 2 fine tune" },
+	{ 0x39, 0x00, 7, "FM amount" }, { 0x68, 0x40, 6, "Pulse width" }, { 0x5D, 0x7F, 2, "Osc mix" },
+	{ 0x3A, 0x00, 16, "Portamento" },
+	{ 0x5A, 0xFF, 3, "Filter frequency" }, { 0x6F, 0x10, 4, "Filter resonance" }, { 0x6C, 0x00, 5, "Filter envelope amount" },
+	{ 0x5B, 0x00, 8, "Filter attack" }, { 0x70, 0x00, 9, "Filter decay" }, { 0x6D, 0x7F, 10, "Filter sustain" }, { 0x6A, 0x30, 11, "Filter release" },
+	{ 0x5C, 0x00, 12, "Amp attack" }, { 0x59, 0x00, 13, "Amp decay" }, { 0x6E, 0x7F, 14, "Amp sustain" }, { 0x6B, 0x90, 15, "Amp release" },
+	{ 0x69, 0xFF, 17, "Amp gain" }, { 0x3C, 0xFF, -1, "Master volume" },
 };
-// The expression pedal input: the same converter, channel $72. Pitch bend ($70) and the mod
-// wheel ($71) read zero, as on the rack unit -- the firmware takes both over MIDI instead.
-static const uint8_t PEDAL_CHANNEL = 0x72, BEND_CHANNEL = 0x70, WHEEL_CHANNEL = 0x71;
+// The expression pedal input: the same converter, channel $72. The mod wheel and pitch bend come over MIDI.
+static const uint8_t PEDAL_CHANNEL = 0x72;
+// Where the firmware keeps the program being edited: 66 bytes in the 68331's RAM (offset from $100000),
+// laid out as the manual's "Patch Dump Format". Found by searching the RAM for a program sent as SysEx.
+static const uint32_t EDIT_BUFFER = 0x16626;
+static const int EDIT_BUFFER_SIZE = 66;
+// In a performance each of the four slots has a program of its own, one after another from EDIT_BUFFER, and
+// this byte (0-3) is the slot the knobs edit. In program mode only slot A's LED is lit and the knobs edit
+// slot A; the byte keeps its last value there, so the LEDs say which mode it is.
+static const uint32_t SELECTED_SLOT = 0x12226;
 
 // The buttons in panel order: (key line address byte, bit mask) -- gearmulator's ButtonType ids,
 // several of which it names after the wrong control (noted).

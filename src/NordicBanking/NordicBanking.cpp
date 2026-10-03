@@ -7,11 +7,14 @@
 #include "../plugin.hpp"
 #include "Panel.hpp"
 #include "PanelMap.hpp"
+#include "KnobSync.hpp"
 #include "Nord2x.hpp"
 
 #include <osdialog.h>
 
+#include <algorithm>
 #include <atomic>
+#include <cmath>
 #include <cstring>
 #include <fstream>
 #include <iterator>
@@ -39,7 +42,12 @@ struct NordicBanking : Module {
 	enum OutputId { OUT_A_OUTPUT, OUT_B_OUTPUT, OUT_C_OUTPUT, OUT_D_OUTPUT, OUTPUTS_LEN };
 	enum LightId { LED_LIGHT, LIGHTS_LEN = LED_LIGHT + nb::NUM_LEDS };
 
-	static constexpr float VOLTS = 5.f;   // the DSP's full scale, as a Rack audio level
+	// The DSP's full scale is 1, and the unit never gets near it: a held note at full MASTER VOL peaks around
+	// 0.04, which is 0.2 V at 5 V full scale -- 28 dB under a Rack audio source. The make-up gain is a menu
+	// choice (0 dB = the DSP's full scale at 5 V) and the default brings a typical note to a few volts.
+	static constexpr float VOLTS = 5.f;
+	int outGainDb = 24, outGainCachedDb = -1;
+	float outGain = 1.f;
 
 	std::unique_ptr<nb::Nord2x> unit;           // audio thread only
 	std::atomic<nb::Nord2x*> handover{nullptr};
@@ -52,10 +60,13 @@ struct NordicBanking : Module {
 	std::vector<uint8_t> flash;                 // guarded by snapMutex: what the patch keeps
 	Snapshot snap;                              // guarded by snapMutex
 	std::vector<std::vector<uint8_t>> pendingSysex;   // guarded by snapMutex: from the menu, sent by process()
+	size_t sysexTotal = 0;                      // guarded by snapMutex: how many of this load there were, 0 = none loading
+	std::atomic<bool> noPrograms{false};        // the flash holds no programs: blank, every switch on
 
 	midi::InputQueue midiInput;
 	bool buttonDown[28] = {};
 	uint8_t knobSent[26], pedalSent = 0xff;
+	int knobHold[26] = {};                      // housekeeping ticks a knob the hand just moved is left alone
 	int housekeeping = 0, flashCountdown = 0;
 
 	dsp::SampleRateConverter<4> outSrc;
@@ -102,7 +113,20 @@ struct NordicBanking : Module {
 			const std::string err = nb::Nord2x::check(rom);
 			if (!err.empty()) { setStatus(err); booting = false; return; }
 			std::unique_ptr<nb::Nord2x> n(new nb::Nord2x);
-			if (!n->boot(rom, f)) { setStatus("THE OS DID NOT START"); booting = false; return; }
+			if (!n->boot(rom, f)) {
+				// A stored flash the firmware cannot boot with: keep it in a file, power on from an erased one.
+				if (f.empty()) { setStatus("THE OS DID NOT START"); booting = false; return; }
+				const std::string bad = asset::user("MoonTechnologies/nordic-banking-flash-unbootable.bin");
+				system::createDirectories(system::getDirectory(bad));
+				std::ofstream(bad, std::ios::binary).write(reinterpret_cast<const char*>(f.data()), std::streamsize(f.size()));
+				WARN("Nordic Banking: the stored program memory would not boot; saved to %s and started erased", bad.c_str());
+				n.reset(new nb::Nord2x);
+				if (!n->boot(rom, {})) { setStatus("THE OS DID NOT START"); booting = false; return; }
+				{
+					std::lock_guard<std::mutex> lock(snapMutex);
+					flash.clear();
+				}
+			}
 			INFO("Nordic Banking: Nord Lead 2X OS booted from %s", system::getFilename(path).c_str());
 			delete handover.exchange(n.release());
 			setStatus("");
@@ -143,8 +167,8 @@ struct NordicBanking : Module {
 		boot();
 	}
 
-	/** Every F0 ... F7 message in a .syx file, queued for the firmware's MIDI input. */
-	bool loadSysex(const std::string& path) {
+	/** Every F0 ... F7 message in a .syx file, appended to the queue for the firmware's MIDI input. */
+	static std::vector<std::vector<uint8_t>> readSysex(const std::string& path) {
 		const std::vector<uint8_t> d = readFile(path);
 		std::vector<std::vector<uint8_t>> msgs;
 		for (size_t i = 0; i < d.size(); i++) {
@@ -155,10 +179,29 @@ struct NordicBanking : Module {
 			msgs.emplace_back(d.begin() + long(i), d.begin() + long(j) + 1);
 			i = j;
 		}
+		return msgs;
+	}
+	bool loadSysex(const std::string& path) {
+		std::vector<std::vector<uint8_t>> msgs = readSysex(path);
 		if (msgs.empty()) return false;
 		std::lock_guard<std::mutex> lock(snapMutex);
 		for (auto& m : msgs) pendingSysex.push_back(std::move(m));
+		sysexTotal = pendingSysex.size();
 		return true;
+	}
+	/** Every .syx file in a folder, in name order (bank0 ... bank3, then Perf0): the whole factory library.
+	    Returns how many files held SysEx. */
+	int loadSysexFolder(const std::string& dir) {
+		std::vector<std::string> files;
+		for (const std::string& f : system::getEntries(dir)) {
+			std::string ext = string::lowercase(system::getExtension(f));
+			if (ext == ".syx" && system::isFile(f)) files.push_back(f);
+		}
+		std::sort(files.begin(), files.end(), [](const std::string& a, const std::string& b) {
+			return string::lowercase(system::getFilename(a)) < string::lowercase(system::getFilename(b)); });
+		int loaded = 0;
+		for (const std::string& f : files) if (loadSysex(f)) loaded++;
+		return loaded;
 	}
 
 	// --- audio -----------------------------------------------------------------------------
@@ -166,8 +209,11 @@ struct NordicBanking : Module {
 		if (nb::Nord2x* n = handover.exchange(nullptr)) {
 			unit.reset(n);
 			outBuf.clear();
-			std::memset(knobSent, 0xff, sizeof(knobSent));
-			pedalSent = 0xff;
+			// The firmware is not told where the knobs are at power-on: a knob reaching it through the A/D converter
+			// is a knob someone turned, and it would rewrite the program it just loaded. The knobs are moved to the
+			// sound instead (KnobSync.hpp), and only what the hand turns is sent.
+			for (int i = 0; i < 26; i++) { knobSent[i] = knobCode(i); knobHold[i] = 0; }
+			pedalSent = inputs[PEDAL_INPUT].isConnected() ? 0xff : 0;
 			for (bool& b : buttonDown) b = false;
 		}
 		midi::Message msg;
@@ -181,7 +227,7 @@ struct NordicBanking : Module {
 		// The front panel: knobs into the ADC, buttons onto the key lines, the pedal input.
 		for (int i = 0; i < 26; i++) {
 			const uint8_t c = knobCode(i);
-			if (c != knobSent[i]) { n.setKnob(nb::KNOBS[i].channel, c); knobSent[i] = c; }
+			if (c != knobSent[i]) { n.setKnob(nb::KNOBS[i].channel, c); knobSent[i] = c; knobHold[i] = 12; }
 		}
 		for (int i = 0; i < 28; i++) {
 			const bool down = params[BUTTON_PARAM + i].getValue() > 0.5f;
@@ -206,9 +252,10 @@ struct NordicBanking : Module {
 			outSrc.process(mOut, &frames, outBuf.endData(), &oLen);
 			outBuf.endIncr(oLen);
 		}
+		if (outGainDb != outGainCachedDb) { outGainCachedDb = outGainDb; outGain = std::pow(10.f, outGainDb / 20.f); }
 		dsp::Frame<4> fo = {};
 		if (!outBuf.empty()) fo = outBuf.shift();
-		for (int c = 0; c < 4; c++) outputs[OUT_A_OUTPUT + c].setVoltage(fo.samples[c] * VOLTS);
+		for (int c = 0; c < 4; c++) outputs[OUT_A_OUTPUT + c].setVoltage(fo.samples[c] * VOLTS * outGain);
 
 		// Housekeeping, about 40 times a second: SysEx from the menu, the LEDs, the display and
 		// the flash.
@@ -216,6 +263,25 @@ struct NordicBanking : Module {
 			housekeeping = 0;
 			float rows[6][8], digits[3][8];
 			n.leds(rows, digits);
+			// The knobs follow the sound: where a knob and the program being edited disagree it is moved to the
+			// program's value on screen only, with knobSent set to match so the firmware is never told. A knob the
+			// hand is on is left alone until it has settled.
+			{
+				// Which program the knobs edit: slot A in program mode (the other slots' LEDs dark), else the selected slot.
+				int slot = 0;
+				float others = 0.f;
+				for (int i = 44; i <= 46; i++) others = std::max(others, rows[nb::LEDS[i].row][nb::LEDS[i].bit]);
+				if (others > 0.1f) { uint8_t sl = 0; n.ram(nb::SELECTED_SLOT, &sl, 1); slot = sl & 3; }
+				uint8_t prog[nb::EDIT_BUFFER_SIZE];
+				n.ram(nb::EDIT_BUFFER + uint32_t(slot * nb::EDIT_BUFFER_SIZE), prog, sizeof prog);
+				for (int i = 0; i < 26; i++) {
+					if (knobHold[i] > 0) { knobHold[i]--; continue; }
+					const int c = nb::KnobSync::resync(i, knobCode(i), prog);
+					if (c < 0) continue;
+					params[KNOB_PARAM + i].setValue(float(c) / 255.f);
+					knobSent[i] = uint8_t(c);
+				}
+			}
 			for (int i = 0; i < nb::NUM_LEDS; i++) {
 				const nb::Led& l = nb::LEDS[i];
 				lights[LED_LIGHT + i].setBrightness(l.row < 6 ? rows[l.row][l.bit] : 0.f);
@@ -227,8 +293,19 @@ struct NordicBanking : Module {
 					n.midi(pendingSysex.front().data(), pendingSysex.front().size());
 					pendingSysex.erase(pendingSysex.begin());
 				}
+				if (sysexTotal) {
+					if (pendingSysex.empty()) { sysexTotal = 0; status.clear(); flashCountdown = 80; }   // done: look at the flash in two seconds, once the firmware has written it
+					else status = "LOADING PROGRAMS " + std::to_string(100 * (sysexTotal - pendingSysex.size()) / sysexTotal) + "%";
+				}
 				// 64 KB of flash: copy it for the patch every few seconds.
-				if (--flashCountdown <= 0) { n.copyFlash(flash); flashCountdown = 120; }
+				if (--flashCountdown <= 0) {
+					n.copyFlash(flash);
+					flashCountdown = 120;
+					// A unit with no programs has an erased flash: all 0xFF but the few bytes the firmware writes itself.
+					size_t used = 0;
+					for (uint8_t b : flash) used += b != 0xFF;
+					noPrograms = flash.size() == nb::Nord2x::FLASH_SIZE && used < 500;
+				}
 				snapMutex.unlock();
 			}
 		}
@@ -241,6 +318,7 @@ struct NordicBanking : Module {
 		std::lock_guard<std::mutex> lock(snapMutex);
 		if (!flash.empty()) json_object_set_new(root, "flash", json_string(string::toBase64(flash).c_str()));
 		json_object_set_new(root, "midi", midiInput.toJson());
+		json_object_set_new(root, "outGainDb", json_integer(outGainDb));
 		return root;
 	}
 
@@ -252,6 +330,7 @@ struct NordicBanking : Module {
 			if (json_t* j = json_object_get(root, "flash")) flash = string::fromBase64(json_string_value(j));
 		}
 		if (json_t* j = json_object_get(root, "midi")) midiInput.fromJson(j);
+		if (json_t* j = json_object_get(root, "outGainDb")) outGainDb = clamp(int(json_integer_value(j)), 0, 48);
 		boot();
 	}
 };
@@ -260,36 +339,46 @@ struct NordicBanking : Module {
 
 namespace {
 
-/** The unit's three seven-segment digits, each segment as bright as the multiplex drives it.
+/** The read-out well, all of it one piece of glass: the unit's three seven-segment digits, each
+    segment as bright as the multiplex drives it, and the lamps the unit answers its selector
+    buttons with, grouped by the button that steps them. LED indices are nb::LEDS order.
     Segment bits as the firmware writes them: 7 top, 1 middle, 4 bottom, 2 upper left, 6 upper
     right, 3 lower left, 5 lower right, 0 point. */
-struct SevenSegment : widget::Widget {
+struct DisplayWidget : widget::Widget {
 	NordicBanking* module = nullptr;
 
-	void drawLayer(const DrawArgs& args, int layer) override {
-		if (layer != 1) return;
-		NVGcontext* vg = args.vg;
-		Snapshot s;
-		std::string status = "NORD LEAD 2X";
-		if (module) {
-			std::lock_guard<std::mutex> lock(module->snapMutex);
-			s = module->snap;
-			status = module->status;
-		}
-		if (!module || !status.empty()) {
-			const panel::TextStyle st(panel::Face::Mono, box.size.y * 0.3f, panel::CLAY, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
-			panel::text(vg, st, box.size.x / 2, box.size.y * 0.32f, module ? status : "NORD LEAD 2X");
-			panel::text(vg, st.inked(panel::SAGE), box.size.x / 2, box.size.y * 0.74f,
-				!module ? "NORDIC BANKING" : module->booting ? "PLEASE WAIT" : "RIGHT-CLICK: LOAD OS");
-			return;
-		}
-		const float h = box.size.y * 0.86f, w = h * 0.52f, t = h * 0.11f, gap = box.size.x / 3.f;
+	struct Lamp { const char* text; int led; };
+	struct Group { const char* label; int n; Lamp lamps[5]; };
+
+	// Four columns of three, in the order the panel's buttons stand. The unit's selectors light
+	// one LED, or a pair of neighbours for the setting between them (LFO 1's square wave is the top
+	// two lit); the two lamps no multiplex position answers for (SIN, 2/3) stay dark, as on the unit.
+	static const Group* groups() {
+		static const Group g[12] = {
+			{ "OSC 1", 4, { { "SIN", 0 }, { "TRI", 1 }, { "SAW", 2 }, { "PLS", 3 } } },
+			{ "OSC 2", 4, { { "TRI", 4 }, { "SAW", 5 }, { "PLS", 6 }, { "NOISE", 7 } } },
+			{ "RING/SYNC", 2, { { "RING", 9 }, { "SYNC", 10 } } },
+			{ "LFO 1", 3, { { "S.RND", 18 }, { "TRI", 19 }, { "RND", 20 } } },
+			{ "LFO 1 DEST", 3, { { "FM", 21 }, { "OSC 2", 22 }, { "PW", 23 } } },
+			{ "LFO 2", 3, { { "ECHO", 25 }, { "UP", 26 }, { "DWN", 27 } } },
+			{ "MOD ENV", 2, { { "FM", 28 }, { "OSC 2", 29 } } },
+			{ "FILTER", 3, { { "HP 24", 11 }, { "LP 24", 12 }, { "LP 12", 13 } } },
+			{ "KBD TRACK", 2, { { "2/3", 15 }, { "1/3", 16 } } },
+			{ "PLAY", 3, { { "POLY", 33 }, { "LEGATO", 34 }, { "MONO", 35 } } },
+			{ "WHEEL", 3, { { "MORPH", 30 }, { "OSC 2", 31 }, { "FILTER", 32 } } },
+			{ "OCT", 5, { { "-2", 38 }, { "-1", 39 }, { "0", 40 }, { "+1", 41 }, { "+2", 42 } } },
+		};
+		return g;
+	}
+
+	void drawDigits(NVGcontext* vg, const Snapshot& s, float x, float y, float width, float height) {
+		const float h = height, w = h * 0.52f, t = h * 0.11f, gap = width / 3.f;
 		for (int d = 0; d < 3; d++) {
-			const float x0 = gap * d + (gap - w) / 2 - t / 2, y0 = (box.size.y - h) / 2;
-			auto seg = [&](int bit, float x, float y, float sw, float sh) {
+			const float x0 = x + gap * d + (gap - w) / 2 - t / 2, y0 = y;
+			auto seg = [&](int bit, float sx, float sy, float sw, float sh) {
 				const float b = s.digits[d][bit];
 				nvgBeginPath(vg);
-				nvgRoundedRect(vg, x0 + x, y0 + y, sw, sh, t * 0.4f);
+				nvgRoundedRect(vg, x0 + sx, y0 + sy, sw, sh, t * 0.4f);
 				nvgFillColor(vg, nvgLerpRGBA(panel::alpha(panel::CLAY, 0.08f), panel::CLAY, b));
 				nvgFill(vg);
 			};
@@ -303,6 +392,57 @@ struct SevenSegment : widget::Widget {
 			seg(0, w + t * 0.4f, h - t, t, t);           // point
 		}
 	}
+
+	void drawLayer(const DrawArgs& args, int layer) override {
+		if (layer != 1) return;
+		NVGcontext* vg = args.vg;
+		Snapshot snap;
+		std::string status = "NORD LEAD 2X";
+		bool booting = false;
+		if (module) {
+			std::lock_guard<std::mutex> lock(module->snapMutex);
+			snap = module->snap;
+			status = module->status;
+			booting = module->booting;
+		}
+		const float s = box.size.x / panel::GLASS_W;                 // pixels per mm
+		// Millimetres across a glass GLASS_W wide: the digits at the left, then four columns of lamps.
+		const float digitsW = 22.f, digitsH = 9.f, x0 = 4.f, colGap = 3.f, pitch = 3.2f, y0 = 3.9f;
+		drawDigits(vg, snap, x0 * s, (panel::GLASS_H - digitsH) / 2 * s, digitsW * s, digitsH * s);
+
+		const float lx = x0 + digitsW + 4.f;
+		const float colW = (panel::GLASS_W - lx - 3.f - 3 * colGap) / 4.f;
+		if (module && (!status.empty() || module->noPrograms)) {
+			const panel::TextStyle word(panel::Face::Mono, 7.5f, panel::CLAY, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+			const float cx = (lx + (panel::GLASS_W - 3.f - lx) / 2) * s;
+			// A status (booting, loading, no OS) first; a unit with an erased flash has no programs to play.
+			const bool ours = status.empty();
+			panel::text(vg, word, cx, panel::GLASS_H * 0.36f * s, ours ? "NO PROGRAMS LOADED" : status);
+			panel::text(vg, word.inked(panel::SAGE), cx, panel::GLASS_H * 0.68f * s,
+				ours ? "RIGHT-CLICK: LOAD PROGRAM BANKS" : (booting || status.rfind("LOADING", 0) == 0) ? "PLEASE WAIT" : "RIGHT-CLICK: LOAD OS");
+			return;
+		}
+		const panel::TextStyle st(panel::Face::Mono, 7.f, panel::SAGE, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
+		const Group* g = groups();
+		for (int c = 0; c < 4; c++) {
+			// The lamps follow the widest label of their column, so the words line up under one another.
+			float labelW = 0.f;
+			for (int r = 0; r < 3; r++) labelW = std::max(labelW, panel::textWidth(vg, st, g[c * 3 + r].label) / s);
+			labelW += 1.8f;
+			const float gx = lx + c * (colW + colGap);
+			for (int r = 0; r < 3; r++) {
+				const Group& grp = g[c * 3 + r];
+				const float gy = y0 + r * pitch;   // columns run down: three groups, then the next column
+				panel::text(vg, st.inked(panel::PAPER), gx * s, gy * s, grp.label);
+				float x = gx + labelW;
+				for (int k = 0; k < grp.n; k++) {
+					const float b = module ? module->lights[NordicBanking::LED_LIGHT + grp.lamps[k].led].getBrightness() : 0.f;
+					const NVGcolor ink = b > 0.05f ? panel::alpha(panel::LIME, 0.35f + 0.65f * b) : panel::alpha(panel::SAGE, 0.55f);
+					x = panel::text(vg, st.inked(ink), x * s, gy * s, grp.lamps[k].text) / s + 1.8f;
+				}
+			}
+		}
+	}
 };
 
 } // namespace
@@ -314,9 +454,9 @@ struct NordicBankingWidget : ModuleWidget {
 		panel::addScrews(this);
 		panel::addLabels(this);
 
-		SevenSegment* display = new SevenSegment;
+		DisplayWidget* display = new DisplayWidget;
 		display->module = module;
-		display->box = panel::mmRect((panel::W - panel::DISPLAY_W) / 2, panel::DISPLAY_Y, panel::DISPLAY_W, panel::DISPLAY_H);
+		display->box = panel::mmRect(panel::GLASS_X, panel::GLASS_Y, panel::GLASS_W, panel::GLASS_H);
 		addChild(display);
 
 		// In nb::KNOBS order.
@@ -338,19 +478,15 @@ struct NordicBankingWidget : ModuleWidget {
 		for (int i = 0; i < 28; i++)
 			addParam(createParamCentered<VCVButton>(panel::mm(buttons[i].x, buttons[i].y), module, NordicBanking::BUTTON_PARAM + i));
 
-		// In nb::LEDS order.
-		const Vec leds[nb::NUM_LEDS] = { panel::OSC1_SINE_POS, panel::OSC1_TRI_POS, panel::OSC1_SAW_POS,
-			panel::OSC1_PULSE_POS, panel::OSC2_TRI_POS, panel::OSC2_SAW_POS, panel::OSC2_PULSE_POS, panel::OSC2_NOISE_POS,
-			panel::OSC2_KBD_POS, panel::RINGMOD_POS, panel::SYNC_POS, panel::HP24_POS, panel::LP24_POS, panel::LP12_POS,
-			panel::VELOCITY_POS, panel::KBD23_POS, panel::KBD13_POS, panel::DISTORTION_POS, panel::LFO1_SOFTRND_POS,
-			panel::LFO1_TRI_POS, panel::LFO1_RND_POS, panel::LFO1_FM_POS, panel::LFO1_OSC2_POS, panel::LFO1_PW_POS,
-			panel::ARP_POS, panel::LFO2_TOP_POS, panel::LFO2_MID_POS, panel::LFO2_BOTTOM_POS, panel::MODENV_FM_POS,
-			panel::MODENV_OSC2_POS, panel::WHEEL_MORPH_POS, panel::WHEEL_OSC2_POS, panel::WHEEL_FILTER_POS,
-			panel::POLY_POS, panel::LEGATO_POS, panel::MONO_POS, panel::UNISON_POS, panel::AUTO_POS, panel::OCT_M2_POS,
-			panel::OCT_M1_POS, panel::OCT_0_POS, panel::OCT_P1_POS, panel::OCT_P2_POS, panel::SLOT_A_POS,
-			panel::SLOT_B_POS, panel::SLOT_C_POS, panel::SLOT_D_POS, panel::VELMORPH_POS, panel::KBDSPLIT_POS };
-		for (int i = 0; i < nb::NUM_LEDS; i++)
-			addChild(createLightCentered<SmallLight<panel::ClayLight> >(panel::mm(leds[i].x, leds[i].y), module, NordicBanking::LED_LIGHT + i));
+		// The lamps that stay lamps: one beside each button that has a light of its own. The rest of
+		// the unit's LEDs are drawn on the display.
+		struct Lamp { int led; Vec pos; };
+		const Lamp lamps[12] = { { 8, panel::OSC2_KBD_POS }, { 14, panel::VELOCITY_POS }, { 17, panel::DISTORTION_POS },
+			{ 24, panel::ARP_POS }, { 36, panel::UNISON_POS }, { 37, panel::AUTO_POS }, { 43, panel::SLOT_A_POS },
+			{ 44, panel::SLOT_B_POS }, { 45, panel::SLOT_C_POS }, { 46, panel::SLOT_D_POS }, { 47, panel::VELMORPH_POS },
+			{ 48, panel::KBDSPLIT_POS } };
+		for (const Lamp& l : lamps)
+			addChild(createLightCentered<SmallLight<panel::ClayLight> >(panel::mm(l.pos.x, l.pos.y), module, NordicBanking::LED_LIGHT + l.led));
 
 		addInput(createInputCentered<panel::PortIn>(panel::mm(panel::PEDAL_POS.x, panel::PEDAL_POS.y), module, NordicBanking::PEDAL_INPUT));
 		const Vec outs[4] = { panel::OUT_A_POS, panel::OUT_B_POS, panel::OUT_C_POS, panel::OUT_D_POS };
@@ -371,6 +507,13 @@ struct NordicBankingWidget : ModuleWidget {
 			std::free(p);
 			m->boot();
 		}));
+		menu->addChild(createMenuItem("Load program banks from folder...", "", [=]() {
+			char* p = osdialog_file(OSDIALOG_OPEN_DIR, NULL, NULL, NULL);
+			if (!p) return;
+			const std::string dir = p;
+			std::free(p);
+			if (m->loadSysexFolder(dir) == 0) m->setStatus("NO SYSEX IN THAT FOLDER");
+		}));
 		menu->addChild(createMenuItem("Send SysEx file (programs, performances)...", "", [=]() {
 			char* p = osdialog_file(OSDIALOG_OPEN, NULL, NULL, NULL);
 			if (!p) return;
@@ -378,6 +521,15 @@ struct NordicBankingWidget : ModuleWidget {
 			std::free(p);
 			if (!m->loadSysex(path)) m->setStatus("NO SYSEX IN THAT FILE");
 		}));
+		menu->addChild(new MenuSeparator);
+		{
+			static const int dbs[7] = { 0, 12, 18, 24, 30, 36, 42 };
+			std::vector<std::string> names;
+			for (int d : dbs) names.push_back("+" + std::to_string(d) + " dB" + (d == 24 ? " (default)" : ""));
+			menu->addChild(createIndexSubmenuItem("Output level", names,
+				[=]() { int best = 0; for (int i = 0; i < 7; i++) if (std::abs(dbs[i] - m->outGainDb) < std::abs(dbs[best] - m->outGainDb)) best = i; return best; },
+				[=](int i) { m->outGainDb = dbs[i]; }));
+		}
 		menu->addChild(new MenuSeparator);
 		menu->addChild(createMenuLabel("MIDI in"));
 		appendMidiMenu(menu, &m->midiInput);

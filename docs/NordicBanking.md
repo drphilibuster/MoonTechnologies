@@ -1,6 +1,6 @@
 # Nordic Banking
 
-**FORM 8938 — the statement of foreign financial assets. Nordic banking is where the money goes to be discreet.** 52 HP.
+**FORM 8938 — the statement of foreign financial assets. Nordic banking is where the money goes to be discreet.** 42 HP.
 
 A Clavia Nord Lead 2X, running its own operating system. The 2X has a Motorola MC68331
 microcontroller and two DSP56362 signal processors. The 68331 owns the front panel, MIDI
@@ -61,8 +61,29 @@ key line going low. The LEDs and the three digits are one multiplex the firmware
 slot by slot, and each is drawn at its share of the refresh, so a flashing LED flashes and
 the half-lit decimal points stay half lit.
 
+A unit with an erased flash has no programs to play: the OS image is only the firmware, and the
+factory sounds live in the 64 KB flash. Until some are loaded, every program is blank (all switches on)
+and sounds like static, so the display says **NO PROGRAMS LOADED**. **Load program banks from
+folder...** in the context menu sends every `.syx` file in a folder in name order (Clavia's factory
+library is `bank0.syx` to `bank3.syx`, then `Perf0.syx` for the performances), a message every
+25 ms with a percentage on the display, about fourteen seconds in all. The programs are kept in the
+patch's flash, so it is done once per patch.
+
+The knobs follow the sound, as Contagion's do. The unit's knobs are not motorised: select another program
+and they stay where they were. Here each knob is moved to its parameter's value in the program the unit is
+editing (the selected slot's, in a performance), on screen only -- the firmware is never told, so nothing is
+marked edited. Touch a knob and it starts from the sound's value. The map is measured, not gearmulator's:
+its names for the converter's channels are not what the firmware does with them (the channel it calls
+"Filter frequency" edits the amp envelope's decay), so each panel knob is on the channel whose byte of the
+program, per the manual's patch format, is its parameter. Master volume is not in the program and is not
+synced.
+
 The selectors light one LED, or a pair of neighbours for the setting between them, as on
-the unit:
+the unit. Those lamps are drawn on the display glass, beside the three digits, grouped by the
+button that steps them (OSC 1, OSC 2, RING/SYNC, LFO 1, LFO 1 DEST, LFO 2, MOD ENV, FILTER,
+KBD TRACK, PLAY, WHEEL, OCT), which took 37 LED widgets and a row of gaps off the panel. A lamp
+that belongs to a button of its own (ARP, VELOCITY, DISTORTION, UNISON, AUTO, the four slots,
+VEL/MORPH, PERF MODE's KBD SPLIT, OSC 2's KBD TRACK) stays beside that button:
 
 * **LFO 1 WAVE**: soft random, triangle, random; the top two lit is square, the bottom two
   sawtooth. **DEST**: FM, OSC 2, PW; FM + OSC 2 is OSC 1+2, OSC 2 + PW is the filter.

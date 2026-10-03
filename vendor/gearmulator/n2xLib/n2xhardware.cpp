@@ -43,8 +43,11 @@ namespace n2x
 			ucThreadFunc();
 		}));
 
-		while(!m_bootFinished)
+		// MoonTechnologies: a flash the firmware cannot boot with must not hang the caller for ever.
+		// A boot takes about a second of machine time; give up after ten.
+		for(uint32_t i = 0; !m_bootFinished && i < 125000; ++i)
 			processAudio(8,8);
+		m_bootTimedOut = !m_bootFinished;
 		m_midiOffsetCounter = 0;
 	}
 
