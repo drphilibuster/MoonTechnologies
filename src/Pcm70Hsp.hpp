@@ -20,6 +20,7 @@
 #pragma once
 #include <cstdint>
 #include <cstring>
+#include <algorithm>
 #include <cmath>
 #include <vector>
 
@@ -81,8 +82,9 @@ public:
 
 private:
     enum { R0 = 0, ACC = 4, O = 5, A = 6, P = 7, T0 = 8, T1 = 9, T2 = 10, NREG = 11 };
-    enum Op : uint8_t { MOVR, MOV, SAT, HALF, ADD, SUB, NEG, ZERO, ALU34, ALUV, LD, ST, IN, DAC, CARRYIN };
-    struct Mop { uint8_t t, d, a, b; uint16_t w, x; };
+    // The last five are pairs the decoder fuses (see fuse()): the run loop pays one dispatch for two operations. The second operation's fields are d2..x2.
+    enum Op : uint8_t { MOVR, MOV, SAT, HALF, ADD, SUB, NEG, ZERO, ALU34, ALUV, LD, ST, IN, DAC, CARRYIN, HALF_ALUV, ALUV_HALF, SAT_HALF, ALUV_SAT, HALF_ADD };
+    struct Mop { uint8_t t, d, a, b; uint16_t w, x; uint8_t d2, a2, b2, pad; uint16_t w2, x2; };
     struct CS {                                            // sequencer state carried from sample to sample
         int st = 0, c49 = 0xE9, c48 = 0xF7, c48b = 0, c48w = 0, scq0 = 0, scq1 = 0, xh0 = 1, xh1 = 1, prevX = 0;     // c48 = -1: set by a flagged word's nibble, see c48b (U48 address without it) and c48w (the word)
         bool operator==(const CS& o) const { return st == o.st && c49 == o.c49 && c48 == o.c48 && c48b == o.c48b && c48w == o.c48w && scq0 == o.scq0 && scq1 == o.scq1 && xh0 == o.xh0 && xh1 == o.xh1 && prevX == o.prevX; }
@@ -124,39 +126,84 @@ private:
         }
     }
 
-    void run(const Decoded& d) {
-        double* g = r; const uint16_t* of = off; const uint16_t ps = pos;
-        for (const Mop *m = d.ops.data(), *e = m + d.ops.size(); m < e; ++m) {
-            switch (m->t) {
-            case MOV: g[m->d] = g[m->a]; break;
-            case MOVR: g[m->d] = g[ras[m->w]]; break;                 // the register select of a word whose select bits move (chorus programs swap it)
-            case SAT: g[m->d] = sat(g[m->a]); break;
-            case HALF: g[m->d] = g[m->a] / 2; break;
-            case ADD: g[m->d] = g[m->a] + g[m->b]; break;
-            case SUB: g[m->d] = g[m->a] - g[m->b]; break;
-            case NEG: g[m->d] = -g[m->b]; break;
-            case ZERO: g[m->d] = 0.0; break;
-            case ALU34: g[m->d] = 0.5 * logicop34(g[m->a], g[m->b]); break;
-            case ALUV: {                                   // the ALU operation selected by U48 from the live coefficient nibble
-                const int e48 = U48[m->x | nibs[m->w] << 2];
-                const int F = (e48 >> 3 & 1) << 2 | (e48 >> 4 & 1) << 1 | (e48 >> 5 & 1), Cc = e48 >> 2 & 1;
-                const double a = g[m->a], b = g[m->b];
-                double op = 0;
-                if (F == 1) op = Cc ? a : a + b; else if (F == 3) op = Cc ? 0.5 * logicop34(a, b) : b; else if (F == 4) op = a - b; else if (F == 7) op = -b;
-                g[m->d] = op; break; }
-            case LD: g[m->d] = mem[(uint16_t)(ps + of[m->w])] + 0.0; break;
-            case ST: mem[(uint16_t)(ps + of[m->w])] = g[O]; break;
-            case IN: g[m->d] = curIn; break;
-            case DAC: if (ndac == 0) *L = g[O]; else if (ndac == 1) *Rr = g[O]; ndac++; break;
-            case CARRYIN: {                                // events issued late in the previous sample, due at tick m->d of this one
-                int j = 0;
-                for (int i = 0; i < ncarry; i++) if (carry[i].due == m->d) doEvent(carry[i].kind, carry[i].wa, carry[i].addr), j++;
-                (void)j; break; }
-            }
-        }
+    // the ALU operation selected by U48 from the live coefficient nibble of word w (flagged words only)
+    inline double aluv(double a, double b, int w, int x) const {
+        const int e48 = U48[x | nibs[w] << 2];
+        const int F = (e48 >> 3 & 1) << 2 | (e48 >> 4 & 1) << 1 | (e48 >> 5 & 1), Cc = e48 >> 2 & 1;
+        double op = 0;
+        if (F == 1) op = Cc ? a : a + b; else if (F == 3) op = Cc ? 0.5 * logicop34(a, b) : b; else if (F == 4) op = a - b; else if (F == 7) op = -b;
+        return op;
     }
 
+    // One dispatch per (fused) operation. On GCC/Clang each case ends in its own indirect jump (threaded code), which the branch predictor follows far better
+    // than the single jump of a switch; elsewhere it is a plain switch. The cases are written once, as macros.
+#if defined(__GNUC__)
+  #define HSP_CASE(name) L_##name:
+  #define HSP_NEXT() do { if (++m == e) return; goto *tbl[m->t]; } while (0)
+#else
+  #define HSP_CASE(name) case name:
+  #define HSP_NEXT() break
+#endif
+    void run(const Decoded& d) {
+        double* g = r; const uint16_t* of = off; const uint16_t ps = pos;
+        const Mop *m = d.ops.data(), *e = m + d.ops.size();
+        if (m == e) return;
+#if defined(__GNUC__)
+        static const void* const tbl[] = { &&L_MOVR, &&L_MOV, &&L_SAT, &&L_HALF, &&L_ADD, &&L_SUB, &&L_NEG, &&L_ZERO, &&L_ALU34, &&L_ALUV, &&L_LD, &&L_ST, &&L_IN, &&L_DAC,
+                                           &&L_CARRYIN, &&L_HALF_ALUV, &&L_ALUV_HALF, &&L_SAT_HALF, &&L_ALUV_SAT, &&L_HALF_ADD };
+        goto *tbl[m->t];
+#else
+        for (; m < e; ++m) switch (m->t) {
+#endif
+            HSP_CASE(MOV) g[m->d] = g[m->a]; HSP_NEXT();
+            HSP_CASE(MOVR) g[m->d] = g[ras[m->w]]; HSP_NEXT();                 // the register select of a word whose select bits move (chorus programs swap it)
+            HSP_CASE(SAT) g[m->d] = sat(g[m->a]); HSP_NEXT();
+            HSP_CASE(HALF) g[m->d] = g[m->a] / 2; HSP_NEXT();
+            HSP_CASE(ADD) g[m->d] = g[m->a] + g[m->b]; HSP_NEXT();
+            HSP_CASE(SUB) g[m->d] = g[m->a] - g[m->b]; HSP_NEXT();
+            HSP_CASE(NEG) g[m->d] = -g[m->b]; HSP_NEXT();
+            HSP_CASE(ZERO) g[m->d] = 0.0; HSP_NEXT();
+            HSP_CASE(ALU34) g[m->d] = 0.5 * logicop34(g[m->a], g[m->b]); HSP_NEXT();
+            HSP_CASE(ALUV) g[m->d] = aluv(g[m->a], g[m->b], m->w, m->x); HSP_NEXT();
+            HSP_CASE(LD) g[m->d] = mem[(uint16_t)(ps + of[m->w])] + 0.0; HSP_NEXT();
+            HSP_CASE(ST) mem[(uint16_t)(ps + of[m->w])] = g[O]; HSP_NEXT();
+            HSP_CASE(IN) g[m->d] = curIn; HSP_NEXT();
+            HSP_CASE(DAC) if (ndac == 0) *L = g[O]; else if (ndac == 1) *Rr = g[O]; ndac++; HSP_NEXT();
+            HSP_CASE(HALF_ALUV) g[m->d] = g[m->a] / 2; g[m->d2] = aluv(g[m->a2], g[m->b2], m->w2, m->x2); HSP_NEXT();
+            HSP_CASE(ALUV_HALF) g[m->d] = aluv(g[m->a], g[m->b], m->w, m->x); g[m->d2] = g[m->a2] / 2; HSP_NEXT();
+            HSP_CASE(SAT_HALF) g[m->d] = sat(g[m->a]); g[m->d2] = g[m->a2] / 2; HSP_NEXT();
+            HSP_CASE(ALUV_SAT) g[m->d] = aluv(g[m->a], g[m->b], m->w, m->x); g[m->d2] = sat(g[m->a2]); HSP_NEXT();
+            HSP_CASE(HALF_ADD) g[m->d] = g[m->a] / 2; g[m->d2] = g[m->a2] + g[m->b2]; HSP_NEXT();
+            HSP_CASE(CARRYIN) {                                // events issued late in the previous sample, due at tick m->d of this one
+                for (int i = 0; i < ncarry; i++) if (carry[i].due == m->d) doEvent(carry[i].kind, carry[i].wa, carry[i].addr);
+                HSP_NEXT(); }
+#if !defined(__GNUC__)
+        }
+#endif
+    }
+  #undef HSP_CASE
+  #undef HSP_NEXT
+
     struct Ev { int kind, wa; uint16_t w; };               // wa for R loads; w = word whose offset field forms the address
+    // Fuse neighbouring operations into one dispatch. Each pair runs its two operations in order on the same register file, so the arithmetic is unchanged.
+    static std::vector<Mop> fuse(const std::vector<Mop>& in) {
+        std::vector<Mop> out; out.reserve(in.size());
+        for (size_t i = 0; i < in.size(); i++) {
+            Mop m = in[i];
+            if (i + 1 < in.size()) {
+                const Mop& n = in[i + 1]; int f = -1;
+                if (m.t == HALF && n.t == ALUV) f = HALF_ALUV;
+                else if (m.t == ALUV && n.t == HALF) f = ALUV_HALF;
+                else if (m.t == SAT && n.t == HALF) f = SAT_HALF;
+                else if (m.t == ALUV && n.t == SAT) f = ALUV_SAT;
+                else if (m.t == HALF && n.t == ADD) f = HALF_ADD;
+                if (f >= 0) { m.t = (uint8_t)f; m.d2 = n.d; m.a2 = n.a; m.b2 = n.b; m.w2 = n.w; m.x2 = n.x; i++; }
+            }
+            out.push_back(m);
+        }
+        return out;
+    }
+
     Decoded decode(const CS& start) const {
         Decoded D; D.start = start; CS s = start;
         struct W { int mwr, mcen, op, wa, ra, acc, dpd, n, m26; } wd[128];
@@ -168,7 +215,7 @@ private:
         std::vector<Ev> due[SAMPLE_TICKS];
         std::vector<Mop> ops;
         int nib = 0, dpdx = 1, ra_l = 0;
-        auto emit = [&](uint8_t t, int d, int a, int b, int w = 0, int x = 0) { Mop m; m.t = t; m.d = (uint8_t)d; m.a = (uint8_t)a; m.b = (uint8_t)b; m.w = (uint16_t)w; m.x = (uint16_t)x; ops.push_back(m); };
+        auto emit = [&](uint8_t t, int d, int a, int b, int w = 0, int x = 0) { Mop m; memset(&m, 0, sizeof m); m.t = t; m.d = (uint8_t)d; m.a = (uint8_t)a; m.b = (uint8_t)b; m.w = (uint16_t)w; m.x = (uint16_t)x; ops.push_back(m); };
         for (int Pn = 0; Pn < 128; Pn++) for (int ph = 0; ph < 3; ph++) {
             const int tick = 3 * Pn + ph;
             const auto& f = wd[Pn]; const auto& fp = wd[(Pn + 127) & 127]; const auto& fpp = wd[(Pn + 126) & 127];
@@ -263,7 +310,8 @@ private:
             if (def && !(live & def)) keep = false;
             if (keep) { live = (live & ~def) | use; kept.push_back(m); }
         }
-        D.ops.assign(kept.rbegin(), kept.rend());
+        std::reverse(kept.begin(), kept.end());
+        D.ops = fuse(kept);
         return D;
     }
 };
