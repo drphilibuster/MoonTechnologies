@@ -57,7 +57,8 @@ struct LegacyVactrolEngine {
 		float smoothed = (float) std::fmin(cell.step(iLed) / gRef, 1.0);
 		float span = top * (0.25f + 0.75f * (1.f - bend));
 		float g = poleG(140.f + smoothed * span * (1.f + bend * 2.f), fs);
-		return lp2.lp(lp.lp(noise.next(), g), g) * e * (1.5f + 0.4f * grain);
+		// the one deliberate change since: the noise circuit is paused while the envelope is under -100 dB (VactrolEngine::kQuiet), not stepped for nothing
+		return lp2.lp(lp.lp(e > 1e-5f ? noise.next() : 0.f, g), g) * e * (1.5f + 0.4f * grain);
 	}
 };
 

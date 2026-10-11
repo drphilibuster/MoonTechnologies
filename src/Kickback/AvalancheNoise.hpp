@@ -51,6 +51,159 @@
 
 namespace kickback {
 
+
+/** The avalanche circuit's Newton step with the circuit's own structure written out: the same
+    equations `mna::Circuit` stamps for it (same elements, same trapezoidal capacitors, same gmin,
+    same 1 V update limit and 1 uV stop), but the four plasma nodes -- each tied only to the emitter
+    node and the base -- are eliminated by hand and the remaining four unknowns (A, B2, C2, B1) are
+    solved as a 4x4. About a third of the generic solver's cost; the generic one stays as the reference
+    (`AvalancheNoise::fast = false`) and tests/Kickback/test_avalanche_fast.cpp holds the two together. */
+struct FastAvalanche {
+    enum { A, B2, C2, B1, kN = 4, kP = 4 };
+    double v[kN + kP] = {};                 // A B2 C2 B1 P0..P3
+    double vPrev[3] = {}, iPrev[3] = {};    // C3, C4, C5
+    double cap[3] = {};                     // their farads
+    double g4 = 0, g3 = 0, g7 = 0;          // R4, R3, R7
+    double npnIs = 0, npnBF = 0, npnBR = 0, npnVAF = 0;
+    double dIs = 0, dNvt = 0;               // T1's base-emitter diode
+    double jIs = 0, jNvt = 0, jBv = 0, jIbv = 0, jNvtBr = 0;      // the bulk junction
+    double zIs[kP] = {}, zNvt[kP] = {}, zIbv[kP] = {}, zNvtBr[kP] = {}, gR[kP] = {};
+    double gmin = 1e-12, h = 1.0;
+
+    // exp(x) and its slope; below -700 the answer is 0 to the last bit (an off plasma's breakdown term
+    // is exp(-1e5)), so the call is skipped.
+    static double ex(double x, double& d) {
+        if (x < -700.0) { d = 0.0; return 0.0; }
+        return mna::expLim(x, d);
+    }
+
+    void load(const mna::Circuit& c, const int* plasmaZ) {
+        for (int i = 0; i < kN + kP; i++) v[i] = c.v[i];
+        const int capIdx[3] = { 3, 6, 8 };
+        for (int k = 0; k < 3; k++) { const mna::Circuit::Elem& e = c.e[capIdx[k]]; cap[k] = e.p0; vPrev[k] = e.vPrev; iPrev[k] = e.iPrev; }
+        g4 = c.e[0].p0; g3 = c.e[2].p0; g7 = c.e[7].p0;
+        const mna::Circuit::Elem& q = c.e[1]; npnIs = q.p0; npnBF = q.p1; npnBR = q.p2; npnVAF = q.p3;
+        dIs = c.e[9].p0; dNvt = c.e[9].p1;
+        const mna::Circuit::Elem& j = c.e[4]; jIs = j.p0; jNvt = j.p1; jBv = j.p2; jIbv = j.p3; jNvtBr = j.p4;
+        for (int k = 0; k < kP; k++) {
+            gR[k] = c.e[10 + 2 * k].p0;
+            const mna::Circuit::Elem& z = c.e[plasmaZ[k]];
+            zIs[k] = z.p0; zNvt[k] = z.p1; zIbv[k] = z.p3; zNvtBr[k] = z.p4;
+        }
+        gmin = c.gmin; h = c.h;
+    }
+
+    /** One time step. `vcc` the supply, `inoise` the noise current A -> B2, `zBv[k]` each plasma's
+        breakdown voltage now. Returns the Newton iterations, negative if it did not converge. */
+    int step(double vcc, double inoise, const double* zBv, int maxIter) {
+        const double gC[3] = { 2.0 * cap[0] / h, 2.0 * cap[1] / h, 2.0 * cap[2] / h };
+        int result = -maxIter;
+        for (int it = 1; it <= maxIter; it++) {
+            double M[kN][kN + 1];
+            for (int i = 0; i < kN; i++) { for (int j = 0; j <= kN; j++) M[i][j] = 0.0; M[i][i] = gmin; M[i][kN] = -gmin * v[i]; }
+            const double vA = v[A], vB = v[B2], vC = v[C2], vD = v[B1];
+            double d;
+
+            // R4: vcc -> C2
+            { double g = g4, i = g * (vcc - vC); M[C2][C2] += g; M[C2][kN] += i; }
+            // R3: C2 -> A
+            { double g = g3, i = g * (vC - vA);
+              M[C2][C2] += g; M[C2][A] -= g; M[C2][kN] -= i;
+              M[A][A] += g;  M[A][C2] -= g; M[A][kN] += i; }
+            // R7: vcc -> B1
+            { double g = g7, i = g * (vcc - vD); M[B1][B1] += g; M[B1][kN] += i; }
+            // C3: A -> gnd, C5: B1 -> gnd
+            { double g = gC[0], i = g * (vA - vPrev[0]) - iPrev[0]; M[A][A] += g; M[A][kN] -= i; }
+            { double g = gC[2], i = g * (vD - vPrev[2]) - iPrev[2]; M[B1][B1] += g; M[B1][kN] -= i; }
+            // C4: C2 -> B1
+            { double g = gC[1], i = g * ((vC - vD) - vPrev[1]) - iPrev[1];
+              M[C2][C2] += g; M[C2][B1] -= g; M[C2][kN] -= i;
+              M[B1][B1] += g; M[B1][C2] -= g; M[B1][kN] += i; }
+            // T1's base-emitter diode: B1 -> gnd
+            { double e = ex(vD / dNvt, d), i = dIs * (e - 1.0), g = dIs * d / dNvt; M[B1][B1] += g; M[B1][kN] -= i; }
+            // the bulk junction: B2 -> A, with its breakdown
+            { double vd = vB - vA, d1, d2;
+              double e1 = ex(vd / jNvt, d1), e2 = ex(-(vd + jBv) / jNvtBr, d2);
+              double i = jIs * (e1 - 1.0) - jIbv * e2, g = jIs * d1 / jNvt + jIbv * d2 / jNvtBr;
+              M[B2][B2] += g; M[B2][A] -= g; M[B2][kN] -= i;
+              M[A][A] += g;   M[A][B2] -= g; M[A][kN] += i; }
+            // the noise current, A -> B2
+            M[A][kN] -= inoise; M[B2][kN] += inoise;
+            // T2: collector C2, base B2, emitter gnd
+            { const double Is = npnIs, BF = npnBF, BR = npnBR, VAF = npnVAF;
+              double vbe = vB, vbc = vB - vC, def, der;
+              double ef = ex(vbe / mna::kVt, def), er = ex(vbc / mna::kVt, der);
+              double f = 1.0 - vbc / VAF;
+              double Ic = Is * (ef - er) * f - Is / BR * (er - 1.0);
+              double Ib = Is / BF * (ef - 1.0) + Is / BR * (er - 1.0);
+              double dIc_dvbe = Is * def / mna::kVt * f;
+              double dIc_dvbc = -Is * der / mna::kVt * f - Is * (ef - er) / VAF - Is / BR * der / mna::kVt;
+              double dIb_dvbe = Is / BF * def / mna::kVt;
+              double dIb_dvbc = Is / BR * der / mna::kVt;
+              // collector row: dVb = dvbe + dvbc, dVc = -dvbc ; base row likewise
+              M[C2][B2] += dIc_dvbe + dIc_dvbc; M[C2][C2] += -dIc_dvbc; M[C2][kN] -= Ic;
+              M[B2][B2] += dIb_dvbe + dIb_dvbc; M[B2][C2] += -dIb_dvbc; M[B2][kN] -= Ib; }
+
+            // the plasmas: R from A to Pk, a switched zener from B2 to Pk. Eliminate Pk.
+            double dk[kP], rP[kP], rA[kP], rB[kP];
+            for (int k = 0; k < kP; k++) {
+                const double vP = v[kN + k];
+                double iR = gR[k] * (vA - vP);
+                double vd = vB - vP, d1, d2;
+                double e1 = ex(vd / zNvt[k], d1), e2 = ex(-(vd + zBv[k]) / zNvtBr[k], d2);
+                double iZ = zIs[k] * (e1 - 1.0) - zIbv[k] * e2, gz = zIs[k] * d1 / zNvt[k] + zIbv[k] * d2 / zNvtBr[k];
+                const double gr = gR[k];
+                // A row: +iR out, B2 row: +iZ out
+                M[A][A] += gr;   M[A][kN] -= iR;
+                M[B2][B2] += gz; M[B2][kN] -= iZ;
+                // Pk row (F = -iR - iZ + gmin*vP): J = [-gr on A, -gz on B2, gr+gz+gmin on Pk]
+                dk[k] = gr + gz + gmin;
+                rA[k] = -gr; rB[k] = -gz;
+                rP[k] = (iR + iZ) - gmin * vP;
+                // columns Pk in rows A, B2 are (-gr) and (-gz); substitute dPk = (rP - rA dA - rB dB)/dk
+                const double cA = -gr, cB = -gz, inv = 1.0 / dk[k];
+                M[A][A]   -= cA * rA[k] * inv;  M[A][B2]  -= cA * rB[k] * inv;  M[A][kN]  -= cA * rP[k] * inv;
+                M[B2][A]  -= cB * rA[k] * inv;  M[B2][B2] -= cB * rB[k] * inv;  M[B2][kN] -= cB * rP[k] * inv;
+            }
+
+            // 4x4, partial pivoting
+            for (int c = 0; c < kN; c++) {
+                int piv = c;
+                for (int r = c + 1; r < kN; r++) if (std::fabs(M[r][c]) > std::fabs(M[piv][c])) piv = r;
+                if (std::fabs(M[piv][c]) < 1e-300) return -it;
+                if (piv != c) for (int j = c; j <= kN; j++) { double t = M[c][j]; M[c][j] = M[piv][j]; M[piv][j] = t; }
+                double inv = 1.0 / M[c][c];
+                for (int r = c + 1; r < kN; r++) {
+                    double f = M[r][c] * inv;
+                    if (f == 0.0) continue;
+                    for (int j = c; j <= kN; j++) M[r][j] -= f * M[c][j];
+                }
+            }
+            double dx[kN + kP];
+            for (int r = kN - 1; r >= 0; r--) {
+                double sum = M[r][kN];
+                for (int j = r + 1; j < kN; j++) sum -= M[r][j] * dx[j];
+                dx[r] = sum / M[r][r];
+            }
+            for (int k = 0; k < kP; k++) dx[kN + k] = (rP[k] - rA[k] * dx[A] - rB[k] * dx[B2]) / dk[k];
+
+            double worst = 0.0;
+            for (int i = 0; i < kN + kP; i++) {
+                double x = dx[i];
+                if (x > 1.0) x = 1.0;
+                if (x < -1.0) x = -1.0;
+                v[i] += x;
+                if (std::fabs(x) > worst) worst = std::fabs(x);
+            }
+            if (worst < 1e-6) { result = it; break; }
+        }
+        // the capacitors' memory, as Circuit::step leaves it
+        const double vcs[3] = { v[A], v[C2] - v[B1], v[B1] };
+        for (int k = 0; k < 3; k++) { iPrev[k] = gC[k] * (vcs[k] - vPrev[k]) - iPrev[k]; vPrev[k] = vcs[k]; }
+        return result;
+    }
+};
+
 struct AvalancheNoise {
     enum Node { A, B2, C2, B1, P0, P1, P2, P3, kNodes };
     static constexpr int kPlasmas = 4;
@@ -76,6 +229,8 @@ struct AvalancheNoise {
     double vcc = kVcc;
     double bv = kBv;                      // the bulk junction's breakdown voltage
     bool microplasma = true;              // false: the shot-noise-only model
+    bool fast = true;                     // the hand-eliminated solver (FastAvalanche); false: the generic mna::Circuit
+    FastAvalanche fa;
     microplasma::Params mp[kPlasmas];
     microplasma::Switch sw[kPlasmas];
     microplasma::Rng mrng;
@@ -138,6 +293,7 @@ struct AvalancheNoise {
         double tgt[kFixed] = { vcc };
         ok = ckt.solveDc(tgt, kFixed, 48);
         ckt.h = 1.0 / rate;
+        fa.load(ckt, plasmaZ);
         started = true;
     }
 
@@ -170,6 +326,14 @@ struct AvalancheNoise {
         }
         double sigma = std::sqrt(2.0 * kQ * ib * kM * kM * rate * 0.5);
         ckt.setCurrent(noiseSrc, noiseOn ? sigma * gauss() : 0.0);
+        if (fast) {
+            double zBv[kPlasmas];
+            for (int k = 0; k < kPlasmas; k++) zBv[k] = ckt.e[plasmaZ[k]].p2;
+            double inoise = ckt.e[noiseSrc].p0;
+            if (fa.step(vcc, inoise, zBv, 80) < 0) ok = false;
+            for (int i = 0; i < kNodes; i++) ckt.v[i] = fa.v[i];
+            return fa.v[B1];
+        }
         if (ckt.step(80) < 0) ok = false;       // a plasma switching on needs a few more iterations than a quiet step
         return ckt.v[B1];
     }
@@ -214,6 +378,10 @@ struct AvalancheSource {
                              AvalancheNoise::Variant v = AvalancheNoise::PERCUSSIVE,
                              bool plasmas = true, double c5Farads = 0.1e-6)
         : variant(v), microplasma(plasmas), c5(c5Farads), norm(plasmas ? normFor(v, c5Farads) : kNorm), seed0(seed) {}
+
+    /** The solver's floor in hertz, 192 kHz (full) or 96 kHz (eco: half the cost, band power within 0.4 dB
+        of full out to 20 kHz over 4 seeds x 20 s; 48 kHz is not offered, it is 2.7 dB down above 16 kHz). Restarts the circuit. */
+    void setSolverRate(double hz) { minSolver = hz; setRate(fs); }
 
     void setRate(double audioRate) {
         fs = audioRate;

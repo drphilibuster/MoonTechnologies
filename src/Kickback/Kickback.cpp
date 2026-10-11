@@ -63,6 +63,7 @@ struct Kickback : Module {
 	// the module's filter-corner topology -- the engine as it was.
 	int vactrolPart = 0;          // vactrol::PartId
 	bool vactrolBoard = false;    // false: filter corner (module), true: the LDR sets the decay (the board)
+	bool noiseEco = false;        // avalanche circuits solved at 96 kHz instead of 192 kHz (not the same noise: see docs/Kickback.md)
 	Hat hat;
 	Tom tom[3];
 
@@ -193,11 +194,18 @@ struct Kickback : Module {
 		snare.reset(); snare.setRate(fs);
 		hat.reset();   hat.setRate(fs);
 		for (int i = 0; i < 3; i++) { tom[i].reset(); tom[i].setRate(fs); }
+		applyNoiseSolver();
+	}
+
+	void applyNoiseSolver() {
+		double hz = noiseEco ? 96000.0 : 192000.0;
+		snare.setNoiseSolver(hz);
+		hat.setNoiseSolver(hz);
 	}
 
 	void onReset(const ResetEvent& e) override {
 		Module::onReset(e);
-		vactrolPart = 0; vactrolBoard = false;
+		vactrolPart = 0; vactrolBoard = false; noiseEco = false; applyNoiseSolver();
 		kick.reset(); snare.reset(); hat.reset();
 		for (int i = 0; i < 3; i++) tom[i].reset();
 		payroll.reset();
@@ -218,6 +226,7 @@ struct Kickback : Module {
 		json_object_set_new(root, "dazzleNoise", json_integer(snare.ksEng.plasma ? 1 : 0));
 		json_object_set_new(root, "vactrolPart", json_integer(vactrolPart));
 		json_object_set_new(root, "vactrolBoard", json_boolean(vactrolBoard));
+		json_object_set_new(root, "noiseEco", json_boolean(noiseEco));
 		return root;
 	}
 	void dataFromJson(json_t* root) override {
@@ -232,6 +241,9 @@ struct Kickback : Module {
 		vactrolPart = j ? clamp((int)json_integer_value(j), 0, ::vactrol::PART_COUNT - 1) : 0;
 		j = json_object_get(root, "vactrolBoard");
 		vactrolBoard = j ? json_boolean_value(j) : false;
+		j = json_object_get(root, "noiseEco");
+		noiseEco = j ? json_boolean_value(j) : false;
+		applyNoiseSolver();
 	}
 
 	/** DAZZLE, wherever it is: the snare's mode and the hat's top end. */
@@ -549,6 +561,10 @@ struct KickbackWidget : ModuleWidget {
 			{"White", "Microplasma (avalanche circuit)"},
 			[=]() { return (size_t) (m->hat.plasma ? 1 : 0); },
 			[=](size_t i) { m->hat.plasma = (i == 1); }));
+		menu->addChild(createIndexSubmenuItem("Circuit solver rate",
+			{"Full (192 kHz)", "Eco (96 kHz, half the cost, 0.4 dB off above 16 kHz)"},
+			[=]() { return (size_t) (m->noiseEco ? 1 : 0); },
+			[=](size_t i) { m->noiseEco = (i == 1); m->applyNoiseSolver(); }));
 		menu->addChild(createIndexSubmenuItem("DAZZLE noise",
 			{"White", "Microplasma (avalanche circuit)"},
 			[=]() { return (size_t) (m->snare.ksEng.plasma ? 1 : 0); },

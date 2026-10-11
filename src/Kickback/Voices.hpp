@@ -351,6 +351,10 @@ struct VactrolEngine {
 	int partId = 0;         // ::vactrol::PartId
 	bool board = false;     // false: the cell opens a filter corner (module); true: the cell sets the
 	                        // envelope's decay, as on the Day 9 board (processBoard below)
+	// Below this envelope the output is under -100 dB of the strike, so the circuit simulation (the engine's
+	// whole cost, ~4 us a sample) is not stepped: it is paused, not reset, as the hat's hiss already is
+	// (its noise is stationary, so the state it resumes from is as good as any), and the filters are fed zero.
+	static constexpr float kQuiet = 1e-5f;
 	double vC2 = 0.0;       // board: C2's voltage, 1.0 = what a full-velocity strike pumps it to
 
 	void setPart(int id) {
@@ -391,7 +395,7 @@ struct VactrolEngine {
 		if (vC2 < 1e-9) vC2 = 0.0;
 		float e = (float) vC2;
 		float g = poleG(top, fs);
-		return lp2.lp(lp.lp(noise.next(), g), g) * e * (1.5f + 0.4f * 0.5f);
+		return lp2.lp(lp.lp(e > kQuiet ? noise.next() : 0.f, g), g) * e * (1.5f + 0.4f * 0.5f);
 	}
 
 	inline float process(float top, float t60, float bend, float grain) {
@@ -402,7 +406,7 @@ struct VactrolEngine {
 		float smoothed = (float) std::fmin(cell.step(iLed) / gRef, 1.0);
 		float span = top * (0.25f + 0.75f * (1.f - bend));
 		float g = poleG(140.f + smoothed * span * (1.f + bend * 2.f), fs);
-		return lp2.lp(lp.lp(noise.next(), g), g) * e * (1.5f + 0.4f * grain);
+		return lp2.lp(lp.lp(e > kQuiet ? noise.next() : 0.f, g), g) * e * (1.5f + 0.4f * grain);
 	}
 };
 
@@ -531,6 +535,8 @@ struct Snare {
 	/** VACTROL mode's two menu options: the vactrol part (::vactrol::PartId) and the topology (false =
 	    the module's filter corner, true = the board's LDR-sets-the-decay). Defaults are the old engine. */
 	void setVactrol(int part, bool board) { vacEng.setPart(part); vacEng.board = board; }
+	/** Solver floor of every avalanche circuit the snare owns (its vactrol noise and its DAZZLE table). */
+	void setNoiseSolver(double hz) { vacEng.noise.setSolverRate(hz); ksEng.dz.setSolverRate(hz); }
 	KsEngine ksEng;
 	StrikePulse strike;
 	Attack attack;
@@ -641,6 +647,7 @@ struct Hat {
 	void setRate(float fs_) {
 		fs = fs_; dc.setRate(fs_); attack.setRate(fs_); ksEng.setRate(fs_); avalanche.setRate(fs_); topC.clear();
 	}
+	void setNoiseSolver(double hz) { avalanche.setSolverRate(hz); ksEng.dz.setSolverRate(hz); }
 	void reset() {
 		noise.reset(); avalanche.reset();
 		o1.reset(); o2.reset(); o3.reset();

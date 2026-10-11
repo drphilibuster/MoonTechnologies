@@ -14,9 +14,10 @@ CORE := ../../src/Drum.hpp ../../src/Kickback/Voices.hpp ../../src/Kickback/Brid
         ../../src/Kickback/Payroll.hpp ../../src/DspCache.hpp \
         ../../src/Kickback/AvalancheNoise.hpp ../../src/Microplasma.hpp ../../src/Mna.hpp ../../src/Cd40106.hpp ../../src/Vactrol.hpp
 
-all: test_voices test_avalanche test_microplasma test_xor test_vactrol_snare test_noise_source
+all: test_avalanche_fast test_voices test_avalanche test_microplasma test_xor test_vactrol_snare test_noise_source
 
-test: test_voices test_avalanche test_microplasma test_xor test_vactrol_snare test_noise_source
+test: test_avalanche_fast test_voices test_avalanche test_microplasma test_xor test_vactrol_snare test_noise_source
+	./test_avalanche_fast
 	./test_voices
 	./test_avalanche
 	./test_microplasma
@@ -51,3 +52,6 @@ clean:
 # pitch track. No sanitizers, so it is quick. `make render_kick && ./render_kick out`.
 render_kick: render_kick.cpp $(CORE) ../Retroactive/wav.hpp
 	$(CXX) -std=c++11 -O2 -Wall -Wextra -o $@ render_kick.cpp
+
+test_avalanche_fast: test_avalanche_fast.cpp ../../src/Kickback/AvalancheNoise.hpp ../../src/Microplasma.hpp ../../src/Mna.hpp
+	$(CXX) $(CXXFLAGS) $(SAN) -o $@ test_avalanche_fast.cpp

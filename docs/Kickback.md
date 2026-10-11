@@ -597,16 +597,23 @@ about ±2 dB over TUNE and up to ±3 dB over BEND; hat top: about +0.5 dB, ±1.5
 circuit hat is 2 to 3 dB louder than the white one, because the circuit's density per hertz does not
 change with the sample rate and the white noise's, in the hat's band, halves.
 
-*CPU.* The circuit is solved at 192 kHz (or the next multiple of the audio rate), about 1 µs a step
-(M-series): 4 to 6 µs per audio sample at 48 kHz. A sounding hat in HAT noise = microplasma costs
-about **a quarter of one core** at 48 kHz (a 16th-note hat at 120 BPM: 22 to 27 %, white 0.2 %). The
-circuit is only solved while the hiss is heard: not at all with RATTLE at either end, and not once the
-hat's envelope has gone under -100 dB. DAZZLE is much cheaper (0.1 to 0.5 % of a core, 2 hits a
-second): a table is not solved inside the strike but kept in a store topped up one sample per sample
-after a strike, so a strike's cost is spread across the following milliseconds; the first strike after a
-sample-rate change or a reset finds the store empty and pays it at once (about 3 ms at the lowest
-pitch). Running the solver at 96 kHz instead would halve the hat's cost but is not the same noise
-(up to 0.4 dB more at 16 to 19 kHz, kurtosis 2 % higher), so it is not done.
+*CPU.* The circuit is solved at 192 kHz (or the next multiple of the audio rate). The step is the circuit's
+own Newton iteration with its structure written out (the four plasma nodes eliminated by hand, a 4x4 solve
+for the rest): about 0.4 µs a step (M-series), 1.6 µs per audio sample at 48 kHz, 2.5 times the generic
+`mna::Circuit` solver it agrees with to 1e-12 V (`tests/Kickback/test_avalanche_fast.cpp`; the generic
+solver stays as the reference, `AvalancheNoise::fast = false`). A sounding hat in HAT noise = microplasma
+costs roughly a tenth of one core at 48 kHz. The circuit is only solved while the hiss is heard: not at
+all with RATTLE at either end, and not once the hat's or the snare's envelope has gone under -100 dB (it
+is paused, not reset, so the noise carries on from where it was). DAZZLE is much cheaper (0.1 to 0.5 % of
+a core, 2 hits a second): a table is not solved inside the strike but kept in a store topped up one sample
+per sample after a strike, so a strike's cost is spread across the following milliseconds; the first
+strike after a sample-rate change or a reset finds the store empty and pays it at once (about 3 ms at the
+lowest pitch).
+
+**Circuit solver rate** (left-click menu, saved in the patch as `noiseEco`): *Full* (192 kHz, the
+default) or *Eco* (96 kHz), which halves the noise's cost. It is not the same noise: band power is within
+0.1 to 0.4 dB of Full out to 20 kHz (four seeds, 20 s each; the largest is the snare's 16 to 20 kHz,
+0.36 dB down) and the kurtosis is 2 % higher. 48 kHz is not offered: it is 2.7 dB down above 16 kHz.
 
 ### Snare VACTROL options
 
