@@ -188,6 +188,8 @@ Both processors run the unit's own OS: the 80C515 that owns the front panel, the
 
 *A Clavia Nord Lead 2X, running its own firmware. OS image not included.*
 
+*Nord, Clavia and Nord Lead are trademarks of their owners; this module is not affiliated with or endorsed by Clavia / Nord Keyboards, and the names say only which instrument it emulates.*
+
 The real MC68331 operating system, instruction by instruction, driving two emulated DSP56362s on the dsp56300 core -- the whole Nord Lead 2X from its 512 KB OS image. The front panel is the unit's: every knob on the 68331's converter, every button on its key lines, and the LED multiplex and three-digit display drawn at the brightness the firmware drives them, LED pairs and all. Played over MIDI, with Clavia's factory programs loaded as SysEx; the patch keeps the program flash.
 
 ### [Rebate](docs/Rebate.md) — **MIDIverb digital reverb** · 10 HP · *Effect, Reverb, Delay, Hardware clone*

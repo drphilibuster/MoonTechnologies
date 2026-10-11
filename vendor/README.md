@@ -83,6 +83,9 @@ Changes, each marked `MoonTechnologies` in the source:
   must not pick up whatever lies around); the OS image is always given, and the flash's
   power-on contents are a constructor argument, set before the 68331 starts.
 * `n2xdsp`: the debugger include is behind `DSP56300_DEBUGGER`, as its use already was.
+* `n2xdsp`: the ESAI clock runs at 0.5 of the sample rate (`g_dspCycleScale`), twice the DSP cycles per
+  frame. At 1.0 the DSPs miss their ESAI transmit slots and the Nord Lead's stereo output clicks; see the
+  comment there for the measurements.
 * `n2xhardware`: the constructor's wait for the firmware to finish booting gives up after ten seconds of
   machine time (`bootTimedOut()`), where it waited for ever: a flash the firmware cannot boot with hung the
   module. `Nord2x::boot` returns false and the module starts again from an erased flash.

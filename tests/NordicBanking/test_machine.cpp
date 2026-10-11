@@ -12,6 +12,7 @@
 #include <fstream>
 #include <iterator>
 #include <string>
+#include <thread>
 #include <vector>
 
 using nb::Nord2x;
@@ -303,6 +304,44 @@ int main() {
 			CHECK(change > 0.3, "UP changes the function's value");
 			CHECK(after > 8, "SHIFT again leaves the function");
 		}
+	}
+
+	// The stream: the machine on a worker thread, read without waiting. A reader that keeps pace gets every frame (and
+	// the note sounds); one that asks for more than is there gets what there is, and it is counted.
+	{
+		Nord2x n6;
+		CHECK(n6.boot(os, {}), "boot for the stream");
+		const uint32_t target = 4000;
+		n6.startStream(target);
+		float o[4][128];
+		float* const outs[4] = { o[0], o[1], o[2], o[3] };
+		for (int i = 0; i < 500 && n6.streamStats().fill + 128 < target; i++) std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		const uint8_t on[3] = { 0x90, 60, 100 }, off[3] = { 0x80, 60, 0 };
+		n6.midi(on, 3);
+		n6.streamStats(true);
+		double e = 0;
+		long n = 0;
+		auto next = std::chrono::steady_clock::now();
+		for (int b = 0; b < int(2.0 * Nord2x::SAMPLE_RATE / 128); b++) {
+			const size_t got = n6.read(outs, 128);
+			if (b > 150) for (size_t i = 0; i < got; i++) { e += double(o[0][i]) * o[0][i]; n++; }
+			next += std::chrono::microseconds(int64_t(128 * 1e6 / Nord2x::SAMPLE_RATE));
+			std::this_thread::sleep_until(next);
+		}
+		const Nord2x::StreamStats paced = n6.streamStats(true);
+		std::this_thread::sleep_for(std::chrono::milliseconds(300));   // the reader stops; the ring fills to its target
+		const size_t asked = target + 3000, got = n6.read(outs, 128);
+		size_t total = got, last = got;
+		while (last == 128 && total < asked) { last = n6.read(outs, 128); total += last; }
+		const Nord2x::StreamStats starved = n6.streamStats();
+		n6.midi(off, 3);
+		std::printf("12. stream: paced read %llu underruns, note RMS %.4f, worst block %.2f ms; starved read got %zu of %zu, %llu underrun(s), %llu frames short\n",
+			(unsigned long long) paced.underruns, std::sqrt(e / std::max(1L, n)), paced.worstBlockMs, total, asked,
+			(unsigned long long) starved.underruns, (unsigned long long) starved.starvedFrames);
+		CHECK(paced.underruns == 0, "a reader keeping pace never runs short");
+		CHECK(e / std::max(1L, n) > 1e-4, "the note comes through the stream");
+		CHECK(total < asked && starved.underruns >= 1 && starved.starvedFrames > 0, "a read of more than is buffered is short, and counted");
+		n6.stopStream();
 	}
 
 	if (failures) { std::printf("%d failure(s)\n", failures); return 1; }

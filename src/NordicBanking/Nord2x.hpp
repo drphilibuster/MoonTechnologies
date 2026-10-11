@@ -14,6 +14,7 @@
 // No emulator types here, so the module (C++11) can include it; Nord2x.cpp is C++17.
 #pragma once
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -38,6 +39,27 @@ public:
 
 	/** One block at 98.2 kHz: four outputs (A, B, C, D), the DSP's full scale = 1. */
 	void process(float* const out[4], int frames);
+
+	// --- the machine on a thread of its own ------------------------------------------------
+	// process() makes the caller wait for the emulated DSPs and the 68331, so on a busy audio thread one late
+	// thread is a gap in the sound. The stream instead runs the machine on a worker, ahead of the reader, into a
+	// ring of `targetFrames` (at 98.2 kHz); read() only copies, never waits. Use the stream or process(), not both.
+	struct StreamStats {
+		uint64_t underruns = 0;      // read() calls that found the ring short
+		uint64_t starvedFrames = 0;  // frames it was short by
+		double worstBlockMs = 0;     // the longest the worker took over one block of 128 frames
+		uint32_t minFill = 0;        // the lowest the ring has been, in frames, after a read
+		uint32_t fill = 0, target = 0;
+	};
+	/** Start the worker. `log`, when given, is called from it (never from the reader) with a line whenever
+	    reads have run short. */
+	void startStream(uint32_t targetFrames, std::function<void(const std::string&)> log = {});
+	void stopStream();
+	void setStreamTarget(uint32_t targetFrames);
+	/** Up to `frames` frames of the four outputs; returns how many there were (fewer than asked = an underrun,
+	    and 0 until the ring has first filled). Wait-free: one reader thread. */
+	size_t read(float* const out[4], size_t frames);
+	StreamStats streamStats(bool reset = false);
 
 	// --- the front panel and MIDI (from the audio thread) ---------------------------------
 	/** A complete MIDI message: a channel message, or a whole SysEx F0 ... F7. */

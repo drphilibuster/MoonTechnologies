@@ -76,8 +76,19 @@ struct NordicBanking : Module {
 	int knobHold[26] = {};                      // housekeeping ticks a knob the hand just moved is left alone
 	int housekeeping = 0, flashCountdown = 0;
 
-	dsp::SampleRateConverter<4> outSrc;
-	dsp::DoubleRingBuffer<dsp::Frame<4>, 256> outBuf;
+	// The machine's 98.2 kHz to Rack's rate, one converter per output pair: C/D are resampled only while something is
+	// patched to them (the converter is the module's largest cost on Rack's audio thread).
+	dsp::SampleRateConverter<2> srcAB, srcCD;
+	dsp::DoubleRingBuffer<dsp::Frame<2>, 256> bufAB, bufCD;
+	bool cdActive = false;
+	// The machine runs on a worker thread of its own, `bufferMs` ahead of what Rack reads (Nord2x.hpp). A read that
+	// finds it short holds the last frame rather than dropping to zero, which would be a click.
+	int bufferMs = 40, bufferCachedMs = -1;
+	float lastMachine[4] = {};                  // audio thread: the last machine-rate frame, held on an underrun
+	dsp::Frame<2> lastAB = {}, lastCD = {};     // audio thread: the last output frames, held if the converter had none
+	std::atomic<unsigned> clipped{0};           // output samples beyond +-10 V, since the last reset
+	std::atomic<bool> resetStats{false};
+	nb::Nord2x::StreamStats stats;              // guarded by snapMutex: refreshed with the display
 
 	NordicBanking() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -137,6 +148,10 @@ struct NordicBanking : Module {
 				}
 			}
 			INFO("Nordic Banking: Nord Lead 2X OS booted from %s", system::getFilename(path).c_str());
+			n->startStream(uint32_t(bufferMs * 0.001 * nb::Nord2x::SAMPLE_RATE), [](const std::string& line) {
+				WARN("Nordic Banking: %s", line.c_str());
+			});
+			bufferCachedMs = bufferMs;
 			delete handover.exchange(n.release());
 			setStatus("");
 			rememberImage();
@@ -217,7 +232,7 @@ struct NordicBanking : Module {
 	void process(const ProcessArgs& args) override {
 		if (nb::Nord2x* n = handover.exchange(nullptr)) {
 			unit.reset(n);
-			outBuf.clear();
+			bufAB.clear(); bufCD.clear(); srcAB.refreshState(); srcCD.refreshState(); cdActive = false;
 			// The firmware is not told where the knobs are at power-on: a knob reaching it through the A/D converter
 			// is a knob someone turned, and it would rewrite the program it just loaded. The knobs are moved to the
 			// sound instead (KnobSync.hpp), and only what the hand turns is sent.
@@ -274,22 +289,44 @@ struct NordicBanking : Module {
 			if (msg.getSize() > 0) n.midi(msg.bytes.data(), size_t(msg.getSize()));
 
 		// Run the machine at its own rate, a block at a time.
-		if (outBuf.size() < 16) {
-			outSrc.setRates(int(nb::Nord2x::SAMPLE_RATE), int(args.sampleRate));
+		const bool wantCD = outputs[OUT_C_OUTPUT].isConnected() || outputs[OUT_D_OUTPUT].isConnected();
+		if (wantCD != cdActive) { cdActive = wantCD; bufCD.clear(); srcCD.refreshState(); lastCD = {}; }
+		if (bufAB.size() < 16) {
+			srcAB.setRates(int(nb::Nord2x::SAMPLE_RATE), int(args.sampleRate));
+			srcCD.setRates(int(nb::Nord2x::SAMPLE_RATE), int(args.sampleRate));
 			const int mLen = 32;
 			float o[4][mLen];
 			float* const outs[4] = { o[0], o[1], o[2], o[3] };
-			n.process(outs, mLen);
-			dsp::Frame<4> mOut[mLen];
-			for (int k = 0; k < mLen; k++) for (int c = 0; c < 4; c++) mOut[k].samples[c] = o[c][k];
-			int frames = mLen, oLen = int(outBuf.capacity());
-			outSrc.process(mOut, &frames, outBuf.endData(), &oLen);
-			outBuf.endIncr(oLen);
+			const int got = int(n.read(outs, size_t(mLen)));
+			for (int c = 0; c < 4; c++) {
+				for (int k = got; k < mLen; k++) o[c][k] = got ? o[c][got - 1] : lastMachine[c];
+				lastMachine[c] = o[c][mLen - 1];
+			}
+			dsp::Frame<2> mAB[mLen], mCD[mLen];
+			for (int k = 0; k < mLen; k++) {
+				mAB[k].samples[0] = o[0][k]; mAB[k].samples[1] = o[1][k];
+				mCD[k].samples[0] = o[2][k]; mCD[k].samples[1] = o[3][k];
+			}
+			int frames = mLen, oLen = int(bufAB.capacity());
+			srcAB.process(mAB, &frames, bufAB.endData(), &oLen);
+			bufAB.endIncr(oLen);
+			if (cdActive) {
+				frames = mLen; oLen = int(bufCD.capacity());
+				srcCD.process(mCD, &frames, bufCD.endData(), &oLen);
+				bufCD.endIncr(oLen);
+			}
 		}
 		if (outGainDb != outGainCachedDb) { outGainCachedDb = outGainDb; outGain = std::pow(10.f, outGainDb / 20.f); }
-		dsp::Frame<4> fo = {};
-		if (!outBuf.empty()) fo = outBuf.shift();
-		for (int c = 0; c < 4; c++) outputs[OUT_A_OUTPUT + c].setVoltage(fo.samples[c] * VOLTS * outGain);
+		if (!bufAB.empty()) lastAB = bufAB.shift();
+		if (cdActive && !bufCD.empty()) lastCD = bufCD.shift();
+		float fo[4] = { lastAB.samples[0], lastAB.samples[1], cdActive ? lastCD.samples[0] : 0.f, cdActive ? lastCD.samples[1] : 0.f };
+		unsigned over = 0;
+		for (int c = 0; c < 4; c++) {
+			const float v = fo[c] * VOLTS * outGain;
+			over += std::fabs(v) > 10.f;
+			outputs[OUT_A_OUTPUT + c].setVoltage(v);
+		}
+		if (over) clipped.fetch_add(over, std::memory_order_relaxed);
 
 		// Housekeeping, about 40 times a second: SysEx from the menu, the LEDs, the display and
 		// the flash.
@@ -320,7 +357,11 @@ struct NordicBanking : Module {
 				const nb::Led& l = nb::LEDS[i];
 				lights[LED_LIGHT + i].setBrightness(l.row < 6 ? rows[l.row][l.bit] : 0.f);
 			}
+			if (bufferMs != bufferCachedMs) { bufferCachedMs = bufferMs; n.setStreamTarget(uint32_t(bufferMs * 0.001 * nb::Nord2x::SAMPLE_RATE)); }
+			const bool reset = resetStats.exchange(false);
+			if (reset) clipped = 0;
 			if (snapMutex.try_lock()) {
+				stats = n.streamStats(reset);
 				std::memcpy(snap.digits, digits, sizeof digits);
 				// One message per tick: the firmware takes SysEx as a unit would, at MIDI's pace.
 				if (!pendingSysex.empty()) {
@@ -353,6 +394,7 @@ struct NordicBanking : Module {
 		if (!flash.empty()) json_object_set_new(root, "flash", json_string(string::toBase64(flash).c_str()));
 		json_object_set_new(root, "midi", midiInput.toJson());
 		json_object_set_new(root, "outLevelDb", json_integer(outGainDb));
+		json_object_set_new(root, "bufferMs", json_integer(bufferMs));
 		json_object_set_new(root, "cvMidiChannel", json_integer(cvMidi.channel));
 		json_object_set_new(root, "cvPolyToChannels", json_boolean(cvMidi.polyToChannels));
 		json_object_set_new(root, "cvMinNoteMs", json_real(minNoteMs));
@@ -369,6 +411,7 @@ struct NordicBanking : Module {
 		}
 		if (json_t* j = json_object_get(root, "midi")) midiInput.fromJson(j);
 		if (json_t* j = json_object_get(root, "outLevelDb")) outGainDb = clamp(int(json_integer_value(j)), 0, 48);
+		if (json_t* j = json_object_get(root, "bufferMs")) bufferMs = clamp(int(json_integer_value(j)), 5, 250);
 		if (json_t* j = json_object_get(root, "cvMidiChannel")) cvMidi.channel = clamp(int(json_integer_value(j)), 0, 15);
 		if (json_t* j = json_object_get(root, "cvPolyToChannels")) cvMidi.polyToChannels = json_is_true(j);
 		if (json_t* j = json_object_get(root, "cvMinNoteMs")) minNoteMs = clamp(float(json_number_value(j)), 0.f, 4000.f);
@@ -637,6 +680,24 @@ struct NordicBankingWidget : ModuleWidget {
 			menu->addChild(createIndexSubmenuItem("Output level", names,
 				[=]() { int best = 0; for (int i = 0; i < 7; i++) if (std::abs(dbs[i] - m->outGainDb) < std::abs(dbs[best] - m->outGainDb)) best = i; return best; },
 				[=](int i) { m->outGainDb = dbs[i]; }));
+		}
+		{
+			static const int ms[6] = { 10, 20, 40, 80, 160, 250 };
+			std::vector<std::string> names;
+			for (int v : ms) names.push_back(std::to_string(v) + " ms" + (v == 40 ? " (default)" : ""));
+			menu->addChild(createIndexSubmenuItem("Audio buffer (latency vs. dropouts)", names,
+				[=]() { int best = 0; for (int i = 0; i < 6; i++) if (std::abs(ms[i] - m->bufferMs) < std::abs(ms[best] - m->bufferMs)) best = i; return best; },
+				[=](int i) { m->bufferMs = ms[i]; }));
+			nb::Nord2x::StreamStats st;
+			{
+				std::lock_guard<std::mutex> lock(m->snapMutex);
+				st = m->stats;
+			}
+			const double toMs = 1000.0 / nb::Nord2x::SAMPLE_RATE;
+			menu->addChild(createMenuLabel(string::f("Dropouts: %llu (%llu frames short)", (unsigned long long) st.underruns, (unsigned long long) st.starvedFrames)));
+			menu->addChild(createMenuLabel(string::f("Buffer low point %.1f of %.1f ms; worst block %.2f ms", st.minFill * toMs, st.target * toMs, st.worstBlockMs)));
+			menu->addChild(createMenuLabel(string::f("Output beyond +-10 V: %u samples", m->clipped.load())));
+			menu->addChild(createMenuItem("Reset these counts", "", [=]() { m->resetStats = true; }));
 		}
 		menu->addChild(new MenuSeparator);
 		menu->addChild(createCheckMenuItem("SHIFT lets go after the next button (else it stays down until clicked)", "",

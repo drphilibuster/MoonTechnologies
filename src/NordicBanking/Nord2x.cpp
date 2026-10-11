@@ -7,13 +7,17 @@
 #include "n2xLib/n2xhardware.h"
 #include "n2xLib/n2xrom.h"
 #include "dsp56kBase/logging.h"
+#include "dsp56kBase/threadtools.h"
 #include "dsp56kEmu/audio.h"
 #include "mc68k/logging.h"
 #include "synthLib/midiTypes.h"
 
 #include <algorithm>
+#include <atomic>
+#include <chrono>
 #include <cstring>
 #include <mutex>
+#include <thread>
 
 namespace nb {
 
@@ -47,6 +51,17 @@ struct Nord2x::Impl {
 			lastA = v;
 		}
 	}
+	// --- the stream (see Nord2x.hpp) ---------------------------------------------------------
+	static constexpr uint32_t BLOCK = 128;           // frames the worker runs at a time
+	static constexpr uint32_t RING = 32768;          // frames, a power of two
+	std::vector<float> ring = std::vector<float>(4 * size_t(RING), 0.f);
+	std::atomic<uint64_t> head{0}, tail{0};          // frames ever written / read
+	std::atomic<bool> run{false}, primed{false};
+	std::atomic<uint32_t> target{0};
+	std::atomic<uint64_t> underruns{0}, starved{0};
+	std::atomic<uint32_t> worstBlockUs{0}, minFill{0xFFFFFFFFu};
+	std::thread worker;
+
 	void digit(int d) {
 		digitSlots[d]++;
 		for (int b = 0; b < 8; b++) digitOn[d][b] += !(data >> b & 1);
@@ -54,7 +69,88 @@ struct Nord2x::Impl {
 };
 
 Nord2x::Nord2x() : impl(new Impl) {}
-Nord2x::~Nord2x() = default;
+Nord2x::~Nord2x() { stopStream(); }
+
+void Nord2x::startStream(uint32_t targetFrames, std::function<void(const std::string&)> log) {
+	Impl& m = *impl;
+	if (m.worker.joinable() || !m.hw) return;
+	setStreamTarget(targetFrames);
+	m.run = true;
+	m.worker = std::thread([this, log]() {
+		Impl& m = *impl;
+		dsp56k::ThreadTools::setCurrentThreadName("NordicBanking");
+		dsp56k::ThreadTools::setCurrentThreadPriority(dsp56k::ThreadPriority::Highest);
+		float blk[4][Impl::BLOCK];
+		float* const bp[4] = { blk[0], blk[1], blk[2], blk[3] };
+		auto lastLog = std::chrono::steady_clock::now();
+		uint64_t loggedUnderruns = 0;
+		while (m.run) {
+			const uint64_t h = m.head.load(std::memory_order_relaxed), t = m.tail.load(std::memory_order_acquire);
+			if (h - t + Impl::BLOCK <= m.target.load(std::memory_order_relaxed)) {
+				const auto t0 = std::chrono::steady_clock::now();
+				process(bp, int(Impl::BLOCK));
+				const uint32_t us = uint32_t(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t0).count());
+				if (us > m.worstBlockUs.load(std::memory_order_relaxed)) m.worstBlockUs = us;
+				for (int c = 0; c < 4; c++)
+					for (uint32_t i = 0; i < Impl::BLOCK; i++) m.ring[size_t(c) * Impl::RING + size_t((h + i) & (Impl::RING - 1))] = blk[c][i];
+				m.head.store(h + Impl::BLOCK, std::memory_order_release);
+			} else {
+				m.primed = true;
+				std::this_thread::sleep_for(std::chrono::microseconds(250));
+			}
+			const auto now = std::chrono::steady_clock::now();
+			if (log && now - lastLog > std::chrono::seconds(2)) {
+				lastLog = now;
+				const uint64_t u = m.underruns.load();
+				if (u != loggedUnderruns) {
+					const StreamStats s = streamStats();
+					log("audio ran short " + std::to_string(u - loggedUnderruns) + " time(s) in 2 s (" + std::to_string(s.starvedFrames) +
+						" frames in all); the buffer's low point was " + std::to_string(s.minFill) + " of " + std::to_string(s.target) +
+						" frames, the worst block took " + std::to_string(s.worstBlockMs) + " ms");
+					loggedUnderruns = u;
+				}
+			}
+		}
+	});
+}
+
+void Nord2x::stopStream() {
+	Impl& m = *impl;
+	m.run = false;
+	if (m.worker.joinable()) m.worker.join();
+}
+
+void Nord2x::setStreamTarget(uint32_t targetFrames) {
+	impl->target = std::min(std::max(targetFrames, Impl::BLOCK), Impl::RING - Impl::BLOCK);
+}
+
+size_t Nord2x::read(float* const out[4], size_t frames) {
+	Impl& m = *impl;
+	if (!m.primed.load(std::memory_order_relaxed)) return 0;
+	const uint64_t t = m.tail.load(std::memory_order_relaxed), h = m.head.load(std::memory_order_acquire);
+	const size_t got = std::min(frames, size_t(h - t));
+	for (int c = 0; c < 4; c++)
+		for (size_t i = 0; i < got; i++) out[c][i] = m.ring[size_t(c) * Impl::RING + size_t((t + i) & (Impl::RING - 1))];
+	m.tail.store(t + got, std::memory_order_release);
+	if (got < frames) { m.underruns.fetch_add(1, std::memory_order_relaxed); m.starved.fetch_add(frames - got, std::memory_order_relaxed); }
+	const uint32_t fill = uint32_t(h - t - got);
+	if (fill < m.minFill.load(std::memory_order_relaxed)) m.minFill.store(fill, std::memory_order_relaxed);
+	return got;
+}
+
+Nord2x::StreamStats Nord2x::streamStats(bool reset) {
+	Impl& m = *impl;
+	StreamStats s;
+	s.underruns = m.underruns;
+	s.starvedFrames = m.starved;
+	s.worstBlockMs = m.worstBlockUs / 1000.0;
+	const uint32_t mf = m.minFill;
+	s.fill = uint32_t(m.head.load() - m.tail.load());
+	s.minFill = mf == 0xFFFFFFFFu ? s.fill : mf;
+	s.target = m.target;
+	if (reset) { m.underruns = 0; m.starved = 0; m.worstBlockUs = 0; m.minFill = 0xFFFFFFFFu; }
+	return s;
+}
 
 std::string Nord2x::check(const std::vector<uint8_t>& rom) {
 	if (rom.size() != ROM_SIZE) return "not a Nord Lead 2X OS image (expected 512 KB)";

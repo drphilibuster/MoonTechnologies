@@ -2,6 +2,8 @@
 
 **FORM 8938 — the statement of foreign financial assets. Nordic banking is where the money goes to be discreet.** 36 HP.
 
+> Nord, Clavia and Nord Lead are trademarks of their owners; this module is not affiliated with or endorsed by Clavia / Nord Keyboards, and the names say only which instrument it emulates.
+
 A Clavia Nord Lead 2X, running its own operating system. The 2X has a Motorola MC68331
 microcontroller and two DSP56362 signal processors. The 68331 owns the front panel, MIDI
 and program memory; it boots the DSPs and tells them what to play. Nordic Banking runs both

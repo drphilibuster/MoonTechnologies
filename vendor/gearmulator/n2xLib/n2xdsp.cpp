@@ -16,6 +16,16 @@ namespace n2x
 	static constexpr dsp56k::TWord g_externalMemAddr	= 0x008000;
 	static constexpr dsp56k::TWord g_pMemSize			= 0x004000;
 
+	// MoonTechnologies: the DSPs' ESAI clock runs at this fraction of the sample rate, i.e. each frame gives the
+	// emulated DSP 1/g_dspCycleScale times the cycles. At 1.0 the DSPs run out of cycles: DSP B misses its ESAI
+	// transmit slots (the previous word goes out again) and DSP A's feed to it is short. A repeated word is
+	// invisible in a mono sound and a click when the two output channels differ, as with UNISON, so every
+	// program with stereo content crackled (the glitches fall exactly on the reported underruns). Measured with
+	// a held note through 30 factory programs: median noise floor -35 dB at 1.0, -60 at 0.8, -81 at 0.5, and a
+	// unison program goes from ~130 steps in 1.5 s to none (floor -136 dB, no underruns). 1.2 is far worse. The
+	// speed-up is a stand-in for the real DSP clock, which is not known; level and pitch are unchanged.
+	static constexpr double g_dspCycleScale			= 0.5;
+
 	namespace
 	{
 		dsp56k::DefaultMemoryValidator g_memValidator;
@@ -42,7 +52,7 @@ namespace n2x
 			constexpr auto samplerate = g_samplerate;
 			constexpr auto clockMultiplier = 2;
 
-			clock.setSamplerate(samplerate * clockMultiplier);
+			clock.setSamplerate(samplerate * g_dspCycleScale * clockMultiplier);
 
 			clock.setClockSource(dsp56k::EsaiClock::ClockSource::Cycles);
 
