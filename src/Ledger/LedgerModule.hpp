@@ -708,7 +708,21 @@ struct Ledger : Module {
 		seedInLast = -1;
 	}
 
+	// A captured loop is let go: the slot becomes a generator again, on the settings it
+	// was captured with, so it can evolve. (Its written pattern stays in the slot, unused.)
+	void releaseCapture(int t) {
+		L::Slot& s = slots[t][active[t]];
+		if (s.kind != L::kSlotPat)
+			return;
+		s.kind = L::kSlotGen;
+		eng.external[t] = false;
+		psrc[t].releaseAll();
+		patStep[t] = -1;
+		bumpSlot(t, active[t]);
+	}
+
 	void reseedTrack(int t) {
+		releaseCapture(t);
 		setBase(S::TP(t, S::kTSeed), (int)(random::u32() % 1000));
 	}
 
@@ -728,6 +742,16 @@ struct Ledger : Module {
 			return;
 		// Restart: unless the track has just played its loop's last step and the new slot
 		// is as long (then it goes on to step 1 by itself, walk and all), it starts over.
+		// A slot not yet visited is made on first arrival: a fresh 16-step generator, as the
+		// module opens with, on a seed of its own. Kept with the session from then on.
+		if (slots[t][k].kind == L::kSlotEmpty) {
+			L::Slot& fresh = slots[t][k];
+			fresh.clear();
+			fresh.kind = L::kSlotGen;
+			L::defaultBlock(fresh.block, t, (int)(random::u32() % 1000));
+			fresh.block[L::kBlockLength] = 16;
+			bumpSlot(t, k);
+		}
 		S::TrackState& tr = eng.dtc->tracks[t];
 		int outLen = eng.v[S::TP(t, S::kTLength)];
 		bool atEnd = outLen <= 1 || tr.eosCount == 0;		// eosCount: steps played of this loop

@@ -64,7 +64,7 @@ static MenuItem* valueSubmenu(const std::string& label, const std::string& right
 struct LedgerDisplay : widget::OpaqueWidget {
 	Ledger* module = NULL;
 	S::Shoal view;					// the UI's copy of the engine, for evalStep
-	Ledger::Snapshot snap;
+	Ledger::Snapshot snap = {};	// zeroed: until the first publish nothing in it may be an index
 	bool haveSnap = false;
 
 	// each track's active slot, as last copied
@@ -160,6 +160,7 @@ struct LedgerDisplay : widget::OpaqueWidget {
 				std::memcpy(view.solo, snap.solo, sizeof view.solo);
 				haveSnap = true;
 			}
+			if (!haveSnap) return OpaqueWidget::step();	// the engine has not published yet
 			for (int t = 0; t < S::kNumTracks; t++) {
 				int k = snap.active[t];
 				if (k != cacheSlot[t] || module->slotVersion[t][k].load() != cacheVer[t]) {
