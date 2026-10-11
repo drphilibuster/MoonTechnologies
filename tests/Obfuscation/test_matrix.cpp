@@ -1,4 +1,5 @@
 #include "../../src/Obfuscation/Matrix.hpp"
+#include <chrono>
 #include <cstdio>
 #include <vector>
 using namespace obf;
@@ -140,6 +141,63 @@ int main() {
 			if (i > 144000) tail += (double) y * y;
 		}
 		CHECK(early > 0.0 && tail < 0.1 * early, "tail not decaying: early %g tail %g", early, tail);
+	}
+
+	// 8. running only the stages that reach the output sounds the same as running all 96: the same noise-and-sine
+	// through both while STAGES sweeps up and down, the error against the signal, and what it saves.
+	{
+		for (int margin : { 0, 8 }) for (float pinch : { 0.3f, 0.6f, 1.f }) {
+		Matrix fast, full; Rng r; r.seed(99);
+		for (int b = 0; b < 3; b++) { full.band[b].prune = false; fast.band[b].margin = margin; }
+		Params p; p.pinch = pinch; p.spread = 0.5f; p.drive = 0.f; p.stages = 8.f;
+		double err = 0, sig = 0; float worst = 0.f;
+		for (int i = 0; i < 480000; i++) {
+			p.stages = 4.f + 40.f * (0.5f + 0.5f * std::sin(i * 0.00004f));   // 4..44 and back, over ~3 s
+			float x = 0.3f * r.bi() + 0.3f * std::sin(2.f * PI_F * 220.f * i / SR);
+			float a = fast.process(x, p, false, false, false, false), b = full.process(x, p, false, false, false, false);
+			if (i > 48000) { err += (double)(a - b) * (a - b); sig += (double) b * b; worst = std::max(worst, std::fabs(a - b)); }
+		}
+		const double rel = 10.0 * std::log10((err + 1e-30) / (sig + 1e-30));
+		printf("   margin %2d pinch %.1f: pruned vs full while STAGES sweeps 4..44: error %.1f dB below the signal, worst sample %.4f\n", margin, pinch, -rel, worst);
+		if (margin == 8) CHECK(rel < (pinch > 0.9f ? -55.0 : -80.0), "pruning changes the sound at pinch %g: error only %.1f dB down", pinch, -rel);
+		}
+		{
+		auto cost = [&](bool prune, float stages) {
+			Matrix m; for (int b = 0; b < 3; b++) m.band[b].prune = prune;
+			Params q; q.stages = stages; Rng g; g.seed(3);
+			volatile float sink = 0.f;
+			const auto t0 = std::chrono::steady_clock::now();
+			for (int i = 0; i < 480000; i++) sink = sink + m.process(0.3f * g.bi(), q, false, false, false, false);
+			return std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count() * 100.0 / 10.0;   // percent of one core at 48 kHz
+		};
+		for (float st : { 8.f, 32.f, 96.f })
+			printf("   %3.0f stages: %.1f%% of a core all stages, %.1f%% pruned\n", st, cost(false, st), cost(true, st));
+		}
+	}
+
+	// 9. the stage's single multiply-add form against the textbook arithmetic it replaced (Zavalishin's TPT allpass: v3 = v - z2, v1 = a1 z1 + a2 v3,
+	// v2 = z2 + a2 z1 + a3 v3, out = v - 2 kd v1), written out here as the reference: 96 stages at cutoffs and Qs across the range, noise in.
+	{
+		for (float qlo : { 0.5f, 6.f, 30.f }) {
+			Chain c; c.nSm = c.nTarget = 96.f; c.prune = false;
+			float rz1[MAX_STAGES] = {}, rz2[MAX_STAGES] = {};
+			Rng r; r.seed(5);
+			for (int i = 0; i < 96; i++) c.setStage(i, 40.f * std::exp2(0.5f * (float) i / 6.f * 1.2f) , qlo * (1.f + 0.02f * (float) i), SR);
+			double err = 0, sig = 0;
+			for (int n = 0; n < 192000; n++) {
+				const float x = 0.4f * r.bi();
+				float v = x;
+				for (int i = 0; i < 96; i++) {
+					const float v3 = v - rz2[i], v1 = c.a1[i] * rz1[i] + c.a2[i] * v3, v2 = rz2[i] + c.a2[i] * rz1[i] + c.a3[i] * v3;
+					rz1[i] = 2.f * v1 - rz1[i]; rz2[i] = 2.f * v2 - rz2[i]; v = v - 2.f * c.kd[i] * v1;
+				}
+				const float y = c.process(x);
+				if (n > 48000) { err += (double)(y - v) * (y - v); sig += (double) v * v; }
+			}
+			const double rel = 10.0 * std::log10((err + 1e-30) / (sig + 1e-30));
+			printf("   Q %.1f: multiply-add form vs reference over 96 stages: error %.1f dB below the signal\n", qlo, -rel);
+			CHECK(rel < -95.0, "stage form drifts from the reference: only %.1f dB down at Q %g", -rel, qlo);
+		}
 	}
 
 	printf("%d checks, %d failures\n", checks, failures);

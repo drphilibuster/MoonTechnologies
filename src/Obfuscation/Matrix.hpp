@@ -78,16 +78,27 @@ struct LR4 {
     stage's cutoff, and a higher Q concentrates it there). */
 struct Chain {
 	float kd[MAX_STAGES], a1[MAX_STAGES], a2[MAX_STAGES], a3[MAX_STAGES];
+	float ca[MAX_STAGES], k2[MAX_STAGES];       // 1 - 2*kd*a2 and 2*kd: the stage's output as one multiply-add of its input (see stage())
 	float z1[MAX_STAGES], z2[MAX_STAGES];
 	float off[MAX_STAGES], tgt[MAX_STAGES];     // per-stage cutoff offset, -1..1
 	float qoff[MAX_STAGES], qtgt[MAX_STAGES];   // per-stage Q offset, -1..1
 	float nSm = 8.f, nTarget = 8.f;
+	/** Only the stages that can reach the output run (see process()); false runs all of them, as before. */
+	bool prune = true;
+	int margin = 8;         // stages kept running ahead of the tap, so they have settled by the time it reaches them
+	                        // (0 sounds the same until STAGES moves, then a stage joins from silence: -34 dB error at high PINCH)
+	int ran = MAX_STAGES;   // stages that ran on the last sample; every stage past it holds zero state
 	Chain() { reset(); }
 	void reset() {
 		for (int i = 0; i < MAX_STAGES; i++) {
-			kd[i] = 1.f; a1[i] = 1.f; a2[i] = a3[i] = 0.f;
+			kd[i] = 1.f; a1[i] = 1.f; a2[i] = a3[i] = 0.f; ca[i] = 1.f; k2[i] = 2.f;
 			z1[i] = z2[i] = off[i] = tgt[i] = qoff[i] = qtgt[i] = 0.f;
 		}
+		ran = MAX_STAGES;
+	}
+	/** How many stages must run: those the output tap reads now (nSm) or will read as it slews to nTarget. */
+	int needed() const {
+		return prune ? (int)clampf(std::ceil(std::max(nSm, nTarget)) + (float)margin, 1.f, (float)MAX_STAGES) : MAX_STAGES;
 	}
 	/** Zavalishin TPT state-variable allpass: x - 2k*bp with k = 1/Q. Chosen over
 	    a direct-form biquad because it stays bounded while its coefficients move. */
@@ -97,29 +108,62 @@ struct Chain {
 		a1[i] = 1.f / (1.f + g * (g + kd[i]));
 		a2[i] = g * a1[i];
 		a3[i] = g * a2[i];
+		k2[i] = 2.f * kd[i];
+		ca[i] = 1.f - k2[i] * a2[i];
 	}
 	int active() const { return (int)clampf(std::ceil(nSm), 1.f, (float)MAX_STAGES); }
-	/** Every stage runs on every sample and only the output tap moves. A stage
-	    that stopped running would keep stale state, and bringing it back in
-	    would inject that state as a click on each step of STAGES. */
+	/** The output tap sits after stage `active()`; the stages past it, and past where the tap is slewing to, do
+	    not touch the output, so they do not run. A stage that stops running is zeroed, not left with stale
+	    state: brought back in it starts from silence, and the tap reaches it at 0.02 stages a sample, so it
+	    has begun to settle before it is heard. (Set `prune` false to run every stage on every sample.) */
+	struct Tap { int run, k; float frac; };
+	/** The per-sample bookkeeping before the stages run: slew the stage count, find the tap and how many stages must run. */
+	Tap begin() {
+		nSm += clampf((nTarget - nSm) * 0.01f, -0.02f, 0.02f);
+		const int k = active();
+		const int run = needed();
+		for (int i = run; i < ran; i++) z1[i] = z2[i] = 0.f;
+		ran = run;
+		return { run, k, clampf(nSm - (float)(k - 1), 0.f, 1.f) };
+	}
+	/** One stage. With s = a1*z1 - a2*z2 (state only), v1 = a2*v + s, and so the output v - 2*kd*v1 = (1 - 2*kd*a2)*v - 2*kd*s: the
+	    signal's way through the stage is a single multiply-add. The stages are a serial chain, so it is that dependence, not the arithmetic,
+	    that costs: this is a third of the previous form's latency (v - z2, then a multiply-add, then another) and equal to it to rounding. */
+	inline void stage(int i, float& v) {
+		const float zz1 = z1[i], zz2 = z2[i];
+		const float s = a1[i] * zz1 - a2[i] * zz2;
+		const float v1 = a2[i] * v + s;
+		const float v2 = zz2 + a2[i] * zz1 + a3[i] * (v - zz2);
+		z1[i] = 2.f * v1 - zz1;
+		z2[i] = 2.f * v2 - zz2;
+		v = ca[i] * v - k2[i] * s;
+	}
 	float process(float x) {
 		// Slewed every sample, not at control rate: a stepped crossfade weight
 		// is itself a click. Rate-limited so a big jump sweeps stage by stage.
-		nSm += clampf((nTarget - nSm) * 0.01f, -0.02f, 0.02f);
-		int k = active();
-		float frac = clampf(nSm - (float)(k - 1), 0.f, 1.f);
+		const Tap t = begin();
 		float v = x, before = x, after = x;
-		for (int i = 0; i < MAX_STAGES; i++) {
-			if (i == k - 1) before = v;
-			float v3 = v - z2[i];
-			float v1 = a1[i] * z1[i] + a2[i] * v3;
-			float v2 = z2[i] + a2[i] * z1[i] + a3[i] * v3;
-			z1[i] = 2.f * v1 - z1[i];
-			z2[i] = 2.f * v2 - z2[i];
-			v = v - 2.f * kd[i] * v1;
-			if (i == k - 1) after = v;
+		for (int i = 0; i < t.run; i++) {
+			if (i == t.k - 1) before = v;
+			stage(i, v);
+			if (i == t.k - 1) after = v;
 		}
-		return sanitize(before + frac * (after - before));
+		return sanitize(before + t.frac * (after - before));
+	}
+	/** The three bands' chains together: independent of each other, so running them stage by stage side by side lets the processor overlap them. */
+	static void process3(Chain* c, const float* in, float* out) {
+		Tap t[3]; float v[3], before[3], after[3];
+		int runMax = 0;
+		for (int b = 0; b < 3; b++) { t[b] = c[b].begin(); v[b] = before[b] = after[b] = in[b]; if (t[b].run > runMax) runMax = t[b].run; }
+		for (int i = 0; i < runMax; i++) {
+			for (int b = 0; b < 3; b++) {
+				if (i >= t[b].run) continue;
+				if (i == t[b].k - 1) before[b] = v[b];
+				c[b].stage(i, v[b]);
+				if (i == t[b].k - 1) after[b] = v[b];
+			}
+		}
+		for (int b = 0; b < 3; b++) out[b] = sanitize(before[b] + t[b].frac * (after[b] - before[b]));
 	}
 };
 
@@ -191,14 +235,16 @@ struct Matrix {
 		for (int b = 0; b < 3; b++) {
 			Chain& c = band[b];
 			float fb = f0 * bandMul[b];
+			c.nTarget = target;
+			const int need = c.needed();
 			for (int i = 0; i < MAX_STAGES; i++) {
 				c.off[i] += (c.tgt[i] - c.off[i]) * 0.05f;
 				c.qoff[i] += (c.qtgt[i] - c.qoff[i]) * 0.05f;
+				if (i >= need) continue;   // a stage that does not run needs no coefficients
 				float f = clampf(fb * std::exp2(p.spread * 2.f * c.off[i]), 10.f, 0.45f * sr);
 				float q = clampf(q0 * std::exp2(p.spread * 2.f * c.qoff[i]), 0.5f, 40.f);
 				c.setStage(i, f, q, sr);
 			}
-			c.nTarget = target;
 		}
 	}
 
@@ -235,10 +281,10 @@ struct Matrix {
 		float lo = xoComp.allpass(lo1);
 
 		float bands[3] = {lo, mid, hi};
+		float bandOut[3];
+		Chain::process3(band, bands, bandOut);
 		float sum = 0.f;
-		for (int b = 0; b < 3; b++) {
-			sum += band[b].process(bands[b]);
-		}
+		for (int b = 0; b < 3; b++) sum += bandOut[b];
 
 		// saturator, 2x oversampled
 		float d = 1.f + 19.f * p.drive;
