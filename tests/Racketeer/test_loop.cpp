@@ -301,6 +301,92 @@ int main() {
 	}
 	printf("T6  bit clock = 44 kbit / delay\n");
 
+	// --- T7: the carry-select modulator is the same arithmetic ----------------
+	// Pt2399::modulate() computes both outcomes of each bit and lets the bit pick
+	// (advanceSel). It must be the textbook one-bit-at-a-time update (advanceC),
+	// bit for bit: a reference chip stepped with advanceC, fed the same input.
+	// Both clocks, a fast one that runs many bits per sample and a slow one.
+	{
+		using pt2399::Pt2399;
+		int bad = 0;
+		for (int pass = 0; pass < 2; pass++) {
+			Pt2399 a, b;
+			a.setSampleRate(48000.0); b.setSampleRate(48000.0);
+			double rate = pass == 0 ? 44000.0 / 0.030 : 44000.0 / 0.4;
+			a.setBitRate(rate); b.setBitRate(rate);
+			uint32_t s = 12345u;
+			float prev = 0.f;
+			for (int i = 0; i < 48000; i++) {
+				s = s * 1664525u + 1013904223u;
+				float cur = 2.4f * ((int32_t) s / 2147483648.f) * (i & 1024 ? 0.1f : 1.f);
+				a.begin(); b.begin();
+				a.demod(); b.demod();
+				a.modulate(prev, cur);
+				// Reference: advanceC, one bit at a time, on b's own state.
+				if (b.m > 0) {
+					float dx = (cur - prev) / (float) b.m, x = prev;
+					Pt2399::Coef k = b.coef();
+					for (int j = 0; j < b.m; j++) {
+						x += dx;
+						int bit = x > b.mod.v ? 1 : 0;
+						Pt2399::advanceC(b.mod, bit, k);
+						b.ram[b.w] = (uint8_t) bit;
+						if (++b.w == (uint32_t) Pt2399::kBits) b.w = 0;
+					}
+				}
+				prev = cur;
+			}
+			if (a.w != b.w || a.mod.v != b.mod.v || a.mod.u != b.mod.u || a.mod.hist != b.mod.hist
+			    || a.dem.v != b.dem.v || a.ram != b.ram)
+				bad++;
+		}
+		checks++;
+		if (bad) { failures++; printf("  FAIL  advanceSel drifted from advanceC (%d of 2 clocks)\n", bad); }
+	}
+	printf("T7  modulate() is bit-identical to the one-bit-at-a-time update\n");
+
+	// --- T8: the pipelined demodulator changes nothing -----------------------
+	// With pipeline on, modulate(n) also runs demod(n+1) in its loop, on a guess
+	// of the next sample's bit count and clock. Against a loop with it off the
+	// output must be identical to the last bit -- steady TIME, a TIME step (the
+	// guess is wrong for exactly one sample), a slow sweep (never steady), a
+	// reset in the middle, and 2x oversampling.
+	{
+		int bad = 0;
+		struct Sc { float d; int os; int mode; float echo; };
+		const Sc scs[] = {
+			{0.030f, 1, 0, 0.9f}, {0.030f, 2, 0, 1.3f}, {0.120f, 1, 1, 0.8f},
+			{0.050f, 1, 2, 1.1f}, {0.400f, 2, 2, 0.9f}, {0.030f, 1, 3, 1.2f},
+		};
+		for (const Sc& sc : scs) {
+			Pt2399Loop a, b;
+			a.setSampleRate(48000.f, sc.os); b.setSampleRate(48000.f, sc.os);
+			b.chip.pipeline = false;
+			if (!a.chip.pipeline) { bad++; continue; }
+			a.echo = b.echo = sc.echo; a.chipNoise = b.chipNoise = 0.5f;
+			a.delaySec = b.delaySec = sc.d;
+			racketeer::Noise n;
+			for (int i = 0; i < 48000 * 3; i++) {
+				float d = sc.d;
+				if (sc.mode == 1 && i > 60000) d = sc.d * 0.5f;                  // one step
+				if (sc.mode == 2) d = sc.d * (1.f + 0.4f * std::sin(i * 3e-4f)); // sweep
+				if (sc.mode == 3 && (i % 5000) == 4999) d = sc.d * 2.f;          // repeated steps
+				a.delaySec = b.delaySec = d;
+				if (sc.mode == 3 && i == 70000) { a.reset(); b.reset(); }
+				a.setFilter(3000.f, 0.2f); b.setFilter(3000.f, 0.2f);
+				for (int k = 0; k < sc.os; k++) {
+					float x = i < 3000 ? 0.5f * n.white() : 0.f;
+					float da, db;
+					float ya = a.process(x, da), yb = b.process(x, db);
+					if (ya != yb || da != db) { bad++; i = 1 << 30; break; }
+				}
+			}
+		}
+		checks++;
+		if (bad) { failures++; printf("  FAIL  pipelined demod differs from the plain loop (%d)\n", bad); }
+	}
+	printf("T8  the pipelined demodulator is bit-identical\n");
+
 	printf("\n%d checks, %d failures\n", checks, failures);
 	return failures ? 1 : 0;
 }

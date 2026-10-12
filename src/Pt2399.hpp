@@ -91,6 +91,27 @@ struct Pt2399 {
     int m = 0;                                  // bits this audio sample
     float lastOut = 0.f;
 
+    /** Pipelining, for a caller with feedback around the chip (Racketeer):
+        demod() then modulate() each sample, the modulator's input depending on
+        the demodulator's output. The next sample's demodulator reads bits the
+        current modulate() does not touch ([w+m, w+m+m') against [w, w+m)), so
+        modulate() can run it in the same loop -- two independent chains
+        overlap where two separate loops each wait on their own. It has to
+        guess m' and the clock for the next sample; demod() takes the guess
+        only if both came true and otherwise discards it and does the work as
+        before. Either way the result is bit-identical. Off by default. */
+    bool pipeline = false;
+    struct Spec {
+        bool valid = false;
+        Adm dem;
+        double sum = 0.0, rate = 0.0;
+        int m = 0;
+        uint32_t w = 0;
+        float alpha = 0.f, kSyl = 0.f, vsMin = 0.f, vsMax = 0.f, clipV = 0.f;
+    } spec;
+    double lastBeginRate = -1.0;
+    bool steady = false;                        // clock unchanged since last begin()
+
     Pt2399() { ram.assign(kBits, 0); reset(); }
 
     void reset() {
@@ -98,6 +119,9 @@ struct Pt2399 {
         w = 0;
         mod = Adm(); dem = Adm();
         acc = 0.0; m = 0; lastOut = 0.f;
+        spec.valid = false;
+        lastBeginRate = -1.0;
+        steady = false;
     }
 
     void setSampleRate(double fs) { fsAudio = fs; }
@@ -128,6 +152,8 @@ struct Pt2399 {
 
     /** Number of clock bits that fall in this audio sample. */
     int begin() {
+        steady = bitRate == lastBeginRate;
+        lastBeginRate = bitRate;
         acc += bitRate / fsAudio;
         m = (int)acc;
         acc -= m;
@@ -153,10 +179,42 @@ struct Pt2399 {
     }
     inline void advance(Adm& s, int bit) const { advanceC(s, bit, coef()); }
 
+    /** advanceC() for the modulator, whose `bit` is the comparator's decision on
+        the integrator it is about to update. Written as above, each bit waits on
+        the last one's whole chain (compare, run filter, step size, integrate,
+        clip). Here both outcomes are computed from the incoming state, which
+        does not depend on the bit, and the bit only picks -- the same arithmetic
+        in the same order, with the chain cut to the integrator's own
+        subtract/fma/clamp. ~1.8x on the modulator loop at the fast clocks. */
+    static inline void advanceSel(Adm& s, int bit, const Coef& k) {
+        const uint8_t h0 = (uint8_t)((s.hist << 1) & 7), h1 = (uint8_t)(h0 | 1);
+        const float r0 = h0 == 0 ? 1.f : 0.f, r1 = h1 == 7 ? 1.f : 0.f;
+        const float u0 = s.u + k.kSyl * (r0 - s.u), u1 = s.u + k.kSyl * (r1 - s.u);
+        const float span = k.vsMax - k.vsMin;
+        const float vs0 = k.vsMin + span * u0, vs1 = k.vsMin + span * u1;
+        float v0 = s.v + k.alpha * (-vs0 - s.v);
+        float v1 = s.v + k.alpha * (vs1 - s.v);
+        v0 = v0 > k.clipV ? k.clipV : (v0 < -k.clipV ? -k.clipV : v0);
+        v1 = v1 > k.clipV ? k.clipV : (v1 < -k.clipV ? -k.clipV : v1);
+        s.hist = bit ? h1 : h0;
+        s.u = bit ? u1 : u0;
+        s.v = bit ? v1 : v0;
+    }
+
     /** Pin 12: the demodulator's output, averaged over this audio sample. Reads
         the bits that were written kBits clocks ago; call before modulate(). */
     float demod() {
-        if (m <= 0) return lastOut;
+        if (m <= 0) { spec.valid = false; return lastOut; }
+        if (spec.valid) {
+            spec.valid = false;
+            if (spec.m == m && spec.w == w && spec.rate == bitRate
+                && spec.alpha == alpha && spec.kSyl == kSyl && spec.vsMin == vsMin
+                && spec.vsMax == vsMax && spec.clipV == clipV) {
+                dem = spec.dem;
+                lastOut = (float)(assumed::CHIP_POLARITY * spec.sum / m);
+                return lastOut;
+            }
+        }
         double sum = 0.0;
         uint32_t idx = w;
         for (int j = 0; j < m; j++) {
@@ -171,16 +229,61 @@ struct Pt2399 {
     /** The comparator and OP1: `x0` to `x1` is LPF1's output across this audio
         sample. Writes the new bits over the ones demod() just read. */
     void modulate(float x0, float x1) {
+        spec.valid = false;
         if (m <= 0) return;
         float dx = (x1 - x0) / (float)m;
         float x = x0;
-        for (int j = 0; j < m; j++) {
-            x += dx;
-            int bit = x > mod.v ? 1 : 0;
-            advance(mod, bit);
-            ram[w] = (uint8_t)bit;
-            if (++w == (uint32_t)kBits) w = 0;
+        // State in locals for the pass: a byte store into `ram` would otherwise
+        // force a reload of `mod` and `w` on every bit.
+        Adm md = mod;
+        const Coef k = coef();
+        uint32_t wr = w;
+        uint8_t* r = ram.data();
+        // The next sample's bit count, if the clock holds: what begin() will
+        // compute then, to the same arithmetic.
+        int m2 = 0;
+        if (pipeline && steady) {
+            m2 = (int)(acc + bitRate / fsAudio);
+            if (m2 > 0 && m + m2 >= kBits / 2) m2 = 0;
         }
+        int j = 0;
+        if (m2 > 0) {
+            Adm d = dem;
+            double sum = 0.0;
+            uint32_t rd = wr + (uint32_t)m;
+            if (rd >= (uint32_t)kBits) rd -= (uint32_t)kBits;
+            const int both = m < m2 ? m : m2;
+            for (; j < both; j++) {
+                advanceC(d, r[rd], k);
+                sum += d.v;
+                if (++rd == (uint32_t)kBits) rd = 0;
+                x += dx;
+                int bit = x > md.v ? 1 : 0;
+                advanceSel(md, bit, k);
+                r[wr] = (uint8_t)bit;
+                if (++wr == (uint32_t)kBits) wr = 0;
+            }
+            for (int i = both; i < m2; i++) {
+                advanceC(d, r[rd], k);
+                sum += d.v;
+                if (++rd == (uint32_t)kBits) rd = 0;
+            }
+            spec.valid = true;
+            spec.dem = d; spec.sum = sum; spec.m = m2;
+            spec.rate = bitRate;
+            spec.alpha = alpha; spec.kSyl = kSyl; spec.vsMin = vsMin;
+            spec.vsMax = vsMax; spec.clipV = clipV;
+        }
+        for (; j < m; j++) {
+            x += dx;
+            int bit = x > md.v ? 1 : 0;
+            advanceSel(md, bit, k);
+            r[wr] = (uint8_t)bit;
+            if (++wr == (uint32_t)kBits) wr = 0;
+        }
+        mod = md;
+        w = wr;
+        spec.w = wr;
     }
 
     /** demod() then modulate(), in one pass, for a caller whose modulator input
@@ -235,7 +338,7 @@ private:
             t.sum += t.dem.v;
             t.x += t.dx;
             int bit = t.x > t.mod.v ? 1 : 0;
-            advanceC(t.mod, bit, t.k);
+            advanceSel(t.mod, bit, t.k);
             ram[t.w] = (uint8_t)bit;
             if (++t.w == (uint32_t)kBits) t.w = 0;
         };

@@ -36,6 +36,7 @@
 #include <vector>
 
 #include "../Pt2399.hpp"
+#include "../DspCache.hpp"
 
 namespace racketeer {
 
@@ -141,16 +142,22 @@ struct Pt2399Loop {
 	Svf svf;
 	Noise noise;
 
+	// Knob-rate values kept out of the per-sample path (see DspCache.hpp).
+	mt::Cache noiseScaleC;       // keyed on chipNoise
+	float lastCut = -1.f, lastRes = -1.f, lastFs = -1.f;   // setFilter()'s memo
+
 	// Read-out.
 	float fsInternal = 1.f;      // the chip's bit clock, Hz
 
 	/** `base` is the engine rate, `os` the oversampling factor the loop runs at. */
 	void setSampleRate(float base, int os) {
+		chip.pipeline = true;        // feedback around the chip: see Pt2399::pipeline
 		fs = base * (float)os;
 		chip.setSampleRate((double)fs);
 		dc.setSampleRate(fs);
 		in1.setCutoff(kInputFc, fs);
 		in2.a = in1.a;
+		lastFs = -1.f;               // the filter's tan is for the old rate
 		reset();
 	}
 
@@ -164,7 +171,13 @@ struct Pt2399Loop {
 		svf.reset();
 	}
 
-	void setFilter(float cutoffHz, float res) { svf.set(cutoffHz, fs, res); }
+	/** Called every sample by the module; the tan inside only runs when the
+	    cutoff, the resonance or the rate actually moved. */
+	void setFilter(float cutoffHz, float res) {
+		if (cutoffHz == lastCut && res == lastRes && fs == lastFs) return;
+		lastCut = cutoffHz; lastRes = res; lastFs = fs;
+		svf.set(cutoffHz, fs, res);
+	}
 
 	/** One sample. `x` is what goes into the loop (input, seed, injected noise),
 	    in +-1 units. Returns the filtered output; `dirty` gets the pre-filter tap. */
@@ -199,8 +212,12 @@ struct Pt2399Loop {
 
 		// --- the comparator: noise floor, then the modulator writes the RAM ---
 		float cur = (float)volts() * v;
-		if (chipNoise > 0.f)
-			cur += (float)kNoiseV * std::pow(20.f, 2.f * chipNoise - 1.f) * 1.7320508f * noise.white();
+		if (chipNoise > 0.f) {
+			const float scale = noiseScaleC.get(chipNoise, [](float c) {
+				return (float)kNoiseV * std::pow(20.f, 2.f * c - 1.f) * 1.7320508f;
+			});
+			cur += scale * noise.white();
+		}
 		chip.modulate(prevIn, cur);
 		prevIn = cur;
 
