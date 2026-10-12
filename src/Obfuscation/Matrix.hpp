@@ -13,6 +13,9 @@
 #include <cmath>
 #include <cstdint>
 #include <algorithm>
+#if defined(__ARM_NEON)
+#include <arm_neon.h>
+#endif
 
 namespace obf {
 
@@ -47,6 +50,7 @@ struct Svf {
 		a3 = g * a2;
 	}
 	void reset() { ic1 = ic2 = 0.f; }
+	float peak() const { return std::max(std::fabs(ic1), std::fabs(ic2)); }
 	/** lp and hp of one 2nd-order Butterworth section. */
 	void run(float x, float& lp, float& hp) {
 		float v3 = x - ic2;
@@ -64,6 +68,7 @@ struct LR4 {
 	Svf lp1, lp2, hp1, hp2;
 	void set(float fc, float sr) { lp1.set(fc, sr); lp2.set(fc, sr); hp1.set(fc, sr); hp2.set(fc, sr); }
 	void reset() { lp1.reset(); lp2.reset(); hp1.reset(); hp2.reset(); }
+	float peak() const { return std::max(std::max(lp1.peak(), lp2.peak()), std::max(hp1.peak(), hp2.peak())); }
 	void run(float x, float& lo, float& hi) {
 		float l, h, d;
 		lp1.run(x, l, d); lp2.run(l, lo, d);
@@ -118,8 +123,16 @@ struct Chain {
 	    has begun to settle before it is heard. (Set `prune` false to run every stage on every sample.) */
 	struct Tap { int run, k; float frac; };
 	/** The per-sample bookkeeping before the stages run: slew the stage count, find the tap and how many stages must run. */
+	void slewCount() { nSm += clampf((nTarget - nSm) * 0.01f, -0.02f, 0.02f); }
+	void zeroState() { for (int i = 0; i < MAX_STAGES; i++) z1[i] = z2[i] = 0.f; ran = 0; }
+	/** Largest |state| among the stages that have run (the rest hold zero, see begin()). */
+	float peakState() const {
+		float m = 0.f;
+		for (int i = 0; i < ran; i++) m = std::max(m, std::max(std::fabs(z1[i]), std::fabs(z2[i])));
+		return m;
+	}
 	Tap begin() {
-		nSm += clampf((nTarget - nSm) * 0.01f, -0.02f, 0.02f);
+		slewCount();
 		const int k = active();
 		const int run = needed();
 		for (int i = run; i < ran; i++) z1[i] = z2[i] = 0.f;
@@ -167,6 +180,67 @@ struct Chain {
 	}
 };
 
+/** The three bands side by side, one stage at a time: lane b of every array is band b's stage i (lane 3 is
+ *  spare and stays at rest). The bands are independent chains of the same length, so one 4-lane operation
+ *  does a stage for all of them -- about a third of the instructions of running them one after another,
+ *  and the stage is still a single fused multiply-add deep on the signal's way through (see Chain::stage). */
+struct alignas(16) Pk {
+	float a1[4], a2[4], a3[4], ca[4], k2[4], z1[4], z2[4];
+	void rest() {
+		for (int l = 0; l < 4; l++) { a1[l] = 1.f; a2[l] = a3[l] = 0.f; ca[l] = 1.f; k2[l] = 2.f; z1[l] = z2[l] = 0.f; }
+	}
+};
+
+/** Runs `run` stages of the packed chains on in[0..2]; the output tap interpolates between the input and output
+ *  of stage k (1-based) by frac, as Chain::process does. `simd` false runs the same arithmetic one lane at a time. */
+inline void stages3(Pk* pk, int run, int k, float frac, const float* in, float* out, bool simd) {
+	float before[4] = {in[0], in[1], in[2], 0.f}, after[4] = {in[0], in[1], in[2], 0.f};
+#if defined(__ARM_NEON)
+	if (simd) {
+		float32x4_t v = vld1q_f32(before), bef = v, aft = v;
+		auto step = [&](int i) {
+			Pk& q = pk[i];
+			const float32x4_t a1 = vld1q_f32(q.a1), a2 = vld1q_f32(q.a2), a3 = vld1q_f32(q.a3);
+			const float32x4_t z1 = vld1q_f32(q.z1), z2 = vld1q_f32(q.z2);
+			const float32x4_t s = vfmsq_f32(vmulq_f32(a1, z1), a2, z2);               // a1 z1 - a2 z2
+			const float32x4_t v1 = vfmaq_f32(s, a2, v);
+			const float32x4_t v2 = vfmaq_f32(vfmaq_f32(z2, a2, z1), a3, vsubq_f32(v, z2));
+			const float32x4_t two = vdupq_n_f32(2.f);
+			vst1q_f32(q.z1, vfmsq_f32(vmulq_f32(two, v1), vdupq_n_f32(1.f), z1));        // 2 v1 - z1
+			vst1q_f32(q.z2, vfmsq_f32(vmulq_f32(two, v2), vdupq_n_f32(1.f), z2));
+			const float32x4_t nks = vnegq_f32(vmulq_f32(vld1q_f32(q.k2), s));
+			v = vfmaq_f32(nks, vld1q_f32(q.ca), v);                                     // ca v - k2 s
+		};
+		const int tap = k - 1 < run ? k - 1 : run;
+		for (int i = 0; i < tap; i++) step(i);
+		if (tap < run) { bef = v; step(tap); aft = v; for (int i = tap + 1; i < run; i++) step(i); }
+		float b4[4], a4[4];
+		vst1q_f32(b4, bef); vst1q_f32(a4, aft);
+		for (int b = 0; b < 3; b++) { before[b] = b4[b]; after[b] = a4[b]; }
+		if (tap >= run) for (int b = 0; b < 3; b++) before[b] = after[b] = in[b];
+		for (int b = 0; b < 3; b++) out[b] = sanitize(before[b] + frac * (after[b] - before[b]));
+		return;
+	}
+#endif
+	(void) simd;
+	float v[4] = {in[0], in[1], in[2], 0.f};
+	for (int i = 0; i < run; i++) {
+		Pk& q = pk[i];
+		if (i == k - 1) for (int l = 0; l < 3; l++) before[l] = v[l];
+		for (int l = 0; l < 3; l++) {
+			const float z1 = q.z1[l], z2 = q.z2[l];
+			const float s = q.a1[l] * z1 - q.a2[l] * z2;
+			const float v1 = q.a2[l] * v[l] + s;
+			const float v2 = z2 + q.a2[l] * z1 + q.a3[l] * (v[l] - z2);
+			q.z1[l] = 2.f * v1 - z1;
+			q.z2[l] = 2.f * v2 - z2;
+			v[l] = q.ca[l] * v[l] - q.k2[l] * s;
+		}
+		if (i == k - 1) for (int l = 0; l < 3; l++) after[l] = v[l];
+	}
+	for (int b = 0; b < 3; b++) out[b] = sanitize(before[b] + frac * (after[b] - before[b]));
+}
+
 struct Params {
 	float freq = 0.5f;      // 0..1, 40 Hz .. 8 kHz exponential
 	float pinch = 0.3f;     // 0..1 stage Q, 0.5 .. ~30 (concentrates the delay at FREQ)
@@ -181,7 +255,9 @@ struct Params {
 struct Matrix {
 	float sr = 48000.f;
 	LR4 xo1, xo2, xoComp, bright;
-	Chain band[3];
+	Chain band[3];          // coefficients, offsets and the stage count; the running state lives in pk
+	Pk pk[MAX_STAGES];
+	bool simd = true;       // false: the same arithmetic a lane at a time (the test oracle, and builds without NEON)
 	Svf osUp, osUp2, osDn, osDn2;
 	float dcX = 0.f, dcY = 0.f;
 	float env = 0.f, envArm = 1.f, refractory = 0.f;
@@ -191,15 +267,38 @@ struct Matrix {
 	Rng rng;
 	float fired = 0.f;       // decaying flag for the module's LED
 
+	// Silence costs nothing: once the input is exactly zero and every state has decayed under kIdleFloor
+	// (-400 dB; the output is flushed to zero below 1e-25 anyway) the states are zeroed and the audio path
+	// is skipped until a non-zero sample arrives. Same output to rounding; set `idleGate` false for the old path.
+	static constexpr float kIdleFloor = 1e-20f;
+	bool idleGate = true;
+	bool idle = false;       // states are zero and the audio path is not running
+	bool stale = false;      // coefficients were not recomputed while idle
+	// Coefficients are recomputed only when something that feeds them moved.
+	bool settled = false;    // off/qoff have stopped slewing to tgt/qtgt
+	bool keyValid = false;
+	float keyFreq = 0.f, keyPinch = 0.f, keySpread = 0.f, keySr = 0.f;
+	int keyNeed[3] = {0, 0, 0};
+	float fRatio[3][MAX_STAGES], qRatio[3][MAX_STAGES];
+	float ratioSpread = 0.f;
+	int ratioN = 0;
+	bool ratioValid = false;
+	// Parameter-only gains, held until their parameter moves (pow and tanh are not free at every sample).
+	float gDrive = -1.f, gBright = -1.f, gBoost = -1.f;
+	float gTd = 1.f, gBrightMul = 1.f, gBoostMul = 1.f;
+
 	Matrix() { setRate(48000.f); reset(); }
 	void setRate(float s) { sr = s; xo1.set(xoLoF, sr); xo2.set(xoHiF, sr); xoComp.set(xoHiF, sr); bright.set(3000.f, sr);
 		osUp.set(0.4f * sr, 2.f * sr); osUp2.set(0.4f * sr, 2.f * sr); osDn.set(0.4f * sr, 2.f * sr); osDn2.set(0.4f * sr, 2.f * sr); }
 	void reset() {
 		xo1.reset(); xo2.reset(); xoComp.reset(); bright.reset();
 		for (int b = 0; b < 3; b++) band[b].reset();
+		for (int i = 0; i < MAX_STAGES; i++) pk[i].rest();
 		osUp.reset(); osUp2.reset(); osDn.reset(); osDn2.reset();
 		dcX = dcY = 0.f; env = 0.f; envArm = 1.f; refractory = 0.f; ctr = 0; fired = 0.f;
 		randWas = gateWas = false;
+		idle = stale = settled = keyValid = ratioValid = false;
+		gDrive = gBright = gBoost = -1.f;
 		rng.seed(0x1234567u);
 		for (int b = 0; b < 3; b++) ladder(b);
 		for (int b = 0; b < 3; b++) for (int i = 0; i < MAX_STAGES; i++) { band[b].off[i] = band[b].tgt[i]; band[b].qoff[i] = band[b].qtgt[i]; }
@@ -214,12 +313,14 @@ struct Matrix {
 			band[b].tgt[i] = 2.f * p - 1.f;
 		}
 		for (int i = 0; i < MAX_STAGES; i++) band[b].qtgt[i] = 0.f;
+		settled = false;
 	}
 	void roll() {
 		for (int b = 0; b < 3; b++) {
 			for (int i = 0; i < MAX_STAGES; i++) band[b].tgt[i] = rng.bi();
 			for (int i = 0; i < MAX_STAGES; i++) band[b].qtgt[i] = rng.bi();
 		}
+		settled = false;
 		fired = 1.f;
 	}
 
@@ -227,25 +328,81 @@ struct Matrix {
 
 	static float pinchQ(float k) { return 0.5f * std::exp2(clampf(k, 0.f, 1.f) * 5.9f); }
 
-	void updateCoeffs(const Params& p) {
+	/** The scatter offsets glide toward their targets. Returns true if any moved. */
+	bool slewOffsets() {
+		if (settled) return false;
+		bool moved = false;
+		for (int b = 0; b < 3; b++) {
+			Chain& c = band[b];
+			for (int i = 0; i < MAX_STAGES; i++) {
+				const float o = c.off[i] + (c.tgt[i] - c.off[i]) * 0.05f;
+				const float q = c.qoff[i] + (c.qtgt[i] - c.qoff[i]) * 0.05f;
+				moved |= (o != c.off[i]) | (q != c.qoff[i]);
+				c.off[i] = o; c.qoff[i] = q;
+			}
+		}
+		if (!moved) settled = true;
+		return moved;
+	}
+
+	void computeCoeffs(const Params& p) {
 		static const float bandMul[3] = {0.25f, 1.f, 4.f};
 		float f0 = freqHz(p.freq);
 		float q0 = pinchQ(p.pinch);
 		float target = clampf(p.stages, 1.f, (float)MAX_STAGES);
+		// The per-stage scatter ratios depend on SPREAD and the offsets only; with the offsets settled a FREQ or
+		// PINCH sweep reuses them (the same values, so the same coefficients) instead of two exp2 a stage.
+		int ratioNeed = 0;
+		for (int b = 0; b < 3; b++) ratioNeed = std::max(ratioNeed, band[b].needed());
+		if (!(ratioValid && settled && ratioSpread == p.spread && ratioNeed <= ratioN)) {
+			for (int b = 0; b < 3; b++)
+				for (int i = 0; i < ratioNeed; i++) {
+					fRatio[b][i] = std::exp2(p.spread * 2.f * band[b].off[i]);
+					qRatio[b][i] = std::exp2(p.spread * 2.f * band[b].qoff[i]);
+				}
+			ratioN = ratioNeed; ratioSpread = p.spread; ratioValid = settled;
+		}
 		for (int b = 0; b < 3; b++) {
 			Chain& c = band[b];
 			float fb = f0 * bandMul[b];
 			c.nTarget = target;
 			const int need = c.needed();
-			for (int i = 0; i < MAX_STAGES; i++) {
-				c.off[i] += (c.tgt[i] - c.off[i]) * 0.05f;
-				c.qoff[i] += (c.qtgt[i] - c.qoff[i]) * 0.05f;
-				if (i >= need) continue;   // a stage that does not run needs no coefficients
-				float f = clampf(fb * std::exp2(p.spread * 2.f * c.off[i]), 10.f, 0.45f * sr);
-				float q = clampf(q0 * std::exp2(p.spread * 2.f * c.qoff[i]), 0.5f, 40.f);
+			keyNeed[b] = need;
+			for (int i = 0; i < need; i++) {   // a stage that does not run needs no coefficients
+				float f = clampf(fb * fRatio[b][i], 10.f, 0.45f * sr);
+				float q = clampf(q0 * qRatio[b][i], 0.5f, 40.f);
 				c.setStage(i, f, q, sr);
+				pk[i].a1[b] = c.a1[i]; pk[i].a2[b] = c.a2[i]; pk[i].a3[b] = c.a3[i]; pk[i].ca[b] = c.ca[i]; pk[i].k2[b] = c.k2[i];
 			}
 		}
+		keyFreq = p.freq; keyPinch = p.pinch; keySpread = p.spread; keySr = sr; keyValid = true;
+	}
+
+	/** Control-rate refresh: slew the offsets, then recompute the stage coefficients only if an input to
+	    them changed (offsets still moving, FREQ / PINCH / SPREAD, the stage count). Same values as
+	    recomputing every time, since nothing else feeds them. */
+	void updateCoeffs(const Params& p) {
+		const bool moved = slewOffsets();
+		for (int b = 0; b < 3; b++) band[b].nTarget = clampf(p.stages, 1.f, (float)MAX_STAGES);
+		bool same = keyValid && !moved && keyFreq == p.freq && keyPinch == p.pinch && keySpread == p.spread && keySr == sr;
+		for (int b = 0; same && b < 3; b++) same = band[b].needed() == keyNeed[b];
+		if (!same) computeCoeffs(p);
+	}
+
+	bool quiet() const {
+		float m = std::max(std::max(xo1.peak(), xo2.peak()), std::max(xoComp.peak(), bright.peak()));
+		m = std::max(m, std::max(std::max(osUp.peak(), osUp2.peak()), std::max(osDn.peak(), osDn2.peak())));
+		m = std::max(m, std::max(std::fabs(dcX), std::fabs(dcY)));
+		for (int i = 0; i < band[0].ran; i++)
+			for (int l = 0; l < 3; l++) m = std::max(m, std::max(std::fabs(pk[i].z1[l]), std::fabs(pk[i].z2[l])));
+		return m < kIdleFloor;
+	}
+	void zeroStates() {
+		xo1.reset(); xo2.reset(); xoComp.reset(); bright.reset();
+		osUp.reset(); osUp2.reset(); osDn.reset(); osDn2.reset();
+		dcX = dcY = 0.f;
+		for (int b = 0; b < 3; b++) band[b].zeroState();
+		for (int i = 0; i < MAX_STAGES; i++) for (int l = 0; l < 4; l++) pk[i].z1[l] = pk[i].z2[l] = 0.f;
 	}
 
 	/** x in +-1. clockEdge: rising edge of the clock jack. gate: RANDOM gate level (held = set frozen).
@@ -270,9 +427,23 @@ struct Matrix {
 		randWas = randOn;
 		gateWas = gate;
 
-		if (ctr == 0) updateCoeffs(p);
+		if (idle && x != 0.f) {          // signal back: the coefficients were left where they were
+			idle = false;
+			if (stale) { computeCoeffs(p); stale = false; }
+		}
+		if (ctr == 0) {
+			if (idle) slewOffsets();      // keep the glide on time; the stages are recomputed on wake
+			else updateCoeffs(p);
+		}
+		const bool tick = ctr == 0;
 		ctr = (ctr + 1) % CTRL_DIV;
 		if (fired > 0.f) fired -= 1.f / (0.1f * sr);
+
+		if (idleGate && !idle && tick && x == 0.f && quiet()) { zeroStates(); idle = true; stale = true; }
+		if (idle) {
+			for (int b = 0; b < 3; b++) { band[b].nTarget = clampf(p.stages, 1.f, (float)MAX_STAGES); band[b].slewCount(); }
+			return 0.f;
+		}
 
 		// split
 		float lo1, hi1, mid, hi;
@@ -282,13 +453,21 @@ struct Matrix {
 
 		float bands[3] = {lo, mid, hi};
 		float bandOut[3];
-		Chain::process3(band, bands, bandOut);
+		{
+			// The three bands share one stage count and slew it together, so one tap and one run length serve all.
+			const int oldRan = band[0].ran;
+			Chain::Tap t[3];
+			for (int b = 0; b < 3; b++) t[b] = band[b].begin();
+			for (int i = t[0].run; i < oldRan; i++) for (int l = 0; l < 4; l++) pk[i].z1[l] = pk[i].z2[l] = 0.f;
+			stages3(pk, t[0].run, t[0].k, t[0].frac, bands, bandOut, simd);
+		}
 		float sum = 0.f;
 		for (int b = 0; b < 3; b++) sum += bandOut[b];
 
 		// saturator, 2x oversampled
 		float d = 1.f + 19.f * p.drive;
-		float td = std::tanh(d);
+		if (p.drive != gDrive) { gDrive = p.drive; gTd = std::tanh(d); }
+		const float td = gTd;
 		float y = 0.f;
 		for (int s = 0; s < 2; s++) {
 			float u = (s == 0 ? 2.f * sum : 0.f), l1, l2, h;
@@ -301,7 +480,8 @@ struct Matrix {
 		// brightness: +-12 dB shelf-ish via LR4 split
 		float bl, bh;
 		bright.run(y, bl, bh);
-		y = bl + bh * std::pow(10.f, (p.bright - 0.5f) * 24.f / 20.f);
+		if (p.bright != gBright) { gBright = p.bright; gBrightMul = std::pow(10.f, (p.bright - 0.5f) * 24.f / 20.f); }
+		y = bl + bh * gBrightMul;
 
 		// dc block
 		float dc = y - dcX + 0.9995f * dcY; dcX = y; dcY = sanitize(dc); y = dcY;
@@ -309,7 +489,8 @@ struct Matrix {
 		// clip then boost
 		float th = 0.1f + 0.9f * p.clip;
 		y = clampf(y, -th, th);
-		y *= std::pow(10.f, p.boost * 24.f / 20.f);
+		if (p.boost != gBoost) { gBoost = p.boost; gBoostMul = std::pow(10.f, p.boost * 24.f / 20.f); }
+		y *= gBoostMul;
 		return clampf(sanitize(y), -2.4f, 2.4f);
 	}
 };

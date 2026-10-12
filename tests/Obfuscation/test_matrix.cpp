@@ -200,6 +200,83 @@ int main() {
 		}
 	}
 
+	// 10. silence is free, and sounds the same: the gated matrix (states zeroed and the audio path skipped once the
+	// input is zero and everything has decayed) against the same matrix with the gate off, through bursts and
+	// silences with FREQ, STAGES, SPREAD and a roll all moving while it is quiet. It must also actually idle.
+	{
+		for (float pinch : { 0.1f, 0.5f }) {
+			Matrix gated, open; open.idleGate = false;
+			Rng r; r.seed(11);
+			Params p; p.pinch = pinch; p.spread = 0.6f; p.stages = 24.f; p.drive = 0.5f;
+			double err = 0, sig = 0; float worst = 0.f; long idleSamples = 0, total = 0;
+			for (int i = 0; i < 48000 * 16; i++) {
+				const int seg = i / 48000;                     // 1 s segments: a burst, then three of silence (it rings out in about 2)
+				const bool burst = (seg % 4) == 0;
+				if (!burst && seg % 4 == 2) {                  // move things while it is quiet
+					p.freq = 0.2f + 0.1f * (float)(seg % 7); p.stages = 8.f + 11.f * (float)(seg % 5); p.spread = 0.2f + 0.1f * (float)(seg % 6);
+				}
+				const bool clk = (i % 20000) == 7000;
+				const float x = burst ? 0.4f * r.bi() : 0.f;
+				const float a = gated.process(x, p, clk, false, true, false), b = open.process(x, p, clk, false, true, false);
+				err += (double)(a - b) * (a - b); sig += (double) b * b; worst = std::max(worst, std::fabs(a - b));
+				idleSamples += gated.idle; total++;
+			}
+			const double rel = 10.0 * std::log10((err + 1e-30) / (sig + 1e-30));
+			printf("   pinch %.1f: gated vs open: error %.1f dB below the signal, worst %.2e, idle %.0f%% of the time\n", pinch, -rel, worst, 100.0 * idleSamples / total);
+			CHECK(rel < -110.0, "idle gate changes the sound at pinch %g: only %.1f dB down", pinch, -rel);
+			CHECK(idleSamples > total / 4, "never went idle at pinch %g (%ld of %ld)", pinch, idleSamples, total);
+		}
+	}
+
+	// 11. the three bands side by side (NEON, and the lane-at-a-time form it falls back to) against three independent
+	// scalar chains: 96 stages at different cutoffs and Qs per band, noise in, the tap sweeping through the chain.
+	for (int simd = 0; simd < 2; simd++) {
+		Chain c[3]; Pk pk[MAX_STAGES]; Rng r; r.seed(21);
+		for (int i = 0; i < MAX_STAGES; i++) pk[i].rest();
+		for (int b = 0; b < 3; b++) {
+			c[b].nSm = c[b].nTarget = 96.f; c[b].prune = false;
+			for (int i = 0; i < 96; i++) {
+				c[b].setStage(i, 60.f * std::exp2(0.07f * (float) i + (float) b), (0.6f + 0.3f * (float) b) * (1.f + 0.03f * (float) i), SR);
+				pk[i].a1[b] = c[b].a1[i]; pk[i].a2[b] = c[b].a2[i]; pk[i].a3[b] = c[b].a3[i]; pk[i].ca[b] = c[b].ca[i]; pk[i].k2[b] = c[b].k2[i];
+			}
+		}
+		double err = 0, sig = 0;
+		for (int n = 0; n < 96000; n++) {
+			const int run = 96, k = 1 + (n / 1000) % 96; const float frac = 0.5f;
+			const float x[3] = {0.3f * r.bi(), 0.3f * r.bi(), 0.3f * r.bi()};
+			float y[3], ref[3];
+			stages3(pk, run, k, frac, x, y, simd != 0);
+			for (int b = 0; b < 3; b++) {
+				c[b].nSm = (float) (k - 1) + 0.5f;  c[b].nTarget = c[b].nSm;   // the tap at stage k, frac 0.5 (begin() leaves nSm alone: no slew needed)
+				float v = x[b], before = x[b], after = x[b];
+				for (int i = 0; i < run; i++) { if (i == k - 1) before = v; c[b].stage(i, v); if (i == k - 1) after = v; }
+				ref[b] = sanitize(before + frac * (after - before));
+				if (n > 4800) { err += (double)(y[b] - ref[b]) * (y[b] - ref[b]); sig += (double) ref[b] * ref[b]; }
+			}
+		}
+		const double rel = 10.0 * std::log10((err + 1e-30) / (sig + 1e-30));
+		printf("   %s: three bands side by side vs three scalar chains: error %.1f dB below the signal\n", simd ? "simd" : "lanes", -rel);
+		CHECK(rel < -100.0, "packed bands drift from the scalar chains (%s): only %.1f dB down", simd ? "simd" : "lanes", -rel);
+	}
+
+	// 12. the matrix itself: simd against lane-at-a-time, through noise with STAGES, FREQ, SPREAD and rolls moving.
+	{
+		Matrix a, b; b.simd = false; Rng r; r.seed(31);
+		Params p; p.pinch = 0.6f; p.spread = 0.7f; p.drive = 0.4f; p.stages = 40.f;
+		double err = 0, sig = 0;
+		for (int i = 0; i < 48000 * 6; i++) {
+			p.stages = 4.f + 90.f * (0.5f + 0.5f * std::sin(i * 0.00003f));
+			p.freq = 0.5f + 0.4f * std::sin(i * 0.0002f);
+			const float x = (i / 24000) % 3 == 2 ? 0.f : 0.4f * r.bi();
+			const bool clk = (i % 15000) == 0;
+			const float ya = a.process(x, p, clk, false, true, false), yb = b.process(x, p, clk, false, true, false);
+			if (i > 4800) { err += (double)(ya - yb) * (ya - yb); sig += (double) yb * yb; }
+		}
+		const double rel = 10.0 * std::log10((err + 1e-30) / (sig + 1e-30));
+		printf("   matrix simd vs lanes: error %.1f dB below the signal\n", -rel);
+		CHECK(rel < -90.0, "simd matrix differs from lane-at-a-time: only %.1f dB down", -rel);
+	}
+
 	printf("%d checks, %d failures\n", checks, failures);
 	return failures ? 1 : 0;
 }
