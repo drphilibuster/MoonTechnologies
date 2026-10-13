@@ -20,6 +20,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <map>
+#include <memory>
 #include <string>
 
 using namespace accrual;
@@ -172,13 +173,13 @@ static void testFront() {
 // 3. The plant
 // ---------------------------------------------------------------------------------------------
 static Plant& plantAt(double vdd, double cin = kCin) {
-	static std::map<std::string, Plant*> cache;
+	static std::map<std::string, std::unique_ptr<Plant>> cache;
 	char key[64]; snprintf(key, sizeof key, "%g/%g", vdd, cin * 1e12);
 	auto it = cache.find(key);
 	if (it != cache.end()) return *it->second;
-	Plant* p = new Plant;
+	std::unique_ptr<Plant>& p = cache[key];
+	p.reset(new Plant);
 	p->build(vdd, cin);
-	cache[key] = p;
 	return *p;
 }
 
