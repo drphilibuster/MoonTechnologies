@@ -7,6 +7,7 @@
 #include <cstring>
 #include <map>
 #include <set>
+#include <string>
 #include <vector>
 #include "../../src/Ledger/Effects.hpp"
 #include "../../src/Ledger/Voices.hpp"
