@@ -306,6 +306,9 @@ def do_panel(args, panels, slug):
     except FileNotFoundError:
         rep.warn("contrast", "rsvg-convert not found, so labels were not checked against "
                              "the new ground (brew install librsvg)")
+    except ImportError:
+        rep.warn("contrast", "Pillow not found, so labels were not checked against "
+                             "the new ground (pip install pillow)")
 
     if args.strict and rep.warnings:
         rep.errors.append("--strict: warnings count as errors")

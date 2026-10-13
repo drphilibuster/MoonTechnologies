@@ -4,7 +4,7 @@
     python3 tests/panelkit/test_art_import.py
 
 Runs against a scratch art/panels directory, so it never touches the real one.
-Needs rsvg-convert for the pixel comparisons (SKIPs those without it).
+Needs rsvg-convert and Pillow for the pixel comparisons (SKIPs those without them).
 """
 
 import argparse
@@ -72,7 +72,12 @@ def same(a, b, tol=6):
 
 panel = [p for p in AI.specs().values() if p.slug == "Toll"][0]
 sol = solve(panel)
-have_rsvg = shutil.which("rsvg-convert") is not None
+try:
+    import PIL  # noqa: F401 -- the pixel comparisons need it as well as rsvg-convert
+    have_pil = True
+except ImportError:
+    have_pil = False
+have_rsvg = shutil.which("rsvg-convert") is not None and have_pil
 default_svg = render.panel_svg(panel, sol)
 
 # 1. the template, imported unchanged, is the same panel ---------------------
@@ -209,7 +214,8 @@ if have_rsvg:
     check("the template itself raises no word warnings", "needs 3:1" not in out)
 
 # 9. a rule across the bottom screws is warned about ------------------------------------
-os.unlink(ART.path("Toll"))
+if os.path.exists(ART.path("Toll")):  # 8 leaves none behind when it SKIPs
+    os.unlink(ART.path("Toll"))
 span = hdr + ('\n<g id="EXPORT_07_Rules"><rect x="0" y="124.8" width="%.3f" height="0.5" '
               'fill="#7b9a6d"/></g></svg>' % panel.w)
 open(path, "w").write(span)
