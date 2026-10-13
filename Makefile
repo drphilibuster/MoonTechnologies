@@ -106,7 +106,9 @@ DSP56300_SRC := $(filter-out %test.cpp %tests.cpp, \
 	$(wildcard vendor/dsp56300/asmjit/core/*.cpp vendor/dsp56300/asmjit/x86/*.cpp vendor/dsp56300/asmjit/arm/*.cpp) \
 	vendor/gearmulator/hardwareLib/hd44780.cpp vendor/gearmulator/hardwareLib/lcdfonts.cpp
 SOURCES += $(DSP56300_SRC)
-DSP56300_OBJ := $(patsubst %, build/%.o, $(DSP56300_SRC) src/Contagion/VirusC.cpp)
+# src/Depreciation/HspJit.cpp is the PCM 70's HSP as native code (asmjit, C++17); Depreciation.cpp, which stays C++11, is built with PCM70_HSP_JIT to call it.
+DSP56300_OBJ := $(patsubst %, build/%.o, $(DSP56300_SRC) src/Contagion/VirusC.cpp src/Depreciation/HspJit.cpp)
+build/src/Depreciation/Depreciation.cpp.o: FLAGS += -DPCM70_HSP_JIT
 $(DSP56300_OBJ): CXXFLAGS += -std=gnu++17 -DDSP56300_DEBUGGER=0 -DASMJIT_STATIC -Ivendor/dsp56300
 $(patsubst %, build/%.o, $(DSP56300_SRC)): CXXFLAGS += -w
 ifeq ($(shell uname -s), Darwin)

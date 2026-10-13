@@ -11,16 +11,19 @@
 // There are no CV lanes: eight of them were each a stream of edits into the master Z80 through the firmware's own soft-knob routine, and that routine is slow
 // enough that the machine spent most of its time answering them. The ids they held are kept (below) so a saved patch's cables and knobs stay where they were.
 //
-// Threads: the machine is built and booted (about nine seconds of its own time) on a worker, then handed to the audio thread, which is the only thing that
-// touches it afterwards. The UI reads a snapshot the audio thread leaves under a lock it never waits on, and asks for anything it wants done (bank import,
-// configuration bytes) through a queue the audio thread drains.
+// Threads: the machine is built and booted (about nine seconds of its own time) on a worker, then handed to the audio thread. From there it runs either on the
+// audio thread itself, or, by default, on a worker of its own (src/Pcm70Offload.hpp): the audio thread then only pushes the input sample and takes the output
+// sample, which costs the engine one audio block of latency and nearly all of the module's meter. Whichever thread runs it is the only one that touches the
+// machine. The panel's state goes to it as time-stamped snapshots about once a millisecond, the clock and run edges as time-stamped events; what it moves on
+// its own (the knobs that follow the firmware) comes back through a queue the audio thread applies. The UI reads a snapshot the machine thread leaves under a
+// lock it never waits on, and asks for anything it wants done (bank import, configuration bytes) through a queue the machine thread drains.
 #include "../plugin.hpp"
 #include "Panel.hpp"
 #include "Roms.hpp"
 #include "../Pcm70Panel.hpp"
 #include "../Pcm70BatRam.hpp"
 #include "../Pcm70Names.hpp"
-#include "../Pcm70Names.hpp"
+#include "../Pcm70Offload.hpp"
 
 #include <osdialog.h>
 
@@ -88,14 +91,14 @@ struct Depreciation : Module {
 	std::string status = "LOAD ROMS";
 
 	// the machine
-	std::unique_ptr<pcm70::Voice> voice;               // audio thread only
+	std::unique_ptr<pcm70::Voice> voice;               // the machine thread only (the audio thread, or the worker while one runs)
 	std::atomic<pcm70::Voice*> handover{nullptr};
 	std::thread bootThread;
 	std::atomic<bool> booting{false};
 	double voiceRate = 0.0;
-	pcm70::PanelLogic logic;                            // audio thread only
+	pcm70::PanelLogic logic;                            // the machine thread only
 
-	// UI <-> audio
+	// UI <-> machine
 	std::mutex snapMutex;
 	pcm70::PanelLogic::Snap snap;                       // guarded by snapMutex
 	std::vector<uint8_t> battery;                       // the 8 KB RAM image; guarded by snapMutex
@@ -106,10 +109,29 @@ struct Depreciation : Module {
 	std::vector<std::function<void(pcm70::Voice&)>> cmds;
 	std::atomic<bool> cmdPending{false};
 
-	// audio-thread bookkeeping
+	// audio thread <-> machine thread (the same queues whether the machine runs inline or on the worker)
+	struct Mail { int64_t at = 0; uint32_t ack = 0; pcm70::PanelLogic::In in; };       // the panel, as of stream index `at`; `ack` = knob updates applied so far
+	struct Edge { int64_t at; uint8_t kind; };                                          // 0 clock, 1 run
+	struct KnobSet { uint32_t seq; uint8_t cell; float value; };                        // the machine moved a knob to follow the firmware
+	pcm70::Spsc<Mail, 512> mails;
+	pcm70::Spsc<Edge, 256> edges;
+	pcm70::Spsc<KnobSet, 512> knobSets;
+	std::atomic<bool> bypassLit{false};
+	std::atomic<int> factoryTop{pcm70::PanelLogic::FACTORY_SLOTS - 1};                  // the highest FACTORY slot that holds a program
+	pcm70::Offload offload;
+	std::atomic<bool> useWorker{true};                  // run the machine on a worker thread (menu; saved in the patch)
+	std::atomic<int> headroomMs{1};                     // samples in flight beyond the engine's block, in ms (menu; saved)
+	std::atomic<int> latencyShown{0};
+	// the machine thread's own memory
+	Mail cur; bool haveCur = false;                     // the panel as of the latest snapshot due (none yet: the machine's own defaults stand)
 	int ctlCount = 0, snapCount = 0, ramCount = 0;
-	int lastFactoryCached = pcm70::PanelLogic::FACTORY_SLOTS - 1; bool factoryMissing[pcm70::ProgramNames::SLOTS] = {};     // from `names`, refreshed with the snapshot
-	float prevClock = 0.f, prevRun = 0.f;
+	bool factoryMissing[pcm70::ProgramNames::SLOTS] = {};     // from `names`, refreshed with the snapshot
+	uint32_t knobSeq = 0, knobPendingSeq[ROWS * COLS] = {}; float knobPendingValue[ROWS * COLS] = {};
+	// audio-thread bookkeeping
+	bool offloaded = false;                             // the worker owns the machine right now
+	int64_t inlineIndex = 0;                            // stream index when the machine runs on the audio thread
+	int gatherCount = 0, belowCount = 0;
+	uint32_t knobAck = 0;
 	bool clockWas = false, runWas = false;
 
 	Depreciation() {
@@ -142,6 +164,7 @@ struct Depreciation : Module {
 	}
 
 	~Depreciation() {
+		offload.stop();
 		cancelNames = true;
 		if (bootThread.joinable()) bootThread.join();
 		delete handover.exchange(nullptr);
@@ -332,6 +355,8 @@ struct Depreciation : Module {
 		json_t* arr = json_array();
 		for (const std::string& p : currentPaths()) json_array_append_new(arr, json_string(p.c_str()));
 		json_object_set_new(root, "romPaths", arr);          // paths only, never the images
+		json_object_set_new(root, "worker", json_boolean(useWorker.load()));
+		json_object_set_new(root, "headroomMs", json_integer(headroomMs.load()));
 		{
 			std::lock_guard<std::mutex> lock(snapMutex);
 			if (battery.size() == 0x2000) json_object_set_new(root, "batteryRam", json_string(base64(battery).c_str()));   // the registers and settings: the user's own, no ROM data
@@ -340,6 +365,8 @@ struct Depreciation : Module {
 	}
 
 	void dataFromJson(json_t* root) override {
+		if (json_t* j = json_object_get(root, "worker")) useWorker = json_is_true(j);
+		if (json_t* j = json_object_get(root, "headroomMs")) headroomMs = clamp((int)json_integer_value(j), 0, 50);
 		if (json_t* b = json_object_get(root, "batteryRam"))
 			if (json_is_string(b)) { std::vector<uint8_t> ram = unbase64(json_string_value(b)); if (ram.size() == 0x2000) { std::lock_guard<std::mutex> lock(snapMutex); battery = ram; } }
 		std::vector<std::string> paths;
@@ -351,43 +378,129 @@ struct Depreciation : Module {
 		if (!paths.empty()) loadFiles(paths);
 	}
 
-	// --- audio ------------------------------------------------------------------------------------
-	void process(const ProcessArgs& args) override {
-		if (restartRequested.exchange(false)) voice.reset();
-		if (voice && std::fabs(args.sampleRate - voiceRate) > 1.0) {          // the host rate changed: the converter stages are rebuilt, the RAM is kept
-			{ std::lock_guard<std::mutex> lock(snapMutex); battery.assign(voice->batteryRam(), voice->batteryRam() + 0x2000); }
-			voice.reset();
-			boot(args.sampleRate);
+	// --- the machine's thread ----------------------------------------------------------------------
+	/** The panel's snapshot to the firmware: levels, program keys, the matrix, the dedicated inputs; and back the knobs the firmware has moved. */
+	void controlTick(pcm70::Voice& v, int n) {
+		pcm70::PanelLogic::In in = cur.in;
+		in.dt = n / voiceRate;
+		// a knob this thread moved is still on its way to the audio thread, which owns the parameter: until it has been applied the old value is not a touch
+		for (int i = 0; i < ROWS * COLS; i++) {
+			if (!knobPendingSeq[i]) continue;
+			if ((int32_t)(knobPendingSeq[i] - cur.ack) > 0) in.knob[i / COLS][i % COLS] = knobPendingValue[i]; else knobPendingSeq[i] = 0;
 		}
-		if (!voice) {
-			if (pcm70::Voice* h = handover.exchange(nullptr)) { voice.reset(h); voiceRate = args.sampleRate; ctlCount = 0; clockWas = runWas = false; logic.powerUp(); }
+		in.programMissing = !in.regMode && in.slot >= 0 && in.slot < pcm70::ProgramNames::SLOTS && factoryMissing[in.slot];
+		pcm70::PanelLogic::Out o;
+		logic.control(v, in, o);
+		for (int r = 0; r < ROWS; r++) for (int c = 0; c < COLS; c++) if (o.setKnob[r][c]) {
+			const int i = r * COLS + c;
+			KnobSet k; k.seq = ++knobSeq; k.cell = (uint8_t)i; k.value = o.knob[r][c];
+			if (knobSets.push(k)) { knobPendingSeq[i] = k.seq; knobPendingValue[i] = k.value; }
 		}
-		if (!voice) {
-			outputs[OUT_L_OUTPUT].setVoltage(0.f); outputs[OUT_R_OUTPUT].setVoltage(0.f); outputs[WET_L_OUTPUT].setVoltage(0.f); outputs[WET_R_OUTPUT].setVoltage(0.f);
-			return;
-		}
+		bypassLit.store(o.bypassLed, std::memory_order_relaxed);
+	}
+
+	/** One sample of the machine, on whichever thread runs it: the commands the UI asked for, the clock and run edges that have come due, the panel's snapshot about
+	    once a millisecond, the audio, and the read-out for the UI. `index` counts the stream's samples; every time stamp is in it. */
+	void machineStep(double vin, int64_t index, double out[4]) {
 		pcm70::Voice& v = *voice;
 		if (cmdPending.load(std::memory_order_relaxed)) {
 			std::unique_lock<std::mutex> lock(cmdMutex, std::try_to_lock);
 			if (lock) { std::vector<std::function<void(pcm70::Voice&)>> run; run.swap(cmds); cmdPending = false; lock.unlock(); for (auto& f : run) f(v); }
 		}
-		// clock and run: edges found per sample
-		if (inputs[CLOCK_INPUT].isConnected()) {
-			const float c = inputs[CLOCK_INPUT].getVoltage(); if (c > 1.f && !clockWas) logic.clockEdge(v); if (c > 1.f) clockWas = true; else if (c < 0.2f) clockWas = false;
-		}
-		if (inputs[RUN_INPUT].isConnected()) {
-			const float c = inputs[RUN_INPUT].getVoltage(); if (c > 1.f && !runWas) logic.runEdge(v); if (c > 1.f) runWas = true; else if (c < 0.2f) runWas = false;
+		for (Edge e; edges.peek(e) && e.at <= index; ) {
+			edges.pop(e);
+			if (e.kind == 0) logic.clockEdge(v); else logic.runEdge(v);
 		}
 		if (--ctlCount <= 0) {
-			const int n = std::max(1, (int)(args.sampleRate / 1000.f)); ctlCount = n;
-			pcm70::PanelLogic::In in; in.dt = n * args.sampleTime;
+			const int n = std::max(1, (int)(voiceRate / 1000.0)); ctlCount = n;
+			for (Mail m; mails.peek(m) && m.at <= index; ) { mails.pop(m); cur = m; haveCur = true; }
+			if (haveCur) controlTick(v, n);
+		}
+		double l, r; v.process(vin, l, r);
+		out[0] = l; out[1] = r; out[2] = v.wetL; out[3] = v.wetR;
+		// what the UI shows
+		if (--snapCount <= 0) {
+			snapCount = std::max(1, (int)(voiceRate / 50.0));
+			std::unique_lock<std::mutex> lock(snapMutex, std::try_to_lock);
+			if (lock) {
+				logic.snapshot(v, snap);
+				int top = pcm70::PanelLogic::FACTORY_SLOTS - 1;
+				for (int s = 0; s < pcm70::ProgramNames::SLOTS; s++) { factoryMissing[s] = names.done && names.name[s].empty(); if (!factoryMissing[s]) top = std::max(top, s); }
+				factoryTop.store(top, std::memory_order_relaxed);
+				if (--ramCount <= 0) { ramCount = 50; battery.assign(v.batteryRam(), v.batteryRam() + 0x2000); }
+			}
+		}
+	}
+
+	/** Audio thread: put the machine on its worker, or take it back. The worker is stopped and joined before anything else touches the machine. */
+	void setOffloaded(bool on, double sampleRate) {
+		if (on == offloaded) return;
+		if (on) {
+			mails.clear(); edges.clear(); cur = Mail(); haveCur = false;
+			const size_t lat = wantedLatency(sampleRate);
+			latencyShown = (int)lat;
+			offload.start([this](double in, int64_t index, double out[4]) { machineStep(in, index, out); }, lat);
+		} else {
+			offload.stop();
+			mails.clear(); edges.clear(); inlineIndex = 0; cur = Mail(); haveCur = false;
+		}
+		offloaded = on;
+	}
+	/** The samples to keep in flight: the engine's block (it calls back to back for a whole block and then waits, and the answers to the first inputs must exist
+	    by the time the last of them has been asked for) and the menu's headroom for the worker's own scheduling. */
+	size_t wantedLatency(double sampleRate) const {
+		const int block = std::max(1, APP->engine->getBlockFrames());
+		return (size_t)block + (size_t)(headroomMs.load() * 0.001 * sampleRate);
+	}
+
+	// --- audio ------------------------------------------------------------------------------------
+	void process(const ProcessArgs& args) override {
+		if (restartRequested.exchange(false)) { setOffloaded(false, args.sampleRate); voice.reset(); }
+		if (voice && std::fabs(args.sampleRate - voiceRate) > 1.0) {          // the host rate changed: the converter stages are rebuilt, the RAM is kept
+			setOffloaded(false, args.sampleRate);
+			{ std::lock_guard<std::mutex> lock(snapMutex); battery.assign(voice->batteryRam(), voice->batteryRam() + 0x2000); }
+			voice.reset();
+			boot(args.sampleRate);
+		}
+		if (!voice) {
+			if (pcm70::Voice* h = handover.exchange(nullptr)) {
+				voice.reset(h); voiceRate = args.sampleRate; ctlCount = 0; snapCount = 0; clockWas = runWas = false; logic.powerUp();
+				for (int i = 0; i < ROWS * COLS; i++) knobPendingSeq[i] = 0;
+			}
+		}
+		if (!voice) {
+			outputs[OUT_L_OUTPUT].setVoltage(0.f); outputs[OUT_R_OUTPUT].setVoltage(0.f); outputs[WET_L_OUTPUT].setVoltage(0.f); outputs[WET_R_OUTPUT].setVoltage(0.f);
+			return;
+		}
+		setOffloaded(useWorker.load(std::memory_order_relaxed), args.sampleRate);
+		const int64_t stamp = offloaded ? offload.position() : inlineIndex;
+
+		// what the machine thread moved to follow the firmware, now that this thread is the one that may touch the parameter
+		for (KnobSet k; knobSets.pop(k); ) { params[CELL_PARAM + k.cell].setValue(k.value); knobAck = k.seq; }
+
+		// clock and run: edges found per sample, stamped for the machine thread
+		if (inputs[CLOCK_INPUT].isConnected()) {
+			const float c = inputs[CLOCK_INPUT].getVoltage();
+			if (c > 1.f && !clockWas) { Edge e = { stamp, 0 }; edges.push(e); }
+			if (c > 1.f) clockWas = true; else if (c < 0.2f) clockWas = false;
+		}
+		if (inputs[RUN_INPUT].isConnected()) {
+			const float c = inputs[RUN_INPUT].getVoltage();
+			if (c > 1.f && !runWas) { Edge e = { stamp, 1 }; edges.push(e); }
+			if (c > 1.f) runWas = true; else if (c < 0.2f) runWas = false;
+		}
+
+		// the panel, about once a millisecond
+		if (--gatherCount <= 0) {
+			gatherCount = std::max(1, (int)(args.sampleRate / 1000.f));
+			Mail m; m.at = stamp; m.ack = knobAck;
+			pcm70::PanelLogic::In& in = m.in;
 			in.regMode = params[REGMODE_PARAM].getValue() > 0.5f;
 			{
 				// the selector's range follows the bank: coming back from 69 to USER must not leave it pointing past register 49
-				const float top = (float)(in.regMode ? pcm70::PanelLogic::USER_SLOTS - 1 : lastFactoryCached);
+				const float top = (float)(in.regMode ? pcm70::PanelLogic::USER_SLOTS - 1 : factoryTop.load(std::memory_order_relaxed));
 				if (params[SLOT_PARAM].getValue() > top) params[SLOT_PARAM].setValue(top);
 				in.slot = (int)std::lround(params[SLOT_PARAM].getValue());
-				in.programMissing = !in.regMode && in.slot >= 0 && in.slot < pcm70::ProgramNames::SLOTS && factoryMissing[in.slot];
 			}
 			in.load = params[LOAD_PARAM].getValue() > 0.5f; in.store = params[STORE_PARAM].getValue() > 0.5f; in.bypass = params[BYPASS_PARAM].getValue() > 0.5f;
 			for (int r = 0; r < ROWS; r++) for (int c = 0; c < COLS; c++) in.knob[r][c] = params[CELL_PARAM + r * COLS + c].getValue();
@@ -396,29 +509,26 @@ struct Depreciation : Module {
 			jack(SUSTAIN_INPUT, in.sust, in.sustOn); jack(SOFT_INPUT, in.soft, in.softOn); jack(PGM_INPUT, in.pgm, in.pgmOn); jack(BYPASS_CV_INPUT, in.byp, in.bypOn);
 			in.clkDiv = (int)(params[CLK_DIV_PARAM].getValue() + 0.5f);
 			in.input = params[INPUT_PARAM].getValue(); in.inPad20 = params[IN_PAD_PARAM].getValue() > 0.5f; in.outPad20 = params[OUT_PAD_PARAM].getValue() > 0.5f; in.trimVolts = params[TRIM_PARAM].getValue();
-			pcm70::PanelLogic::Out out;
-			logic.control(v, in, out);
-			for (int r = 0; r < ROWS; r++) for (int c = 0; c < COLS; c++) if (out.setKnob[r][c]) params[CELL_PARAM + r * COLS + c].setValue(out.knob[r][c]);
-			lights[BYPASS_LED].setBrightness(out.bypassLed ? 1.f : 0.f);
+			mails.push(m);
+			lights[BYPASS_LED].setBrightness(bypassLit.load(std::memory_order_relaxed) ? 1.f : 0.f);
+			if (offloaded) {
+				// follow the engine's block size: up at once, down only when it has stayed lower for a couple of seconds
+				const size_t want = wantedLatency(args.sampleRate), have = offload.latency();
+				if (want > have) { offload.setLatency(want); latencyShown = (int)want; belowCount = 0; }
+				else if (want < have) { if (++belowCount > 2000) { offload.setLatency(want); latencyShown = (int)want; belowCount = 0; } }
+				else belowCount = 0;
+			}
 		}
+
 		// the signal
 		float vin = 0.f; const bool a = inputs[IN_INPUT].isConnected(), b = inputs[IN_R_INPUT].isConnected();
 		if (a) vin += inputs[IN_INPUT].getVoltageSum(); if (b) vin += inputs[IN_R_INPUT].getVoltageSum();
-		double l, r; v.process(vin, l, r);
+		double o[4];
+		if (offloaded) offload.exchange(vin, o);
+		else machineStep(vin, inlineIndex++, o);
 		const float og = params[OUT_LEVEL_PARAM].getValue();
-		outputs[OUT_L_OUTPUT].setVoltage((float)l * og); outputs[OUT_R_OUTPUT].setVoltage((float)r * og);
-		outputs[WET_L_OUTPUT].setVoltage((float)v.wetL); outputs[WET_R_OUTPUT].setVoltage((float)v.wetR);
-		// what the UI shows
-		if (--snapCount <= 0) {
-			snapCount = std::max(1, (int)(args.sampleRate / 50.f));
-			std::unique_lock<std::mutex> lock(snapMutex, std::try_to_lock);
-			if (lock) {
-				logic.snapshot(v, snap);
-				lastFactoryCached = pcm70::PanelLogic::FACTORY_SLOTS - 1;
-				for (int s = 0; s < pcm70::ProgramNames::SLOTS; s++) { factoryMissing[s] = names.done && names.name[s].empty(); if (!factoryMissing[s]) lastFactoryCached = std::max(lastFactoryCached, s); }
-				if (--ramCount <= 0) { ramCount = 50; battery.assign(v.batteryRam(), v.batteryRam() + 0x2000); }
-			}
-		}
+		outputs[OUT_L_OUTPUT].setVoltage((float)o[0] * og); outputs[OUT_R_OUTPUT].setVoltage((float)o[1] * og);
+		outputs[WET_L_OUTPUT].setVoltage((float)o[2]); outputs[WET_R_OUTPUT].setVoltage((float)o[3]);
 	}
 
 };
@@ -633,6 +743,20 @@ struct DepreciationWidget : ModuleWidget {
 			std::free(dir);
 		}));
 		menu->addChild(createMenuItem("Forget ROMs", "", [=]() { m->loadFiles({}); }));
+
+		menu->addChild(new MenuSeparator);
+		menu->addChild(createMenuLabel("Processing"));
+		menu->addChild(createCheckMenuItem("Run the machine on a worker thread", "", [=]() { return m->useWorker.load(); }, [=]() { m->useWorker = !m->useWorker.load(); }));
+		menu->addChild(createMenuLabel(m->useWorker.load()
+			? string::f("Adds %d samples (%.1f ms) of latency: one audio block and the headroom below", m->latencyShown.load(), 1000.0 * m->latencyShown.load() / APP->engine->getSampleRate())
+			: "No added latency; the machine's cost is on the audio thread"));
+		{
+			static const int ms[6] = { 0, 1, 2, 5, 10, 20 };
+			menu->addChild(createIndexSubmenuItem("Worker headroom", { "0 ms", "1 ms", "2 ms", "5 ms", "10 ms", "20 ms" },
+				[=]() { int best = 0; for (int i = 0; i < 6; i++) if (std::abs(ms[i] - m->headroomMs.load()) < std::abs(ms[best] - m->headroomMs.load())) best = i; return best; },
+				[=](int i) { m->headroomMs = ms[i]; }));
+			menu->addChild(createMenuLabel(string::f("Dropouts: %llu (raise the headroom if there are any)", (unsigned long long) m->offload.underruns())));
+		}
 
 		menu->addChild(new MenuSeparator);
 		menu->addChild(createMenuLabel("MIDI and system (stored in the unit's battery RAM)"));

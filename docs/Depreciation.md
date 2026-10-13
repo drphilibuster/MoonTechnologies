@@ -203,7 +203,8 @@ Besides the ROM entries: **MIDI channel**, **OMNI mode**, **Program change
 enabled**, **Auto load** and **Memory protect** (the firmware's own system
 options, stored in its battery RAM — see *Registers and the patch*);
 **Import SysEx bank…**, **Export SysEx bank…**, **Power cycle**, and **Clear memory
-(factory fresh)**.
+(factory fresh)**. Under *Processing*: **Run the machine on a worker thread** (on by
+default) and **Worker headroom**; see *CPU*.
 
 ---
 
@@ -314,16 +315,42 @@ at rest it only showed the module's own housekeeping.
   firmware's; the module's captions are the firmware's.
 * **Latency** is about 0.5 ms at 48 kHz (the look-ahead of the two band-limited
   converter stages); the dry path carries the same delay so dry and wet keep the
-  relative timing the hardware has.
+  relative timing the hardware has. With the machine on its worker thread (the
+  default) the module adds one engine audio block and the worker headroom to that,
+  to dry and wet alike; see *CPU*.
 * A V3 edit within ±3 steps of a program's loaded **DEFINITION** value leaves 8
   coefficient bytes alone — the firmware's own behaviour, for the knob as for the
   module.
 
 ## CPU
 
-About 8 to 12% of one core at 48 kHz for the whole machine; more at 192 kHz
-(the input conversion's kernel grows with the host rate). The firmware's two
-processors cost about 1%.
+About 3% of one core at 48 kHz for the whole machine (it was about 7% before the
+HSP ran as native code); more at 192 kHz (the input conversion's kernel grows with
+the host rate). The cost is the firmware's two Z80s (a little over a third), the
+HSP signal processor (a fifth) and the two band-limited converter stages.
+
+* **The HSP is native code.** The signal processor's program is decoded once per
+  program load into a short list of operations; that list is run as machine code
+  generated at run time (x86-64 and ARM64; asmjit, the same library Contagion's
+  DSP uses) with the eleven registers held in vector registers, which makes each
+  step cost the arithmetic's own latency instead of a store and a reload. The
+  interpreter stays as the fallback and the reference: the first time a decode is
+  compiled it is run against the interpreter on scratch state, and any
+  disagreement turns the native code off. Output is bit-identical
+  (`tests/Depreciation/test_hsp.cpp` runs every check with the native code on).
+* **The machine runs on a worker thread** by default, as Nordic Banking's does. The
+  audio thread then only hands the input sample over and takes the output sample
+  back, so Rack's meter for the module reads a fraction of a percent; the cost
+  itself (about 3%) moves to another core and is not reduced by that. The price is
+  latency: one engine audio block (the worker cannot have answered the first input
+  of a block by the time the engine asks for the last) plus **Worker headroom**
+  (1 ms by default). It is the same for the dry and the wet path of the module, so
+  they stay aligned with each other, but not with a dry signal patched around the
+  module. For a send/return or a 100% wet use that is just pre-delay; to use the
+  module as a mixed insert with another dry path in parallel, switch the worker
+  off (*Run the machine on a worker thread*) and there is none. **Dropouts** in
+  the menu counts the times the worker was late (the last sample was held); raise
+  the headroom if it is not zero.
 
 ## Where this comes from
 

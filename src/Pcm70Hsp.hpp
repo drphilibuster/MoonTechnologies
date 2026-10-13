@@ -16,8 +16,13 @@
 // moment they were issued) and run at the same tick the reference would run them. The arithmetic is the reference's, expression for expression, so the output is
 // bit-identical (tests/Depreciation/test_hsp.cpp).
 //
+// The decoded list runs two ways, on one State (Pcm70HspJit.hpp): the interpreter below, and, once a decode has been used a few times, native code generated from
+// the same list (src/Depreciation/HspJit.cpp; the register file in vector registers instead of memory, so a dependent chain pays the arithmetic's latency and not the
+// store-to-load forwarding of each step). The first build of a decode is checked against the interpreter on scratch state; a disagreement turns the JIT off for good.
+//
 // The two sequencer PROMs (U48 512 B, U49 32 B) are the user's own dumps, given to setProms().
 #pragma once
+#include "Pcm70HspJit.hpp"
 #include <cstdint>
 #include <cstring>
 #include <algorithm>
@@ -36,10 +41,20 @@ class Hsp {
 public:
     static const int SAMPLE_TICKS = 384;
 
-    void setProms(const uint8_t* u48 /*512*/, const uint8_t* u49 /*32*/) { memcpy(U48, u48, 512); memcpy(U49, u49, 32); cache.clear(); }
+    void setProms(const uint8_t* u48 /*512*/, const uint8_t* u49 /*32*/) { memcpy(U48, u48, 512); memcpy(U49, u49, 32); cache.clear(); nibGen++; }
+    /** Turn the native code on or off (on by default where it is built in). Off, the interpreter alone runs. */
+    void setJit(bool on) { jitOn = on; }
+    bool jitDisagreed() const { return jitMismatch; }   // a self-test found native code and interpreter apart (never seen: a code-generator bug if it is)
+    bool jitRunning() const { return !cache.empty() && (bool)cache.back().code; }
 
     // Install a program. Control fields (the top 16 bits of each word) change only when a program is loaded; the memory offsets (low 16 bits) change continuously.
     void setProgram(const uint32_t* w) {
+        if (haveProgram) {
+            // by far the common call: a modulated program rewrites its memory offsets every sample and nothing else
+            uint32_t ctl = 0;
+            for (int i = 0; i < 128; i++) ctl |= (w[i] ^ words[i]) >> 16;
+            if (ctl == 0) { for (int i = 0; i < 128; i++) { words[i] = w[i]; off[i] = (uint16_t)w[i]; } return; }
+        }
         bool load = !haveProgram, flagged = false;
         for (int i = 0; i < 128; i++) {
             const uint32_t diff = (w[i] ^ words[i]) >> 16;
@@ -48,7 +63,9 @@ public:
                 if ((diff & 0x0F) && !isVar[i]) { isVar[i] = true; flagged = true; }
                 if ((diff & 0xC0) && !isVarRa[i]) { isVarRa[i] = true; flagged = true; }
             }
-            words[i] = w[i]; off[i] = (uint16_t)(w[i] & 0xFFFF); nibs[i] = (uint8_t)((w[i] >> 16) & 15); ras[i] = (uint8_t)((w[i] >> 22) & 3);
+            const uint8_t nb = (uint8_t)((w[i] >> 16) & 15);
+            if (nb != nibs[i]) nibGen++;
+            words[i] = w[i]; off[i] = (uint16_t)(w[i] & 0xFFFF); nibs[i] = nb; ras[i] = (uint8_t)((w[i] >> 22) & 3);
         }
         haveProgram = true;
         if (load) { memset(isVar, 0, sizeof isVar); memset(isVarRa, 0, sizeof isVarRa); }
@@ -56,50 +73,65 @@ public:
     }
 
     void reset() {
-        mem.assign(65536, 0.0); for (int i = 0; i < NREG; i++) r[i] = 0.0;
-        pos = 0; cs = CS(); ncarry = 0; ndac = 0;
+        mem.assign(65536, 0.0); for (int i = 0; i < NREG; i++) js.r[i] = 0.0;
+        pos = 0; cs = CS(); js.ncarry = 0; js.ndac = 0;
     }
 
     void process(double in, double& outL, double& outR) {
-        const Decoded* d = find();
-        outL = outR = 0.0; ndac = 0; curIn = in; L = &outL; Rr = &outR;
-        run(*d);
+        Decoded* d = find();
+        State& s = js;
+        s.out[0] = s.out[1] = 0.0; s.ndac = 0; s.curIn = in; s.mem = mem.data(); s.off = off; s.ras = ras; s.ps = pos;
+        refreshKinds(*d); s.aluk = d->aluk.data();
+#ifdef PCM70_HSP_JIT
+        if (jitOn && !d->code && !d->jitTried && ++d->uses >= JIT_AFTER) buildJit(*d);
+        if (d->code) d->code(&s); else
+#endif
+        run(*d, s);
+        outL = s.out[0]; outR = s.out[1];
         // events issued in this sample that complete in the next one
         int n = 0;
         for (size_t i = 0; i < d->carryOut.size(); i++) {
             const CarryDesc& c = d->carryOut[i];
-            carry[n].kind = c.kind; carry[n].wa = c.wa; carry[n].due = c.due; carry[n].addr = (uint16_t)(pos + off[c.w]); n++;
+            s.ckind[n] = c.kind; s.cwa[n] = c.wa; s.cdue[n] = c.due; s.caddr[n] = (uint16_t)(pos + off[c.w]); n++;
         }
-        ncarry = n;
+        s.ncarry = n;
         cs = d->end; pos++;
     }
 
-    double reg(int i) const { return r[i]; }               // R0-R3 = 0-3, ACC 4, O 5, A 6, P 7
+    double reg(int i) const { return js.r[i]; }               // R0-R3 = 0-3, ACC 4, O 5, A 6, P 7
     double peek(int a) const { return mem[a & 0xFFFF]; }
     uint16_t position() const { return pos; }
     size_t opCount() const { return cache.empty() ? 0 : cache.back().ops.size(); }
     uint64_t decodes = 0;                              // how many times a sample had to be decoded (diagnostic)
+    uint64_t jitCompiles = 0;                          // how many decodes have been turned into native code (diagnostic)
 
 private:
-    enum { R0 = 0, ACC = 4, O = 5, A = 6, P = 7, T0 = 8, T1 = 9, T2 = 10, NREG = 11 };
+    typedef hspjit::State State;
+    enum { R0 = 0, ACC = 4, O = 5, A = 6, P = 7, T0 = 8, T1 = 9, T2 = 10, NREG = hspjit::NREG };
     // The last five are pairs the decoder fuses (see fuse()): the run loop pays one dispatch for two operations. The second operation's fields are d2..x2.
+    // The first fifteen are hspjit::OpT's, in its order (static_assert below); x of an ALUV is its index into the kind table (aluK).
     enum Op : uint8_t { MOVR, MOV, SAT, HALF, ADD, SUB, NEG, ZERO, ALU34, ALUV, LD, ST, IN, DAC, CARRYIN, HALF_ALUV, ALUV_HALF, SAT_HALF, ALUV_SAT, HALF_ADD };
+    static_assert((int)MOVR == (int)hspjit::MOVR && (int)ALUV == (int)hspjit::ALUV && (int)CARRYIN == (int)hspjit::CARRYIN && (int)HALF_ALUV == (int)hspjit::NUM_OPS, "operation numbering");
     struct Mop { uint8_t t, d, a, b; uint16_t w, x; uint8_t d2, a2, b2, pad; uint16_t w2, x2; };
     struct CS {                                            // sequencer state carried from sample to sample
         int st = 0, c49 = 0xE9, c48 = 0xF7, c48b = 0, c48w = 0, scq0 = 0, scq1 = 0, xh0 = 1, xh1 = 1, prevX = 0;     // c48 = -1: set by a flagged word's nibble, see c48b (U48 address without it) and c48w (the word)
         bool operator==(const CS& o) const { return st == o.st && c49 == o.c49 && c48 == o.c48 && c48b == o.c48b && c48w == o.c48w && scq0 == o.scq0 && scq1 == o.scq1 && xh0 == o.xh0 && xh1 == o.xh1 && prevX == o.prevX; }
     };
     struct CarryDesc { uint8_t kind, wa, due; uint16_t w; };
-    struct Carry { uint8_t kind, wa, due; uint16_t addr; };
-    struct Decoded { CS start, end; std::vector<Mop> ops; std::vector<CarryDesc> carryOut; };
+    struct Decoded {
+        CS start, end; std::vector<Mop> ops; std::vector<CarryDesc> carryOut;
+        std::vector<hspjit::Op> raw;                       // the same operations unfused, for the code generator
+        std::vector<uint16_t> alW, alX;                    // per ALUV kind-table entry: the word whose live nibble selects it, and its U48 address without the nibble
+        std::vector<uint8_t> aluk; uint32_t alukGen = ~0u; // the kinds for the nibbles as of nibGen
+        hspjit::Code code; bool jitTried = false; int uses = 0;
+    };
 
     uint8_t U48[512] = {}, U49[32] = {};
     uint32_t words[128] = {}; uint16_t off[128] = {}; uint8_t nibs[128] = {}, ras[128] = {}; bool isVar[128] = {}, isVarRa[128] = {}; bool haveProgram = false;
     std::vector<double> mem = std::vector<double>(65536, 0.0);
-    double r[NREG] = {};
+    State js;                                              // the registers, the sample's inputs and outputs, the carried events (the native code works on this too)
     uint16_t pos = 0; CS cs;
-    Carry carry[16]; int ncarry = 0;
-    int ndac = 0; double curIn = 0, *L = nullptr, *Rr = nullptr;
+    uint32_t nibGen = 0; bool jitOn = true, jitMismatch = false;
     std::vector<Decoded> cache;                            // decodes for this program, keyed by their start state (most recent last)
 
     static double sat(double v) { return v < -1.0 ? -1.0 : (v > 0.99997 ? 0.99997 : v); }
@@ -108,7 +140,7 @@ private:
         long x = ~q(a) & q(b); x &= 0x3FFFF; if (x & 0x20000) x -= 0x40000; return x / 131072.0;
     }
 
-    const Decoded* find() {
+    Decoded* find() {
         for (size_t i = 0; i < cache.size(); i++) if (cache[i].start == cs) { if (i + 1 != cache.size()) { Decoded t = std::move(cache[i]); cache.erase(cache.begin() + i); cache.push_back(std::move(t)); } return &cache.back(); }
         if (cache.size() >= 4) cache.erase(cache.begin());
         cache.push_back(decode(cs)); decodes++;
@@ -116,23 +148,32 @@ private:
     }
 
     // one event of the reference model: 0 DRAM read -> R, 1 DRAM write of O, 2 ADC -> R, 3 DAC <- O, 4 R <- O
-    void doEvent(int kind, int wa, uint16_t addr) {
+    static void doEvent(State& s, int kind, int wa, uint16_t addr) {
         switch (kind) {
-        case 0: r[wa] = mem[addr] + 0.0; break;
-        case 1: mem[addr] = r[O]; break;
-        case 2: r[wa] = curIn; break;
-        case 4: r[wa] = r[O]; break;
-        default: if (ndac == 0) *L = r[O]; else if (ndac == 1) *Rr = r[O]; ndac++; break;
+        case 0: s.r[wa] = s.mem[addr] + 0.0; break;
+        case 1: s.mem[addr] = s.r[O]; break;
+        case 2: s.r[wa] = s.curIn; break;
+        case 4: s.r[wa] = s.r[O]; break;
+        default: if (s.ndac < 2) s.out[s.ndac] = s.r[O]; s.ndac++; break;
         }
     }
+    /** The events carried over from the previous sample that fall due at tick `due` (called by CARRYIN, from the interpreter and from native code). */
+    static void carryStep(State* s, int due) {
+        for (int i = 0; i < s->ncarry; i++) if (s->cdue[i] == due) doEvent(*s, s->ckind[i], s->cwa[i], s->caddr[i]);
+    }
 
-    // the ALU operation selected by U48 from the live coefficient nibble of word w (flagged words only)
-    inline double aluv(double a, double b, int w, int x) const {
-        const int e48 = U48[x | nibs[w] << 2];
+    // The ALU operation U48 selects for a flagged word's live coefficient nibble, as a kind: 0 zero, 1 A, 2 A+B, 3 B, 4 A-B, 5 -B, 6 half of (~A & B).
+    static uint8_t kindOf(int e48) {
         const int F = (e48 >> 3 & 1) << 2 | (e48 >> 4 & 1) << 1 | (e48 >> 5 & 1), Cc = e48 >> 2 & 1;
-        double op = 0;
-        if (F == 1) op = Cc ? a : a + b; else if (F == 3) op = Cc ? 0.5 * logicop34(a, b) : b; else if (F == 4) op = a - b; else if (F == 7) op = -b;
-        return op;
+        return F == 1 ? (Cc ? 1 : 2) : F == 3 ? (Cc ? 6 : 3) : F == 4 ? 4 : F == 7 ? 5 : 0;
+    }
+    static inline double aluOp(int kind, double a, double b) {
+        switch (kind) { case 1: return a; case 2: return a + b; case 3: return b; case 4: return a - b; case 5: return -b; case 6: return 0.5 * logicop34(a, b); default: return 0.0; }
+    }
+    void refreshKinds(Decoded& d) const {
+        if (d.alukGen == nibGen) return;
+        d.alukGen = nibGen;
+        for (size_t k = 0; k < d.alW.size(); k++) d.aluk[k] = kindOf(U48[d.alX[k] | nibs[d.alW[k]] << 2]);
     }
 
     // One dispatch per (fused) operation. On GCC/Clang each case ends in its own indirect jump (threaded code), which the branch predictor follows far better
@@ -144,8 +185,8 @@ private:
   #define HSP_CASE(name) case name:
   #define HSP_NEXT() break
 #endif
-    void run(const Decoded& d) {
-        double* g = r; const uint16_t* of = off; const uint16_t ps = pos;
+    static void run(const Decoded& d, State& s) {
+        double* g = s.r; const uint16_t* of = s.off; const uint8_t* ras = s.ras; const uint8_t* kinds = s.aluk; double* const mem = s.mem; const uint16_t ps = (uint16_t)s.ps;
         const Mop *m = d.ops.data(), *e = m + d.ops.size();
         if (m == e) return;
 #if defined(__GNUC__)
@@ -164,18 +205,18 @@ private:
             HSP_CASE(NEG) g[m->d] = -g[m->b]; HSP_NEXT();
             HSP_CASE(ZERO) g[m->d] = 0.0; HSP_NEXT();
             HSP_CASE(ALU34) g[m->d] = 0.5 * logicop34(g[m->a], g[m->b]); HSP_NEXT();
-            HSP_CASE(ALUV) g[m->d] = aluv(g[m->a], g[m->b], m->w, m->x); HSP_NEXT();
+            HSP_CASE(ALUV) g[m->d] = aluOp(kinds[m->x], g[m->a], g[m->b]); HSP_NEXT();
             HSP_CASE(LD) g[m->d] = mem[(uint16_t)(ps + of[m->w])] + 0.0; HSP_NEXT();
             HSP_CASE(ST) mem[(uint16_t)(ps + of[m->w])] = g[O]; HSP_NEXT();
-            HSP_CASE(IN) g[m->d] = curIn; HSP_NEXT();
-            HSP_CASE(DAC) if (ndac == 0) *L = g[O]; else if (ndac == 1) *Rr = g[O]; ndac++; HSP_NEXT();
-            HSP_CASE(HALF_ALUV) g[m->d] = g[m->a] / 2; g[m->d2] = aluv(g[m->a2], g[m->b2], m->w2, m->x2); HSP_NEXT();
-            HSP_CASE(ALUV_HALF) g[m->d] = aluv(g[m->a], g[m->b], m->w, m->x); g[m->d2] = g[m->a2] / 2; HSP_NEXT();
+            HSP_CASE(IN) g[m->d] = s.curIn; HSP_NEXT();
+            HSP_CASE(DAC) if (s.ndac < 2) s.out[s.ndac] = g[O]; s.ndac++; HSP_NEXT();
+            HSP_CASE(HALF_ALUV) g[m->d] = g[m->a] / 2; g[m->d2] = aluOp(kinds[m->x2], g[m->a2], g[m->b2]); HSP_NEXT();
+            HSP_CASE(ALUV_HALF) g[m->d] = aluOp(kinds[m->x], g[m->a], g[m->b]); g[m->d2] = g[m->a2] / 2; HSP_NEXT();
             HSP_CASE(SAT_HALF) g[m->d] = sat(g[m->a]); g[m->d2] = g[m->a2] / 2; HSP_NEXT();
-            HSP_CASE(ALUV_SAT) g[m->d] = aluv(g[m->a], g[m->b], m->w, m->x); g[m->d2] = sat(g[m->a2]); HSP_NEXT();
+            HSP_CASE(ALUV_SAT) g[m->d] = aluOp(kinds[m->x], g[m->a], g[m->b]); g[m->d2] = sat(g[m->a2]); HSP_NEXT();
             HSP_CASE(HALF_ADD) g[m->d] = g[m->a] / 2; g[m->d2] = g[m->a2] + g[m->b2]; HSP_NEXT();
             HSP_CASE(CARRYIN) {                                // events issued late in the previous sample, due at tick m->d of this one
-                for (int i = 0; i < ncarry; i++) if (carry[i].due == m->d) doEvent(carry[i].kind, carry[i].wa, carry[i].addr);
+                carryStep(&s, m->d);
                 HSP_NEXT(); }
 #if !defined(__GNUC__)
         }
@@ -203,6 +244,47 @@ private:
         }
         return out;
     }
+
+#ifdef PCM70_HSP_JIT
+    static const int JIT_AFTER = 16;                       // uses of one decode before it is compiled: the transient ones while the sequencer state settles are not
+
+    void buildJit(Decoded& d) {
+        d.jitTried = true;
+        hspjit::Code c = hspjit::compile(d.raw.data(), d.raw.size(), &Hsp::carryStep, &Hsp::logicop34);
+        if (!c) { jitOn = false; return; }                 // no executable memory here: do not try again
+        if (!selfTest(d, c)) { jitOn = false; jitMismatch = true; return; }
+        d.code = std::move(c); jitCompiles++;
+    }
+    // One decode, both ways, on identical scratch state (random registers, delay RAM, events carried in) for several samples, with every kind of ALUV tried.
+    bool selfTest(Decoded& d, const hspjit::Code& c) {
+        uint64_t x = 0x9E3779B97F4A7C15ull;
+        auto rnd = [&]() { x = x * 6364136223846793005ull + 1442695040888963407ull; return (double)(x >> 11) * (1.0 / 9007199254740992.0) * 2.0 - 1.0; };
+        std::vector<double> ma(65536), mb;
+        for (double& v : ma) v = rnd() * 1.2;
+        mb = ma;
+        State a, b;
+        for (int i = 0; i < NREG; i++) a.r[i] = rnd() * 1.5;
+        b = a; a.mem = ma.data(); b.mem = mb.data();
+        std::vector<uint8_t> kinds(d.alW.size());
+        for (int smp = 0; smp < 8; smp++) {
+            for (size_t k = 0; k < kinds.size(); k++) kinds[k] = (uint8_t)(smp == 0 ? d.aluk[k] : (k + smp) % 7);
+            a.aluk = b.aluk = kinds.data(); a.off = b.off = off; a.ras = b.ras = ras;
+            a.ps = b.ps = (uint32_t)(x >> 40) & 0xFFFF; a.curIn = b.curIn = rnd(); a.ndac = b.ndac = 0; a.out[0] = a.out[1] = b.out[0] = b.out[1] = 0.0;
+            a.ncarry = b.ncarry = 1 + (int)(x >> 33) % 4;
+            for (int i = 0; i < a.ncarry; i++) {
+                a.ckind[i] = b.ckind[i] = (uint8_t)((x >> (20 + i)) % 5); a.cwa[i] = b.cwa[i] = (uint8_t)((x >> (10 + i)) & 3);
+                a.cdue[i] = b.cdue[i] = (uint8_t)(i % 4); a.caddr[i] = b.caddr[i] = (uint16_t)(x >> (7 + i));
+                (void)rnd();
+            }
+            run(d, a); c(&b);
+            for (int i = 0; i < NREG; i++) if (!(a.r[i] == b.r[i] || (a.r[i] != a.r[i] && b.r[i] != b.r[i])) && i < 8) return false;
+            if (!(a.out[0] == b.out[0]) || !(a.out[1] == b.out[1]) || a.ndac != b.ndac) return false;
+            for (size_t i = 0; i < ma.size(); i++) if (!(ma[i] == mb[i])) return false;
+            for (int i = 0; i < NREG; i++) b.r[i] = a.r[i];   // temporaries are not part of the contract between samples
+        }
+        return true;
+    }
+#endif
 
     Decoded decode(const CS& start) const {
         Decoded D; D.start = start; CS s = start;
@@ -311,6 +393,16 @@ private:
             if (keep) { live = (live & ~def) | use; kept.push_back(m); }
         }
         std::reverse(kept.begin(), kept.end());
+        // ALUV: x (a U48 address) becomes an index into the kind table, one entry per distinct (word, address)
+        for (Mop& m : kept) {
+            if (m.t != ALUV) continue;
+            size_t k = 0;
+            while (k < D.alW.size() && !(D.alW[k] == m.w && D.alX[k] == m.x)) k++;
+            if (k == D.alW.size()) { D.alW.push_back(m.w); D.alX.push_back(m.x); }
+            m.x = (uint16_t)k;
+        }
+        D.aluk.assign(D.alW.size(), 0);
+        for (const Mop& m : kept) { hspjit::Op o; o.t = m.t; o.d = m.d; o.a = m.a; o.b = m.b; o.w = m.w; o.k = m.x; D.raw.push_back(o); }
         D.ops = fuse(kept);
         return D;
     }

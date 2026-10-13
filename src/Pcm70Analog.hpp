@@ -82,6 +82,17 @@ struct Polyphase {
             tab[(size_t)p * taps + i] = (float)S[(size_t)m].real();
         }
     }
+    /** Both channels at one position: the two table rows are read once for both (each channel's sum is the same sequence of additions as eval()). */
+    void eval2(const double* xl, const double* xr, double frac, double& l, double& r) const {
+        const double pf = frac * PH; int p = (int)pf; if (p >= PH) p = PH - 1; const double a = pf - p;
+        const float* r0 = &tab[(size_t)p * taps]; const float* r1 = r0 + taps;
+        double l0 = 0.0, l1 = 0.0, r0s = 0.0, r1s = 0.0;
+        for (int i = 0; i < taps; i++) {
+            const double c0 = (double)r0[i], c1 = (double)r1[i];
+            l0 += xl[i] * c0; l1 += xl[i] * c1; r0s += xr[i] * c0; r1s += xr[i] * c1;
+        }
+        l = l0 + a * (l1 - l0); r = r0s + a * (r1s - r0s);
+    }
     double eval(const double* x, double frac) const {                        // x -> k0-B (contiguous, ascending)
         const double pf = frac * PH; int p = (int)pf; if (p >= PH) p = PH - 1; const double a = pf - p;
         const float* r0 = &tab[(size_t)p * taps]; const float* r1 = r0 + taps;
@@ -139,7 +150,7 @@ struct OutputStage {
         const long long num = v * Q, k0 = base + num / P, rem = num % P;
         if (ring[0].count - B <= k0 + A) return false;
         const double fr = (double)rem / (double)P;
-        l = pp.eval(ring[0].window(k0), fr); r = pp.eval(ring[1].window(k0), fr);
+        pp.eval2(ring[0].window(k0), ring[1].window(k0), fr, l, r);
         if (++v >= P) { v -= P; base += Q; }
         return true;
     }
@@ -169,12 +180,14 @@ struct LevelDetector {
 // changes are dB-linear ramps. Dry equals wet at equal codes within 0.5 dB: kDry = 1.05 (digital full scale in = digital full scale out). Run at host rate.
 struct MixStage {
     double kDry = 1.05, tau = 0.0054, sw = 255.0, sd = 255.0; int cw = 255, cd = 255; double a = 0.0;
+    double lastSw = -1.0, lastSd = -1.0, gw = 0.0, gd = 0.0;               // the gains for the smoothed codes as they last were (the codes settle, and a pow() per sample is not free)
     void init(double hostRate) { a = 1.0 - std::exp(-1.0 / (tau * hostRate)); }
     static double gainOf(double code) { return std::pow(10.0, -0.392 * code / 20.0); }
     void setCodes(int wet, int dry) { cw = wet; cd = dry; }
     void process(double dryIn, double wetL, double wetR, double& outL, double& outR) {
         sw += a * (cw - sw); sd += a * (cd - sd);
-        const double gw = gainOf(sw), gd = gainOf(sd);
+        if (sw != lastSw) { lastSw = sw; gw = gainOf(sw); }
+        if (sd != lastSd) { lastSd = sd; gd = gainOf(sd); }
         outL = wetL * gw + dryIn * kDry * gd; outR = wetR * gw + dryIn * kDry * gd;
     }
 };

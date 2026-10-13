@@ -55,6 +55,17 @@ emulator and the varimode firmware) are unused but still in the tree and still t
   Racketeer already does). Bit-identical to the chips one at a time (new check, with a negative control). Racketeer and
   Diversified's `modulate()` now goes through the same kernel; their bit-identity tests still pass.
 
+### Changed: Depreciation, about 7% to 3% of a core, and off the audio thread by default
+
+* The PCM 70's HSP now runs as native code generated from the decoded program (asmjit; x86-64 and ARM64), with the interpreter as the fallback and the
+  reference: output bit-identical, checked at run time on first use and by `tests/Depreciation/test_hsp.cpp` (random programs, both factory banks, the live
+  modulated programs). The converter's stereo output kernel shares its table reads, the mix stage no longer takes two `pow()` per sample, and a
+  modulated program's per-sample offset update has a fast path.
+* The machine runs on a worker thread by default, the way Nordic Banking's does (menu: *Run the machine on a worker thread*, *Worker headroom*,
+  *Dropouts*). The audio thread only exchanges samples, so the module's meter reads a fraction of a percent; the cost is one engine audio block of
+  latency on the whole module (dry and wet alike). Switching it off restores the previous zero-added-latency behaviour. The panel's snapshots, the
+  clock/run edges and the knobs the firmware moves travel between the threads time-stamped (`src/Pcm70Offload.hpp`, `tests/Depreciation/test_offload.cpp`).
+
 ### Added: Accrual, the 4069 VCO
 
 The Modular in a Week 4069 VCO (Unfinished projects, kristian.borgstedt 2019-12-06) solved as its circuit. A BC560/BC550

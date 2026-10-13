@@ -4,6 +4,7 @@
 //   * random programs on the real PROMs, program words changing under the running core (offsets every sample, control words now and then),
 //   * every register of the two library banks as the firmware itself loads them,
 //   * a live run, program rebuilt from the machine's control store every sample (the modulated words of chorus/flange programs).
+// Built with PCM70_HSP_JIT the compiled core runs as native code once a decode has been used a few times, so all of the above is also the native code's test.
 // With $PCM70_ROMS / $PCM70_SYX unset the real-data parts print SKIP and pass.
 #include <cinttypes>
 #include "fixtures.hpp"
@@ -47,7 +48,7 @@ static void report(const char* what, const Pair& p) {
 // ---- random programs ----------------------------------------------------------------------------------------------------
 static void testRandomPrograms(const char* label, const uint8_t* u48, const uint8_t* u49, int programs, int samples, bool realProms) {
 	std::mt19937 g(realProms ? 7 : 11); std::normal_distribution<double> nd(0.0, 0.3);
-	uint64_t bad = 0, decodes = 0, n = 0; double energy = 0; uint64_t sd = 0;
+	uint64_t bad = 0, decodes = 0, n = 0, jit = 0; double energy = 0; uint64_t sd = 0;
 	for (int k = 0; k < programs; k++) {
 		Pair p(u48, u49); uint32_t w[128];
 		const int style = k % 3;                                      // 0: any word; 1: sparse (few memory words, like real programs); 2: real-looking control, random offsets
@@ -63,11 +64,14 @@ static void testRandomPrograms(const char* label, const uint8_t* u48, const uint
 			if (t % 331 == 200) { int i = g() % 128; w[i] = (uint32_t)g(); p.program(w); }                                                         // a control word changes
 			p.step(t < samples / 2 ? nd(g) : 0.0);
 		}
-		bad += p.bad; decodes += p.opt.decodes; n += p.samples; energy += p.energy; sd += p.stateDiffs();
+		bad += p.bad; decodes += p.opt.decodes; jit += p.opt.jitCompiles; n += p.samples; energy += p.energy; sd += p.stateDiffs();
 		if (p.bad || p.stateDiffs()) std::printf("  program %d (style %d): %" PRIu64 " mismatches, %" PRIu64 " state differences\n", k, style, p.bad, p.stateDiffs());
 	}
-	std::printf("%-44s %8" PRIu64 " samples in %d programs, %" PRIu64 " output mismatches, %" PRIu64 " state differences, energy %.1f, %" PRIu64 " decodes\n", label, n, programs, bad, sd, energy, decodes);
+	std::printf("%-44s %8" PRIu64 " samples in %d programs, %" PRIu64 " output mismatches, %" PRIu64 " state differences, energy %.1f, %" PRIu64 " decodes, %" PRIu64 " native\n", label, n, programs, bad, sd, energy, decodes, jit);
 	CHECK(bad == 0); CHECK(sd == 0); CHECK(energy > 0);
+#ifdef PCM70_HSP_JIT
+	CHECK(jit > 0);
+#endif
 }
 
 // ---- stored programs ------------------------------------------------------------------------------------------------------

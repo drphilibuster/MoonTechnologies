@@ -12,9 +12,15 @@ CORE := ../../src/Depreciation/Roms.hpp
 MACHINE := ../../src/Pcm70Machine.hpp ../../src/Pcm70Locate.hpp ../../src/Pcm70Drive.hpp ../../src/Pcm70BatRam.hpp ../../src/Pcm70Hsp.hpp fixtures.hpp hsp_ref.hpp ../../vendor/z80/z80.c ../../vendor/z80/z80.h
 CC ?= cc
 
-all: test_roms test_machine test_hsp test_analog test_voice test_control test_panel
+# The HSP's native code (src/Depreciation/HspJit.cpp, asmjit) is built into test_hsp: the compiled core is checked against the reference with the JIT running.
+ASMJIT_DIR := ../../vendor/dsp56300/asmjit
+ASMJIT_SRC := $(wildcard $(ASMJIT_DIR)/core/*.cpp $(ASMJIT_DIR)/x86/*.cpp $(ASMJIT_DIR)/arm/*.cpp)
+ASMJIT_OBJ := $(patsubst $(ASMJIT_DIR)/%.cpp,asmjit_obj/%.o,$(ASMJIT_SRC))
+JITFLAGS := -std=gnu++17 -O2 -w -DASMJIT_STATIC -I../../vendor/dsp56300
 
-test: test_roms test_machine test_hsp test_analog test_voice test_control test_panel
+all: test_roms test_machine test_hsp test_analog test_voice test_control test_panel test_offload
+
+test: test_roms test_machine test_hsp test_analog test_voice test_control test_panel test_offload
 	./test_roms
 	./test_machine
 	./test_hsp
@@ -22,6 +28,7 @@ test: test_roms test_machine test_hsp test_analog test_voice test_control test_p
 	./test_voice
 	./test_control
 	./test_panel
+	./test_offload
 
 test_roms: test_roms.cpp $(CORE)
 	$(CXX) $(CXXFLAGS) -o $@ test_roms.cpp
@@ -32,8 +39,15 @@ z80.o: ../../vendor/z80/z80.c ../../vendor/z80/z80.h
 test_machine: test_machine.cpp $(CORE) $(MACHINE) z80.o
 	$(CXX) $(CXXFLAGS) -o $@ test_machine.cpp z80.o
 
-test_hsp: test_hsp.cpp $(CORE) $(MACHINE) z80.o
-	$(CXX) $(CXXFLAGS) -o $@ test_hsp.cpp z80.o
+asmjit_obj/%.o: $(ASMJIT_DIR)/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(JITFLAGS) -c -o $@ $<
+
+hspjit.o: ../../src/Depreciation/HspJit.cpp ../../src/Pcm70HspJit.hpp
+	$(CXX) $(JITFLAGS) -c -o $@ ../../src/Depreciation/HspJit.cpp
+
+test_hsp: test_hsp.cpp $(CORE) $(MACHINE) ../../src/Pcm70HspJit.hpp z80.o hspjit.o $(ASMJIT_OBJ)
+	$(CXX) $(CXXFLAGS) -DPCM70_HSP_JIT -o $@ test_hsp.cpp z80.o hspjit.o $(ASMJIT_OBJ)
 
 test_voice: test_voice.cpp fixtures.hpp $(MACHINE) ../../src/Pcm70Analog.hpp ../../src/Pcm70Voice.hpp z80.o
 	$(CXX) $(CXXFLAGS) -o $@ test_voice.cpp z80.o
@@ -47,8 +61,11 @@ test_control: test_control.cpp fixtures.hpp $(MACHINE) ../../src/Pcm70Control.hp
 test_panel: test_panel.cpp fixtures.hpp $(MACHINE) ../../src/Pcm70Analog.hpp ../../src/Pcm70Voice.hpp ../../src/Pcm70Panel.hpp ../../src/Pcm70Names.hpp ../../src/Pcm70Keys.hpp z80.o
 	$(CXX) $(CXXFLAGS) -o $@ test_panel.cpp z80.o
 
+test_offload: test_offload.cpp ../../src/Pcm70Offload.hpp
+	$(CXX) $(CXXFLAGS) -pthread -o $@ test_offload.cpp
+
 test_analog: test_analog.cpp ../../src/Pcm70Analog.hpp
 	$(CXX) $(CXXFLAGS) -o $@ test_analog.cpp
 
 clean:
-	rm -rf test_roms test_roms.dSYM test_machine test_machine.dSYM test_hsp test_hsp.dSYM test_analog test_analog.dSYM test_voice test_voice.dSYM test_control test_control.dSYM test_panel test_panel.dSYM voice_ir voice_ir.dSYM z80.o
+	rm -rf asmjit_obj hspjit.o test_roms test_roms.dSYM test_machine test_machine.dSYM test_hsp test_hsp.dSYM test_analog test_analog.dSYM test_voice test_voice.dSYM test_control test_control.dSYM test_panel test_panel.dSYM test_offload test_offload.dSYM voice_ir voice_ir.dSYM z80.o
