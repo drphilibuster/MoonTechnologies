@@ -742,16 +742,7 @@ struct Ledger : Module {
 			return;
 		// Restart: unless the track has just played its loop's last step and the new slot
 		// is as long (then it goes on to step 1 by itself, walk and all), it starts over.
-		// A slot not yet visited is made on first arrival: a fresh 16-step generator, as the
-		// module opens with, on a seed of its own. Kept with the session from then on.
-		if (slots[t][k].kind == L::kSlotEmpty) {
-			L::Slot& fresh = slots[t][k];
-			fresh.clear();
-			fresh.kind = L::kSlotGen;
-			L::defaultBlock(fresh.block, t, (int)(random::u32() % 1000));
-			fresh.block[L::kBlockLength] = 16;
-			bumpSlot(t, k);
-		}
+		// An empty slot stays empty: it is silence, and what recording writes into.
 		S::TrackState& tr = eng.dtc->tracks[t];
 		int outLen = eng.v[S::TP(t, S::kTLength)];
 		bool atEnd = outLen <= 1 || tr.eosCount == 0;		// eosCount: steps played of this loop
