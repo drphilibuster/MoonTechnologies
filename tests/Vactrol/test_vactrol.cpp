@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstdio>
 #include <functional>
+#include <initializer_list>
 
 static int checks = 0, failures = 0;
 static bool quiet = false;
