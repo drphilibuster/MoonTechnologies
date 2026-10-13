@@ -153,6 +153,75 @@ static void testCaptureReplays()
 	delete m;
 }
 
+// The TANK's step editing writes a generator down where it is (Ledger::writeDown, sent
+// as PUT_SLOT on the playing slot): it goes on playing what it played, from the step it
+// was on, and an edited step then plays the edit and nothing else changes.
+static void testWriteDownInPlace()
+{
+	Ledger* m = newLedger();
+	int64_t f = 0;
+	tick( m, f++ );
+	m->params[Ledger::BPM_PARAM].setValue( 120.f );
+	m->params[Ledger::POT_PARAM + L::kDChance].setValue( 65.f );
+	m->params[Ledger::POT_PARAM + L::kDNote].setValue( 40.f );
+	m->params[Ledger::POT_PARAM + L::kDTie].setValue( 25.f );
+	m->params[Ledger::POT_PARAM + L::kDGate].setValue( 50.f );
+	m->params[Ledger::POT_PARAM + L::kDLength].setValue( 12.f );
+	tick( m, f++ );
+	S::Shoal s;
+	twin( s, m );
+	BareIo b;
+	for ( int i = 0; i < 24000 * 5 + 777; ++i ) { tick( m, f++ ); S::step( &s, b.io, 1 ); }
+
+	// written down mid-loop, from the UI's side (a copy of the engine, as the display has)
+	S::Shoal view;
+	twin( view, m );
+	L::Slot* w = new L::Slot;
+	CHECK( m->writeDown( &view, 0, *w ), "a generator slot can be written down" );
+	SlotEdit* e = new SlotEdit;
+	e->op = SlotEdit::PUT_SLOT; e->track = 0; e->slot = m->active[0]; e->data = *w;
+	m->sendEdit( *e );
+	tick( m, f++ ); S::step( &s, b.io, 1 );
+	CHECK( m->slots[0][0].kind == L::kSlotPat && m->eng.external[0] && m->active[0] == 0,
+		   "the playing slot is now a pattern, still playing" );
+	int diffs = 0, gates = 0;
+	for ( int i = 0; i < 24000 * 30; ++i )
+	{
+		tick( m, f++ ); S::step( &s, b.io, 1 );
+		gates += b.gate[0] > 0.f;
+		if ( m->outputs[Ledger::GATE_OUTPUT].getVoltage() != b.gate[0]
+			 || ( b.gate[0] > 0.f && m->outputs[Ledger::PITCH_OUTPUT].getVoltage() != b.pitch[0] ) )
+			++diffs;
+	}
+	CHECK( gates > 10000 && diffs == 0, "written down in place, it replays the generator: %d frames differ", diffs );
+
+	// one step's note up seven semitones: that step sounds 7/12 V higher, nothing else moves
+	L::Pattern& pat = w->pat;
+	int edited = -1;
+	for ( int i = 0; i < pat.count && edited < 0; ++i )
+		if ( i + 1 >= pat.count || pat.notes[i + 1].start / L::kTicksPerStep != pat.notes[i].start / L::kTicksPerStep ) edited = i;
+	CHECK( edited >= 0, "a step with one note, to edit" );
+	if ( edited >= 0 ) pat.notes[edited].pitch = (uint8_t)( pat.notes[edited].pitch + 7 );
+	e->op = SlotEdit::PUT_PATTERN; e->data = *w;
+	m->sendEdit( *e );
+	tick( m, f++ ); S::step( &s, b.io, 1 );
+	int same = 0, up = 0, other = 0;
+	for ( int i = 0; i < 24000 * 30; ++i )
+	{
+		tick( m, f++ ); S::step( &s, b.io, 1 );
+		if ( m->outputs[Ledger::GATE_OUTPUT].getVoltage() != b.gate[0] ) { ++other; continue; }
+		if ( b.gate[0] <= 0.f ) continue;
+		float d = m->outputs[Ledger::PITCH_OUTPUT].getVoltage() - b.pitch[0];
+		if ( d == 0.f ) ++same;
+		else if ( std::fabs( d - 7.f / 12.f ) < 1e-4f ) ++up;
+		else ++other;
+	}
+	CHECK( up > 1000 && same > up && other == 0, "the edited step plays 7 semitones up and only it: %d up, %d same, %d other", up, same, other );
+	delete e;
+	delete w;
+	delete m;
+}
+
 static void testChordAndEdits()
 {
 	Ledger* m = newLedger();
@@ -1041,6 +1110,7 @@ int main()
 
 	testUnpatchedIsShoal();
 	testCaptureReplays();
+	testWriteDownInPlace();
 	testChordAndEdits();
 	testRoutedGeneratorIsShoal();
 	testEffectsInTheModule();

@@ -86,7 +86,7 @@ struct LedgerDisplay : widget::OpaqueWidget {
 	int laneSel = L::kLaneMod1;
 	L::GenSettings gen;
 
-	enum Drag { DRAG_NONE, DRAG_MOVE, DRAG_RESIZE, DRAG_VEL, DRAG_LANE, DRAG_FX };
+	enum Drag { DRAG_NONE, DRAG_MOVE, DRAG_RESIZE, DRAG_VEL, DRAG_LANE, DRAG_FX, DRAG_TANK };
 	int fxSel = 0;					// the effect the FX page shows
 	int fxParam = -1;				// the parameter being dragged
 	float fxDragAcc = 0.f;
@@ -107,6 +107,7 @@ struct LedgerDisplay : widget::OpaqueWidget {
 	~LedgerDisplay() {
 		delete rollPending;
 		delete fxPending;
+		delete tankPending;
 	}
 
 	void flushRollUndo() {
@@ -311,14 +312,200 @@ struct LedgerDisplay : widget::OpaqueWidget {
 			case kPageSeq: seqButton(e); break;
 			case kPageSong: songButton(e); break;
 			default:
-				if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.pos.x < laneW()) {
-					float lh = (box.size.y - 2 * pad) / S::kNumTracks;
-					int t = (int)((e.pos.y - pad) / lh);
-					if (t >= 0 && t < S::kNumTracks) module->requestSel = t;
+				if (e.pos.x < laneW()) {
+					int t = (int)std::floor((e.pos.y - pad) / tankGeo().lh);
+					if (e.button == GLFW_MOUSE_BUTTON_LEFT && t >= 0 && t < S::kNumTracks) module->requestSel = t;
+					tankButton(e);
 				}
 				break;
 		}
 		e.consume(this);
+	}
+
+	// ---- TANK: a step edited where it is drawn ------------------------------
+	//
+	// Drag a bar up or down and its step's notes go up or down a semitone per three
+	// pixels; click an empty step and it gets a note; right-click a step to clear it.
+	// A generator has no stored steps -- its bars are grown from the seed every frame
+	// -- so the first edit writes it down in place, the way CAPTURE would (same notes,
+	// same settings, the slot now a pattern that plays exactly what was heard) and then
+	// edits that. The whole gesture, write-down included, is one undo step.
+
+	struct TankGeo { float lh, lx0, lx1; };
+	TankGeo tankGeo() const {
+		TankGeo g;
+		g.lh = (box.size.y - 2 * pad) / S::kNumTracks;
+		g.lx0 = pad + 9.f;				// the track number
+		g.lx1 = laneW() - 34.f;			// rate, slot and flags
+		return g;
+	}
+	// The track and drawn step under p. Cells past a track's length are not steps.
+	bool tankHit(Vec p, int& t, int& s) const {
+		TankGeo g = tankGeo();
+		t = (int)std::floor((p.y - pad) / g.lh);
+		if (t < 0 || t >= S::kNumTracks || p.x < g.lx0 || p.x >= g.lx1) return false;
+		int length = view.v[S::TP(t, S::kTLength)];
+		int cells = std::max(16, length);
+		s = (int)std::floor((p.x - g.lx0) / ((g.lx1 - g.lx0) / cells));
+		return s >= 0 && s < length;
+	}
+	// The pattern step a drawn step plays: a pattern walks through its SHIFT, a
+	// generator's capture has none.
+	int tankPatStep(int t, int s) const {
+		int length = std::max(1, (int)view.v[S::TP(t, S::kTLength)]);
+		int shift = isPat(t) ? view.v[S::XP(t, S::kXShift)] : 0;
+		return ((s + shift) % length + length) % length;
+	}
+
+	L::Slot tankSlot;					// the working copy of the slot being edited
+	int tankT = -1, tankK = -1;
+	int tankCell = -1, tankStep = -1;	// the drawn step, and the pattern step it is
+	bool tankArmed = false;				// pressed on notes; a drag will move them
+	enum { TANK_MAX = 16 };
+	int tankIdx[TANK_MAX], tankOrig[TANK_MAX], tankN = 0;
+	float tankY0 = 0.f;
+	U::SlotUndo* tankPending = NULL;
+
+	// Take track t's playing slot for editing, writing a generator down first.
+	bool tankBegin(int t) {
+		int k = snap.active[t];
+		L::Slot* s = new L::Slot;
+		module->readSlotFull(t, k, *s);
+		if (s->kind == L::kSlotEmpty) { delete s; return false; }
+		tankPending = new U::SlotUndo(module, t, k, true, "edit steps");
+		if (s->kind == L::kSlotGen && module->writeDown(&view, t, *s)) {
+			SlotEdit* e = new SlotEdit;
+			e->op = SlotEdit::PUT_SLOT;
+			e->track = t;
+			e->slot = k;
+			e->data = *s;
+			module->sendEditWait(*e);
+			delete e;
+		}
+		tankSlot = *s;
+		delete s;
+		tankT = t;
+		tankK = k;
+		return true;
+	}
+
+	// The notes that start in pattern step st, remembered as they are now.
+	void tankCollect(int st) {
+		const L::Pattern& pat = tankSlot.pat;
+		int a = st * L::kTicksPerStep, b = a + L::kTicksPerStep;
+		tankN = 0;
+		for (int i = 0; i < pat.count && tankN < TANK_MAX; i++)
+			if (pat.notes[i].start >= a && pat.notes[i].start < b) {
+				tankIdx[tankN] = i;
+				tankOrig[tankN] = pat.notes[i].pitch;
+				tankN++;
+			}
+	}
+
+	void tankSend() {
+		SlotEdit* e = new SlotEdit;
+		e->op = SlotEdit::PUT_PATTERN;
+		e->track = tankT;
+		e->slot = tankK;
+		e->data = tankSlot;
+		e->data.pat.sort();
+		module->sendEditWait(*e);
+		delete e;
+	}
+
+	void tankEnd() {
+		if (tankPending) U::push(tankPending);
+		tankPending = NULL;
+		tankT = tankK = -1;
+		tankCell = tankStep = -1;
+		tankArmed = false;
+		tankN = 0;
+		drag = DRAG_NONE;
+	}
+
+	// Whether track t's drawn step s has a note (as the bar shows it).
+	bool tankStepFires(int t, int s) const {
+		if (isPat(t)) {
+			int st = tankPatStep(t, s);
+			int a = st * L::kTicksPerStep, b = a + L::kTicksPerStep;
+			for (int i = 0; i < cache[t].pat.count; i++)
+				if (cache[t].pat.notes[i].start >= a && cache[t].pat.notes[i].start < b) return true;
+			return false;
+		}
+		S::StepEval ev;
+		S::evalStep(&view, t, s, ev);
+		return ev.fires;
+	}
+
+	void tankButton(const ButtonEvent& e) {
+		int t, s;
+		if (!tankHit(e.pos, t, s)) return;
+		int st = tankPatStep(t, s);
+		bool fires = tankStepFires(t, s);
+		if (e.button == GLFW_MOUSE_BUTTON_RIGHT) {
+			if (!fires) { slotMenu(t, snap.active[t]); return; }
+			if (!tankBegin(t)) return;
+			tankCollect(st);
+			for (int j = tankN - 1; j >= 0; j--) tankSlot.pat.remove(tankIdx[j]);
+			tankSend();
+			tankEnd();
+			return;
+		}
+		if (e.button != GLFW_MOUSE_BUTTON_LEFT) return;
+		tankCell = s;
+		tankStep = st;
+		tankY0 = e.pos.y;
+		dragPos = e.pos;
+		drag = DRAG_TANK;
+		if (fires) {
+			// nothing changes until the bar actually moves: a click only selects the track
+			tankArmed = true;
+			return;
+		}
+		// an empty step: a note at the pitch of the nearest one before it (or C4)
+		if (!tankBegin(t)) { drag = DRAG_NONE; return; }
+		L::Pattern& pat = tankSlot.pat;
+		int a = st * L::kTicksPerStep, pitch = pat.count ? pat.notes[0].pitch : 60;
+		for (int i = 0; i < pat.count && pat.notes[i].start < a; i++) pitch = pat.notes[i].pitch;
+		L::Note n;
+		n.start = (uint16_t)a;
+		n.len = (uint16_t)std::max(1, (L::kTicksPerStep * (int)view.v[S::TP(t, S::kTGate)]) / 100);
+		n.pitch = (uint8_t)clamp(pitch, 0, 127);
+		n.vel = (uint8_t)clamp((int)view.v[S::kGMidiVelocity], 1, 127);
+		if (!pat.add(n)) { tankEnd(); return; }
+		tankCollect(st);
+		tankSend();
+	}
+
+	void tankMove(float y) {
+		if (tankArmed) {
+			if (std::fabs(y - tankY0) < 3.f) return;
+			int t = (int)std::floor((tankY0 - pad) / tankGeo().lh);
+			tankArmed = false;
+			if (!tankBegin(t)) { drag = DRAG_NONE; return; }
+			tankCollect(tankStep);
+		}
+		if (tankT < 0 || tankN == 0) return;
+		int d = (int)std::round((tankY0 - y) / 3.f);		// three pixels a semitone, up is up
+		bool changed = false;
+		for (int j = 0; j < tankN; j++) {
+			uint8_t p = (uint8_t)clamp(tankOrig[j] + d, 0, 127);
+			if (tankSlot.pat.notes[tankIdx[j]].pitch != p) { tankSlot.pat.notes[tankIdx[j]].pitch = p; changed = true; }
+		}
+		if (changed) tankSend();
+	}
+
+	// While a bar is dragged its note is printed over it.
+	void drawTankEdit(NVGcontext* vg) {
+		if (drag != DRAG_TANK || tankT < 0 || tankN == 0 || tankCell < 0) return;
+		TankGeo g = tankGeo();
+		int length = view.v[S::TP(tankT, S::kTLength)];
+		float cw = (g.lx1 - g.lx0) / std::max(16, length);
+		int top = 0;
+		for (int j = 0; j < tankN; j++) top = std::max(top, (int)tankSlot.pat.notes[tankIdx[j]].pitch);
+		float x = g.lx0 + (tankCell + 0.5f) * cw, y = pad + tankT * g.lh;
+		const panel::TextStyle LBL(panel::Face::Mono, 8.f, panel::LIME, NVG_ALIGN_CENTER | NVG_ALIGN_BOTTOM);
+		panel::text(vg, LBL, x, y + 1.f, noteName(top));
 	}
 
 	void rollButton(const ButtonEvent& e) {
@@ -413,7 +600,17 @@ struct LedgerDisplay : widget::OpaqueWidget {
 	}
 
 	void onDragMove(const DragMoveEvent& e) override {
-		if (drag == DRAG_FX && page() == kPageFx) { fxDrag(e.mouseDelta.x / getAbsoluteZoom()); return; }
+		if (drag == DRAG_FX && page() == kPageFx) {
+			// across or up: either way of dragging a bar moves it
+			Vec d = e.mouseDelta.div(getAbsoluteZoom());
+			fxDrag(std::fabs(d.x) >= std::fabs(d.y) ? d.x : -d.y);
+			return;
+		}
+		if (drag == DRAG_TANK) {
+			dragPos = dragPos.plus(e.mouseDelta.div(getAbsoluteZoom()));
+			tankMove(dragPos.y);
+			return;
+		}
 		if (drag == DRAG_NONE || page() != kPageRoll) return;
 		float z = getAbsoluteZoom();
 		dragPos = dragPos.plus(e.mouseDelta.div(z));
@@ -445,6 +642,7 @@ struct LedgerDisplay : widget::OpaqueWidget {
 	float dragPosStartY() const { return dragStartY; }
 
 	void onDragEnd(const DragEndEvent& e) override {
+		if (drag == DRAG_TANK) tankEnd();
 		if ((drag == DRAG_MOVE || drag == DRAG_RESIZE || drag == DRAG_VEL) && selNote >= 0 && selNote < roll.pat.count) {
 			L::Note n = roll.pat.notes[selNote];
 			roll.pat.sort();
@@ -1140,9 +1338,8 @@ struct LedgerDisplay : widget::OpaqueWidget {
 		const int16_t* v = view.v;
 		const S::Dtc* dtc = view.dtc;
 		bool anySolo = S::anySoloOf(&view);
-		const float lh = (box.size.y - 2 * pad) / S::kNumTracks;
-		const float numW = 9.f, tailW = 34.f;
-		const float lx0 = pad + numW, lx1 = laneW() - tailW;
+		const TankGeo g = tankGeo();
+		const float lh = g.lh, lx0 = g.lx0, lx1 = g.lx1;
 
 		const panel::TextStyle NUM(panel::Face::Mono, std::min(9.f, lh * 0.8f), panel::SAGE,
 			NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
@@ -1182,22 +1379,11 @@ struct LedgerDisplay : widget::OpaqueWidget {
 					pLo = std::min(pLo, (int)cache[t].pat.notes[i].pitch);
 					pHi = std::max(pHi, (int)cache[t].pat.notes[i].pitch);
 				}
-			for (int s = 0; s < cells; s++) {
-				float x = lx0 + s * cw;
-				if (s >= length) {
-					nvgBeginPath(vg);
-					nvgCircle(vg, x + bw * 0.5f, yc, 0.5f);
-					nvgFillColor(vg, panel::alpha(panel::SAGE, 0.3f));
-					nvgFill(vg);
-					continue;
-				}
-				bool isPos = s == tr.pos;
-				if (isPos) {
-					nvgBeginPath(vg);
-					nvgRect(vg, x, barTop, bw, barH);
-					nvgFillColor(vg, panel::alpha(panel::SAGE, 0.28f));
-					nvgFill(vg);
-				}
+			// Each kind of mark is gathered into one path and filled once: a fill per
+			// cell was over a thousand draw calls a frame on a full tank.
+			float hF[S::kMaxSteps];
+			int chordN[S::kMaxSteps];
+			for (int s = 0; s < cells && s < length && s < S::kMaxSteps; s++) {
 				float hFrac = 0.f;
 				int chord = 0;
 				if (pat) {
@@ -1219,23 +1405,53 @@ struct LedgerDisplay : widget::OpaqueWidget {
 					S::evalStep(&view, t, s, ev);
 					if (ev.fires) hFrac = ev.barH / 5.f;
 				}
+				hF[s] = hFrac;
+				chordN[s] = chord;
+			}
+			int pos = tr.pos >= 0 && tr.pos < length ? tr.pos : -1;
+			// past the end: a dot per cell
+			if (cells > length) {
 				nvgBeginPath(vg);
-				if (hFrac <= 0.f) {
-					nvgRect(vg, x, barBot - 0.7f, bw, 0.7f);
-					nvgFillColor(vg, panel::alpha(panel::SAGE, muted ? 0.25f : 0.45f));
-				}
-				else {
-					float h = barH * hFrac;
-					nvgRect(vg, x, barBot - h, bw, h);
-					nvgFillColor(vg, isPos ? panel::LIME : base);
-				}
+				for (int s = length; s < cells; s++) nvgCircle(vg, lx0 + s * cw + bw * 0.5f, yc, 0.5f);
+				nvgFillColor(vg, panel::alpha(panel::SAGE, 0.3f));
 				nvgFill(vg);
-				for (int c = 1; c < chord && c < 4; c++) {
-					nvgBeginPath(vg);
-					nvgRect(vg, x, barTop - 0.2f + c * 1.6f - 1.6f, bw, 0.6f);
-					nvgFillColor(vg, panel::alpha(panel::LIME, 0.8f));
-					nvgFill(vg);
-				}
+			}
+			// the playing step's backdrop
+			if (pos >= 0) {
+				nvgBeginPath(vg);
+				nvgRect(vg, lx0 + pos * cw, barTop, bw, barH);
+				nvgFillColor(vg, panel::alpha(panel::SAGE, 0.28f));
+				nvgFill(vg);
+			}
+			// rests
+			nvgBeginPath(vg);
+			for (int s = 0; s < length && s < cells; s++)
+				if (hF[s] <= 0.f) nvgRect(vg, lx0 + s * cw, barBot - 0.7f, bw, 0.7f);
+			nvgFillColor(vg, panel::alpha(panel::SAGE, muted ? 0.25f : 0.45f));
+			nvgFill(vg);
+			// notes
+			nvgBeginPath(vg);
+			for (int s = 0; s < length && s < cells; s++)
+				if (hF[s] > 0.f && s != pos) { float h = barH * hF[s]; nvgRect(vg, lx0 + s * cw, barBot - h, bw, h); }
+			nvgFillColor(vg, base);
+			nvgFill(vg);
+			if (pos >= 0 && hF[pos] > 0.f) {
+				float h = barH * hF[pos];
+				nvgBeginPath(vg);
+				nvgRect(vg, lx0 + pos * cw, barBot - h, bw, h);
+				nvgFillColor(vg, panel::LIME);
+				nvgFill(vg);
+			}
+			// a tick per extra note of a chord
+			bool anyChord = false;
+			for (int s = 0; s < length && s < cells && !anyChord; s++) anyChord = chordN[s] > 1;
+			if (anyChord) {
+				nvgBeginPath(vg);
+				for (int s = 0; s < length && s < cells; s++)
+					for (int c = 1; c < chordN[s] && c < 4; c++)
+						nvgRect(vg, lx0 + s * cw, barTop - 0.2f + c * 1.6f - 1.6f, bw, 0.6f);
+				nvgFillColor(vg, panel::alpha(panel::LIME, 0.8f));
+				nvgFill(vg);
 			}
 
 			// rate, slot, follow, solo/mute
@@ -1257,6 +1473,7 @@ struct LedgerDisplay : widget::OpaqueWidget {
 		nvgStrokeWidth(vg, 0.5f);
 		nvgStroke(vg);
 
+		drawTankEdit(vg);
 		drawBooks(vg);
 	}
 

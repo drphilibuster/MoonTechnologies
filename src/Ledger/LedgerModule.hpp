@@ -251,6 +251,7 @@ struct Ledger : Module {
 	std::atomic<bool> requestReseedAll{false};
 	std::atomic<bool> requestCapture{false};
 	dsp::ClockDivider modDiv, lightDiv, snapDiv;
+	uint32_t modPass = 0;
 	float gateNow[S::kNumTracks] = {};
 	float captFlash = 0.f;
 
@@ -601,8 +602,14 @@ struct Ledger : Module {
 		if (bpm != bookLast[3]) { bookLast[3] = bpm; setBase(S::kGBPM, bpm); }
 	}
 
-	// Recompute every CV's contribution and hand the engine the results.
-	void modulate() {
+	// Recompute every CV's contribution and hand the engine the results. A track that
+	// nothing modulates -- no knob CV patched, no live matrix slot -- has nothing to
+	// recompute but its effects' playing values, which only an edit moves; those are
+	// done on `all` passes only (every 16th, 1.3 ms at 48 kHz), its mutes every pass.
+	void modulate(bool all = true) {
+		bool anyPotCv = false;
+		for (int k = 0; k < L::kNumDests && !anyPotCv; k++)
+			anyPotCv = inputs[POT_CV_INPUT + k].isConnected();
 		float cvIn[L::kNumCvSources];
 		bool cvInOn[L::kNumCvSources];
 		for (int i = 0; i < L::kNumCvSources; i++) {
@@ -610,6 +617,18 @@ struct Ledger : Module {
 			cvIn[i] = cvInOn[i] ? inputs[CV_INPUT + i].getVoltage() : 0.f;
 		}
 		for (int t = 0; t < S::kNumTracks; t++) {
+			if (!all && !anyPotCv) {
+				bool live = false;
+				for (int i = 0; i < L::kNumMatrixSlots && !live; i++)
+					live = matrix[t][i].live() && matrix[t][i].dest >= 0;
+				if (!live) {
+					// mutes still land at once: they are a performance control
+					const L::Slot& sl = slots[t][active[t]];
+					for (int i = 0; i < L::kChainSlots; i++)
+						chains[t].setMuted(i, chains[t].fx[i].gmute || ((sl.fxMute >> i) & 1));
+					continue;
+				}
+			}
 			// the sources: CV A-D, this track's MOD 1-4 lanes and its CCs, as 0..10 V
 			float cv[L::kNumMatrixSources];
 			bool cvOn[L::kNumMatrixSources];
@@ -949,6 +968,21 @@ struct Ledger : Module {
 		bumpSlot(t, k);
 		queued[t] = k;
 		captFlash = 1.f;
+	}
+
+	// UI thread: track t's playing slot, a generator, written down where it is -- the
+	// notes `from` (the engine, or the UI's copy of it) would play at each step, on the
+	// settings CAPTURE gives a captured loop -- so it can be edited step by step. Sent
+	// as a PUT_SLOT on the playing slot, it goes on playing exactly what it played.
+	// False if the slot is not a generator.
+	bool writeDown(const S::Shoal* from, int t, L::Slot& out) {
+		readSlotFull(t, active[t], out);
+		if (out.kind != L::kSlotGen)
+			return false;
+		L::capture(from, t, (uint8_t)from->v[S::kGMidiVelocity], out.pat);
+		L::captureBlock(out.block);
+		out.kind = L::kSlotPat;
+		return true;
 	}
 
 	// The UI's edits, applied in the order they were made.
@@ -1313,7 +1347,7 @@ struct Ledger : Module {
 		syncPots();
 		syncBooks();
 		if (modDiv.process())
-			modulate();
+			modulate((modPass++ & 15) == 0);
 
 		if (muteTrig.process(params[MUTE_PARAM].getValue() > 0.f))
 			setBase(S::TP(sel, S::kTMute), !base[S::TP(sel, S::kTMute)]);

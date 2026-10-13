@@ -66,6 +66,8 @@ Both processors run the unit's own OS: the 80C515 that owns the front panel, the
 group: hardware
 credit: *A Clavia Nord Lead 2X, running its own firmware. OS image not included.*
 
+*Nord, Clavia and Nord Lead are trademarks of their owners; this module is not affiliated with or endorsed by Clavia / Nord Keyboards, and the names say only which instrument it emulates.*
+
 The real MC68331 operating system, instruction by instruction, driving two emulated DSP56362s on the dsp56300 core -- the whole Nord Lead 2X from its 512 KB OS image. The front panel is the unit's: every knob on the 68331's converter, every button on its key lines, and the LED multiplex and three-digit display drawn at the brightness the firmware drives them, LED pairs and all. Played over MIDI, with Clavia's factory programs loaded as SysEx; the patch keeps the program flash.
 
 ## Rebate
@@ -186,10 +188,10 @@ credit: *Day 9 — and a long way past it.*
 Started as the six drum voices of that folder and is now a drum machine. The voices are modal banks struck by a real contact pulse: the BaSnaHi kick with the SmurfDrum as its second model, a snare switching between XORbell, the percussive noise voice and Karplus–Strong, a hi-hat whose one knob sweeps metal to noise to the Tiny Dazzler, and all three TomTomTom rings at once as three differently-sized drums. **None of the rest is in the original:** its own clock, a ranked pattern engine (a metric spine plus Euclidean necklaces, with per-voice lengths and an EVOLVE that moves the loop pass to pass), per-voice clock ratios, a BURST mode that hands each voice's steps to its own ratio, velocity-scaled gate outputs, and a SEED that swaps patterns on the bar line. The physics is out of the literature rather than the schematic — Bilbao's contact force, Bessel-zero mode ratios, Karplus–Strong's drum recurrence.
 
 ## PaymentSchedule
-group: miaw
-credit: *Day 10, consolidated.*
+group: built
+credit: *In the line of Voxglitch's VX Drum Sequencer.*
 
-The Baby8 with the 4017 sequential switch falling out of the same counter in both directions, the 4031 tap looper, and the varimode quantizer.
+An eight-track drum sequencer whose screen is the grid. Click a step to set a hit, drag across to paint, and switch the grid between a step's six values (gate, velocity, chance, ratchet, micro-timing offset and a free CV) to drag them as bars. Each track has its own length, up to 64 steps, and its own rate against the clock, from four steps a clock to one every sixteen, including 3:2. Ratchets, offsets and swing are fractions of the measured clock, so they follow any tempo. Sixteen pattern memories, picked on the screen or by CV, change at the bar. Each track has a trigger and a held velocity; the triggers and CV lanes also come out as one eight-channel cable each. Copy and paste go through the system clipboard, and Rack's undo covers every edit.
 
 ## SignHere
 group: miaw

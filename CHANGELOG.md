@@ -5,6 +5,56 @@ these modules run on, so a Rack 2 plugin is always `2.x.y`.
 
 ## Unreleased
 
+### Changed: Payment Schedule is a drum sequencer
+
+The Modular in a Week Baby8 / 4031 / varimode board is retired. Payment Schedule is now an eight-track drum sequencer in the
+line of Voxglitch's VX Drum Sequencer, with the grid on its screen (19 HP, was 22). It has:
+
+* up to 64 steps a track, each track with its own length and rate (x4 to /16, and 3:2);
+* per-step gate, velocity, chance, ratchet, micro-timing offset (early or late) and a free CV, edited as lanes on the screen;
+* swing, and sixteen patterns that change at the bar, chosen on the screen or by CV;
+* a trigger and a held velocity per track, plus 8-channel TRIGS and CV cables and EOC;
+* system-clipboard copy and paste, randomize by drum role, rotate, and undo on every edit.
+
+The engine is `src/PaymentSchedule/DrumSeq.hpp`; `tests/PaymentSchedule/test_drumseq.cpp` drives it with trigger and square
+clocks. **Old patches** keep the slug and load, but their params belonged to other controls: they are reset to defaults and
+the module starts with its starter beat. The old circuit models (`Sequencer.hpp`, `Cd4017.hpp`, `Cd4031.hpp`, the PIC16F684
+emulator and the varimode firmware) are unused but still in the tree and still tested.
+
+### Changed: Ledger -- edit the TANK's bars, less CPU
+
+* **The TANK's step bars edit in place.**
+  * Drag a bar up or down to move its step's notes by semitones.
+  * Click an empty step for a note; right-click a step to clear it.
+  * On a generator track the first edit writes the loop down where it is (`Ledger::writeDown`, what CAPTURE writes, sent
+    to the playing slot), so it plays on unchanged and then takes the edit. It is one undo step with the edit.
+    `tests/Ledger/test_module.cpp` checks the write-down replays the generator frame for frame, and that an edited step
+    moves alone.
+  * The FX page's bars drag up and down as well as across.
+* **Audio thread 1.35% -> 0.87% of a core (8 tracks, no effects), 2.2% -> 1.45% (three effects a track).**
+  * A track nothing modulates (no knob CV, no live matrix slot) recomputes its effects' playing values every 64 samples,
+    not every 4; its mutes still land every 4.
+  * An effect's event queue answers "nothing due yet" without a scan (`EvQueue::minAt`).
+* **Drawing.** The TANK draws each track's bars as a few paths instead of one fill per cell.
+* **panelkit:** `panel::text` caches each face's font handle, instead of building the path string and searching Rack's font
+  cache on every call. Every panel's text gets cheaper.
+
+### Changed: Amortization -- TILT the right way round, sings from silence, about 30% less CPU
+
+* **TILT clockwise is bright**, as on a real unit (the schematic draws the pot the other way). The *TILT, clockwise is* menu is
+  gone and old patches' `tiltCwBright` is ignored, so a patch saved with the old default now turns the same knob the right way.
+* **The loop starts by itself.** With nothing patched a real Verbtronic sings once FEEDBACK is far enough up, and stays silent on
+  MIX OUT at MIX minimum. The model could not: its PT2399s had a hard dead band (an input inside the modulator's idle ripple left
+  the idle bit pattern untouched), and the 40 uV of per-sample noise sat entirely inside it -- the earlier "self-oscillation" checks
+  all started from a 5 V burst. Each chip's comparator now has 0.6 mV rms of its own noise, a fresh draw per bit
+  (`Pt2399::cmpNoise`, `assumed::CMP_NOISE_V`): Verb starts at about 90 % FEEDBACK, Tronic near the top, MIX OUT stays exactly
+  dry at minimum. VERB OUT hisses about 4-6 mV rms at FEEDBACK 0. New checks start from silence, and show quiet comparators never
+  start Tronic.
+* **CPU 2.7% -> 1.9% of a core (Verb), 1.3% -> 1.0% (Tronic).** The three chips' bit loops run in one pass
+  (`Pt2399::modulateN`), and each demodulator is pipelined into the previous sample's modulator (`Pt2399::pipeline`, as
+  Racketeer already does). Bit-identical to the chips one at a time (new check, with a negative control). Racketeer and
+  Diversified's `modulate()` now goes through the same kernel; their bit-identity tests still pass.
+
 ### Added: Accrual, the 4069 VCO
 
 The Modular in a Week 4069 VCO (Unfinished projects, kristian.borgstedt 2019-12-06) solved as its circuit. A BC560/BC550

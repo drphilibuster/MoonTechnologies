@@ -84,9 +84,9 @@ spectrum and a warped field, driven by audio and CV.
 |---|---|---|---|
 | **[Accrual](docs/Accrual.md)**<br>4069 saw & pulse VCO | **[Deduction](docs/Deduction.md)**<br>multimode filter | **[Audit Logic](docs/AuditLogic.md)**<br>logic, switches & divider | **[Kickback](docs/Kickback.md)**<br>drum machine |
 
-| <img src="tools/previews/PaymentSchedule.png" width="185"> | <img src="tools/previews/SignHere.png" width="143"> | <img src="tools/previews/Diversified.png" width="118"> | <img src="tools/previews/Toll.png" width="84"> |
+| <img src="tools/previews/PaymentSchedule.png" width="160"> | <img src="tools/previews/SignHere.png" width="143"> | <img src="tools/previews/Diversified.png" width="118"> | <img src="tools/previews/Toll.png" width="84"> |
 |---|---|---|---|
-| **[Payment Schedule](docs/PaymentSchedule.md)**<br>8-step sequencer | **[Sign Here](docs/SignHere.md)**<br>controllers | **[Diversified](docs/Diversified.md)**<br>multi-effects | **[Toll](docs/Toll.md)**<br>struck-metal voice |
+| **[Payment Schedule](docs/PaymentSchedule.md)**<br>drum sequencer | **[Sign Here](docs/SignHere.md)**<br>controllers | **[Diversified](docs/Diversified.md)**<br>multi-effects | **[Toll](docs/Toll.md)**<br>struck-metal voice |
 
 | <img src="tools/previews/Obfuscation.png" width="101"> | <img src="tools/previews/ScheduleA.png" width="118"> |
 |---|---|
@@ -169,6 +169,12 @@ A phrase counter for arranging a patch. One base length N and six lines that eac
 *After Ormer Modular's Shoal (MIT) and Squarp's Hermod+.*
 
 An eight-track generative sequencer. Each track's melody is grown from a seed, never written down. Every step is worked out from the seed the moment it plays, so a knob turned back returns the exact line it left, and a seed number recalls a melody anywhere. Its generator is Shoal's engine, ported line for line and tested frame by frame against the original. Ledger therefore keeps all of Shoal: chance, bipolar note and octave variation, fifteen walks, twenty-nine exact clock ratios, Follow (tracks sharing a seed through their own filters, which gives harmonies and canons), Evolve, Breathe, Weight, Slop, Freeze, Currents and end-of-sequence pulses. On top of it sit Hermod-style written patterns: a polyphonic piano roll with modulation lanes, sixteen slots per track launched as sequences, and CAPTURE, which writes a generated loop down so it can be edited. Each track runs its notes through up to eight of Hermod's nineteen effects (arpeggiator, echo, ratchet, Turing register, LFO and the rest), with per-slot values and mutes. MIDI in plays and records into the tracks (overdub, replace or looper), its CCs drive the mod matrix, and a transpose leader moves them. Two MIDI outputs carry every track on its own channel, along with clock and transport. Rows of slots launch together on a loop's end, a grid, or when every loop comes round at once, and a song strings rows together, each played its number of times. Rack's undo covers the pattern, slot, effect and song edits.
+
+### [Payment Schedule](docs/PaymentSchedule.md) — **drum sequencer** · 19 HP · *Sequencer, Drum, Polyphonic*
+
+*In the line of Voxglitch's VX Drum Sequencer.*
+
+An eight-track drum sequencer whose screen is the grid. Click a step to set a hit, drag across to paint, and switch the grid between a step's six values (gate, velocity, chance, ratchet, micro-timing offset and a free CV) to drag them as bars. Each track has its own length, up to 64 steps, and its own rate against the clock, from four steps a clock to one every sixteen, including 3:2. Ratchets, offsets and swing are fractions of the measured clock, so they follow any tempo. Sixteen pattern memories, picked on the screen or by CV, change at the bar. Each track has a trigger and a held velocity; the triggers and CV lanes also come out as one eight-channel cable each. Copy and paste go through the system clipboard, and Rack's undo covers every edit.
 
 ## Hardware, running its own firmware
 
@@ -271,12 +277,6 @@ Four logic gates with selectable functions and the 0 V / 12 V reference, gated a
 *Day 9 — and a long way past it.*
 
 Started as the six drum voices of that folder and is now a drum machine. The voices are modal banks struck by a real contact pulse: the BaSnaHi kick with the SmurfDrum as its second model, a snare switching between XORbell, the percussive noise voice and Karplus–Strong, a hi-hat whose one knob sweeps metal to noise to the Tiny Dazzler, and all three TomTomTom rings at once as three differently-sized drums. **None of the rest is in the original:** its own clock, a ranked pattern engine (a metric spine plus Euclidean necklaces, with per-voice lengths and an EVOLVE that moves the loop pass to pass), per-voice clock ratios, a BURST mode that hands each voice's steps to its own ratio, velocity-scaled gate outputs, and a SEED that swaps patterns on the bar line. The physics is out of the literature rather than the schematic — Bilbao's contact force, Bessel-zero mode ratios, Karplus–Strong's drum recurrence.
-
-### [Payment Schedule](docs/PaymentSchedule.md) — **8-step sequencer** · 22 HP · *Sequencer, Switch, Quantizer*
-
-*Day 10, consolidated.*
-
-The Baby8 with the 4017 sequential switch falling out of the same counter in both directions, the 4031 tap looper, and the varimode quantizer.
 
 ### [Sign Here](docs/SignHere.md) — **controllers** · 17 HP · *Controller, Utility*
 

@@ -40,11 +40,6 @@ struct Amortization : Module {
 	double fbS = 0.5, tiltS = 0.5, mixS = 0.5, attS = 0.5;
 	double smoothK = 0.01;
 
-	// Context menu: which way the TILT pot turns. The schematic puts the tone
-	// stage's bass-up, treble-down end at the CW lug; the manual's copy reads
-	// "low to flat to high". Unresolved without a unit in hand.
-	bool tiltCwBright = false;
-
 	// Read-outs, published for the display from the audio thread.
 	float dispDelayMs = 0.f;
 	float dispClockMHz = 0.f;
@@ -99,7 +94,7 @@ struct Amortization : Module {
 		Verbtronic::In in;
 		in.vin = clampd((double)inputs[IN_INPUT].getVoltageSum(), -12.0, 12.0);
 		in.feedback = fbS;
-		in.tilt = tiltCwBright ? 1.0 - tiltS : tiltS;
+		in.tilt = tiltS;
 		in.mix = mixS;
 		in.mixAtten = attS;
 		in.mixCv = inputs[MIX_INPUT].getVoltageSum();
@@ -128,16 +123,8 @@ struct Amortization : Module {
 		}
 	}
 
-	json_t* dataToJson() override {
-		json_t* root = json_object();
-		json_object_set_new(root, "tiltCwBright", json_boolean(tiltCwBright));
-		return root;
-	}
-
-	void dataFromJson(json_t* root) override {
-		json_t* j = json_object_get(root, "tiltCwBright");
-		if (j) tiltCwBright = json_boolean_value(j);
-	}
+	// Patches from before 2026-10 carry "tiltCwBright"; it is ignored. TILT
+	// clockwise is bright, as on a real unit, whatever that flag said.
 };
 
 
@@ -261,19 +248,6 @@ struct AmortizationWidget : ModuleWidget {
 		addInput(createInputCentered<panel::PortInMain>(panel::mm(panel::IN_POS.x, panel::IN_POS.y), module, Amortization::IN_INPUT));
 		addOutput(createOutputCentered<panel::PortOutMain>(panel::mm(panel::MIX_OUT_POS.x, panel::MIX_OUT_POS.y), module, Amortization::MIX_OUTPUT));
 		addOutput(createOutputCentered<panel::PortOut>(panel::mm(panel::VERB_OUT_POS.x, panel::VERB_OUT_POS.y), module, Amortization::VERB_OUTPUT));
-	}
-
-	void appendContextMenu(Menu* menu) override {
-		Amortization* m = dynamic_cast<Amortization*>(module);
-		if (!m)
-			return;
-		menu->addChild(new MenuSeparator);
-		menu->addChild(createMenuLabel("Amortization"));
-
-		menu->addChild(createIndexSubmenuItem("TILT, clockwise is",
-			{"Dark (as the schematic draws the pot)", "Bright"},
-			[=]() { return m->tiltCwBright ? 1 : 0; },
-			[=](int v) { m->tiltCwBright = v != 0; }));
 	}
 };
 

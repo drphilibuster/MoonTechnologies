@@ -2,14 +2,14 @@
 
 One VCV Rack 2 plugin, slug `MoonTechnologies`, brand **Moon Technologies**,
 author **Taxxess**. Thirty-seven modules sharing one panel pipeline: the three
-originals (`PatchAudit`, `Retroactive`, `UncertaintyPolicy`), eleven built to
+originals (`PatchAudit`, `Retroactive`, `UncertaintyPolicy`), twelve built to
 order (`Dividend`, `TaxBracket`, `Racketeer`, `Gross`, `Amortization`,
 `Repossession`, `Collusion`, `Reconciliation`, `Dependents`, `Calculation`,
-`Ledger`), one expander
-(`ScheduleA`, which attaches to `Repossession`), eleven Modular-in-a-Week banks
+`Ledger`, `PaymentSchedule` -- a drum sequencer since 2026-10, it was a
+Modular-in-a-Week bank), one expander
+(`ScheduleA`, which attaches to `Repossession`), ten Modular-in-a-Week banks
 (`SixFigures`, `Garnishment`, `Consolidation`, `Installment`, `Volatility`,
-`Deduction`, `AuditLogic`, `Kickback`, `PaymentSchedule`, `SignHere`,
-`Diversified`), one voice that split off from a bank (`Toll`, out of
+`Deduction`, `AuditLogic`, `Kickback`, `SignHere`, `Diversified`), one voice that split off from a bank (`Toll`, out of
 `Kickback`), one bank doubled into a module of its own (`Bailout`, out of
 `Consolidation`), one new effect (`Obfuscation`, a three-band allpass
 matrix), two about video (`Transmittal`, which publishes it, and
@@ -201,7 +201,9 @@ the source, to name them.
 
 ## Firmware that runs on an emulated PIC
 
-`Payment Schedule`'s quantizer is a PIC16F684 (`src/Pic16f684.hpp`) running firmware. **Our own
+`Payment Schedule`'s old varimode quantizer was a PIC16F684 (`src/Pic16f684.hpp`) running firmware.
+The module no longer uses it (it is a drum sequencer now); the emulator, the firmware and their
+tests stay in the tree, still built and tested, until someone decides to remove them. **Our own
 firmware is in this repo**: `firmware/varimode/varimode_fixed.asm`, with its `.hex` and the
 generated `src/PaymentSchedule/VarimodeFirmware.hpp`. Edit the assembly and `make firmware`;
 `tools/pic16asm.py` is the assembler (no MPASM here), and `make test` fails if the committed

@@ -71,9 +71,20 @@ struct EvQueue
 	Item		q[N];
 	int			n;
 	uint32_t	seq;
+	// No waiting item is due before this: popDue() answers "nothing yet" without a scan,
+	// which is every sample but the few an event leaves on. Removing items keeps it a
+	// bound; anything that makes an item earlier must lower it (push, retime).
+	uint32_t	minAt;
 
-	EvQueue() : n( 0 ), seq( 0 ) {}
+	EvQueue() : n( 0 ), seq( 0 ), minAt( 0 ) {}
 	void clear() { n = 0; }
+
+	// Every waiting item due at `at`.
+	void retime( uint32_t at )
+	{
+		for ( int i = 0; i < n; ++i ) q[i].at = at;
+		minAt = at;
+	}
 
 	bool push( uint32_t at, const Ev& ev )
 	{
@@ -86,6 +97,7 @@ struct EvQueue
 			if ( victim < 0 ) return false;
 			q[victim] = q[--n];
 		}
+		if ( n == 0 || (int32_t)( at - minAt ) < 0 ) minAt = at;
 		q[n].at = at;
 		q[n].seq = seq++;
 		q[n].ev = ev;
@@ -96,6 +108,7 @@ struct EvQueue
 	// The earliest due item (time, then order pushed), removed into `out`; false if none.
 	bool popDue( uint32_t now, Ev& out )
 	{
+		if ( n == 0 || (int32_t)( minAt - now ) > 0 ) return false;
 		int best = -1;
 		for ( int i = 0; i < n; ++i )
 		{
@@ -104,7 +117,13 @@ struct EvQueue
 				 || ( q[i].at == q[best].at && (int32_t)( q[i].seq - q[best].seq ) < 0 ) )
 				best = i;
 		}
-		if ( best < 0 ) return false;
+		if ( best < 0 )
+		{
+			// the bound was low: make it the real earliest, so the next samples skip
+			minAt = q[0].at;
+			for ( int i = 1; i < n; ++i ) if ( (int32_t)( q[i].at - minAt ) < 0 ) minAt = q[i].at;
+			return false;
+		}
 		out = q[best].ev;
 		q[best] = q[--n];
 		return true;

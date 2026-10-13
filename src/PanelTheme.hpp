@@ -109,13 +109,30 @@ struct TextStyle {
 	TextStyle sized(float px) const { TextStyle s = *this; s.size = px; return s; }
 };
 
+/** A face's font handle, looked up once per window. Rack's loadFont builds the
+    path string and searches its cache on every call, and text is drawn hundreds of
+    times a frame across a patch; the handle does not change while the window
+    lives. -1 (not loaded yet) is not kept, so a failed load is retried. UI thread
+    only, like everything that draws. */
+inline int faceHandle(Face f) {
+	static window::Window* owner[3] = {NULL, NULL, NULL};
+	static int handle[3] = {-1, -1, -1};
+	int i = (int)f;
+	if (handle[i] < 0 || owner[i] != APP->window) {
+		std::shared_ptr<window::Font> font = APP->window->loadFont(facePath(f));
+		handle[i] = font ? font->handle : -1;
+		owner[i] = APP->window;
+	}
+	return handle[i];
+}
+
 /** Binds a style to the context. False means the face has not loaded yet and the
     caller must draw nothing: nvgText with no face bound is undefined. */
 inline bool bindStyle(NVGcontext* vg, const TextStyle& s) {
-	std::shared_ptr<window::Font> font = APP->window->loadFont(facePath(s.face));
-	if (!font)
+	int handle = faceHandle(s.face);
+	if (handle < 0)
 		return false;
-	nvgFontFaceId(vg, font->handle);
+	nvgFontFaceId(vg, handle);
 	nvgFontSize(vg, s.size);
 	nvgTextAlign(vg, s.align);
 	nvgTextLetterSpacing(vg, s.tracking);

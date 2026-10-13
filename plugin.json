@@ -255,12 +255,12 @@
     {
       "slug": "PaymentSchedule",
       "name": "Payment Schedule",
-      "description": "Modular in a Week sequencer: Baby8 steps, 4017 sequential switch in both directions, 4031 tap looper and the varimode quantizer",
+      "description": "Eight-track drum sequencer: up to 64 steps a track, each track its own length and clock rate, per-step velocity, chance, ratchet, micro-timing and CV, sixteen patterns",
       "manualUrl": "https://github.com/drphilibuster/MoonTechnologies/blob/main/docs/PaymentSchedule.md",
       "tags": [
         "Sequencer",
-        "Switch",
-        "Quantizer"
+        "Drum",
+        "Polyphonic"
       ]
     },
     {

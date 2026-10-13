@@ -97,8 +97,8 @@ goes on ringing in a different shape.
 
 | Control | |
 |---|---|
-| **FEEDBACK** | 0–100 %, a linear pot. Only the upper part of the travel feeds back much (see above). As modelled the mesh is just under unity even at zero — tails of several seconds — and the loop starts to sing at about 70 % in either mode; past that the limiter, the chips and the make-up stage clip it into a sustained wail. **How long the tail runs at zero, and where it starts to sing, depend on the chip's loss per pass, which the datasheet fixes only to about ±0.5 dB** — see the table below, and measure those two on a unit. |
-| **TILT** | The tone pot. −100 % to +100 %; flat at centre. See the note on direction below. |
+| **FEEDBACK** | 0–100 %, a linear pot. Only the upper part of the travel feeds back much (see above). As modelled the mesh is just under unity even at zero — tails of several seconds — and with nothing patched the loop starts to sing by itself — from the chips' own noise — at about 90 % in Verb and near the top of the knob in Tronic; past that the limiter, the chips and the make-up stage clip it into a sustained wail. **How long the tail runs at zero, and where it starts to sing, depend on the chip's loss per pass, which the datasheet fixes only to about ±0.5 dB** — see the table below, and measure those two on a unit. |
+| **TILT** | The tone pot. −100 % to +100 %; flat at centre, clockwise brighter (treble up, bass down), as on a real unit. |
 | **MODE** | **Verb** (switch closed) or **Tronic**. The original's toggle is the TRONIC/VERB word at the top right of the read-out: click it to flip. The word shows what is actually running once the gate has had its say; a small clay GATE under it means the gate is holding Verb while the toggle is at Tronic. |
 | **MIX** | The OUTPUT MIX pot. 0 is dry, 100 % is 99 % wet. |
 | **MIX CV** (trimmer) | The attenuverter on the MIX CV jack. Centre: no effect. Clockwise passes the CV, anticlockwise inverts it. |
@@ -123,10 +123,6 @@ Mono, as the original is. Everything the previous version added around it —
 stereo, SIZE, PREDELAY, FREEZE, MOD, CV over FEEDBACK/TILT/SIZE — has no
 counterpart in the circuit and has been removed.
 
-## Context menu
-
-* **TILT, clockwise is** — *Dark* (default) or *Bright*. See below.
-
 ## What is the schematic, and what is assumed
 
 Everything in `src/Amortization/Verbtronic.hpp` is a value off the schematic, a
@@ -139,11 +135,10 @@ improves; every one is a single constant.
 | **PT2399 modulator internals** — the step size and its adaptation | Not in the datasheet. The leak (4.7k × 0.047 µF = 221 µs) is. The step sizes (0.15 V, adapting up to 5 V on runs of identical bits, 0.1 ms run filter) are set so the model meets the datasheet's gain (−0.3 dB against −0.5 typical), THD (0.40 % at 2 MHz against 0.3 % typical, 1 % max) and output swing (1.9 Vrms at 10 % THD+N against 2 typical). Those specs do not determine them uniquely. |
 | **The chip's gain per pass** | Taken as what the modulator model gives (−0.1 to −0.3 dB at audio). The mesh sits just under unity, so **this is the most sensitive number in the module**: at −0.5 dB per pass the Verb tail at zero feedback falls from over ten seconds to about four, and the loop does not start to sing until the top of the knob (about 90 % and up) instead of about 70 %. Two measurements on a unit fix it — the tail length at FEEDBACK 0 in Verb, and the FEEDBACK position at which it starts to sing. |
 | **Demodulator polarity** | +1 (the delayed copy has the polarity of what went in). Flipping it changes which frequencies the loop reinforces, not whether it is stable. |
-| **TILT direction** | The schematic labels the tone pot's lug 1 "CW" and the resulting stage is bass-up at that end. The manual's text reads "low to flat to high". The menu option flips it; one look at a unit settles it. |
 | **FEEDBACK taper** | Linear, as a B100k. |
 | **DG202 in the circuit** | The part itself is now from its datasheet (Maxim, Rev 3): 115 Ω on-resistance typical, logic low 0.8 V / high 2.4 V, logic 1 = ON. Open: the on-resistance at ±12 V rather than the tabulated ±15 V, and the mode-gate circuit, which is not on the schematic (assumed to OR onto the toggle's logic line). |
 | **Op-amp and zener parts** | Not named. The ±12 V stages clip at ±10.5 V, the chips' at ±2.4 V; the bridge-and-5V1 limiter is an exponential knee at 6.2 V. |
-| **Noise** | The chip's −90 dBV noise floor is injected at each comparator, so a loop past unity starts from silence. |
+| **Comparator noise** | 0.6 mV rms at each chip's comparator, a fresh draw per bit. Without it the delta modulator has a hard dead band — anything inside the integrator's idle ripple (about 1–2 mV) leaves the idle bit pattern untouched and the chip passes nothing — so the loop could never start by itself, and a real unit does with nothing patched. 0.6 mV is the least that starts it in both modes (Verb from about 90 % FEEDBACK, Tronic near 100 %). The price is a hiss of about 4–6 mV rms on VERB OUT at FEEDBACK 0, roughly 20 dB above the datasheet's −90 dBV per chip; MIX at its minimum keeps all of it off MIX OUT. The FEEDBACK position at which a unit starts to sing with nothing patched, in each mode, would fix this number. |
 | **The 0.08 ms** in the measured delay relation, and the chip's 400 ms power-on reset | Not modelled. |
 
 ## Voltage conventions
@@ -156,11 +151,11 @@ below 0.8 V.
 
 Amortization ships inside the Moon Technologies plugin, so it is built with the
 rest of the family — see [BUILDING.md](BUILDING.md). The circuit is
-`src/Amortization/Verbtronic.hpp`, self-contained, and `tests/Amortization` is 96
+`src/Amortization/Verbtronic.hpp`, self-contained, and `tests/Amortization` is 105
 checks of it against independent statements of the schematic and the datasheets —
 the nodal equations solved numerically, the datasheet's gain, THD and swing, and
 the measured clock relation — not against the code's own expression of them.
-About 2–4 % of one core at 48 kHz.
+About 1.9 % of one core at 48 kHz in Verb, 1.0 % in Tronic (Apple M-series, the plugin's flags): the three chips' bit loops run in one pass, with each demodulator pipelined into the previous sample's modulator.
 
 ## The panel
 

@@ -267,14 +267,17 @@ int main() {
 		CHECK(db(std::abs(toneAnalog(100, 0.02))) > 6.0 && db(std::abs(toneAnalog(10000, 0.02))) < -5.0, "tone at the CW lug", "should be bass up, treble down");
 		CHECK(db(std::abs(toneAnalog(100, 0.98))) < -6.0 && db(std::abs(toneAnalog(10000, 0.98))) > 5.0, "tone at the CCW lug", "should be bass down, treble up");
 		CHECK(std::fabs(std::abs(toneAnalog(1000, 0.1)) - std::abs(toneAnalog(1000, 0.9))) < 0.2, "tone pivot", "the tilt should pivot near 1 kHz");
-		// the pot's direction reaches the stage: fully clockwise is the CW lug
+		// the knob's direction reaches the stage: fully clockwise is bright (the
+		// schematic's CCW lug) -- measured on a real unit, the schematic says
+		// the reverse
 		{
 			Verbtronic w; w.setSampleRate(fs);
 			Verbtronic::In in; Verbtronic::Out o;
 			in.tilt = 1.0; w.process(in, o);
-			CHECK(std::fabs(w.toneX - 0.0) < 1e-9, "tilt direction", "TILT fully clockwise put the wiper at %.3f, not at the CW lug", w.toneX);
+			CHECK(std::fabs(w.toneX - 1.0) < 1e-9, "tilt direction", "TILT fully clockwise put the wiper at %.3f, not at the bright lug", w.toneX);
+			CHECK(db(std::abs(toneAnalog(10000, std::fmin(w.toneX, 0.98)))) > 5.0, "tilt direction", "TILT fully clockwise is not bright");
 			in.tilt = 0.0; w.process(in, o);
-			CHECK(std::fabs(w.toneX - 1.0) < 1e-9, "tilt direction", "TILT fully anticlockwise put the wiper at %.3f", w.toneX);
+			CHECK(std::fabs(w.toneX - 0.0) < 1e-9, "tilt direction", "TILT fully anticlockwise put the wiper at %.3f", w.toneX);
 		}
 		// the section sign is inverting
 		Verbtronic v; v.setSampleRate(fs); v.setTone(0.5);
@@ -456,6 +459,81 @@ int main() {
 		CHECK(finite && maxAbs <= 10.5 + 1e-9, "mode change bounded", "finite %d, peak %.2f V", (int)finite, maxAbs);
 		CHECK(diff > 0.1, "mode change is audible", "the output differed by only %.4f V from not changing", diff);
 		CHECK(rms(y, at + (size_t)(0.1 * fs), at + (size_t)(0.6 * fs)) > 0.01, "mode change sounds", "went silent");
+	}
+
+	// --- from silence ---------------------------------------------------------------------------------------
+	// A real unit with nothing patched sings by itself once FEEDBACK is far
+	// enough up, and MIX at its minimum keeps all of it off MIX OUT. The
+	// comparators' noise is what starts it (assumed::CMP_NOISE_V); without it
+	// the modulators' dead band holds the loop at exactly nothing.
+	printf("  from silence...\n");
+	{
+		auto quiet = [&](bool verb, double fb, double noise, double& mixPeak) {
+			Verbtronic v; v.setSampleRate(fs); v.setComparatorNoise(noise);
+			Verbtronic::In in; Verbtronic::Out o;
+			in.feedback = fb; in.verb = verb; in.mix = 0.0; in.vin = 0.0;
+			double acc = 0; mixPeak = 0;
+			size_t N = (size_t)(fs * 10.0), from = (size_t)(fs * 8.0);
+			for (size_t n = 0; n < N; n++) {
+				v.process(in, o);
+				if (n >= from) acc += o.verb * o.verb;
+				mixPeak = std::fmax(mixPeak, std::fabs(o.mix));
+			}
+			return std::sqrt(acc / (double)(N - from));
+		};
+		for (int m = 0; m < 2; m++) {
+			bool verb = m == 0;
+			double mp0, mp1, mpOff;
+			double full = quiet(verb, 1.0, assumed::CMP_NOISE_V, mp1);
+			double idle = quiet(verb, 0.0, assumed::CMP_NOISE_V, mp0);
+			double dead = quiet(verb, 1.0, 0.0, mpOff);
+			printf("      %s: no input, FEEDBACK full %.2f V rms at 8-10 s (%.4f V at FEEDBACK 0; %.5f V with quiet comparators)\n",
+			       verb ? "Verb  " : "Tronic", full, idle, dead);
+			CHECK(full > 3.0, "self-oscillation", "%s with nothing in and FEEDBACK full is only %.4f V", verb ? "Verb" : "Tronic", full);
+			CHECK(idle < 0.05, "idle noise", "%s hisses %.4f V at FEEDBACK 0", verb ? "Verb" : "Tronic", idle);
+			CHECK(mp0 == 0.0 && mp1 == 0.0, "MIX at minimum", "%s: %.6f V of the wet reached MIX OUT", verb ? "Verb" : "Tronic", std::fmax(mp0, mp1));
+			if (m == 1)   // the dead band is real: quiet comparators never start Tronic
+				CHECK(dead < 0.01, "dead band", "Tronic started from %.5f V with no comparator noise", dead);
+		}
+	}
+
+	// --- three chips in one pass ----------------------------------------------------------------------------
+	// Pt2399::modulateN steps three chips' chains together; per chip it must
+	// be the same arithmetic as modulate() alone, bit for bit, with and without
+	// the comparator noise and with the pipelined demodulator on and off.
+	printf("  three chips in one pass...\n");
+	{
+		int bad = 0;
+		for (int noisy = 0; noisy < 2; noisy++)
+			for (int pipe = 0; pipe < 2; pipe++) {
+				Pt2399 a[3], b[3];
+				for (int i = 0; i < 3; i++) {
+					a[i].setSampleRate(fs); b[i].setSampleRate(fs);
+					a[i].setPin6(Verbtronic::pin6(i, true)); b[i].setPin6(Verbtronic::pin6(i, true));
+					a[i].pipeline = b[i].pipeline = pipe != 0;
+					a[i].cmpNoise = b[i].cmpNoise = noisy ? 1e-3f : 0.f;
+					a[i].noiseSeed = b[i].noiseSeed = 77u + (uint32_t)i;
+				}
+				float prev[3] = {0, 0, 0};
+				for (int n = 0; n < 20000 && !bad; n++) {
+					if (n == 9000)   // a clock change mid-run
+						for (int i = 0; i < 3; i++) { a[i].setPin6(Verbtronic::pin6(i, false)); b[i].setPin6(Verbtronic::pin6(i, false)); }
+					float x[3];
+					for (int i = 0; i < 3; i++) {
+						a[i].begin(); b[i].begin();
+						float ya = a[i].demod(), yb = b[i].demod();
+						if (ya != yb) bad++;
+						x[i] = (float)(0.8 * std::sin(0.01 * (i + 1) * n)) + 0.3f * ya;
+					}
+					for (int i = 0; i < 3; i++) a[i].modulate(prev[i], x[i]);
+					Pt2399* bc[3] = {&b[0], &b[1], &b[2]};
+					Pt2399::modulateN(bc, 3, prev, x);
+					for (int i = 0; i < 3; i++) prev[i] = x[i];
+				}
+				for (int i = 0; i < 3; i++)
+					if (a[i].ram != b[i].ram || a[i].mod.v != b[i].mod.v || a[i].w != b[i].w) bad++;
+			}
+		CHECK(bad == 0, "modulateN", "three chips in one pass differ from one at a time (%d)", bad);
 	}
 
 	// --- sample rate -----------------------------------------------------------------------------------------

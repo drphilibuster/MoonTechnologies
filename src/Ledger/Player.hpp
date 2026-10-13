@@ -38,7 +38,7 @@ struct PatternSource
 	void releaseAll()
 	{
 		q.dropNoteOns();
-		for ( int i = 0; i < q.n; ++i ) q.q[i].at = now;
+		q.retime( now );
 	}
 
 	// Schedule the notes of pattern step `step` (already shifted), which starts now and

@@ -112,6 +112,12 @@ struct Pt2399 {
     double lastBeginRate = -1.0;
     bool steady = false;                        // clock unchanged since last begin()
 
+    /** The comparator's input noise, volts rms, drawn fresh for every decision
+        (uniform, from a per-chip xorshift). 0 is off and leaves the modulator
+        exactly as it was. See Amortization's `assumed::CMP_NOISE_V`. */
+    float cmpNoise = 0.f;
+    uint32_t noiseSeed = 0x2545F491u;
+
     Pt2399() { ram.assign(kBits, 0); reset(); }
 
     void reset() {
@@ -119,6 +125,7 @@ struct Pt2399 {
         w = 0;
         mod = Adm(); dem = Adm();
         acc = 0.0; m = 0; lastOut = 0.f;
+        noiseSeed = 0x2545F491u;
         spec.valid = false;
         lastBeginRate = -1.0;
         steady = false;
@@ -229,62 +236,129 @@ struct Pt2399 {
     /** The comparator and OP1: `x0` to `x1` is LPF1's output across this audio
         sample. Writes the new bits over the ones demod() just read. */
     void modulate(float x0, float x1) {
-        spec.valid = false;
-        if (m <= 0) return;
-        float dx = (x1 - x0) / (float)m;
-        float x = x0;
-        // State in locals for the pass: a byte store into `ram` would otherwise
-        // force a reload of `mod` and `w` on every bit.
-        Adm md = mod;
-        const Coef k = coef();
-        uint32_t wr = w;
-        uint8_t* r = ram.data();
-        // The next sample's bit count, if the clock holds: what begin() will
-        // compute then, to the same arithmetic.
-        int m2 = 0;
-        if (pipeline && steady) {
-            m2 = (int)(acc + bitRate / fsAudio);
-            if (m2 > 0 && m + m2 >= kBits / 2) m2 = 0;
+        Pt2399* self = this;
+        modulateN(&self, 1, &x0, &x1);
+    }
+
+    /** modulate() for `n` (1..3) chips at once, each with its own input ramp.
+        Each chip's modulator -- and, pipelined, its next demodulator -- is a
+        chain that waits on its own previous bit; chains from different chips
+        are independent, so stepping them in the same loop overlaps them where
+        separate calls each wait. Per chip the arithmetic and its order are
+        exactly modulate()'s, so the result is bit-identical (tests/Amortization). */
+    static void modulateN(Pt2399** c, int n, const float* x0, const float* x1) {
+        bool noisy = false;
+        for (int i = 0; i < n; i++) noisy = noisy || c[i]->cmpNoise > 0.f;
+        // The chip count is a template argument so the per-chip loop unrolls
+        // and every chip's state stays in registers.
+        if (n == 3) { if (noisy) modulateK<3, true>(c, x0, x1); else modulateK<3, false>(c, x0, x1); }
+        else if (n == 2) { if (noisy) modulateK<2, true>(c, x0, x1); else modulateK<2, false>(c, x0, x1); }
+        else { if (noisy) modulateK<1, true>(c, x0, x1); else modulateK<1, false>(c, x0, x1); }
+    }
+
+private:
+    template <int n, bool Noisy>
+    static void modulateK(Pt2399** c, const float* x0, const float* x1) {
+        struct T {
+            Adm md, d;
+            Coef k;
+            float x, dx, nz;
+            double sum;
+            uint32_t wr, rd, ns;
+            int m, m2;
+            uint8_t* r;
+        } t[n];
+        int jMax = 0;
+        for (int i = 0; i < n; i++) {
+            Pt2399& p = *c[i];
+            T& s = t[i];
+            p.spec.valid = false;
+            s.m = p.m > 0 ? p.m : 0;
+            s.dx = s.m > 0 ? (x1[i] - x0[i]) / (float)s.m : 0.f;
+            s.x = x0[i];
+            // State in locals for the pass: a byte store into `ram` would
+            // otherwise force a reload of `mod` and `w` on every bit.
+            s.md = p.mod;
+            s.k = p.coef();
+            s.wr = p.w;
+            s.r = p.ram.data();
+            s.nz = p.cmpNoise * 1.7320508f * (1.f / 2147483648.f);
+            s.ns = p.noiseSeed;
+            // The next sample's bit count, if the clock holds: what begin() will
+            // compute then, to the same arithmetic.
+            s.m2 = 0;
+            if (s.m > 0 && p.pipeline && p.steady) {
+                s.m2 = (int)(p.acc + p.bitRate / p.fsAudio);
+                if (s.m2 > 0 && s.m + s.m2 >= kBits / 2) s.m2 = 0;
+            }
+            if (s.m2 > 0) {
+                s.d = p.dem;
+                s.sum = 0.0;
+                s.rd = s.wr + (uint32_t)s.m;
+                if (s.rd >= (uint32_t)kBits) s.rd -= (uint32_t)kBits;
+            }
+            int top = s.m > s.m2 ? s.m : s.m2;
+            if (top > jMax) jMax = top;
+        }
+        auto dem = [](T& s) {
+            advanceC(s.d, s.r[s.rd], s.k);
+            s.sum += s.d.v;
+            if (++s.rd == (uint32_t)kBits) s.rd = 0;
+        };
+        auto mod = [](T& s) {
+            s.x += s.dx;
+            float xc = s.x;
+            if (Noisy) {
+                // The comparator's own noise: a fresh draw per decision.
+                s.ns ^= s.ns << 13; s.ns ^= s.ns >> 17; s.ns ^= s.ns << 5;
+                xc += s.nz * (float)(int32_t)s.ns;
+            }
+            int bit = xc > s.md.v ? 1 : 0;
+            advanceSel(s.md, bit, s.k);
+            s.r[s.wr] = (uint8_t)bit;
+            if (++s.wr == (uint32_t)kBits) s.wr = 0;
+        };
+        // Every chain of every chip, while all of them still have bits ...
+        int jAll = jMax;
+        bool allSpec = true;
+        for (int i = 0; i < n; i++) {
+            if (t[i].m < jAll) jAll = t[i].m;
+            if (t[i].m2 > 0) { if (t[i].m2 < jAll) jAll = t[i].m2; }
+            else allSpec = false;
         }
         int j = 0;
-        if (m2 > 0) {
-            Adm d = dem;
-            double sum = 0.0;
-            uint32_t rd = wr + (uint32_t)m;
-            if (rd >= (uint32_t)kBits) rd -= (uint32_t)kBits;
-            const int both = m < m2 ? m : m2;
-            for (; j < both; j++) {
-                advanceC(d, r[rd], k);
-                sum += d.v;
-                if (++rd == (uint32_t)kBits) rd = 0;
-                x += dx;
-                int bit = x > md.v ? 1 : 0;
-                advanceSel(md, bit, k);
-                r[wr] = (uint8_t)bit;
-                if (++wr == (uint32_t)kBits) wr = 0;
-            }
-            for (int i = both; i < m2; i++) {
-                advanceC(d, r[rd], k);
-                sum += d.v;
-                if (++rd == (uint32_t)kBits) rd = 0;
-            }
-            spec.valid = true;
-            spec.dem = d; spec.sum = sum; spec.m = m2;
-            spec.rate = bitRate;
-            spec.alpha = alpha; spec.kSyl = kSyl; spec.vsMin = vsMin;
-            spec.vsMax = vsMax; spec.clipV = clipV;
+        if (allSpec) {
+            for (; j < jAll; j++)
+                for (int i = 0; i < n; i++) { dem(t[i]); mod(t[i]); }
+        } else {
+            for (int i = 0; i < n; i++) if (t[i].m < jAll) jAll = t[i].m;
+            for (; j < jAll; j++)
+                for (int i = 0; i < n; i++) { if (j < t[i].m2) dem(t[i]); mod(t[i]); }
         }
-        for (; j < m; j++) {
-            x += dx;
-            int bit = x > md.v ? 1 : 0;
-            advanceSel(md, bit, k);
-            r[wr] = (uint8_t)bit;
-            if (++wr == (uint32_t)kBits) wr = 0;
+        // ... then whatever each has left.
+        for (; j < jMax; j++)
+            for (int i = 0; i < n; i++) {
+                if (j < t[i].m2) dem(t[i]);
+                if (j < t[i].m) mod(t[i]);
+            }
+        for (int i = 0; i < n; i++) {
+            Pt2399& p = *c[i];
+            T& s = t[i];
+            if (s.m <= 0) continue;
+            p.mod = s.md;
+            p.w = s.wr;
+            p.noiseSeed = s.ns;
+            p.spec.w = s.wr;
+            if (s.m2 > 0) {
+                p.spec.valid = true;
+                p.spec.dem = s.d; p.spec.sum = s.sum; p.spec.m = s.m2;
+                p.spec.rate = p.bitRate;
+                p.spec.alpha = p.alpha; p.spec.kSyl = p.kSyl; p.spec.vsMin = p.vsMin;
+                p.spec.vsMax = p.vsMax; p.spec.clipV = p.clipV;
+            }
         }
-        mod = md;
-        w = wr;
-        spec.w = wr;
     }
+public:
 
     /** demod() then modulate(), in one pass, for a caller whose modulator input
         does not depend on this sample's demodulator output (no feedback around

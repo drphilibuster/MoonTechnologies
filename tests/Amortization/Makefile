@@ -6,7 +6,9 @@
 # rebuild the test, and a negative control against a stale binary passes for the
 # wrong reason.
 CXX ?= c++
-CXXFLAGS := -std=c++11 -O2 -Wall -Wextra -g
+# -ffp-contract=off: "three chips in one pass" compares two spellings of one
+# update bit for bit, so the compiler may not fuse a multiply-add in only one.
+CXXFLAGS := -std=c++11 -O2 -ffp-contract=off -Wall -Wextra -g
 SAN := -fsanitize=address,undefined -fno-omit-frame-pointer
 
 CORE := ../../src/Amortization/Verbtronic.hpp ../../src/Pt2399.hpp

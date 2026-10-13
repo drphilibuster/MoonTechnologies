@@ -85,10 +85,17 @@ namespace assumed {
     // The PT2399 modulator's own assumptions (step sizes, syllabic filter, the
     // demodulator's polarity) live with the chip in src/Pt2399.hpp, shared with
     // Racketeer.
-    // The PT2399's output noise floor: -90 dBV typical, A-weighted (datasheet).
-    // Injected at each chip's comparator; it is what lets a loop past unity start
-    // by itself from silence.
-    static const double CHIP_NOISE_V = 40e-6;
+    // The PT2399 comparator's input noise, volts rms, a fresh draw per decision.
+    // Without it the modulator has a hard dead band: an input inside the
+    // integrator's idle ripple (about +-alpha * ADM_VS_MIN, ~1-2 mV) leaves the
+    // idle 0101 pattern untouched and the chip passes nothing at all, so a
+    // loop past unity could never start by itself -- and a real Verbtronic does,
+    // with nothing patched (measured on a unit, 2026-10). Noise of this order
+    // dithers the dead band away. The datasheet gives only the output figure
+    // (-90 dBV typical, A-weighted), which a comparator this quiet would beat
+    // by ~20 dB at the slow Tronic clocks; set CMP_NOISE_V so the loop starts
+    // where the unit does, and see docs/Amortization.md for the trade.
+    static const double CMP_NOISE_V = 0.6e-3;
 }
 
 
@@ -146,7 +153,7 @@ struct Verbtronic {
     struct In {
         double vin = 0;        // volts at IN
         double feedback = 0;   // FEEDBACK pot, 0..1, clockwise up
-        double tilt = 0.5;     // TILT pot, 0..1, clockwise up
+        double tilt = 0.5;     // TILT knob, 0..1, clockwise = brighter
         double mix = 0.5;      // OUTPUT MIX pot, 0..1, clockwise up
         double mixAtten = 0.5; // MIX CV attenuverter pot, 0..1 (0.5 = off)
         double mixCv = 0;      // volts at MIX CV
@@ -169,10 +176,10 @@ struct Verbtronic {
     Section1 makeupHp, coupleHp;    // 10u and 2u2
     Section1 tone;
     Section2 lpf1[3];
-    double p15prev[3] = {0, 0, 0};
-    uint32_t rng = 0x9E3779B9u;
+    float p15prev[3] = {0, 0, 0};
     double toneX = -1;
     double limV = 0;                // the limiter's last solution, a Newton start
+    double cmpNoise = assumed::CMP_NOISE_V;   // see setComparatorNoise()
 
     Verbtronic() { setSampleRate(48000.0); }
 
@@ -217,16 +224,28 @@ struct Verbtronic {
         reset();
     }
 
+    /** The comparators' noise, volts rms (tests sweep it). */
+    void setComparatorNoise(double v) {
+        cmpNoise = v;
+        for (int i = 0; i < 3; i++) chip[i].cmpNoise = (float)v;
+    }
+
     void reset() {
-        for (int i = 0; i < 3; i++) { chip[i].reset(); lpf1[i].reset(); p15prev[i] = 0; }
-        rng = 0x9E3779B9u;
+        for (int i = 0; i < 3; i++) {
+            chip[i].reset();
+            chip[i].pipeline = true;          // feedback around every chip: see Pt2399::pipeline
+            chip[i].cmpNoise = (float)cmpNoise;
+            chip[i].noiseSeed = 0x2545F491u + 0x9E3779B9u * (uint32_t)i;   // three different chips
+            lpf1[i].reset(); p15prev[i] = 0;
+        }
         outLpf.reset(); makeupHp.reset(); coupleHp.reset(); tone.reset();
         limV = 0;
     }
 
     /** The tone op-amp, as a first-order shelf. x is the wiper's position
-        from the CW lug (schematic lug 1): 0 is full CW (dark, bass up),
-        1 is full CCW (bright). Derived from the schematic's nodal equations. */
+        from the schematic's CW lug (lug 1): 0 is that lug (dark, bass up), 1
+        the other (bright). The knob on a real unit runs the other way: its
+        clockwise end is x = 1. Derived from the schematic's nodal equations. */
     void setTone(double x) {
         if (std::fabs(x - toneX) < 1e-5) return;
         toneX = x;
@@ -295,26 +314,31 @@ struct Verbtronic {
         double lim = 0;
         double vL = limiter(iin, lim);
         double va = -(part::R_ATTEN_FB / part::R_ATTEN_IN) * (in.vin + vL);
-        // Wiper fraction from the CW lug: clockwise on the panel is brighter.
-        setTone(1.0 - clampd(in.tilt, 0.0, 1.0));
+        // Clockwise on the panel is brighter -- measured on a real unit; the
+        // schematic draws the pot the other way round. So the knob's travel is
+        // the wiper's distance from the dark (CW-on-the-schematic) lug.
+        setTone(clampd(in.tilt, 0.0, 1.0));
         double vt = clampd(tone.process(va), -assumed::RAIL_CLIP, assumed::RAIL_CLIP);
         double vj = coupleHp.process(vt);
 
         // --- each chip's input stage -------------------------------------------
-        double p15[3];
+        float p15[3];
         double cur0 = vj / part::R_COUPLE + M / part::R_MESH_U12 + p12[0] / part::R_SELF;
         double cur1 = vj / part::R_COUPLE + M / part::R_MESH_U12 + p12[1] / part::R_SELF;
         double cur2 = M / part::R_MESH_U3 + p12[2] / part::R_SELF;
         double cur[3] = {cur0, cur1, cur2};
+        float x0[3];
         for (int i = 0; i < 3; i++) {
             double raw = lpf1[i].process(-part::R_LPF1_FB * cur[i]);
-            p15[i] = clampd(raw, -assumed::CHIP_CLIP, assumed::CHIP_CLIP);
-            clipped = clipped || p15[i] != raw;
-            rng ^= rng << 13; rng ^= rng >> 17; rng ^= rng << 5;
-            double noisy = p15[i] + assumed::CHIP_NOISE_V * 1.7320508 * ((double)(int32_t)rng * (1.0 / 2147483648.0));
-            chip[i].modulate((float)p15prev[i], (float)noisy);
-            p15prev[i] = noisy;
+            double v = clampd(raw, -assumed::CHIP_CLIP, assumed::CHIP_CLIP);
+            clipped = clipped || v != raw;
+            x0[i] = p15prev[i];
+            p15[i] = (float)v;
+            p15prev[i] = p15[i];
         }
+        // The three comparators and modulators, stepped together.
+        Pt2399* chips[3] = {&chip[0], &chip[1], &chip[2]};
+        Pt2399::modulateN(chips, 3, x0, p15);
 
         // --- the mixer ---------------------------------------------------------
         // MIX CV: a 100k/100k attenuverter, (2a - 1) * CV.

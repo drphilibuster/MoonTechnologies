@@ -73,7 +73,22 @@ in. They set the same things the knobs of the same names did, for the selected
 track, so a patch made before they moved loads unchanged, and undo and MIDI-Map
 work on them as on a knob.
 
-Click a lane to select its track.
+Click a lane to select its track. The bars are the steps, and they can be edited
+in place:
+
+* **Drag a bar up or down** to move that step's notes up or down a semitone for
+  every three pixels. The note is printed above the bar while you drag.
+* **Click an empty step** to give it a note. It takes the pitch of the nearest
+  note before it, with the track's gate length.
+* **Right-click a step** to clear it. Right-clicking an empty step opens the
+  slot menu instead.
+
+A generator's bars are not stored: they are worked out from the seed every time
+they are drawn. So the first edit to a generator track writes its loop down
+where it is, the way CAPTURE does. The slot becomes a pattern that plays exactly
+what the generator was playing, from the step it was on, and then takes the edit.
+The write-down and the edit are a single undo step, so undo brings the generator
+back. On the FX page, the effect bars drag up and down as well as across.
 
 ### ROLL
 
