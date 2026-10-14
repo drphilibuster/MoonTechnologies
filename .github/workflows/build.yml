@@ -75,6 +75,14 @@ jobs:
           unzip -q Rack-SDK.zip -d ..
           test -f ../Rack-SDK/include/dsp/resampler.hpp
 
+      # tests/panelkit SKIPs its pixel comparisons without rsvg-convert and
+      # Pillow; install both so CI runs them rather than passing on the skip.
+      - name: Install rsvg-convert and Pillow (for tests/panelkit)
+        run: |
+          sudo apt-get update && sudo apt-get install -y librsvg2-bin python3-pil
+          rsvg-convert --version
+          python3 -c "import PIL; print('Pillow', PIL.__version__)"
+
       - name: Run the host-side tests
         run: make test
 
